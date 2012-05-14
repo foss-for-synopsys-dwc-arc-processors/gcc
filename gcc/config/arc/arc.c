@@ -2433,7 +2433,7 @@ arc_expand_epilogue (int sibcall_p)
 				cfun->machine->frame_info.gmask,
 				1 + sibthunk_p, &first_offset);
 	      if (sibthunk_p)
-		return;
+		goto epilogue_done;
         }
       /* If we are to restore registers, and first_offset would require
          a limm to be encoded in a PRE_MODIFY, yet we can add it with a
@@ -2518,6 +2518,14 @@ arc_expand_epilogue (int sibcall_p)
       /* Emit the return instruction.  */
       if (sibcall_p == FALSE)
 	emit_jump_insn (gen_return_i ());
+    }
+ epilogue_done:
+  if (!TARGET_EPILOGUE_CFI)
+    {
+      rtx insn;
+
+      for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
+	RTX_FRAME_RELATED_P (insn) = 0;
     }
 }
 
