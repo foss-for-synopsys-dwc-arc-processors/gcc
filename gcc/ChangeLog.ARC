@@ -1,3 +1,8 @@
+2012-07-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_print_operand): Don't mix up the
+	base for a scaled index with a scalable offset.
+
 2012-05-14  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt (mno-epilogue-cfi, mepilogue-cfi): New options.

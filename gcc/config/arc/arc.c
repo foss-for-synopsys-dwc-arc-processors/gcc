@@ -3049,21 +3049,21 @@ arc_print_operand (FILE *file,rtx x,int code)
 	    case POST_INC: case POST_DEC: case POST_MODIFY:
 	      fputs (".ab", file); break;
 	    case PLUS:
+	      /* Are we using a scaled index?  */
+	      if (GET_CODE (XEXP (addr, 0)) == MULT)
+		fputs (".as", file);
 	      /* Can we use a scaled offset?  */
-	      if (CONST_INT_P (XEXP (addr, 1))
-		  && GET_MODE_SIZE (GET_MODE (x)) > 1
-		  && (!(INTVAL (XEXP (addr, 1))
-			& (GET_MODE_SIZE (GET_MODE (x)) - 1) & 3))
-		  /* Does it make a difference?  */
-		  && !SMALL_INT_RANGE(INTVAL (XEXP (addr, 1)),
-				      GET_MODE_SIZE (GET_MODE (x)) - 2, 0))
+	      else if (CONST_INT_P (XEXP (addr, 1))
+		       && GET_MODE_SIZE (GET_MODE (x)) > 1
+		       && (!(INTVAL (XEXP (addr, 1))
+			     & (GET_MODE_SIZE (GET_MODE (x)) - 1) & 3))
+		       /* Does it make a difference?  */
+		       && !SMALL_INT_RANGE(INTVAL (XEXP (addr, 1)),
+					   GET_MODE_SIZE (GET_MODE (x)) - 2, 0))
 		{
 		  fputs (".as", file);
 		  output_scaled = 1;
 		}
-	      /* Are we using a scaled index?  */
-	      else if (GET_CODE (XEXP (addr, 0)) == MULT)
-		fputs (".as", file);
 	      break;
 	    case REG:
 	      break;
