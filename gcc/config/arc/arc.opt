@@ -1,0 +1,363 @@
+; Options for the Argonaut ARC port of the compiler
+;
+; Copyright (C) 2005, 2007-2012 Free Software Foundation, Inc.
+; Copyright 2007-2012 Synopsys Inc.
+;
+; This file is part of GCC.
+;
+; GCC is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free
+; Software Foundation; either version 3, or (at your option) any later
+; version.
+;
+; GCC is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+; License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with GCC; see the file COPYING3.  If not see
+; <http://www.gnu.org/licenses/>.
+
+HeaderInclude
+config/arc/arc-opts.h
+
+mbig-endian
+Target Report RejectNegative Mask(BIG_ENDIAN)
+Compile code for big endian mode
+
+mlittle-endian
+Target Report RejectNegative InverseMask(BIG_ENDIAN)
+Compile code for little endian mode.  This is the default
+
+mmangle-cpu
+Target Report Mask(MANGLE_CPU)
+Prepend the name of the cpu to all public symbol names
+
+; mmangle-cpu-libgcc
+; Target Undocumented Mask(MANGLE_CPU_LIBGC)
+
+mno-cond-exec
+Target Report RejectNegative Mask(NO_COND_EXEC)
+Disable ARCompact specific pass to generate conditional execution instructions
+
+mA4
+Target Report
+Generate code for ARCtangent-A4 processor. No longer supported.
+
+mA5
+Target Report
+Generate ARCompact 32-bit code for ARCtangent-A5 processor
+
+mA6
+Target Report
+Generate ARCompact 32-bit code for ARCtangent-ARC600 processor
+
+mARC600
+Target Report
+Same as -mA6
+
+mA7
+Target Report
+Generate ARCompact 32-bit code for ARCtangent-ARC700 processor
+
+mARC700
+Target Report
+Same as -mA7
+
+mmixed-code
+Target Report Mask(MIXED_CODE_SET)
+Generate ARCompact 16-bit instructions intermixed with 32-bit instructions for ARCtangent-A5 and higher processors
+
+mvolatile-cache
+Target Report Mask(VOLATILE_CACHE_SET)
+Use ordinarily cached memory accesses for volatile references
+
+mno-volatile-cache
+Target Report InverseMask(VOLATILE_CACHE_SET)
+Enable cache bypass for volatile references
+
+mbarrel_shifter
+Target Report Mask(BARREL_SHIFTER)
+Generate instructions supported by barrel shifter
+
+mnorm
+Target Report Mask(NORM_SET)
+Generate norm instruction
+
+mswap
+Target Report Mask(SWAP_SET)
+Generate swap instruction
+
+mmul64
+Target Report Mask(MUL64_SET)
+Generate mul64 and mulu64 instructions
+
+mno-mpy
+Target Report Mask(NOMPY_SET)
+Do not generate mpy instructions for ARC700
+
+mEA
+Target Report Mask(EA_SET)
+Generate Extended arithmetic instructions. Currently only divaw supported
+
+mmin_max
+Target Report Mask(MINMAX_SET)
+Generate min and max instructions
+
+msoft-float
+Target Report Mask(0)
+Dummy flag. This is the default unless FPX switches are provided explicitly
+
+mlong-calls
+Target Report Mask(LONG_CALLS_SET)
+Generate call insns as register indirect calls
+
+mno-brcc
+Target Report Mask(NO_BRCC_SET)
+Do no generate BRcc instructions.
+
+mno-sdata
+Target Report Mask(NO_SDATA_SET)
+Do not generate sdata references
+
+mno-millicode
+Target Report Mask(NO_MILLICODE_THUNK_SET)
+Do not generate millicode thunks (needed only with -Os)
+
+mspfp
+Target Report Mask(SPFP_COMPACT_SET)
+FPX: Generate Single Precision FPX (compact) instructions.
+
+mspfp_compact
+Target Report Mask(SPFP_COMPACT_SET) MaskExists
+FPX: Generate Single Precision FPX (compact) instructions.
+
+mspfp_fast
+Target Report Mask(SPFP_FAST_SET) 
+FPX: Generate Single Precision FPX (fast) instructions.
+
+; START ARC LOCAL
+margonaut
+Target Report Mask(ARGONAUT_SET)
+FPX: Enable Argonaut ARC CPU Double Precision Floating Point extensions.
+; END ARC LOCAL
+
+mdpfp
+Target Report Mask(DPFP_COMPACT_SET)
+FPX: Generate Double Precision FPX (compact) instructions.
+
+mdpfp_compact
+Target Report Mask(DPFP_COMPACT_SET) MaskExists
+FPX: Generate Double Precision FPX (compact) instructions.
+
+mdpfp_fast
+Target Report Mask(DPFP_FAST_SET) 
+FPX: Generate Double Precision FPX (fast) instructions.
+
+; START ARC LOCAL
+mno-dpfp-lrsr
+Target Report Mask(DPFP_DISABLE_LRSR)
+Disable LR and SR instructions from using FPX extension aux registers.
+; END ARC LOCAL
+
+msimd
+Target Report Mask(SIMD_SET)
+Enable generation of ARC SIMD instructions via target-specific builtins.
+
+mcpu=
+Target RejectNegative Joined Var(arc_cpu) Enum(processor_type)
+-mcpu=CPU	Compile code for ARC variant CPU
+
+Enum
+Name(processor_type) Type(enum processor_type)
+
+EnumValue
+Enum(processor_type) String(A5) Value(PROCESSOR_A5)
+
+EnumValue
+Enum(processor_type) String(ARC600) Value(PROCESSOR_ARC600)
+
+EnumValue
+Enum(processor_type) String(ARC601) Value(PROCESSOR_ARC601)
+
+EnumValue
+Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
+
+mtext=
+Target RejectNegative Joined Var(arc_text_string) Init(ARC_DEFAULT_TEXT_SECTION)
+-mtext=SECTION	Put functions in SECTION
+
+mdata=
+Target RejectNegative Joined Var(arc_data_string) Init(ARC_DEFAULT_DATA_SECTION)
+-mdata=SECTION	Put data in SECTION
+
+mrodata=
+Target RejectNegative Joined Var(arc_rodata_string) Init(ARC_DEFAULT_RODATA_SECTION)
+-mrodata=SECTION	Put read-only data in SECTION
+
+mexperimental-mask=
+Target RejectNegative Joined UInteger Var(arc_experimental_mask) Init(1)
+For experimental options
+
+msize-level=
+Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
+size optimization level: 0:none 1:opportunistic 2: regalloc 3:drop align, -Os
+
+misize
+Target Report Var(TARGET_DUMPISIZE)
+Annotate assembler instructions with estimated addresses
+
+multcost=
+Target RejectNegative Joined UInteger Var(arc_multcost) Init(-1)
+Cost to assume for a multiply instruction, with 4 being equal to a normal insn.
+
+mtune=arc600
+Target RejectNegative Var(arc_tune, TUNE_ARC600)
+Tune for ARC600 cpu.
+
+mtune=arc601
+Target RejectNegative Var(arc_tune, TUNE_ARC600)
+Tune for ARC601 cpu.
+
+mtune=arc700
+Target RejectNegative Var(arc_tune, TUNE_ARC700_4_2_STD)
+Tune for ARC700 R4.2 Cpu with standard multiplier block.
+
+mtune=arc700-xmac
+Target RejectNegative Var(arc_tune, TUNE_ARC700_4_2_XMAC)
+Tune for ARC700 R4.2 Cpu with XMAC block.
+
+mtune=ARC725D
+Target RejectNegative Var(arc_tune, TUNE_ARC700_4_2_XMAC)
+Tune for ARC700 R4.2 Cpu with XMAC block.
+
+mtune=ARC750D 
+Target RejectNegative Var(arc_tune, TUNE_ARC700_4_2_XMAC)
+Tune for ARC700 R4.2 Cpu with XMAC block.
+
+mindexed-loads
+Target Var(TARGET_INDEXED_LOADS)
+Enable the use of indexed loads
+
+mauto-modify-reg
+Target Var(TARGET_AUTO_MODIFY_REG)
+Enable the use of pre/post modify with register displacement.
+
+mold-di-patterns
+Target Var(TARGET_OLD_DI_PATTERNS)
+enable use of old DI patterns that have presumably been obsoleted by subreg lowering.
+
+mdynamic
+Target RejectNegative
+Use dynamic libraries for linking
+
+mmul32x16
+Target Report Mask(MULMAC_32BY16_SET)
+Generate 32x16 multiply and mac instructions
+
+m2addr
+Target Var(TARGET_2ADDR)
+Make two-address instruction alternatives visible to reload.
+
+; the initializer is supposed to be: Init(REG_BR_PROB_BASE/2) ,
+; alas, basic-block.h is not included in options.c .
+munalign-prob-threshold=
+Target RejectNegative Joined UInteger Var(arc_unalign_prob_threshold) Init(10000/2)
+Set probability threshold for unaligning branches
+
+mmedium-calls
+Target Var(TARGET_MEDIUM_CALLS)
+Don't use less than 25 bit addressing range for calls.
+
+mannotate-align
+Target Var(TARGET_ANNOTATE_ALIGN)
+Explain what alignment considerations lead to the decision to make an insn short or long.
+
+malign-call
+Target Var(TARGET_ALIGN_CALL)
+Do alignment optimizations for call instructions.
+
+mRcq
+Target Var(TARGET_Rcq)
+Enable Rcq constraint handling - most short code generation depends on this.
+
+mRcw
+Target Var(TARGET_Rcw)
+Enable Rcw constraint handling - most ccfsm condexec mostly depdends on this.
+
+mearly-cbranchsi
+Target Var(TARGET_EARLY_CBRANCHSI)
+Enable pre-reload use of cbranchsi pattern
+
+mbbit-peephole
+Target Var(TARGET_BBIT_PEEPHOLE)
+Enable bbit peephole2
+
+mcase-vector-pcrel
+Target Var(TARGET_CASE_VECTOR_PC_RELATIVE)
+Use pc-relative switch case tables - this enables case table shortening.
+
+mcompact-casesi
+Target Var(TARGET_COMPACT_CASESI)
+Enable compact casesi pattern
+
+mq-class
+Target Var(TARGET_Q_CLASS)
+Enable 'q' instruction alternatives.
+
+mexpand-adddi
+Target Var(TARGET_EXPAND_ADDDI)
+Expand adddi3 and subdi3 at rtl generation time into add.f / adc etc.
+
+
+; START ARC LOCAL
+; Flags used by the assembler, but for which we define preprocessor
+; macro symbols as well.
+mcrc
+Target Report RejectNegative
+Enable variable polynomial CRC extension
+
+mdsp_packa
+Target Report RejectNegative
+Enable DSP 3.1 Pack A extensions
+
+mdvbf
+Target Report RejectNegative
+Enable dual viterbi butterfly extension
+
+mmac_d16
+Target Report RejectNegative Undocumented
+
+mmac_24
+Target Report RejectNegative Undocumented
+
+mtelephony
+Target Report RejectNegative
+Enable Dual and Single Operand Instructions for Telephony
+
+mxy
+Target Report RejectNegative
+Enable XY Memory extension (DSP version 3)
+
+; ARC700 4.10 extension instructions
+mlock
+Target Report RejectNegative
+Enable Locked Load/Store Conditional extension
+
+mswape
+Target Report RejectNegative
+Enable swap byte ordering extension instruction
+
+mrtsc
+Target Report RejectNegative
+Enable 64-bit Time-Stamp Counter extension instruction
+
+mno-epilogue-cfi
+Target Report RejectNegative InverseMask(EPILOGUE_CFI)
+Disable generation of cfi for epilogues.
+
+mepilogue-cfi
+Target RejectNegative Mask(EPILOGUE_CFI)
+Enable generation of cfi for epilogues.
+; END ARC LOCAL
