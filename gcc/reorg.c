@@ -3486,7 +3486,6 @@ relax_delay_slots (rtx first)
 	{
 	  rtx after;
 	  int i;
-	  rtx crossing;
 
 	  /* Delete the RETURN and just execute the delay list insns.
 
