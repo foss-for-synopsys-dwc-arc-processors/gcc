@@ -1055,23 +1055,23 @@ extern int arc_initial_elimination_offset(int from, int to);
 
 /* Nonzero if X is a hard reg that can be used as an index
    or if it is a pseudo reg.  */
-#define REG_OK_FOR_INDEX_P_STRICT(X) \
+#define REG_OK_FOR_INDEX_P_NONSTRICT(X) \
 ((unsigned) REGNO (X) >= FIRST_PSEUDO_REGISTER || \
  (unsigned) REGNO (X) < 29 || \
  (unsigned) REGNO (X) == 63 || \
  (unsigned) REGNO (X) == ARG_POINTER_REGNUM)
 /* Nonzero if X is a hard reg that can be used as a base reg
    or if it is a pseudo reg.  */
-#define REG_OK_FOR_BASE_P_STRICT(X) \
+#define REG_OK_FOR_BASE_P_NONSTRICT(X) \
 ((unsigned) REGNO (X) >= FIRST_PSEUDO_REGISTER || \
  (unsigned) REGNO (X) < 29 || \
  (unsigned) REGNO (X) == 63 || \
  (unsigned) REGNO (X) == ARG_POINTER_REGNUM)
 
 /* Nonzero if X is a hard reg that can be used as an index.  */
-#define REG_OK_FOR_INDEX_P_NONSTRICT(X) REGNO_OK_FOR_INDEX_P (REGNO (X))
+#define REG_OK_FOR_INDEX_P_STRICT(X) REGNO_OK_FOR_INDEX_P (REGNO (X))
 /* Nonzero if X is a hard reg that can be used as a base reg.  */
-#define REG_OK_FOR_BASE_P_NONSTRICT(X) REGNO_OK_FOR_BASE_P (REGNO (X))
+#define REG_OK_FOR_BASE_P_STRICT(X) REGNO_OK_FOR_BASE_P (REGNO (X))
 
 /* GO_IF_LEGITIMATE_ADDRESS recognizes an RTL expression
    that is a valid memory address for an instruction.

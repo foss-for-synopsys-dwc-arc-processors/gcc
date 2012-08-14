@@ -1,3 +1,8 @@
+2012-08-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (REG_OK_FOR_{BASE,INDEX}_P_{,NON}STRICT):
+	Fix mixup.
+
 2012-07-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_print_operand): Don't mix up the
