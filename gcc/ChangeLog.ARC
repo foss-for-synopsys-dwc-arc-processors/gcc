@@ -1,3 +1,28 @@
+2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.
+	(gen_compare_reg): Change type of first argument; get operands from
+	there, and force into registers if needed.  Changed all callers.
+	Use CC_REG.
+	* config/arc/arc.md (R12_REG): Define.
+	(cmpsi, seq, sne, sgt, sle, sge, slt, sgtu, sleu, sgeu, sltu): Delete.
+	(SDF, OPTFPE_CMP): New mode iterators.
+	(cmp): New mode attribute.
+	(cbranchsi4, cstoresi4, cstore<SDF:mode>4): New patterns.
+	(scc_insn, branch_insn): No longer suppress generator functions.
+	(beq, bne, bgt, ble, bge, blt, bgtu, bleu, bgeu, bltu, bunge): Delete.
+	(bungt, bunle, bunlt, buneq, bltgt, bordered, bunordered): Likewise.
+	(cbranch<SDF:mode>4): New patterns.
+	(cmpsf, cmpdf): Delete.
+	(cmp_float): Use RETURN_ADDR_REGNUM and R12_REG.
+	(cmpsf_eq, cmpsf_gt, cmpsf_ge, cmpsf_uneq, cmpsf_ord): Describe with
+	OPTFPE_CMP mode iteration.
+	(cmpdf_eq, cmpdf_gt, cmpdf_ge, cmpdf_uneq, cmpdf_ord): Likewise.
+	* config/arc/arc-protos.h (gen_compare_reg): Update prototype.
+
+	* config/arc/arc.c (arc_print_operand): Check that we have an actual
+	JUMP_INSN before using INSN_ANNULLED_BRANCH_P.
+
 2012-08-14  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (REG_OK_FOR_{BASE,INDEX}_P_{,NON}STRICT):

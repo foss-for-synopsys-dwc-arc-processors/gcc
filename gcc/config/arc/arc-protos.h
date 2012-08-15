@@ -26,8 +26,8 @@ extern rtx arc_va_arg (tree, tree);
 
 extern enum machine_mode arc_select_cc_mode (enum rtx_code, rtx, rtx);
 
-/* Define the function that build the compare insn for scc and bcc.  */
-extern struct rtx_def *gen_compare_reg (enum rtx_code, enum machine_mode);
+/* Define the function that build the compare insn for scc, bcc and mov*cc.  */
+extern struct rtx_def *gen_compare_reg (rtx, enum machine_mode);
 
 /* Declarations for various fns used in the .md file.  */
 extern void arc_output_function_epilogue (FILE *, HOST_WIDE_INT, int);

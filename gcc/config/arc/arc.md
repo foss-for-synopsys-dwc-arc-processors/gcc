@@ -140,6 +140,7 @@
    (VUNSPEC_TRAP_S 27) ; blockage insn for trap_s generation
    (VUNSPEC_UNIMP_S 28) ; blockage insn for unimp_s generation
 
+   (R12_REG 12)
    (SP_REG 28)
    (ILINK1_REGNUM 29)
    (ILINK2_REGNUM 30)
@@ -1322,12 +1323,7 @@
 		         (match_operand:SI 2 "nonmemory_operand" "")
  		         (match_operand:SI 3 "register_operand" "")))]
   ""
-  "
-{
-  enum rtx_code code = GET_CODE (operands[1]);
-
-  operands[1] = gen_compare_reg (code, VOIDmode);
-}")
+  "operands[1] = gen_compare_reg (operands[1], VOIDmode);")
 
 
 (define_expand "movdicc"
@@ -1336,12 +1332,7 @@
 		        (match_operand:DI 2 "nonmemory_operand" "")
 		        (match_operand:DI 3 "register_operand" "")))]
   ""
-  "
-{
-  enum rtx_code code = GET_CODE (operands[1]);
-
-  operands[1] = gen_compare_reg (code, VOIDmode);
-}")
+  "operands[1] = gen_compare_reg (operands[1], VOIDmode);")
 
 
 (define_expand "movsfcc"
@@ -1350,12 +1341,7 @@
 		      (match_operand:SF 2 "nonmemory_operand" "")
 		      (match_operand:SF 3 "register_operand" "")))]
   ""
-  "
-{
-  enum rtx_code code = GET_CODE (operands[1]);
-
-  operands[1] = gen_compare_reg (code, VOIDmode);
-}")
+  "operands[1] = gen_compare_reg (operands[1], VOIDmode);")
 
 (define_expand "movdfcc"
   [(set (match_operand:DF 0 "dest_reg_operand" "")
@@ -1363,12 +1349,7 @@
 		      (match_operand:DF 2 "nonmemory_operand" "")
 		      (match_operand:DF 3 "register_operand" "")))]
   ""
-  "
-{
-  enum rtx_code code = GET_CODE (operands[1]);
-
-  operands[1] = gen_compare_reg (code, VOIDmode);
-}")
+  "operands[1] = gen_compare_reg (operands[1], VOIDmode);")
 
 (define_insn "*movsicc_insn"
   [(set (match_operand:SI 0 "dest_reg_operand" "=w,w")
@@ -3321,27 +3302,26 @@
    (set_attr "cond" "canuse,nocond,nocond")
    (set_attr "length" "4,4,8")])
 
-;; Compare instructions.
-;; This controls RTL generation and register allocation.
+;; Compare / branch instructions.
 
-;; We generate RTL for comparisons and branches by having the cmpxx
-;; patterns store away the operands.  Then, the scc and bcc patterns
-;; emit RTL for both the compare and the branch.
-
-(define_expand "cmpsi"
+(define_expand "cbranchsi4"
   [(set (reg:CC CC_REG)
-	(compare:CC (match_operand:SI 0 "register_operand" "")
-		    (match_operand:SI 1 "nonmemory_operand" "")))]
+	(compare:CC (match_operand:SI 1 "nonmemory_operand" "")
+		    (match_operand:SI 2 "nonmemory_operand" "")))
+   (set (pc)
+	(if_then_else
+	      (match_operator 0 "ordered_comparison_operator" [(reg CC_REG)
+							       (const_int 0)])
+	      (label_ref (match_operand 3 "" ""))
+	      (pc)))]
   ""
-  "
 {
-  arc_compare_op0 = operands[0];
-  if (GET_CODE(operands[1]) == SYMBOL_REF && flag_pic)
-    arc_compare_op1 = force_reg (SImode, operands[1]);
-  else
-   arc_compare_op1 = operands[1];
+  gcc_assert (XEXP (operands[0], 0) == operands[1]);
+  gcc_assert (XEXP (operands[0], 1) == operands[2]);
+  operands[0] = gen_compare_reg (operands[0], VOIDmode);
+  gen_branch_insn (operands[3], operands[0]);
   DONE;
-}")
+})
 
 ;; ??? Could add a peephole to generate compare with swapped operands and
 ;; modifed cc user if second, but not first operand is a compact register.
@@ -3439,87 +3419,42 @@
 
 ;; Next come the scc insns.
 
-(define_expand "seq"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
+(define_expand "cstoresi4"
+  [(set (reg:CC CC_REG)
+	(compare:CC (match_operand:SI 2 "nonmemory_operand" "")
+		    (match_operand:SI 3 "nonmemory_operand" "")))
+   (set (match_operand:SI 0 "dest_reg_operand" "")
+	(match_operator:SI 1 "ordered_comparison_operator" [(reg CC_REG)
+							    (const_int 0)]))]
   ""
-  "
 {
-  operands[1] = gen_compare_reg (EQ, SImode);
-}")
+  gcc_assert (XEXP (operands[1], 0) == operands[2]);
+  gcc_assert (XEXP (operands[1], 1) == operands[3]);
+  operands[1] = gen_compare_reg (operands[1], SImode);
+  gen_scc_insn (operands[0], operands[1]);
+  DONE;
+})
 
-(define_expand "sne"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
+(define_mode_iterator SDF [SF DF])
+
+(define_expand "cstore<mode>4"
+  [(set (reg:CC CC_REG)
+	(compare:CC (match_operand:SDF 2 "register_operand" "")
+		    (match_operand:SDF 3 "register_operand" "")))
+   (set (match_operand:SI 0 "dest_reg_operand" "")
+	(match_operator:SI 1 "comparison_operator" [(reg CC_REG)
+						    (const_int 0)]))]
+
+  "TARGET_OPTFPE"
 {
-  operands[1] = gen_compare_reg (NE, SImode);
-}")
+  gcc_assert (XEXP (operands[1], 0) == operands[2]);
+  gcc_assert (XEXP (operands[1], 1) == operands[3]);
+  operands[1] = gen_compare_reg (operands[1], SImode);
+  gen_scc_insn (operands[0], operands[1]);
+  DONE;
+})
 
-(define_expand "sgt"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GT, SImode);
-}")
-
-(define_expand "sle"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LE, SImode);
-}")
-
-(define_expand "sge"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GE, SImode);
-}")
-
-(define_expand "slt"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LT, SImode);
-}")
-
-(define_expand "sgtu"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GTU, SImode);
-}")
-
-(define_expand "sleu"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LEU, SImode);
-}")
-
-(define_expand "sgeu"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GEU, SImode);
-}")
-
-(define_expand "sltu"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r") (match_dup 1))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LTU, SImode);
-}")
-
-(define_insn_and_split "*scc_insn"
+(define_insn_and_split "scc_insn"
   [(set (match_operand:SI 0 "dest_reg_operand" "=w")
 	(match_operator:SI 1 "proper_comparison_operator" [(reg CC_REG) (const_int 0)]))]
   ""
@@ -3646,206 +3581,7 @@
    (set_attr "length" "4,8")])
 
 ;; These control RTL generation for conditional jump insns
-
-(define_expand "beq"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (EQ, VOIDmode);
-}")
-
-(define_expand "bne"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (NE, VOIDmode);
-}")
-
-(define_expand "bgt"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GT, VOIDmode);
-}")
-
-(define_expand "ble"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LE, VOIDmode);
-}")
-
-(define_expand "bge"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GE, VOIDmode);
-}")
-
-(define_expand "blt"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LT, VOIDmode);
-}")
-
-(define_expand "bgtu"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GTU, VOIDmode);
-}")
-
-(define_expand "bleu"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LEU, VOIDmode);
-}")
-
-(define_expand "bgeu"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (GEU, VOIDmode);
-}")
-
-(define_expand "bltu"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LTU, VOIDmode);
-}")
-
-(define_expand "bunge"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (UNGE, VOIDmode);
-}")
-
-(define_expand "bungt"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (UNGT, VOIDmode);
-}")
-
-(define_expand "bunle"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (UNLE, VOIDmode);
-}")
-
-(define_expand "bunlt"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (UNLT, VOIDmode);
-}")
-
-(define_expand "buneq"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (UNEQ, VOIDmode);
-}")
-
-(define_expand "bltgt"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (LTGT, VOIDmode);
-}")
-
-(define_expand "bordered"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (ORDERED, VOIDmode);
-}")
-
-(define_expand "bunordered"
-  [(set (pc)
-	(if_then_else (match_dup 1)
-		      (label_ref (match_operand 0 "" ""))
-		      (pc)))]
-  ""
-  "
-{
-  operands[1] = gen_compare_reg (UNORDERED, VOIDmode);
-}")
-
-;; Now match both normal and inverted jump.
+;; Match both normal and inverted jump.
 
 ;; TODO - supporting 16-bit conditional short branch insns if needed.
 
@@ -3876,7 +3612,7 @@
 ;   using conditional execution, preventing short insn formation where used.
 ; - for ARC700: likely or somewhat likely taken branches are made long and
 ;   unaligned if possible to avoid branch penalty.
-(define_insn "*branch_insn"
+(define_insn "branch_insn"
   [(set (pc)
 	(if_then_else (match_operator 1 "proper_comparison_operator"
 				      [(reg CC_REG) (const_int 0)])
@@ -5861,128 +5597,57 @@
   ""
   "if (arc_expand_movmem (operands)) DONE; else FAIL;")
 
-;; See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=35803 why we can't
-;; get rid of this bogosity.
-(define_expand "cmpsf"
+;; Close http://gcc.gnu.org/bugzilla/show_bug.cgi?id=35803 if this works
+;; to the point that we can generate cmove instructions.
+(define_expand "cbranch<mode>4"
   [(set (reg:CC CC_REG)
-	(compare:CC (match_operand:SF 0 "register_operand" "")
-		    (match_operand:SF 1 "register_operand" "")))]
-  "TARGET_OPTFPE"
-  "
-{
-  arc_compare_op0 = operands[0];
-  arc_compare_op1 = operands[1];
-  DONE;
-}")
+	(compare:CC (match_operand:SDF 1 "register_operand" "")
+		    (match_operand:SDF 2 "register_operand" "")))
+   (set (pc)
+	(if_then_else
+	      (match_operator 0 "comparison_operator" [(reg CC_REG)
+						       (const_int 0)])
+	      (label_ref (match_operand 3 "" ""))
+	      (pc)))]
 
-(define_expand "cmpdf"
-  [(set (reg:CC CC_REG)
-	(compare:CC (match_operand:DF 0 "register_operand" "")
-		    (match_operand:DF 1 "register_operand" "")))]
   "TARGET_OPTFPE"
-  "
 {
-  arc_compare_op0 = operands[0];
-  arc_compare_op1 = operands[1];
+  gcc_assert (XEXP (operands[0], 0) == operands[1]);
+  gcc_assert (XEXP (operands[0], 1) == operands[2]);
+  operands[0] = gen_compare_reg (operands[0], VOIDmode);
+  gen_branch_insn (operands[3], operands[0]);
   DONE;
-}")
+})
 
 (define_expand "cmp_float"
   [(parallel [(set (match_operand 0 "") (match_operand 1 ""))
-	      (clobber (reg:SI 31))
-	      (clobber (reg:SI 12))])]
+	      (clobber (reg:SI RETURN_ADDR_REGNUM))
+	      (clobber (reg:SI R12_REG))])]
   ""
   "")
 
-(define_insn "*cmpsf_eq"
-  [(set (reg:CC_Z CC_REG) (compare:CC_Z (reg:SF 0) (reg:SF 1)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
+(define_mode_iterator OPTFPE_CMP [CC_Z CC_FP_GT CC_FP_GE CC_FP_UNEQ CC_FP_ORD])
+(define_mode_attr cmp [(CC_Z "eq") (CC_FP_GT "gt") (CC_FP_GE "ge")
+		       (CC_FP_UNEQ "uneq") (CC_FP_ORD "ord")])
+
+(define_insn "*cmpsf_<cmp>"
+  [(set (reg:OPTFPE_CMP CC_REG) (compare:OPTFPE_CMP (reg:SF 0) (reg:SF 1)))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:SI R12_REG))]
   "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_SPFP)"
-  "*return arc_output_libcall (\"__eqsf2\");"
+  "*return arc_output_libcall (\"__<cmp>sf2\");"
   [(set_attr "is_sfunc" "yes")]
 )
 	      
-(define_insn "*cmpdf_eq"
-  [(set (reg:CC_Z CC_REG) (compare:CC_Z (reg:DF 0) (reg:DF 2)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_DPFP)"
-  "*return arc_output_libcall (\"__eqdf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-(define_insn "*cmpsf_gt"
-  [(set (reg:CC_FP_GT CC_REG) (compare:CC_FP_GT (reg:SF 0) (reg:SF 1)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_SPFP)"
-  "*return arc_output_libcall (\"__gtsf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-(define_insn "*cmpdf_gt"
-  [(set (reg:CC_FP_GT CC_REG) (compare:CC_FP_GT (reg:DF 0) (reg:DF 2)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_DPFP)"
-  "*return arc_output_libcall (\"__gtdf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-(define_insn "*cmpsf_ge"
-  [(set (reg:CC_FP_GE CC_REG) (compare:CC_FP_GE (reg:SF 0) (reg:SF 1)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_SPFP)"
-  "*return arc_output_libcall (\"__gesf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-(define_insn "*cmpdf_ge"
-  [(set (reg:CC_FP_GE CC_REG) (compare:CC_FP_GE (reg:DF 0) (reg:DF 2)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_DPFP)"
-  "*return arc_output_libcall (\"__gedf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-(define_insn "*cmpsf_uneq"
-  [(set (reg:CC_FP_UNEQ CC_REG) (compare:CC_FP_UNEQ (reg:SF 0) (reg:SF 1)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_SPFP)"
-  "*return arc_output_libcall (\"__uneqsf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-(define_insn "*cmpdf_uneq"
-  [(set (reg:CC_FP_UNEQ CC_REG) (compare:CC_FP_UNEQ (reg:DF 0) (reg:DF 2)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_DPFP)"
-  "*return arc_output_libcall (\"__uneqdf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-(define_insn "*cmpsf_ord"
-  [(set (reg:CC_FP_ORD CC_REG) (compare:CC_FP_ORD (reg:SF 0) (reg:SF 1)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_SPFP)"
-  "*return arc_output_libcall (\"__ordsf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
-	      
-;; N.B. double precision fpx sets bit 31 for NaNs.  We need bit 51 set
+;; N.B. for "*cmpdf_ord":
+;; double precision fpx sets bit 31 for NaNs.  We need bit 51 set
 ;; for the floating point emulation to recognize the NaN.
-(define_insn "*cmpdf_ord"
-  [(set (reg:CC_FP_ORD CC_REG) (compare:CC_FP_ORD (reg:DF 0) (reg:DF 2)))
-   (clobber (reg:SI 31))
-   (clobber (reg:SI 12))]
+(define_insn "*cmpdf_<cmp>"
+  [(set (reg:OPTFPE_CMP CC_REG) (compare:OPTFPE_CMP (reg:DF 0) (reg:DF 2)))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:SI R12_REG))]
   "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_DPFP)"
-  "*return arc_output_libcall (\"__orddf2\");"
+  "*return arc_output_libcall (\"__<cmp>df2\");"
   [(set_attr "is_sfunc" "yes")]
 )
 

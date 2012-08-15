@@ -100,10 +100,6 @@ static const char *arc_cpu_string = "";
   && SYMBOL_REF_SMALL_P (XEXP(XEXP (XEXP(X,1),0),0)) \
   && GET_CODE (XEXP(XEXP (XEXP(X,1),0), 1)) == CONST_INT)))
 
-/* Save the operands last given to a compare for use when we
-   generate a scc or bcc insn.  */
-rtx arc_compare_op0, arc_compare_op1;
-
 /* Name of text, data, and rodata sections used in varasm.c.  */
 const char *arc_text_section;
 const char *arc_data_section;
@@ -1398,14 +1394,44 @@ arc_set_default_type_attributes (tree type ATTRIBUTE_UNUSED)
    return the rtx for the cc reg in the proper mode.  */
 
 rtx
-gen_compare_reg (enum rtx_code code, enum machine_mode omode)
+gen_compare_reg (rtx comparison, enum machine_mode omode)
 {
-  rtx x = arc_compare_op0, y = arc_compare_op1;
-  enum machine_mode mode = SELECT_CC_MODE (code, x, y);
-  enum machine_mode cmode = GET_MODE (x);
-  rtx cc_reg;
+  enum rtx_code code = GET_CODE (comparison);
+  rtx x = XEXP (comparison, 0);
+  rtx y = XEXP (comparison, 1);
+  rtx tmp, cc_reg;
+  enum machine_mode mode, cmode;
 
-  cc_reg = gen_rtx_REG (mode, 61);
+  
+  cmode = GET_MODE (x);
+  if (cmode == VOIDmode)
+    cmode = GET_MODE (y);
+  gcc_assert (cmode == SImode || cmode == SFmode || cmode == DFmode);
+  if (cmode == SImode)
+    {
+      if (!register_operand (x, SImode))
+	{
+	  if (register_operand (y, SImode))
+	    {
+	      tmp = x;
+	      x = y;
+	      y = tmp;
+	      code = swap_condition (code);
+	    }
+	  else
+	    x = copy_to_mode_reg (SImode, x);
+	}
+      if (GET_CODE (y) == SYMBOL_REF && flag_pic)
+	y = copy_to_mode_reg (SImode, y);
+    }
+  else
+    {
+      x = force_reg (cmode, x);
+      y = force_reg (cmode, y);
+    }
+  mode = SELECT_CC_MODE (code, x, y);
+
+  cc_reg = gen_rtx_REG (mode, CC_REG);
 
   /* ??? FIXME (x-y)==0, as done by both cmpsfpx_raw and
      cmpdfpx_raw, is not a correct comparison for floats:
@@ -1421,8 +1447,9 @@ gen_compare_reg (enum rtx_code code, enum machine_mode omode)
 	  break;
 	case GT: case UNLE: case GE: case UNLT:
 	  code = swap_condition (code);
-	  x = arc_compare_op1;
-	  y = arc_compare_op0;
+	  tmp = x;
+	  x = y;
+	  y = tmp;
 	  break;
 	default:
 	  gcc_unreachable ();
@@ -1455,8 +1482,9 @@ gen_compare_reg (enum rtx_code code, enum machine_mode omode)
 	  break;
 	case LT: case UNGE: case LE: case UNGT:
 	  code = swap_condition (code);
-	  x = arc_compare_op1;
-	  y = arc_compare_op0;
+	  tmp = x;
+	  x = y;
+	  y = tmp;
 	  break;
 	default:
 	  gcc_unreachable ();
@@ -2766,6 +2794,7 @@ arc_print_operand (FILE *file,rtx x,int code)
 	 for TARGET_AT_DBR_COND_EXEC.  */
     case '*' :
       /* Unconditional branches / branches not depending on condition codes.
+	 This could also be a CALL_INSN.
 	 Output the appropriate delay slot suffix.  */
       if (final_sequence && XVECLEN (final_sequence, 0) != 1)
 	{
@@ -2775,7 +2804,7 @@ arc_print_operand (FILE *file,rtx x,int code)
 	  /* For TARGET_PAD_RETURN we might have grabbed the delay insn.  */
 	  if (INSN_DELETED_P (delay))
 	    return;
-	  if (INSN_ANNULLED_BRANCH_P (jump))
+	  if (JUMP_P (jump) && INSN_ANNULLED_BRANCH_P (jump))
 	    fputs (INSN_FROM_TARGET_P (delay)
 		   ?  ".d"
 		   : (TARGET_AT_DBR_CONDEXEC && code == '#' ? ".d" : ".nd"),
