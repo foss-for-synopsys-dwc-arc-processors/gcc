@@ -139,7 +139,8 @@ struct GTY (()) arc_ccfsm
 /* Likewise, but also consider that INSN might be in a delay slot of JUMP.  */
 #define CCFSM_DBR_ISCOMPACT(INSN,JUMP,STATE) \
   ((ARC_CCFSM_COND_EXEC_P (STATE) \
-    || (INSN_ANNULLED_BRANCH_P (JUMP) \
+    || (JUMP_P (JUMP) \
+	&& INSN_ANNULLED_BRANCH_P (JUMP) \
 	&& (TARGET_AT_DBR_CONDEXEC || INSN_FROM_TARGET_P (INSN)))) \
    ? (get_attr_iscompact (INSN) == ISCOMPACT_TRUE \
       || get_attr_iscompact (INSN) == ISCOMPACT_TRUE_LIMM) \
