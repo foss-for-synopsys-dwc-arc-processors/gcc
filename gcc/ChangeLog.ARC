@@ -34,6 +34,9 @@
 	(scc_insn, branch_insn): Separate out expander, preserving mode
 	of CC_REG.
 
+	* web.c (union_match_dups): Avoid NULL dereference at end of
+	loop; also, actually scan each reference.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.

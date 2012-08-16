@@ -117,11 +117,10 @@ union_match_dups (rtx insn, struct web_entry *def_entry,
 
       ref = type == OP_IN ? use_link : def_link;
       entry = type == OP_IN ? use_entry : def_entry;
+      /* The loops terminates without match for 20000629-1.o -O3 */
       for (; *ref; ref++)
 	if (DF_REF_LOC (*ref) == recog_data.operand_loc[op])
-	  break;
-
-      (*fun) (use_entry + DF_REF_ID (*dupref), entry + DF_REF_ID (*ref));
+	  (*fun) (use_entry + DF_REF_ID (*dupref), entry + DF_REF_ID (*ref));
     }
 }
 
