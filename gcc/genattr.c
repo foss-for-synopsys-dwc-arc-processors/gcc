@@ -71,6 +71,10 @@ extern int insn_default_length (rtx);\n\
 extern int insn_min_length (rtx);\n\
 extern int insn_variable_length_p (rtx);\n\
 extern int insn_current_length (rtx);\n\n\
+extern int insn_default_lock_length (rtx);\n\
+extern int insn_min_lock_length (rtx);\n\
+extern int insn_variable_lock_length_p (rtx);\n\
+extern int insn_current_lock_length (rtx);\n\n\
 #include \"insn-addr.h\"\n");
     }
 }
