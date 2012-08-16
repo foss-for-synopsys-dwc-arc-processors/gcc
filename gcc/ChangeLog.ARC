@@ -43,6 +43,9 @@
 	* config/arc/arc.c (emit_store_direct, arc_initialize_trampoline):
 	Expect a block of memory instead of its address.
 
+	* config/arc/arc.c (arc_rtx_costs) <ASHIFT,ASHIFTRT,LSHIFTRT>:
+	Avoid negative cost.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.

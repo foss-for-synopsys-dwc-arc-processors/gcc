@@ -4641,7 +4641,14 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
       else if (GET_CODE (XEXP (x, 1)) != CONST_INT)
         *total = COSTS_N_INSNS (16);
       else
-        *total = COSTS_N_INSNS (INTVAL (XEXP ((x), 1)));
+	{
+          *total = COSTS_N_INSNS (INTVAL (XEXP ((x), 1)));
+	  /* ??? want_to_gcse_p can throw negative shift counts at us,
+	     and then panics when it gets a negative cost as result.
+	     Seen for gcc.c-torture/compile/20020710-1.c -Os .  */
+	  if (*total < 0)
+	    *total = 0;
+	}
       return false;
 
     case DIV:
