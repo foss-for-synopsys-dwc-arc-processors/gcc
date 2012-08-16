@@ -40,6 +40,9 @@
 	* config/arc/arc.c (CCFSM_DBR_ISCOMPACT): Check that we
 	have an actual JUMP_INSN before using INSN_ANNULLED_BRANCH_P.
 
+	* config/arc/arc.c (emit_store_direct, arc_initialize_trampoline):
+	Expect a block of memory instead of its address.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.

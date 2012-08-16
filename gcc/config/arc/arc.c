@@ -2640,13 +2640,11 @@ output_shift (rtx *operands)
 
 /* Nested function support.  */
 
-/* Directly store VALUE at BASE plus OFFSET.  */
+/* Directly store VALUE into memory object BLOCK at OFFSET.  */
 static void
-emit_store_direct (rtx base, int offset, int value)
+emit_store_direct (rtx block, int offset, int value)
 {
-  emit_insn (gen_store_direct (gen_rtx_MEM (SImode,
-					    plus_constant (Pmode, base,
-							   offset)),
+  emit_insn (gen_store_direct (adjust_address (block, SImode, offset),
                                force_reg (SImode,
 					  gen_int_mode (value, SImode))));
 }
@@ -2689,13 +2687,13 @@ static void
 arc_initialize_trampoline (rtx tramp, tree fndecl, rtx cxt)
 {
   rtx fnaddr = XEXP (DECL_RTL (fndecl), 0);
+
   emit_store_direct (tramp, 0, TARGET_BIG_ENDIAN ? 0x78e0d403 : 0xd40378e0);
   emit_store_direct (tramp, 4, TARGET_BIG_ENDIAN ? 0x170c700b : 0x700b170c);
   emit_store_direct (tramp, 8, TARGET_BIG_ENDIAN ? 0x7c0078e0 : 0x78e07c00);
-  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (Pmode, tramp, 12)),
-		  fnaddr);
-  emit_move_insn (gen_rtx_MEM (SImode, plus_constant (Pmode, tramp, 16)), cxt);
-  emit_insn (gen_flush_icache (validize_mem (gen_rtx_MEM (SImode, tramp))));
+  emit_move_insn (adjust_address (tramp, SImode, 12), fnaddr);
+  emit_move_insn (adjust_address (tramp, SImode, 16), cxt);
+  emit_insn (gen_flush_icache (adjust_address (tramp, SImode, 0)));
 }
 
 /* Allow the profiler to easily distinguish trampolines from normal
