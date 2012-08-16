@@ -104,7 +104,10 @@ along with GCC; see the file COPYING3.  If not see
 	builtin_define ("__ARC700__");	\
       }					\
     if (TARGET_NORM)			\
-      builtin_define ("__ARC_NORM__");\
+      {					\
+	builtin_define ("__ARC_NORM__");\
+	builtin_define ("__Xnorm");	\
+      }					\
     if (TARGET_MUL64_SET)		\
       builtin_define ("__ARC_MUL64__");\
     if (TARGET_MULMAC_32BY16_SET)	\
@@ -112,6 +115,8 @@ along with GCC; see the file COPYING3.  If not see
     builtin_define ("__base__");	\
     if (TARGET_SIMD_SET)        	\
       builtin_define ("__ARC_SIMD__");	\
+    if (TARGET_BARREL_SHIFTER)		\
+      builtin_define ("__Xbarrel_shifter");\
     builtin_assert ("cpu=arc");		\
     builtin_assert ("machine=arc");	\
     builtin_define (TARGET_BIG_ENDIAN	\
@@ -123,7 +128,6 @@ along with GCC; see the file COPYING3.  If not see
 /* Match the macros used in the assembler.  */
 #define CPP_SPEC "\
 %{msimd:-D__Xsimd} %{mno-mpy:-D__Xno_mpy} %{mswap:-D__Xswap} \
-%{mnorm:-D__Xnorm} %{mbarrel_shifter:-D__Xbarrel_shifter} \
 %{mmin_max:-D__Xmin_max} %{mEA:-D__Xea} \
 %{mspfp*:-D__Xspfp} %{mdpfp*:-D__Xdpfp} \
 %{mmac_d16:-D__Xxmac_d16} %{mmac_24:-D__Xxmac_24} \

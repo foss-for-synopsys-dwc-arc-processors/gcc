@@ -25,6 +25,10 @@
 	* config/arc/arc.md (attribute delay_slot_filled): : Check that we
 	have an actual JUMP_INSN before using INSN_ANNULLED_BRANCH_P.
 
+	* config/arc/arc.h (TARGET_CPU_CPP_BUILTIN): Define __Xnorm /
+	__Xbarrel_shifter here depending on hardware selection ...
+	(CPP_SPEC) .. instead of here depending on a single switch.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.
