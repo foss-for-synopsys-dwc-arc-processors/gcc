@@ -82,7 +82,10 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	case PROCESSOR_ARC700:
 	  if (! (opts_set->x_target_flags & MASK_BARREL_SHIFTER) )
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
+	  break;
 	case PROCESSOR_ARC601:
+	  if (! (opts_set->x_target_flags & MASK_BARREL_SHIFTER) )
+	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
 	  break;
 	default:
 	  gcc_unreachable ();
@@ -95,6 +98,9 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 #define TARGET_OPTION_INIT_STRUCT arc_option_init_struct
 #define TARGET_OPTION_OPTIMIZATION_TABLE arc_option_optimization_table
 #define TARGET_HANDLE_OPTION arc_handle_option
+
+/* We default to ARC700, which has the barrel shifter enabled.  */
+#define TARGET_DEFAULT_TARGET_FLAGS MASK_BARREL_SHIFTER
 
 #include "common/common-target-def.h"
 

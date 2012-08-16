@@ -46,6 +46,10 @@
 	* config/arc/arc.c (arc_rtx_costs) <ASHIFT,ASHIFTRT,LSHIFTRT>:
 	Avoid negative cost.
 
+	* common/config/arc/arc.c (arc_handle_option) <PROCESSOR_ARC601>:
+	Reset MASK_BARREL_SHIFTER bit in target flags.
+	(TARGET_DEFAULT_TARGET_FLAGS): Define to MASK_BARREL_SHIFTER.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.
