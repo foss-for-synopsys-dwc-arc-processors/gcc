@@ -22,6 +22,9 @@
 
 	* config/arc/arc.c (arc_init): Always default to ARC700.
 
+	* config/arc/arc.md (attribute delay_slot_filled): : Check that we
+	have an actual JUMP_INSN before using INSN_ANNULLED_BRANCH_P.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.

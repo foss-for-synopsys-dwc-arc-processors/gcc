@@ -306,6 +306,7 @@
   (cond [(ne (symbol_ref "NEXT_INSN (PREV_INSN (insn)) == insn") (const_int 0))
 	 (const_string "no")
 	 (ne (symbol_ref "!TARGET_AT_DBR_CONDEXEC
+			  && JUMP_P (insn)
 			  && INSN_ANNULLED_BRANCH_P (insn)
 			  && !INSN_FROM_TARGET_P (NEXT_INSN (insn))")
 	     (const_int 0))
