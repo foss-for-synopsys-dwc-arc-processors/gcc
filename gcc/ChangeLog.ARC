@@ -13,6 +13,11 @@
 	* config/arc/divtab-arc700.c, config/arc/t-arc600-uClibc: Likewise.
 	* config/arc/ieee-754, config/arc/gmon: Likewise (entire directory).
 
+	*config/arc/arc.c (arc_legitimize_address): Rename to ..
+	(arc_legitimize_address_0): .. this.  Changed all callers.
+	(arc_legitimize_address): New function, to provide the expected
+	return on failure for the TARGET_LEGITIMIZE_ADDRESS hook.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.

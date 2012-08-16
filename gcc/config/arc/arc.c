@@ -429,7 +429,7 @@ static bool arc_can_follow_jump (const_rtx follower, const_rtx followee);
 static rtx frame_insn (rtx);
 static void arc_function_arg_advance (cumulative_args_t, enum machine_mode,
 				      const_tree, bool);
-static rtx arc_legitimize_address (rtx, rtx, enum machine_mode mode);
+static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 
 /* initialize the GCC target structure.  */
 #undef TARGET_ASM_INTEGER
@@ -8059,7 +8059,7 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
 	{
 	  rtx pat = XEXP (operands[0], 0);
 
-	  pat = arc_legitimize_address (pat, pat, mode);
+	  pat = arc_legitimize_address_0 (pat, pat, mode);
 	  if (pat)
 	    {
 	      pat = change_address (operands[0], mode, pat);
@@ -8073,7 +8073,7 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
     {
       rtx pat = XEXP (operands[1], 0);
 
-      pat = arc_legitimize_address (pat, pat, mode);
+      pat = arc_legitimize_address_0 (pat, pat, mode);
       if (pat)
 	{
 	  pat = change_address (operands[1], mode, pat);
@@ -8349,9 +8349,11 @@ arc_write_ext_corereg (rtx insn)
   return for_each_rtx (&PATTERN (insn), write_ext_corereg_1, 0);
 }
 
+/* This is like the hook, but returns NULL when it can't / won't generate
+   a legitimate address.  */
 static rtx
-arc_legitimize_address (rtx x, rtx oldx ATTRIBUTE_UNUSED,
-			enum machine_mode mode)
+arc_legitimize_address_0 (rtx x, rtx oldx ATTRIBUTE_UNUSED,
+			  enum machine_mode mode)
 {
   rtx addr, inner;
 
@@ -8385,6 +8387,16 @@ arc_legitimize_address (rtx x, rtx oldx ATTRIBUTE_UNUSED,
   if (memory_address_p ((enum machine_mode) mode, x))
      return x;
   return NULL_RTX;
+}
+
+static rtx
+arc_legitimize_address (rtx orig_x, rtx oldx, enum machine_mode mode)
+{
+  rtx new = arc_legitimize_address_0 (orig_x, oldx, mode);
+
+  if (new)
+    return new;
+  return orig_x;
 }
 
 static rtx
