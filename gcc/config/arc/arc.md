@@ -3320,7 +3320,7 @@
   gcc_assert (XEXP (operands[0], 0) == operands[1]);
   gcc_assert (XEXP (operands[0], 1) == operands[2]);
   operands[0] = gen_compare_reg (operands[0], VOIDmode);
-  gen_branch_insn (operands[3], operands[0]);
+  emit_jump_insn (gen_branch_insn (operands[3], operands[0]));
   DONE;
 })
 
@@ -3432,7 +3432,7 @@
   gcc_assert (XEXP (operands[1], 0) == operands[2]);
   gcc_assert (XEXP (operands[1], 1) == operands[3]);
   operands[1] = gen_compare_reg (operands[1], SImode);
-  gen_scc_insn (operands[0], operands[1]);
+  emit_insn (gen_scc_insn (operands[0], operands[1]));
   DONE;
 })
 
@@ -3451,11 +3451,16 @@
   gcc_assert (XEXP (operands[1], 0) == operands[2]);
   gcc_assert (XEXP (operands[1], 1) == operands[3]);
   operands[1] = gen_compare_reg (operands[1], SImode);
-  gen_scc_insn (operands[0], operands[1]);
+  emit_insn (gen_scc_insn (operands[0], operands[1]));
   DONE;
 })
 
-(define_insn_and_split "scc_insn"
+; We need a separate expander for this lest we loose the mode of CC_REG
+; when match_operator substitutes the literal operand into the comparison.
+(define_expand "scc_insn"
+  [(set (match_operand:SI 0 "dest_reg_operand" "=w") (match_operand:SI 1 ""))])
+
+(define_insn_and_split "*scc_insn"
   [(set (match_operand:SI 0 "dest_reg_operand" "=w")
 	(match_operator:SI 1 "proper_comparison_operator" [(reg CC_REG) (const_int 0)]))]
   ""
@@ -3605,6 +3610,14 @@
 ; }"
 ;  [(set_attr "type" "branch")])
 
+; We need a separate expander for this lest we loose the mode of CC_REG
+; when match_operator substitutes the literal operand into the comparison.
+(define_expand "branch_insn"
+  [(set (pc)
+	(if_then_else (match_operand 1 "" "")
+		      (label_ref (match_operand 0 "" ""))
+		      (pc)))])
+
 ; When estimating sizes during arc_reorg, when optimizing for speed, there
 ; are three reasons why we need to consider branches to be length 6:
 ; - unnull-false delay slot insns are implemented using conditional execution,
@@ -3613,7 +3626,7 @@
 ;   using conditional execution, preventing short insn formation where used.
 ; - for ARC700: likely or somewhat likely taken branches are made long and
 ;   unaligned if possible to avoid branch penalty.
-(define_insn "branch_insn"
+(define_insn "*branch_insn"
   [(set (pc)
 	(if_then_else (match_operator 1 "proper_comparison_operator"
 				      [(reg CC_REG) (const_int 0)])
@@ -5616,7 +5629,7 @@
   gcc_assert (XEXP (operands[0], 0) == operands[1]);
   gcc_assert (XEXP (operands[0], 1) == operands[2]);
   operands[0] = gen_compare_reg (operands[0], VOIDmode);
-  gen_branch_insn (operands[3], operands[0]);
+  emit_jump_insn (gen_branch_insn (operands[3], operands[0]));
   DONE;
 })
 

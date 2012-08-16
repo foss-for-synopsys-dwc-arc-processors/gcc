@@ -29,6 +29,11 @@
 	__Xbarrel_shifter here depending on hardware selection ...
 	(CPP_SPEC) .. instead of here depending on a single switch.
 
+	* config/arc/arc.md (cbranchsi4): Emit last insn.
+	(cstoresi4, cstore<SDF:mode>4, cbranch<SDF:mode>4): Likewise.
+	(scc_insn, branch_insn): Separate out expander, preserving mode
+	of CC_REG.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.
