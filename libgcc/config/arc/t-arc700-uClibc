@@ -26,7 +26,7 @@ CRTSTUFF_T_CFLAGS_S = $(CRTSTUFF_T_CFLAGS) -mA7 -fPIC
 # Compile libgcc2.a with pic.
 TARGET_LIBGCC2_CFLAGS = -mA7 -fPIC
 
-PROFILE_OSDEP = $(T)prof-freq.o
+PROFILE_OSDEP = prof-freq.o
 
 # Override t-slibgcc-elf-ver to hide some lib1func
 # routines which should not be called via PLT.

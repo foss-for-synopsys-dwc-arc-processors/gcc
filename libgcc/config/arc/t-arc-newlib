@@ -36,4 +36,4 @@ MULTILIB_MATCHES += EB=mbig-endian
 MULTILIB_EXCEPTIONS=mmul64* mmul32x16* mnorm*
 # And neither of the -mmul* options make sense without -mnorm:
 MULTILIB_EXCLUSIONS=mARC600/mmul64/!mnorm mcpu=ARC601/mmul64/!mnorm mARC600/mmul32x16/!mnorm
-PROFILE_OSDEP = $(T)prof-freq-stub.o $(T)profil.o
+PROFILE_OSDEP = prof-freq-stub.o profil.o
