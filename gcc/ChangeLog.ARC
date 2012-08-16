@@ -1,3 +1,18 @@
+2012-08-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.gcc: Move ARC libgcc configuration bits into libgcc's
+	config.host.
+	* config/arc/t-arc: Move ARC libgcc configuration bits to its
+	proper place in the new libgcc toplevel directory.
+	* config/arc/asm.h, config/arc/libgcc-excl.ver: Likewise (entire file).
+	* config/arc/crtg.asm, config/arc/crti.asm: Likewise.
+	* config/arc/crtn.asm, config/arc/initfini.c: Likewise.
+	* config/arc/t-arc700-uClibc, config/arc/dp-hack.h: Likewise.
+	* config/arc/fp-hack.h, config/arc/lib1funcs.asm: Likewise.
+	* config/arc/crtgend.asm, config/arc/t-arc-newlib: Likewise.
+	* config/arc/divtab-arc700.c, config/arc/t-arc600-uClibc: Likewise.
+	* config/arc/ieee-754, config/arc/gmon: Likewise (entire directory).
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.

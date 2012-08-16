@@ -816,46 +816,39 @@ alpha*-dec-*vms*)
 arc-*-elf*)
 	extra_headers="arc-simd.h"
 	tm_file="dbxelf.h elfos.h ${tm_file}"
-	tmake_file="arc/t-arc-newlib arc/t-arc"
+	tmake_file="arc/t-arc"
 	case x"${with_cpu}" in
 	  xarc600|xarc601|xarc700)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
 	esac
-	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
 	;;
 arc600-*-linux-uclibc*)
 	extra_headers="arc-simd.h"
 	tm_file="dbxelf.h elfos.h svr4.h linux.h  ${tm_file}"
-	tmake_file="arc/t-arc600-uClibc arc/t-arc"
+	tmake_file="arc/t-arc"
 	tm_defines="${tm_defines} TARGET_CPU_DEFAULT_OPT=\\\"mARC600\\\""
-  	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
-	use_fixproto=yes
 	target_cpu_default="TARGET_CPU_ARC600"
         ;;
 arc601-*-linux-uclibc*)
 	extra_headers="arc-simd.h"
 	tm_file="dbxelf.h elfos.h svr4.h linux.h  ${tm_file}"
-	tmake_file="arc/t-arc601-uClibc arc/t-arc"
+	tmake_file="arc/t-arc"
 	# ??? FIXME there is no -mARC601 option, but the only place
 	# using TARGET_CPU_DEFAULT_OPT is in arc.h in DRIVER_SELF_SPECS
 	# which is #if 0'd out.
 	tm_defines="${tm_defines} TARGET_CPU_DEFAULT_OPT=\\\"mARC601\\\""
-  	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
-	use_fixproto=yes
 	target_cpu_default="TARGET_CPU_ARC601"
         ;;
 arc*-*-linux-uclibc*)
 	extra_headers="arc-simd.h"
 	tm_file="dbxelf.h elfos.h svr4.h linux.h  ${tm_file}"
-	tmake_file="${tmake_file} arc/t-arc700-uClibc arc/t-arc"
+	tmake_file="arc/t-arc"
 	case x"${with_cpu}" in
 	  xarc600|xarc601|xarc700)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
 	esac
-  	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
-	use_fixproto=yes
 	if test x${with_endian} = x; then
 		case ${target} in
 		arc*be-*-* | arc*eb-*-*)	with_endian=big ;;

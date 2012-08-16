@@ -303,6 +303,22 @@ alpha*-dec-*vms*)
 	extra_parts="$extra_parts vms-dwarf2.o vms-dwarf2eh.o"
 	md_unwind_header=alpha/vms-unwind.h
 	;;
+arc-*-elf*)
+	tmake_file="arc/t-arc-newlib arc/t-arc"
+	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
+	;;
+arc600-*-linux-uclibc*)
+	tmake_file="arc/t-arc600-uClibc arc/t-arc"
+	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
+	;;
+arc601-*-linux-uclibc*)
+	tmake_file="arc/t-arc601-uClibc arc/t-arc"
+	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
+	;;
+arc*-*-linux-uclibc*)
+	tmake_file="${tmake_file} arc/t-arc700-uClibc arc/t-arc"
+	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
+	;;
 arm-wrs-vxworks)
 	tmake_file="$tmake_file arm/t-arm arm/t-vxworks t-fdpbit"
 	extra_parts="$extra_parts crti.o crtn.o"

@@ -22,6 +22,12 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
+
+/* This file selects the double-precision parts of fp-bit.c that are
+   still needed for some ARC hardware variants; it also renames functions
+   that duplicate asm-coded functionality so that their results can be
+   used to compare with the optimized versions for debugging.  */
+
 #define FINE_GRAINED_LIBRARIES
 #define ARC_DP_DEBUG 1
 #if !defined (__ARC_NORM__) || ARC_DP_DEBUG
