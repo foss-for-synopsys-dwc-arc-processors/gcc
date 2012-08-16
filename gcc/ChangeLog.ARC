@@ -20,6 +20,8 @@
 
 	* config/arc/arc.c (arc_can_eliminate): Fix logic.
 
+	* config/arc/arc.c (arc_init): Always default to ARC700.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.

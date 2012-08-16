@@ -744,11 +744,7 @@ static void
 arc_override_options (void)
 {
   if (arc_cpu == PROCESSOR_NONE)
-#if UCLIBC_DEFAULT
     arc_cpu = PROCESSOR_ARC700;
-#else
-    arc_cpu = PROCESSOR_A5;
-#endif
 
   if (arc_size_opt_level == 3)
     optimize_size = 1;
