@@ -18,6 +18,8 @@
 	(arc_legitimize_address): New function, to provide the expected
 	return on failure for the TARGET_LEGITIMIZE_ADDRESS hook.
 
+	* config/arc/arc.c (arc_can_eliminate): Fix logic.
+
 2012-08-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_compare_op0, arc_compare_op1): Delete.
