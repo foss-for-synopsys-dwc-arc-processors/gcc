@@ -1,3 +1,7 @@
+2012-08-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/ieee-754/gtdf2.S: Remove redundant check.
+
 2012-08-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.host (arc-*-elf*, arc600-*-linux-uclibc*): New configurations.

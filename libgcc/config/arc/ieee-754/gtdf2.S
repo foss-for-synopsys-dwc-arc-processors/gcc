@@ -65,7 +65,7 @@ __gtdf2:
 	bmsk_s	r12,r12,20
 	add1.f	0,r12,DBL0H	; clear z; set c iff NaN
 	add1.cc.f r12,r12,DBL1H	; clear z; set c iff NaN
-	bbit1	DBL0H,31,.Lneg
+	; don't care: z may or may not be cleared if there is no NaN event
 	cmp.cc	DBL0H,DBL1H
 	j_s.d	[blink]
 	cmp.eq	DBL0L,DBL1L
