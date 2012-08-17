@@ -1,3 +1,7 @@
+2012-08-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.gcc (arc-*-elf*): Add newlib-stdint.h to tm_file.
+
 2012-08-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc: Move ARC libgcc configuration bits into libgcc's
