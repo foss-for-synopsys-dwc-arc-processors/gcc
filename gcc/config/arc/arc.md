@@ -5400,7 +5400,7 @@
 	      n_insns += 2;
 	      if (simplejump_p (scan))
 		{
-		  insn = XEXP (SET_SRC (PATTERN (scan)), 0);
+		  scan = XEXP (SET_SRC (PATTERN (scan)), 0);
 		  continue;
 		}
 	      if (JUMP_LABEL (scan)
