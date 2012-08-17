@@ -1,0 +1,106 @@
+data/bss layout: uses different sections ordered by minimum addressing scale.
+no separate .rodata section(s).
+.data16: scaling factor 16
+.data8, .data4, data2, .data1: likewise for smaller scaling factors
+.bss1, .bss2, .bss4, .bss8, .bss16: bss sections for increasing scaling
+factors
+The data base pointer register i9 typically points at the place where .bss1
+ends and .data1 starts.  It might be moved up or down if allocation
+would otherwise overflow on one side, and on the other side is slack.
+
+Tasks to be done:
+- Convert this document into a proper texinfo file, incorporate it into
+  gcc ducumentation, and test 'make info'
+- binutils support for using undefined labels in mxp data/bss sections
+  as offsets in memory addresses.
+- binutils support for mxp code labels.  For a start, we are looking to
+  have a special text section where to put all the mxp code.  At link time,
+  this special text section is considered to be loaded at the start of the
+  SCM for purposes of resolving SCM absolute relocations.  However, the
+  code gets actually a different load address for the ARC700 core, and gets
+  a j_s [blink] instruction appended (extra points if you make this a j_s.d
+  [blink] before the last insn without the potential to break stuff...)
+  Later we will likely want to move to multiple of such special text sections
+  to handle overlays, and possibly also have different load addreses to
+  accomodate multiple overlays.  If we want to be able to handle SCM PIE,
+  I.e. code that can be loaded to varying SCM locations, the arc will need
+  to load an a core register with the SCM load address before calling the
+  SCQ loading code, and the latter will have to use add instructions to
+  calculate SCM locations on the fly.
+  No matter if we use such add instructions, or long immediates, instructions
+  that reference SCM memory locations work out as 64 bit of code on the
+  arc side, while the other SIMD instructions are injected with a single
+  32 bit code from the arc side.  Thus we have a discrepancy between the
+  space taken up by the instructions in the object file and the size we
+  have to consider for purposes of calculating SCM addresses.
+  Luckily, these differences are constant from the first time the SIMD
+  assembly is emitted.  Thus, the total number of instructions
+  with SCM references that precede an SCM label gives us the number of
+  32 bit words to subtract from the total number of preceding 32 bits words
+  to arrive at the offset from the SCM load address.
+  To account for preceding SCM references in the same module, we can make
+  the SCM label appear to be accordingly earlier in the module.
+  (This will have to be compensated for if we want to do any linktime
+   relaxation at some later point in time.)
+  We also need to keep a tally of the total number of SCM references in each
+  module.
+  When linking multiple modules together, the total of these tallies for all
+  preceding modules needs to be added up, and subtracted from the value of
+  each label.
+  Like SCM references, (other) long immediates bulk up the code on the arc
+  side while leaving the SIMD instruction count the same, so they have to
+  be tallied up together with the SCM references.
+- library functions:
+  - divsi3: use sh64 code as starting point.  Note that there is no
+    point in loading the table base address before the function call, because
+    all SCM memory addressing has an offset.
+    divv8hi3, divv4si3: use older sh64 code w/out lookup table as starting
+    point
+  - divhi3
+- Investigate register class preferencing issues.  Naming lane sets with
+  lane 0 first actually results in the wrong reg_class_subunions.  In theory
+  the ordierng should be something like 00, 10, 01, 30, 03, ff, to get the
+  sets with lane zero prefered for subunions.  preferred classes can be
+  seen in the *lreg dump file after compiling with -da.  Another avenue to
+  saner subunions is to add proper union lane sets 11, 33.
+  The paradoxical thing I am seeing here is that the instruction count for
+  muldi increases when I introduce these measures.
+  Another - or complimentary - approach is to shift the cost balance.
+  in theory REGISTER_MOVE_COST should have an influence, but in practice
+  I haven't seen any.  What works is adding extra cost to insn alternatives
+  which allow non-lane0 registers.  A problem here - and in general - is that
+  we want a viable alternate register class.  Jacking up the cost for
+  non-lane0 alternatives can disparage these to the point that we loose the
+  altclass.  We also have often altclasses that don't actually contain any
+  extra valid registers.  In theory increasing MEMORY_MOVE_COST can
+  compensate, however I see paradoxical outcomes when I try to make this
+  dependent on !(reload_in_progress || reload_completed).  I have a diff
+  for some of the changes I've tried in
+  /home/joernr/prefclass-experiments-20080428.
+  Maybe we ned to jackup REGISTER_MOVE_COST, MEMORY_MOVE_COST and RTX_COST
+  consistently to get a more fine-grained resolution of costs.
+- Obtain code samples of code that we think is suitable and relevant for
+  autovectorization.  E.g. some codec.
+  Dependent tasks:
+  - Identify the actual section of this code that we think we should be
+    able to autovectorize.
+  - Make sure autovectorization takes place.
+- Partitioning work.  Check with IBM Haifa and other Milepost partners
+  what they already have.
+  Inasmuch as not already done:
+  - Identify individual functions and subgraphs of the callgraph we can move
+    to the SIMD engine.
+  - Add code to tree loop analysis to break out loops that we can move to
+    the SIMD engine.
+  - Handle data sets that don't fit into SDM.  The simplest to implement
+    approach is probably to do loop tiling at the interface between arc core
+    and simd engine.  OTOH we can get much better parallelism if we hand
+    over the entire work to the simd engine and let it DMA out the previoud
+    block, and DMA in the next block, while it is performing calculations.
+    For this we need to represent main memory pointers.
+    Need not necessarilty be exposed as pointers to the mxp-gcc, we could
+    express the loop tiling with intrinsics.
+- Add doloop pattern
+- Convert multi-insn define_insn patterns into define_insn_and_split patterns.
+- Add scheduler description
+- Where missing, add comments to the code according to GNU coding standards.

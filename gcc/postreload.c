@@ -906,6 +906,42 @@ reload_combine (void)
 		}
 	    }
 	}
+      /* Look for (set (REGX) (CONST A))
+	 ... (MEM (PLUS (REGX) (const_int)))...
+         and convert it to
+         ... (MEM (CONST B))... .  */
+      if (set != NULL_RTX
+	  && REG_P (SET_DEST (set))
+	  && (hard_regno_nregs[REGNO (SET_DEST (set))]
+			      [GET_MODE (SET_DEST (set))]
+	      == 1)
+	  && CONSTANT_P (SET_SRC (set))
+	  && last_label_ruid < reg_state[REGNO (SET_DEST (set))].use_ruid
+	  /* One use maximum - otherwise we'd de-cse.  */
+	  && (reg_state[REGNO (SET_DEST (set))].use_index
+	      == RELOAD_COMBINE_MAX_USES - 1))
+	{
+	  rtx reg = SET_DEST (set);
+	  unsigned int regno = REGNO (reg);
+	  rtx sum
+	    = plus_constant (SET_SRC (set), INTVAL (reg_state[regno].offset));
+
+	  if (GET_CODE (sum) == PLUS)
+	    sum = gen_rtx_CONST (Pmode, sum);
+	   i = RELOAD_COMBINE_MAX_USES - 1;
+	  /* If we wanted to handle JUMP_INSNS, we'd have to fix up JUMP_LABEL.
+	     (e.g. pr21728.c -Os).  Doesn't seem worth the hassle.  */
+	  if (!JUMP_P (reg_state[regno].reg_use[i].insn)
+	      && validate_change (reg_state[regno].reg_use[i].insn,
+				  reg_state[regno].reg_use[i].usep, sum, 0))
+	    {
+	      /* Delete the reg set.  */
+	      delete_insn (insn);
+
+	      reg_state[regno].use_index = RELOAD_COMBINE_MAX_USES;
+	      continue;
+	    }
+	}
 
       note_stores (PATTERN (insn), reload_combine_note_store, NULL);
 

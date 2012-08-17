@@ -3532,7 +3532,8 @@ expand_builtin_mempcpy_args (tree dest, tree src, tree len, tree type,
 
       if (GET_CODE (len_rtx) == CONST_INT
 	  && can_move_by_pieces (INTVAL (len_rtx),
-				 MIN (dest_align, src_align)))
+				 MIN (dest_align, src_align),
+				 0))
 	{
 	  dest_mem = get_memory_rtx (dest, len);
 	  set_mem_align (dest_mem, dest_align);
@@ -3540,12 +3541,30 @@ expand_builtin_mempcpy_args (tree dest, tree src, tree len, tree type,
 	  set_mem_align (src_mem, src_align);
 	  dest_mem = move_by_pieces (dest_mem, src_mem, INTVAL (len_rtx),
 				     MIN (dest_align, src_align), endp);
-	  dest_mem = force_operand (XEXP (dest_mem, 0), NULL_RTX);
+	  dest_mem = force_operand (XEXP (dest_mem, 0), target);
 	  dest_mem = convert_memory_address (ptr_mode, dest_mem);
 	  return dest_mem;
 	}
+      else
+	{
+	  unsigned int align = MIN (dest_align, src_align);
 
-      return NULL_RTX;
+	  dest_mem = get_memory_rtx (dest, len);
+	  set_mem_align (dest_mem, dest_align);
+	  src_mem = get_memory_rtx (src, len);
+	  set_mem_align (src_mem, src_align);
+	  if (!emit_block_move_via_movmem (dest_mem, src_mem, len_rtx, align,
+					   0, -1))
+	    return NULL_RTX;
+	  dest_mem = XEXP (dest_mem, 0);
+	  if (endp)
+	    dest_mem = gen_rtx_PLUS (GET_MODE (dest_mem), dest_mem,
+				     (endp == 2
+				      ? plus_constant (len_rtx, -1) : len_rtx));
+	  dest_mem = convert_memory_address (ptr_mode,
+					     force_operand (dest_mem, target));
+	  return dest_mem;
+	}
     }
 }
 

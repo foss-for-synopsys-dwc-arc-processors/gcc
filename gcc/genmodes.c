@@ -128,7 +128,9 @@ vector_class (enum mode_class cl)
   switch (cl)
     {
     case MODE_INT: return MODE_VECTOR_INT;
+    case MODE_PARTIAL_INT: return MODE_VECTOR_PARTIAL_INT;
     case MODE_FLOAT: return MODE_VECTOR_FLOAT;
+    case MODE_CC: return MODE_VECTOR_CC;
     case MODE_FRACT: return MODE_VECTOR_FRACT;
     case MODE_UFRACT: return MODE_VECTOR_UFRACT;
     case MODE_ACCUM: return MODE_VECTOR_ACCUM;
@@ -326,10 +328,15 @@ complete_mode (struct mode_data *m)
 
     case MODE_CC:
       /* Again, nothing more need be said.  For historical reasons,
-	 the size of a CC mode is four units.  */
-      validate_mode (m, UNSET, UNSET, UNSET, UNSET, UNSET);
+	 the size of a CC mode defaults to four units.  */
+      if (m->bytesize != blank_mode.bytesize)
+	validate_mode (m, UNSET, SET, UNSET, UNSET, UNSET);
+      else
+	{
+	  validate_mode (m, UNSET, UNSET, UNSET, UNSET, UNSET);
+	  m->bytesize = 4;
+	}
 
-      m->bytesize = 4;
       m->ncomponents = 1;
       m->component = 0;
       break;
@@ -375,7 +382,9 @@ complete_mode (struct mode_data *m)
       break;
 
     case MODE_VECTOR_INT:
+    case MODE_VECTOR_PARTIAL_INT:
     case MODE_VECTOR_FLOAT:
+    case MODE_VECTOR_CC:
     case MODE_VECTOR_FRACT:
     case MODE_VECTOR_UFRACT:
     case MODE_VECTOR_ACCUM:
@@ -530,12 +539,13 @@ make_vector_modes (enum mode_class cl, unsigned int width,
 #define _SPECIAL_MODE(C, N) make_special_mode(MODE_##C, #N, __FILE__, __LINE__)
 #define RANDOM_MODE(N) _SPECIAL_MODE (RANDOM, N)
 #define CC_MODE(N) _SPECIAL_MODE (CC, N)
+#define SIZED_CC_MODE(N, Y) (CC_MODE (N)->bytesize = (Y))
 
-static void
+static struct mode_data *
 make_special_mode (enum mode_class cl, const char *name,
 		   const char *file, unsigned int line)
 {
-  new_mode (cl, name, file, line);
+  return new_mode (cl, name, file, line);
 }
 
 #define INT_MODE(N, Y) FRACTIONAL_INT_MODE (N, -1U, Y)
@@ -1224,6 +1234,7 @@ emit_mode_adjustments (void)
 	      break;
 
 	    case MODE_VECTOR_INT:
+	    case MODE_VECTOR_PARTIAL_INT:
 	    case MODE_VECTOR_FLOAT:
 	    case MODE_VECTOR_FRACT:
 	    case MODE_VECTOR_UFRACT:
@@ -1262,6 +1273,7 @@ emit_mode_adjustments (void)
 	      break;
 
 	    case MODE_VECTOR_INT:
+	    case MODE_VECTOR_PARTIAL_INT:
 	    case MODE_VECTOR_FLOAT:
 	    case MODE_VECTOR_FRACT:
 	    case MODE_VECTOR_UFRACT:

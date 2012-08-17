@@ -519,8 +519,11 @@ __ffsSI2 (UWtype u)
 {
   UWtype count;
 
-  if (u == 0)
-    return 0;
+#ifdef COUNT_TRAILING_ZEROS_0
+  if (COUNT_TRAILING_ZEROS_0 != -1)
+#endif
+    if (u == 0)
+      return 0;
 
   count_trailing_zeros (count, u);
   return count + 1;

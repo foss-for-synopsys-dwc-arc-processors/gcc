@@ -1024,6 +1024,7 @@ bool gimple_duplicate_loop_to_header_edge (struct loop *, edge,
 					 unsigned int, sbitmap,
 					 edge, VEC (edge, heap) **,
 					 int);
+bool gimple_can_duplicate_loop_to_header_edge (struct loop *);
 struct loop *slpeel_tree_duplicate_loop_to_edge_cfg (struct loop *, edge);
 void rename_variables_in_loop (struct loop *);
 void rename_variables_in_bb (basic_block bb);

@@ -545,10 +545,10 @@ proc v3-build_support { } {
 	set object_file [file tail $obj]
 	# Compile with "-w" so that warnings issued by the compiler
 	# do not prevent compilation.
-	if { [v3_target_compile $srcdir/util/$f $object_file "object" \
+	set result [v3_target_compile $srcdir/util/$f $object_file "object" \
 		  [list "incdir=$srcdir" "additional_flags=-w"]]
-	     != "" } {
-	    error "could not compile $f"
+	if { $result != "" } {
+	    error "could not compile $f : $result"
 	}
 	append libtest_objs "$object_file "
     }

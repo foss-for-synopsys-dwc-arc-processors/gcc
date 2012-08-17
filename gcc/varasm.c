@@ -168,8 +168,11 @@ section *in_section;
    at the cold section.  */
 bool in_cold_section_p;
 
-/* A linked list of all the unnamed sections.  */
-static GTY(()) section *unnamed_sections;
+/* A linked list of all the unnamed sections.
+   Must not be garbage collected, because that would cause it to be
+   overwritten when a pch file is loaded, and the data and callback
+   members (can) point to non-ggc memory.  */
+static section *unnamed_sections;
 
 /* Return a nonzero value if DECL has a section attribute.  */
 #ifndef IN_NAMED_SECTION
@@ -518,7 +521,7 @@ get_unnamed_section (unsigned int flags, void (*callback) (const void *),
 {
   section *sect;
 
-  sect = GGC_NEW (section);
+  sect = (section *) xmalloc (sizeof (section));
   sect->unnamed.common.flags = flags | SECTION_UNNAMED;
   sect->unnamed.callback = callback;
   sect->unnamed.data = data;
@@ -535,7 +538,7 @@ get_noswitch_section (unsigned int flags, noswitch_section_callback callback)
 {
   section *sect;
 
-  sect = GGC_NEW (section);
+  sect = (section *) xmalloc (sizeof (section));
   sect->noswitch.common.flags = flags | SECTION_NOSWITCH;
   sect->noswitch.callback = callback;
 
@@ -5670,6 +5673,56 @@ init_varasm_once (void)
 
   if (readonly_data_section == NULL)
     readonly_data_section = text_section;
+}
+
+static GTY(()) section *pickled_in_section;
+
+/* Replace in_section with something that can be restored after reading
+   in a precompiled header file.  */
+void
+pickle_in_section (void)
+{
+  section *p;
+  int i = 0;
+
+  if (!in_section || SECTION_STYLE (in_section) != SECTION_UNNAMED)
+    {
+      pickled_in_section = in_section;
+      return;
+    }
+  for (p = unnamed_sections; p != in_section; p = p->unnamed.next)
+    i++;
+  gcc_assert (p == in_section);
+  pickled_in_section = GGC_NEW (struct unnamed_section);
+  *pickled_in_section = *in_section;
+  pickled_in_section->unnamed.data = (void *) i;
+  in_section = pickled_in_section;
+}
+
+void
+unpickle_in_section (void)
+{
+  int i;
+  section *p;
+
+  in_section = pickled_in_section;
+  if (!in_section || SECTION_STYLE (in_section) != SECTION_UNNAMED)
+    return;
+  /* When flag_preprocess_only is set, backend_init wasn't called, hence the
+     list is empty.  But as we are not outputting any asm then, it doesn't
+     matter that we can't restore in_section.  */
+  if (!unnamed_sections)
+    {
+      in_section = 0;
+      return;
+    }
+  for (p = unnamed_sections, i = (int) in_section->unnamed.data; i; i--)
+    {
+      gcc_assert (p);
+      p = p->unnamed.next;
+    }
+  gcc_assert (p);
+  in_section = p;
 }
 
 enum tls_model

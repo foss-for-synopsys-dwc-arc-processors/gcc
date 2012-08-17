@@ -45,7 +45,10 @@ case ${query} in
       ;;
     --build-cxx)
       CXX_build="@CXX@"
-      CXX=`echo "$CXX_build" | sed 's,gcc/xgcc ,gcc/g++ ,'`
+      # must remove -m options because the actual test options used can be
+      # different from the ones used to build the multilib, when
+      # MULTILIB_MATCHES is used.
+      CXX=`echo "$CXX_build" | sed -e 's,gcc/xgcc ,gcc/g++ ,' -e 's/[ 	]-m[a-zA-Z0-9_]*//g'`
       echo ${CXX}
       ;;
     --build-cc)

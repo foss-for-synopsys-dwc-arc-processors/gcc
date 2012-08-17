@@ -906,7 +906,7 @@ decode_options (unsigned int argc, const char **argv)
   flag_tree_vrp = opt2;
   flag_tree_builtin_call_dce = opt2;
   flag_tree_pre = opt2;
-  flag_tree_switch_conversion = 1;
+  flag_tree_switch_conversion = opt2;
   flag_ipa_cp = opt2;
 
   /* Allow more virtual operators to increase alias precision.  */
@@ -930,6 +930,7 @@ decode_options (unsigned int argc, const char **argv)
   flag_gcse_after_reload = opt3;
   flag_tree_vectorize = opt3;
   flag_ipa_cp_clone = opt3;
+  flag_tree_pre_partial_partial = opt3;
   if (flag_ipa_cp_clone)
     flag_ipa_cp = 1;
 
@@ -953,10 +954,13 @@ decode_options (unsigned int argc, const char **argv)
 	 being declared inline.  */
       flag_inline_functions = 1;
 
-      /* Basic optimization options.  */
-      optimize_size = 1;
+      /* Basic optimization options at -Os are almost the same as -O2.  The
+	 only difference is that we disable PRE, because it sometimes still
+	 increases code size.  If the user want to run PRE with -Os, he/she
+	 will have to indicate so explicitly.  */
       if (optimize > 2)
 	optimize = 2;
+      flag_tree_pre = 0;
 
       /* We want to crossjump as much as possible.  */
       set_param_value ("min-crossjump-insns", 1);

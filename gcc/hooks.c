@@ -86,6 +86,14 @@ hook_bool_mode_const_rtx_true (enum machine_mode mode ATTRIBUTE_UNUSED,
   return true;
 }
 
+/* Generic hook that takes (rtx, rtx) and returns true.  */
+bool
+hook_bool_const_rtx_const_rtx_true (const_rtx follower ATTRIBUTE_UNUSED,
+				    const_rtx followee ATTRIBUTE_UNUSED)
+{
+  return true;
+}
+
 /* Generic hook that takes (FILE *, const char *) and does nothing.  */
 void
 hook_void_FILEptr_constcharptr (FILE *a ATTRIBUTE_UNUSED, const char *b ATTRIBUTE_UNUSED)

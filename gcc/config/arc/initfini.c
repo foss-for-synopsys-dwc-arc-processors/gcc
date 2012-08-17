@@ -3,6 +3,8 @@
 
 Copyright (C) 1995, 1997, 1998, 2009 Free Software Foundation, Inc.
 
+Copyright 2007-2012 Synopsys Inc.
+
 This file is part of GCC.
 
 GCC is free software; you can redistribute it and/or modify

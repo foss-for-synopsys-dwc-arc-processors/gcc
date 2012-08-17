@@ -62,6 +62,7 @@ enum unroll_level
 			   iteration.  */
   UL_NO_GROWTH,		/* Only loops whose unrolling will not cause increase
 			   of code size.  */
+  UL_ESTIMATE_GROWTH,	/* Estimate size increase for UL_ALL.  */
   UL_ALL		/* All suitable loops.  */
 };
 
@@ -156,14 +157,20 @@ estimated_unrolled_size (unsigned HOST_WIDE_INT ninsns,
 
 /* Tries to unroll LOOP completely, i.e. NITER times.
    UL determines which loops we are allowed to unroll. 
-   EXIT is the exit of the loop that should be eliminated.  */
+   EXIT is the exit of the loop that should be eliminated.
+   If UL is UL_ESTIMATE_GROWTH, we set loop->lpt_decision.times to
+   the number of instructions that the loop is estimated to grow by
+   when completely or ordinarily unrolling; we do both these estimations
+   here rather than spread them further around in order to keep the number
+   of times we recompute the number of instructions in the loop down.  */
 
 static bool
 try_unroll_loop_completely (struct loop *loop,
 			    edge exit, tree niter,
 			    enum unroll_level ul)
 {
-  unsigned HOST_WIDE_INT n_unroll, ninsns, max_unroll, unr_insns;
+  unsigned HOST_WIDE_INT n_unroll, e_unroll, max_unroll, unr_insns;
+  unsigned HOST_WIDE_INT ninsns = 0;
   gimple cond;
 
   if (loop->inner)
@@ -173,6 +180,21 @@ try_unroll_loop_completely (struct loop *loop,
     return false;
   n_unroll = tree_low_cst (niter, 1);
 
+  /* In case we don't completely unroll the loop, estimate its size increase
+     from normal unrolling.  */
+  if (ul == UL_ESTIMATE_GROWTH && n_unroll)
+    {
+      ninsns = tree_num_loop_insns (loop, &eni_size_weights);
+      e_unroll = n_unroll + 1;
+      max_unroll = PARAM_VALUE (PARAM_MAX_UNROLL_TIMES);
+      if (e_unroll > max_unroll)
+	e_unroll = max_unroll;
+      max_unroll = PARAM_VALUE (PARAM_MAX_UNROLLED_INSNS) / ninsns;
+      if (e_unroll > max_unroll)
+	e_unroll = max_unroll;
+      if (e_unroll > 1)
+	loop->lpt_decision.times = ninsns * (e_unroll - 1);
+    }
   max_unroll = PARAM_VALUE (PARAM_MAX_COMPLETELY_PEEL_TIMES);
   if (n_unroll > max_unroll)
     return false;
@@ -182,7 +204,8 @@ try_unroll_loop_completely (struct loop *loop,
       if (ul == UL_SINGLE_ITER)
 	return false;
 
-      ninsns = tree_num_loop_insns (loop, &eni_size_weights);
+      if (!ninsns)
+	ninsns = tree_num_loop_insns (loop, &eni_size_weights);
 
       unr_insns = estimated_unrolled_size (ninsns, n_unroll);
       if (dump_file && (dump_flags & TDF_DETAILS))
@@ -212,6 +235,20 @@ try_unroll_loop_completely (struct loop *loop,
 	}
     }
 
+  if (ul == UL_ESTIMATE_GROWTH)
+    {
+      if (n_unroll && gimple_can_duplicate_loop_to_header_edge (loop))
+	{
+	  int unroll_cost = unr_insns - ninsns;
+
+	  if (unroll_cost < 0)
+	    unroll_cost = 0;
+	  loop->lpt_decision.times = unroll_cost;
+	  return true;
+	}
+      else
+	return false;
+    }
   if (n_unroll)
     {
       sbitmap wont_exit;
@@ -274,6 +311,8 @@ canonicalize_loop_induction_variables (struct loop *loop,
   edge exit = NULL;
   tree niter;
 
+  if (ul == UL_ESTIMATE_GROWTH)
+    loop->lpt_decision.times = 0;
   niter = number_of_latch_executions (loop);
   if (TREE_CODE (niter) == INTEGER_CST)
     {
@@ -352,24 +391,78 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
   struct loop *loop;
   bool changed;
   enum unroll_level ul;
+  sbitmap changed_loops;
+  int nloops;
   int iteration = 0;
 
+  nloops = number_of_loops ();
+  changed_loops = sbitmap_alloc (nloops);
   do
     {
+      int last_outer = -1;
+      unsigned outer_size = 0;
+
       changed = false;
 
-      FOR_EACH_LOOP (li, loop, LI_ONLY_INNERMOST)
+      sbitmap_zero (changed_loops);
+      FOR_EACH_LOOP (li, loop, LI_REALLY_FROM_INNERMOST)
 	{
+	  int outer = loop_outer (loop)->num;
+
+	  gcc_assert (loop->num < nloops);
+	  gcc_assert (outer < nloops);
+	  /* By propagating up the changed bit piecemeal, we avoid
+	     n^3 behaviour for deeply nested loops.  */
+	  if (TEST_BIT (changed_loops, loop->num))
+	    {
+
+	      SET_BIT (changed_loops, outer);
+	      continue;
+	    }
+	  if (loop->inner)
+	    continue;
 	  if (may_increase_size && optimize_loop_for_speed_p (loop)
 	      /* Unroll outermost loops only if asked to do so or they do
 		 not cause code growth.  */
-	      && (unroll_outer
-		  || loop_outer (loop_outer (loop))))
-	    ul = UL_ALL;
+	      && (unroll_outer || loop_outer (loop_outer (loop))))
+	    {
+	      unsigned max_outer
+		= PARAM_VALUE (PARAM_MAX_COMPLETELY_PEELED_OUTER_INSNS);
+
+	      if (outer != last_outer)
+		{
+		  struct loop *oloop, *sloop;
+
+		  oloop = loop_outer (loop);
+		  outer_size = tree_num_loop_insns (oloop, &eni_size_weights);
+		  /* Sum up the size growth for unrolling to be done on
+		     all the sibling loops.
+		     If a loop is  not an inner loop, we won't actually unroll
+		     it, but we'd likely unroll its leaf loops, so assuming
+		     that we unroll the outer loop gives an estimate of the
+		     growth of the inner loops.  */
+		  for (sloop = oloop->inner;
+		       outer_size <= max_outer && sloop;
+		       sloop = sloop->next)
+		    {
+		      sloop->lpt_decision.times = 0;
+		      canonicalize_loop_induction_variables
+			(sloop, false, UL_ESTIMATE_GROWTH,
+			 !flag_tree_loop_ivcanon);
+		      outer_size += sloop->lpt_decision.times;
+		    }
+		  last_outer = outer;
+		}
+	      ul = outer_size <= max_outer ? UL_ALL : UL_NO_GROWTH;
+	    }
 	  else
 	    ul = UL_NO_GROWTH;
-	  changed |= canonicalize_loop_induction_variables
-		       (loop, false, ul, !flag_tree_loop_ivcanon);
+	  if (canonicalize_loop_induction_variables
+		(loop, false, ul, !flag_tree_loop_ivcanon))
+	    {
+	      SET_BIT (changed_loops, outer);
+	      changed |= true;
+	    }
 	}
 
       if (changed)
@@ -387,6 +480,7 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
     }
   while (changed
 	 && ++iteration <= PARAM_VALUE (PARAM_MAX_UNROLL_ITERATIONS));
+  sbitmap_free (changed_loops);
 
   return 0;
 }

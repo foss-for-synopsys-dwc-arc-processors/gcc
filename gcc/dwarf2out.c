@@ -2038,6 +2038,7 @@ dwarf2out_frame_debug_expr (rtx expr, const char *label)
 	      cfa_temp.reg = cfa.reg;
 	      cfa_temp.offset = cfa.offset;
 	    }
+else if (dest == stack_pointer_rtx && src == frame_pointer_rtx) ; /*FIXME*/
 	  else
 	    {
 	      /* Saving a register in a register.  */
@@ -2207,6 +2208,12 @@ dwarf2out_frame_debug_expr (rtx expr, const char *label)
 		fde->drap_reg = cfa.reg;
             }
           return;
+
+	/* START ARC LOCAL */
+	case MEM:
+	  /* FIXME.  Need this for epilogues.  */
+	  break;
+	/* END ARC LOCAL */
 
 	default:
 	  gcc_unreachable ();
@@ -10330,6 +10337,7 @@ loc_descriptor (rtx rtl, enum var_init_status initialized)
       break;
 
     case MEM:
+      rtl = targetm.delegitimize_address (rtl);
       loc_result = mem_loc_descriptor (XEXP (rtl, 0), GET_MODE (rtl),
 				       initialized);
       if (loc_result == NULL)

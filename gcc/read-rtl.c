@@ -1593,7 +1593,7 @@ read_rtx_1 (FILE *infile, struct map_value **mode_maps)
 
 	  /* Add expressions to a list, while keeping a count.  */
 	  obstack_init (&vector_stack);
-	  while ((c = read_skip_spaces (infile)) && c != ']')
+	  while ((c = read_skip_spaces (infile)) && c != ']' && c != EOF)
 	    {
 	      ungetc (c, infile);
 	      list_counter++;

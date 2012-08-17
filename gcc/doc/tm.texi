@@ -2784,6 +2784,12 @@ Do not define this macro if you do not define
 is @code{BITS_PER_WORD} bits wide is correct for your machine.
 @end defmac
 
+@deftypefn {Target Hook} bool TARGET_PRESERVE_RELOAD_P (rtx @var{in})
+Called when doing an input reload using the value @var{in}.  Return true
+if the reload register should be available for inheritance later.  This
+might increase the spill pressure, but enhances reload inheritance.
+@end deftypefn
+
 @defmac SMALL_REGISTER_CLASSES
 On some machines, it is risky to let hard registers live across arbitrary
 insns.  Typically, these machines have instructions that require values
@@ -5979,6 +5985,13 @@ A C expression used to determine whether @code{move_by_pieces} will be used to
 copy a chunk of memory, or whether some other block move mechanism
 will be used.  Defaults to 1 if @code{move_by_pieces_ninsns} returns less
 than @code{MOVE_RATIO}.
+@end defmac
+
+@defmac CAN_MOVE_BY_PIECES (@var{size}, @var{alignment})
+A C expression used to determine whether a chunk of memory is to be copied
+in pieces either by @code{move_by_pieces}, or by a movmem expander.  This
+is used by other optimizers that want to anticipate how a block copy is
+going to be done.  If not defined, MOVE_BY_PIECES_P is used instead.
 @end defmac
 
 @defmac MOVE_MAX_PIECES
@@ -9330,7 +9343,7 @@ attributes, @code{false} otherwise.  By default, if a function has a
 target specific attribute attached to it, it will not be inlined.
 @end deftypefn
 
-@deftypefn {Target Hook} bool TARGET_VALID_OPTION_ATTRIBUTE_P (tree @var{fndecl}, tree @var{name}, tree @var{args}, int @var{flags})
+@deftypefn {Target Hook} bool TARGET_OPTION_VALID_ATTRIBUTE_P (tree @var{fndecl}, tree @var{name}, tree @var{args}, int @var{flags})
 This hook is called to parse the @code{attribute(option("..."))}, and
 it allows the function to set different target machine compile time
 options for the current function that might be different than the
@@ -9365,7 +9378,7 @@ function specific options.
 This target hook parses the options for @code{#pragma GCC option} to
 set the machine specific options for functions that occur later in the
 input stream.  The options should be the same as handled by the
-@code{TARGET_VALID_OPTION_ATTRIBUTE_P} hook.
+@code{TARGET_OPTION_VALID_ATTRIBUTE_P} hook.
 @end deftypefn
 
 @deftypefn {Target Hook} bool TARGET_CAN_INLINE_P (tree @var{caller}, tree @var{callee})

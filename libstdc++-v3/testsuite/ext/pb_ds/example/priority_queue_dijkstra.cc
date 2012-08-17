@@ -135,6 +135,10 @@ int main()
       // distances, if applicable.
       for (size_t neighbor_i = 0; neighbor_i < num_vertices; ++neighbor_i)
         {
+	  /* If the neighbor has already been deleted, don't try to
+	     dereference it.  */
+	  if (a_it[neighbor_i] == a_it[0])
+	    continue;
 	  // Potentially, the distance to the neighbor is the distance
 	  // to the currently-considered node + the distance from this
 	  // node to the neighbor.
@@ -148,6 +152,7 @@ int main()
 	    p.modify(a_it[neighbor_i], pq_value(neighbor_i, pot_dist));
         }
 
+      a_it[node_id] = a_it[0];
       // Done with the node, so we pop it.
       a_it[node_id] = a_it[0];
       p.pop();

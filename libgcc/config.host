@@ -190,6 +190,15 @@ alpha*-dec-*vms*)
 	;;
 arc-*-elf*)
 	;;
+arc*-linux-uclibc*)
+# START ARC LOCAL
+	tmake_file="${tmake_file} arc/t-arc"
+	# No need to build crtbeginT.o on uClibc systems.  Should probably
+	# be moved to the OS specific section above.
+	extra_parts="crtbegin.o crtbeginS.o crtend.o crtendS.o"
+    extra_parts="$extra_parts crtg.o crtgend.o crti.o crtn.o libgmon.a"
+# END ARC LOCAL
+	;;
 arm-*-coff* | armel-*-coff*)
 	;;
 arm-semi-aof | armel-semi-aof)
@@ -362,6 +371,8 @@ m32rle-*-elf*)
 m32r-*-linux*)
  	;;
 m32rle-*-linux*)
+	;;
+mxp-*-elf*)
 	;;
 m68hc11-*-*|m6811-*-*)
         ;;

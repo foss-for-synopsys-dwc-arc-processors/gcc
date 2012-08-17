@@ -1,0 +1,31 @@
+$(out_object_file): gt-sh.h
+gt-sh.h : s-gtype ; @true
+
+# ??? the generated .md file must be placed in srcdir, becuase that's the
+# only place that the gensupport include knows about.
+s-mddeps: $(srcdir)/config/mxp/mxp-regset.md
+build/genconstants.o: genconstants.c s-mxp-regset-h
+mxp-regset.h: s-mxp-regset-h; @true
+mxp-regset.c: s-mxp-regset-c; @true
+$(srcdir)/config/mxp/mxp-regset.md: s-mxp-regset-md; @true
+
+s-mxp-regset-h: build/mxp-genregset$(build_exeext)
+	$(RUN_GEN) build/mxp-genregset$(build_exeext) -h > tmp-mxp-regset.h
+	$(SHELL) $(srcdir)/../move-if-change tmp-mxp-regset.h mxp-regset.h
+	$(STAMP) s-mxp-regset-h
+
+s-mxp-regset-md: build/mxp-genregset$(build_exeext)
+	$(RUN_GEN) build/mxp-genregset$(build_exeext) -m > tmp-mxp-regset.md
+	$(SHELL) $(srcdir)/../move-if-change tmp-mxp-regset.md $(srcdir)/config/mxp/mxp-regset.md
+	$(STAMP) s-mxp-regset-md
+
+s-mxp-regset-c: build/mxp-genregset$(build_exeext)
+	$(RUN_GEN) build/mxp-genregset$(build_exeext) > tmp-mxp-regset.c
+	$(SHELL) $(srcdir)/../move-if-change tmp-mxp-regset.c mxp-regset.c
+	$(STAMP) s-mxp-regset-c
+
+build/mxp-genregset.o : config/mxp/mxp-genregset.c $(BCONFIG_H) $(SYSTEM_H) \
+  errors.h config/mxp/regset-config.h
+
+# The startup code is for the arc core only.
+EXTRA_PARTS=

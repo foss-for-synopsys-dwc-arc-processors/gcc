@@ -1085,7 +1085,7 @@ expand_block_move (rtx *operands)
      and efficient sequence.  */
   if (TARGET_SH4A_ARCH && align < 4
       && MEM_ALIGN (operands[0]) >= 32
-      && can_move_by_pieces (bytes, 32))
+      && can_move_by_pieces (bytes, 32, 0))
     {
       rtx dest = copy_rtx (operands[0]);
       rtx src = copy_rtx (operands[1]);

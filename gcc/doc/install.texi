@@ -2257,6 +2257,13 @@ ten combinations as described above.  Note that this is currently only
 supported in the @file{gcc} subdirectory.  (To see how this works, try
 typing @command{echo} before the example given here.)
 
+Unfortunately, options which include an equal sign - like @samp{-mcpu=ARC600} -
+cannot be easily passed on the command line of make.
+For this reason, there is a special target @samp{var-targets}, so you can do:
+
+@smallexample
+    make -j@var{N} var-targets TARGETS="`echo check-g\@{cc,++\@}//arc-sim/-mcpu=ARC600`"
+@end smallexample
 
 @section Additional testing for Java Class Libraries
 

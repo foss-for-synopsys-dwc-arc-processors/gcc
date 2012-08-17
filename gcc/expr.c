@@ -127,7 +127,6 @@ static unsigned HOST_WIDE_INT move_by_pieces_ninsns (unsigned HOST_WIDE_INT,
 static void move_by_pieces_1 (rtx (*) (rtx, ...), enum machine_mode,
 			      struct move_by_pieces *);
 static bool block_move_libcall_safe_for_call_parm (void);
-static bool emit_block_move_via_movmem (rtx, rtx, rtx, unsigned, unsigned, HOST_WIDE_INT);
 static tree emit_block_move_libcall_fn (int);
 static void emit_block_move_via_loop (rtx, rtx, rtx, unsigned);
 static rtx clear_by_pieces_1 (void *, HOST_WIDE_INT, enum machine_mode);
@@ -868,13 +867,20 @@ convert_modes (enum machine_mode mode, enum machine_mode oldmode, rtx x, int uns
 #define STORE_MAX_PIECES  MIN (MOVE_MAX_PIECES, 2 * sizeof (HOST_WIDE_INT))
 
 /* Determine whether the LEN bytes can be moved by using several move
-   instructions.  Return nonzero if a call to move_by_pieces should
-   succeed.  */
+   instructions.  If consider_movmem is false: Return nonzero if a call
+   to move_by_pieces should should be done for this move.
+   If consider_movmem is true: Return nonzero if we want to do this move
+   in pieces, either via move_by_pieces, or via movmem.  */
 
 int
 can_move_by_pieces (unsigned HOST_WIDE_INT len,
-		    unsigned int align ATTRIBUTE_UNUSED)
+		    unsigned int align ATTRIBUTE_UNUSED,
+		    bool consider_movmem ATTRIBUTE_UNUSED)
 {
+#ifdef CAN_MOVE_BY_PIECES
+  if (consider_movmem)
+    return CAN_MOVE_BY_PIECES (len, align);
+#endif
   return MOVE_BY_PIECES_P (len, align);
 }
 
@@ -1302,7 +1308,7 @@ block_move_libcall_safe_for_call_parm (void)
 /* A subroutine of emit_block_move.  Expand a movmem pattern;
    return true if successful.  */
 
-static bool
+bool
 emit_block_move_via_movmem (rtx x, rtx y, rtx size, unsigned int align,
 			    unsigned int expected_align, HOST_WIDE_INT expected_size)
 {
@@ -6991,9 +6997,9 @@ expand_constructor (tree exp, rtx target, enum expand_modifier modifier,
 	    && ! (target != 0 && safe_from_p (target, exp, 1)))
 		  || TREE_ADDRESSABLE (exp)
 		  || (host_integerp (TYPE_SIZE_UNIT (type), 1)
-		      && (! MOVE_BY_PIECES_P
+		      && (! can_move_by_pieces
 				     (tree_low_cst (TYPE_SIZE_UNIT (type), 1),
-				      TYPE_ALIGN (type)))
+				      TYPE_ALIGN (type), 1))
 		      && ! mostly_zeros_p (exp))))
       || ((modifier == EXPAND_INITIALIZER || modifier == EXPAND_CONST_ADDRESS)
 	  && TREE_CONSTANT (exp)))

@@ -525,26 +525,40 @@ find_dead_or_set_registers (rtx target, struct resources *res,
 		     filled by instructions from the target.  This is correct
 		     if the branch is not taken.  Since we are following both
 		     paths from the branch, we must also compute correct info
-		     if the branch is taken.  We do this by inverting all of
-		     the INSN_FROM_TARGET_P bits, calling mark_set_resources,
-		     and then inverting the INSN_FROM_TARGET_P bits again.  */
+		     if the branch is taken.  We do this by inlining the loop
+		     for processing the sequence, and inverting the sense of
+		     the INSN_FROM_TARGET_P test for the target.  */
 
 		  if (GET_CODE (PATTERN (insn)) == SEQUENCE
 		      && INSN_ANNULLED_BRANCH_P (this_jump_insn))
 		    {
-		      for (i = 1; i < XVECLEN (PATTERN (insn), 0); i++)
-			INSN_FROM_TARGET_P (XVECEXP (PATTERN (insn), 0, i))
-			  = ! INSN_FROM_TARGET_P (XVECEXP (PATTERN (insn), 0, i));
+		      rtx x = PATTERN (insn);
+		      int i;
 
 		      target_set = set;
-		      mark_set_resources (insn, &target_set, 0,
-					  MARK_SRC_DEST_CALL);
+		      for (i = 0; i < XVECLEN (x, 0); i++)
+			if ((i == 0 || INSN_FROM_TARGET_P (XVECEXP (x, 0, i)))
+			    && (GET_CODE (PATTERN (XVECEXP (x, 0, i)))
+				!= COND_EXEC))
+			  mark_set_resources (XVECEXP (x, 0, i), &target_set,
+					      0, MARK_SRC_DEST_CALL);
+		      for (i = 0; i < XVECLEN (x, 0); i++)
+			if ((i == 0 || !INSN_FROM_TARGET_P (XVECEXP (x, 0, i)))
+			    && (GET_CODE (PATTERN (XVECEXP (x, 0, i)))
+				!= COND_EXEC))
+			  mark_set_resources (XVECEXP (x, 0, i), &set,
+					      0, MARK_SRC_DEST_CALL);
+		    }
+		  else if (GET_CODE (PATTERN (insn)) == SEQUENCE)
+		    {
+		      rtx x = PATTERN (insn);
+		      int i;
 
-		      for (i = 1; i < XVECLEN (PATTERN (insn), 0); i++)
-			INSN_FROM_TARGET_P (XVECEXP (PATTERN (insn), 0, i))
-			  = ! INSN_FROM_TARGET_P (XVECEXP (PATTERN (insn), 0, i));
-
-		      mark_set_resources (insn, &set, 0, MARK_SRC_DEST_CALL);
+		      for (i = 0; i < XVECLEN (x, 0); i++)
+			if (GET_CODE (PATTERN (XVECEXP (x, 0, i))) != COND_EXEC)
+			  mark_set_resources (XVECEXP (x, 0, i), &set,
+					      0, MARK_SRC_DEST_CALL);
+		      target_set = set;
 		    }
 		  else
 		    {
@@ -586,7 +600,8 @@ find_dead_or_set_registers (rtx target, struct resources *res,
 	}
 
       mark_referenced_resources (insn, &needed, 1);
-      mark_set_resources (insn, &set, 0, MARK_SRC_DEST_CALL);
+      if (GET_CODE (PATTERN (insn)) != COND_EXEC)
+	mark_set_resources (insn, &set, 0, MARK_SRC_DEST_CALL);
 
       COPY_HARD_REG_SET (scratch, set.regs);
       AND_COMPL_HARD_REG_SET (scratch, needed.regs);

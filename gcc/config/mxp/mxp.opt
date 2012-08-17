@@ -1,0 +1,15 @@
+mbig-data
+Target Report Mask(BIGDATA)
+Allow for data / bss sections overflowing i9+offset addressing range
+
+mint16
+Target Report Mask(INT16)
+Make integers 16 bit wide.
+
+mno-vim-label
+Target Report Mask(NO_VIM_LABEL)
+Don't output vim with a label operand.
+
+mno-vld-label
+Target Report Mask(NO_VLD_LABEL)
+Don't output vld with a label operand.

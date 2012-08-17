@@ -1171,11 +1171,13 @@ move_invariant_reg (struct loop *loop, unsigned invno)
   rtx reg, set, dest, note;
   struct use *use;
   bitmap_iterator bi;
+  int n_validated;
 
   if (inv->reg)
     return true;
   if (!repr->move)
     return false;
+  n_validated = num_validated_changes ();
   /* If this is a representative of the class of equivalent invariants,
      really move the invariant.  Otherwise just replace its use with
      the register used for the representative.  */
@@ -1200,7 +1202,17 @@ move_invariant_reg (struct loop *loop, unsigned invno)
       reg = gen_reg_rtx_and_attrs (dest);
 
       /* Try replacing the destination by a new pseudoregister.  */
-      if (!validate_change (inv->insn, &SET_DEST (set), reg, false))
+      validate_change (inv->insn, &SET_DEST (set), reg, true);
+
+      /* Replace the uses we know to be dominated.  It saves work for copy
+	 propagation, and also it is necessary so that dependent invariants
+	 are computed right.  */
+      /* Note that we must test the changes for validity, lest we might
+	 rip apart a match_dup between a use and a clobber.  */
+      if (inv->def)
+	for (use = inv->def->uses; use; use = use->next)
+	  validate_change (use->insn, use->pos, reg, true);
+      if (!apply_change_group ())
 	goto fail;
       df_insn_rescan (inv->insn);
 
@@ -1221,9 +1233,23 @@ move_invariant_reg (struct loop *loop, unsigned invno)
     }
   else
     {
-      if (!move_invariant_reg (loop, repr->invno))
-	goto fail;
+      /* Replace the uses we know to be dominated.  It saves work for copy
+	 propagation, and also it is necessary so that dependent invariants
+	 are computed right.  */
       reg = repr->reg;
+      if (inv->def)
+        for (use = inv->def->uses; use; use = use->next)
+	  validate_change (use->insn, use->pos, reg, true);
+
+      if (verify_changes (n_validated)
+	  && move_invariant_reg (loop, repr->invno))
+	confirm_change_group ();
+      else
+	{
+	  cancel_changes (n_validated);
+	  goto fail;
+	}
+
       set = single_set (inv->insn);
       emit_insn_after (gen_move_insn (SET_DEST (set), reg), inv->insn);
       delete_insn (inv->insn);
@@ -1232,17 +1258,9 @@ move_invariant_reg (struct loop *loop, unsigned invno)
 
   inv->reg = reg;
 
-  /* Replace the uses we know to be dominated.  It saves work for copy
-     propagation, and also it is necessary so that dependent invariants
-     are computed right.  */
   if (inv->def)
-    {
-      for (use = inv->def->uses; use; use = use->next)
-	{
-	  *use->pos = reg;
-	  df_insn_rescan (use->insn);
-	}      
-    }
+    for (use = inv->def->uses; use; use = use->next)
+      df_insn_rescan (use->insn);
 
   return true;
 

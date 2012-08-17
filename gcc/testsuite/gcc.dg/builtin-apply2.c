@@ -26,6 +26,7 @@ void bar(char *name, ...)
 
 int main(void)
 {
+  char dummy[64]; /* Make sure we have 64 bytes of stack to copy.  */
   bar("eeee", 5.444567, 8.90765, 4.567789, INTEGER_ARG);
 
   return 0;

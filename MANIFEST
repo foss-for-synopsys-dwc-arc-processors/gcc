@@ -1,0 +1,159 @@
+From codito-20070401 / codito-20070406 on behalf of Synopsys Inc:
+ added files:
+  gcc/gcc/config/arc/crti.asm
+  gcc/gcc/config/arc/predicates.md
+  gcc/gcc/config/arc/crti.asm
+  gcc/gcc/config/arc/crtn.asm
+  gcc/gcc/config/arc/crtn.asm
+  gcc/gcc/config/arc/arc-simd.h
+  gcc/gcc/config/arc/fpx.md
+  gcc/gcc/config/arc/t-arc700-uClibc
+  gcc/gcc/config/arc/constraints.md
+  gcc/gcc/config/arc/simdext.md
+  gcc/gcc/config/arc/xm-arc.h
+  gcc/gcc/testsuite/gcc.dg/pr35044.c
+ changed files:
+  gcc/config-ml.in (merge from codito's gcc/newlib/config-ml.in)
+  gcc/configure.in
+  gcc/configure
+  gcc/doc/invoke.texi
+  gcc/gcc/doc/extend.texi
+  gcc/gcc/reload.c
+  gcc/gcc/version.c
+  gcc/gcc/config.gcc
+  gcc/gcc/config/arc/arc-protos.h
+  gcc/gcc/config/arc/arc.c
+  gcc/gcc/config/arc/arc.h
+  gcc/gcc/config/arc/arc.md
+  gcc/gcc/config/arc/lib1funcs.asm
+  gcc/gcc/config/arc/t-arc
+  gcc/gcc/config/arc/arc.opt
+  gcc/gcc/config/arc/arc-modes.def
+
+By ARC (now Synopsys Inc) employees:
+ added files:
+  gcc/gcc/config/arc/divtab-arc700.c
+  gcc/gcc/config/arc/gmon
+  gcc/gcc/config/arc/asm.h
+  gcc/gcc/config/arc/crtg.asm
+  gcc/gcc/config/arc/crtgend.asm
+  gcc/gcc/config/arc/t-arc-newlib
+  gcc/gcc/config/arc/arc600.md
+  gcc/gcc/config/arc/arc700.md
+  gcc/gcc/config/arc/gmon/auxreg.h
+  gcc/gcc/config/arc/gmon/machine-gmon.h
+  gcc/gcc/config/arc/gmon/profil.S
+  gcc/gcc/config/arc/gmon/dcache_linesz.S
+  gcc/gcc/config/arc/gmon/prof-freq-stub.S
+  gcc/gcc/config/arc/t-arc700-uClibc
+  gcc/gcc/config/arc/dp-hack.h
+  gcc/gcc/config/arc/fp-hack.h
+  gcc/gcc/config/arc/ieee-754/floatunsidf.S
+  gcc/gcc/config/arc/ieee-754/divdf3.S
+  gcc/gcc/config/arc/ieee-754/orddf2.S
+  gcc/gcc/config/arc/ieee-754/eqsf2.S
+  gcc/gcc/config/arc/ieee-754/truncdfsf2.S
+  gcc/gcc/config/arc/ieee-754/fixunsdfsi.S
+  gcc/gcc/config/arc/ieee-754/divtab-arc-df.c
+  gcc/gcc/config/arc/ieee-754/uneqsf2.S
+  gcc/gcc/config/arc/ieee-754/adddf3.S
+  gcc/gcc/config/arc/ieee-754/gtsf2.S
+  gcc/gcc/config/arc/ieee-754/gedf2.S
+  gcc/gcc/config/arc/ieee-754/floatsisf.S
+  gcc/gcc/config/arc/ieee-754/muldf3.S
+  gcc/gcc/config/arc/ieee-754/fixdfsi.S
+  gcc/gcc/config/arc/ieee-754/divsf3.S
+  gcc/gcc/config/arc/ieee-754/ordsf2.S
+  gcc/gcc/config/arc/ieee-754/eqdf2.S
+  gcc/gcc/config/arc/ieee-754/divtab-arc-sf.c
+  gcc/gcc/config/arc/ieee-754/divsf3-stdmul.S
+  gcc/gcc/config/arc/ieee-754/addsf3.S
+  gcc/gcc/config/arc/ieee-754/uneqdf2.S
+  gcc/gcc/config/arc/ieee-754/gesf2.S
+  gcc/gcc/config/arc/ieee-754/gtdf2.S
+  gcc/gcc/config/arc/ieee-754/mulsf3.S
+  gcc/gcc/config/arc/ieee-754/floatsidf.S
+  gcc/gcc/config/arc/ieee-754/fixsfsi.S
+  gcc/gcc/config/arc/ieee-754/arc-ieee-754.h
+  gcc/gcc/config/arc/ieee-754/extendsfdf2.S
+  gcc/gcc/config/arc/ieee-754/arc600/divdf3.S
+  gcc/gcc/config/arc/ieee-754/arc600/divsf3.S
+  gcc/gcc/config/arc/ieee-754/arc600/muldf3.S
+  gcc/gcc/config/arc/ieee-754/arc600/mulsf3.S
+  gcc/gcc/config/arc/ieee-754/arc600-dsp/mulsf.S
+  gcc/gcc/config/arc/ieee-754/arc600-dsp/muldf.S
+  gcc/gcc/config/arc/ieee-754/arc600-dsp/divdf3.S
+  gcc/gcc/config/arc/ieee-754/arc600-dsp/divsf3.S
+  gcc/gcc/config/mxp
+  gcc/gcc/ChangeLog.ARC
+  gcc/testsuite/ChangeLog.ARC
+  gcc/testsuite/gcc.c-torture/execute/ieee/denorm-rand.c
+  gcc/testsuite/gcc.dg/func-ptr-prof.c
+  gcc/testsuite/gcc.target/arc/arc.exp
+  gcc/testsuite/gcc.target/arc/adc.c
+  gcc/testsuite/gcc.target/arc/sbc.c
+  gcc/testsuite/gcc.target/arc/add_f.c
+  gcc/libstdc++-v3/ChangeLog.ARC
+  gcc/gcc/doc/mxp.texi
+ changed files:
+  gcc/config.sub
+  gcc/gcc/output.h
+  gcc/gcc/target-def.h
+  gcc/gcc/varasm.c
+  gcc/gcc/c-pch.c
+  gcc/gcc/longlong.h
+  gcc/gcc/libgcc2.c
+  gcc/gcc/builtins.c
+  gcc/gcc/combine.c
+  gcc/gcc/expr.h
+  gcc/gcc/expr.c
+  gcc/gcc/gimplify.c
+  gcc/gcc/cse.c
+  gcc/gcc/regmove.c
+  gcc/gcc/genmodes.c
+  gcc/gcc/mode-classes.def
+  gcc/gcc/loop-doloop.c
+  gcc/gcc/doc/tm.texi
+  gcc/gcc/config.gcc
+  gcc/gcc/tree-flow.h
+  gcc/gcc/tree-ssa-loop-cp.c
+  gcc/gcc/tree-ssa-loop-ivopts.c
+  gcc/gcc/tree-ssa-loop-ivcanon.c
+  gcc/gcc/tree-ssa-loop-manip.c
+  gcc/gcc/tree-ssa-pre.c
+  gcc/gcc/common.opt
+  gcc/gcc/cfgloop.h
+  gcc/gcc/params.def
+  gcc/gcc/Makefile.in
+  gcc/gcc/config/arc/t-arc
+  gcc/gcc/config/arc/arc-protos.h
+  gcc/gcc/config/arc/arc.h
+  gcc/gcc/config/arc/arc.c
+  gcc/gcc/config/arc/arc.md
+  gcc/gcc/config/arc/crti.asm
+  gcc/gcc/config/arc/crtn.asm
+  gcc/gcc/config/arc/predicates.md
+  gcc/gcc/config/arc/lib1funcs.asm
+  gcc/gcc/config/arc/t-arc700-uClibc
+  gcc/gcc/config/arc/constraints.md
+  gcc/gcc/config/arc/libgcc-excl.ver
+  gcc/libstdc++-v3/testsuite/27_io/basic_stringbuf/overflow/char/1.cc
+  gcc/libstdc++-v3/testsuite/ext/pb_ds/example/priority_queue_dijkstra.cc
+  gcc/libstdc++-v3/testsuite/lib/libstdc++.exp
+  gcc/libstdc++-v3/scripts/testsuite_flags.in
+  gcc/testsuite/gcc.dg/builtin-apply2.c
+  gcc/testsuite/gcc.dg/sibcall-3.c
+  gcc/testsuite/gcc.dg/sibcall-4.c
+  gcc/testsuite/gcc.dg/gcc.dg/cpp/_Pragma6.c
+  gcc/testsuite/g++.dg/cpp/_Pragma1.C
+  gcc/testsuite/gcc.dg/torture/pr37868.c
+  gcc/testsuite/gcc.dg/pr28243.c
+  gcc/testsuite/lib/scanasm.exp
+
+Others:
+ added files:
+  gcc/config/arc/gmon/sys/gmon.h (from BSD)
+  gcc/config/arc/gmon/sys/gmon_out.h (from BSD)
+  gcc/config/arc/gmon/gmon.c (from BSD)
+  gcc/config/arc/gmon/mcount.c (from BSD)
+  gcc/config/arc/gmon/prof-freq.c

@@ -580,6 +580,9 @@ struct gcc_target
      not, at the current point in the compilation.  */
   bool (* cannot_modify_jumps_p) (void);
 
+  /* True if FOLLOWER may be modified to follow FOLLOWEE.  */
+  bool (*can_follow_jump) (const_rtx follower, const_rtx followee);
+
   /* Return a register class for which branch target register
      optimizations should be applied.  */
   int (* branch_target_register_class) (void);
@@ -906,6 +909,9 @@ struct gcc_target
   enum reg_class (*secondary_reload) (bool, rtx, enum reg_class,
 				      enum machine_mode,
 				      struct secondary_reload_info *);
+  /* Return true if a reload loading IN should share a reload register
+     with an unrelated output reload.  */
+  bool (*preserve_reload_p) (rtx in);
 
   /* This target hook allows the backend to perform additional
      processing while initializing for variable expansion.  */

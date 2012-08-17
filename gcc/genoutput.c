@@ -680,19 +680,55 @@ process_template (struct data *d, const char *template_code)
      list of assembler code templates, one for each alternative.  */
   else if (template_code[0] == '@')
     {
-      d->template_code = 0;
-      d->output_format = INSN_OUTPUT_FORMAT_MULTI;
+      int found_star = 0;
 
-      printf ("\nstatic const char * const output_%d[] = {\n", d->code_number);
+      for (cp = &template_code[1]; *cp; )
+	{
+	  while (ISSPACE (*cp))
+	    cp++;
+	  if (*cp == '*')
+	    found_star = 1;
+	  while (!IS_VSPACE (*cp) && *cp != '\0')
+	    ++cp;
+	}
+      d->template_code = 0;
+      if (found_star)
+	{
+	  d->output_format = INSN_OUTPUT_FORMAT_FUNCTION;
+	  puts ("\nstatic const char *");
+	  printf ("output_%d (rtx *operands ATTRIBUTE_UNUSED, "
+		  "rtx insn ATTRIBUTE_UNUSED)\n", d->code_number);
+	  puts ("{");
+	  puts ("  switch (which_alternative)\n    {");
+	}
+      else
+	{
+	  d->output_format = INSN_OUTPUT_FORMAT_MULTI;
+	  printf ("\nstatic const char * const output_%d[] = {\n",
+		  d->code_number);
+	}
 
       for (i = 0, cp = &template_code[1]; *cp; )
 	{
-	  const char *ep, *sp;
+	  const char *ep, *sp, *bp;
 
 	  while (ISSPACE (*cp))
 	    cp++;
 
-	  printf ("  \"");
+	  bp = cp;
+	  if (found_star)
+	    {
+	      printf ("    case %d:", i);
+	      if (*cp == '*')
+		{
+		  printf ("\n      ");
+		  cp++;
+		}
+	      else
+		printf (" return \"");
+	    }
+	  else
+	    printf ("  \"");
 
 	  for (ep = sp = cp; !IS_VSPACE (*ep) && *ep != '\0'; ++ep)
 	    if (!ISSPACE (*ep))
@@ -708,7 +744,18 @@ process_template (struct data *d, const char *template_code)
 	      cp++;
 	    }
 
-	  printf ("\",\n");
+	  if (!found_star)
+	    puts ("\",");
+	  else if (*bp != '*')
+	    puts ("\";");
+	  else
+	    {
+	      /* The usual action will end with a return.
+		 If there is neither break or return at the end, this is
+		 assumed to be intentional; this allows to have multiple
+		 consecutive alternatives share some code.  */
+	      puts ("");
+	    }
 	  i++;
 	}
       if (i == 1)
@@ -721,7 +768,10 @@ process_template (struct data *d, const char *template_code)
 	  have_error = 1;
 	}
 
-      printf ("};\n");
+      if (found_star)
+	puts ("      default: gcc_unreachable ();\n    }\n}");
+      else
+	printf ("};\n");
     }
   else
     {
@@ -1112,8 +1162,12 @@ strip_whitespace (const char *s)
 /* Record just enough information about a constraint to allow checking
    of operand constraint strings above, in validate_insn_alternatives.
    Does not validate most properties of the constraint itself; does
+   enforce no overlap with MI constraints, and no prefixes.
+   Check for no duplicate names is left to genpreds.c, since only there
+   is enough information to check for overloading.
+   Does not validate most properties of the constraint itself; does
    enforce no duplicate names, no overlap with MI constraints, and no
-   prefixes.  EXP is the define_*constraint form, LINENO the line number
+EXP is the define_*constraint form, LINENO the line number
    reported by the reader.  */
 static void
 note_constraint (rtx exp, int lineno)
@@ -1150,12 +1204,7 @@ note_constraint (rtx exp, int lineno)
 	slot = iter;
 
       if (!strcmp ((*iter)->name, name))
-	{
-	  message_with_line (lineno, "redefinition of constraint '%s'", name);
-	  message_with_line ((*iter)->lineno, "previous definition is here");
-	  have_error = 1;
-	  return;
-	}
+	; /* Ignore here, see more detailed check in genpreds.  */
       else if (!strncmp ((*iter)->name, name, (*iter)->namelen))
 	{
 	  message_with_line (lineno, "defining constraint '%s' here", name);

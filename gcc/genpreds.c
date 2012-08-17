@@ -674,6 +674,7 @@ struct constraint_data
   unsigned int is_extra     : 1;
   unsigned int is_memory    : 1;
   unsigned int is_address   : 1;
+  unsigned int is_overloaded : 1; /* Set for all but the first definition.  */
 };
 
 /* Overview of all constraints beginning with a given letter.  */
@@ -757,6 +758,7 @@ add_constraint (const char *name, const char *regclass,
   bool is_const_int;
   bool is_const_dbl;
   size_t namelen;
+  bool is_overloaded = 0;
 
   if (exp && validate_exp (exp, name, lineno))
     return;
@@ -816,10 +818,29 @@ add_constraint (const char *name, const char *regclass,
 
       if (!strcmp ((*iter)->name, name))
 	{
-	  message_with_line (lineno, "redefinition of constraint '%s'", name);
-	  message_with_line ((*iter)->lineno, "previous definition is here");
-	  have_error = 1;
-	  return;
+	  /* An exact match is OK if the purpose is to overload the constraint.
+	   */
+	  if (is_overloaded)
+	    ; /* We've already warned against the 1st definition.  */
+	  else if ((*iter)->is_register != (regclass != 0)
+		   || (*iter)->is_memory != is_memory
+		   || (*iter)->is_address != is_address)
+	    {
+	      message_with_line (lineno,
+				 "overloading of constraint '%s'", name);
+	      message_with_line ((*iter)->lineno,
+				 "previous definition is here");
+	      is_overloaded = 1;
+	    }
+	  else
+	    {
+	      message_with_line (lineno,
+				 "redefinition of constraint '%s'", name);
+	      message_with_line ((*iter)->lineno,
+				 "previous definition is here");
+	      have_error = 1;
+	      return;
+	    }
 	}
       else if (!strncmp ((*iter)->name, name, (*iter)->namelen))
 	{
@@ -910,6 +931,7 @@ add_constraint (const char *name, const char *regclass,
   c->is_extra = !(regclass || is_const_int || is_const_dbl);
   c->is_memory = is_memory;
   c->is_address = is_address;
+  c->is_overloaded = is_overloaded;
 
   c->next_this_letter = *slot;
   *slot = c;
@@ -958,7 +980,8 @@ write_enum_constraint_num (void)
 	 "{\n"
 	 "  CONSTRAINT__UNKNOWN = 0", stdout);
   FOR_ALL_CONSTRAINTS (c)
-    printf (",\n  CONSTRAINT_%s", c->c_name);
+    if (!c->is_overloaded)
+      printf (",\n  CONSTRAINT_%s", c->c_name);
   puts (",\n  CONSTRAINT__LIMIT\n};\n");
 }
 
@@ -987,9 +1010,10 @@ write_lookup_constraint (void)
 	{
 	  do
 	    {
-	      printf ("      if (!strncmp (str, \"%s\", %lu))\n"
-		      "        return CONSTRAINT_%s;\n",
-		      c->name, (unsigned long int) c->namelen, c->c_name);
+	      if (!c->is_overloaded)
+		printf ("      if (!strncmp (str, \"%s\", %lu))\n"
+			"        return CONSTRAINT_%s;\n",
+			c->name, (unsigned long int) c->namelen, c->c_name);
 	      c = c->next_this_letter;
 	    }
 	  while (c);

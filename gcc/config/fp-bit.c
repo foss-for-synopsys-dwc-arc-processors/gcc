@@ -1028,27 +1028,12 @@ _fpdiv_parts (fp_number_type * a,
 	numerator *= 2;
       }
 
-    if (!ROUND_TOWARDS_ZERO && (quotient & GARDMASK) == GARDMSB)
-      {
-	if (quotient & (1 << NGARDS))
-	  {
-	    /* Because we're half way, we would round to even by adding
-	       GARDROUND + 1, except that's also done in the packing
-	       function, and rounding twice will lose precision and cause
-	       the result to be too far off.  */
-	  }
-	else if (numerator)
-	  {
-	    /* We're a further than half way by the small amount
-	       corresponding to the bits set in "numerator".  Knowing
-	       that, we round here and not in pack_d, because there we
-	       don't have "numerator" available anymore.  */
-	    quotient += GARDROUND + 1;
-
-	    /* Avoid further rounding in pack_d.  */
-	    quotient &= ~(fractype) GARDMASK;
-	  }
-      }
+    /* If we wanted to round here, that would require to take subnormal
+       numbers into account to avoiddouble rounding.  Better to just
+       account for any bits beyond our current guard bits by setting the
+       sticky bit.  */
+    if (numerator)
+      quotient |= 1;
 
     a->fraction.ll = quotient;
     return (a);

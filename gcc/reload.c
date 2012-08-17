@@ -916,6 +916,8 @@ push_reload (rtx in, rtx out, rtx *inloc, rtx *outloc,
   enum insn_code secondary_in_icode = CODE_FOR_nothing;
   enum insn_code secondary_out_icode = CODE_FOR_nothing;
 
+  if (in != 0 && !out && targetm.preserve_reload_p (in))
+    type = RELOAD_OTHER;
   /* INMODE and/or OUTMODE could be VOIDmode if no mode
      has been specified for the operand.  In that case,
      use the operand's mode as the mode to reload.  */

@@ -791,8 +791,10 @@ validate_pattern (rtx pattern, rtx insn, rtx set, int set_code)
 	else if (dmode != smode
 		 && GET_CODE (dest) != PC
 		 && GET_CODE (dest) != CC0
+		 && GET_MODE_CLASS (dmode) != MODE_CC
 		 && GET_CODE (src) != PC
 		 && GET_CODE (src) != CC0
+		 && GET_MODE_CLASS (smode) != MODE_CC
 		 && GET_CODE (src) != CONST_INT)
 	  {
 	    const char *which;

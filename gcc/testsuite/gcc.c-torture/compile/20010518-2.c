@@ -4,6 +4,7 @@
    the array is too large (INT_MAX/2 > 64K).  Force to use 16-bit ints
    for it.  */
 /* { dg-options "-w -mshort" { target m6811-*-* m6812-*-* } } */
+/* { dg-skip-if "HI mode pointer for mxp" { "mxp-*-*" } { "*" } { "" } } */
 
 /* Large static storage.  */
 

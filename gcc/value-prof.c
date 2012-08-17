@@ -1412,7 +1412,7 @@ gimple_stringops_transform (gimple_stmt_iterator *gsi)
     case BUILT_IN_MEMPCPY:
       src = gimple_call_arg (stmt, 1);
       src_align = get_pointer_alignment (src, BIGGEST_ALIGNMENT);
-      if (!can_move_by_pieces (val, MIN (dest_align, src_align)))
+      if (!can_move_by_pieces (val, MIN (dest_align, src_align) ,1))
 	return false;
       break;
     case BUILT_IN_MEMSET:

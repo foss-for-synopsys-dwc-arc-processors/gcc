@@ -19,6 +19,8 @@
 
 // 27.7.1.3 basic_stringbuf overridden virtual functions.
 
+// { dg-options "-Wl,--defsym,__HEAP_SIZE=57m" { target arc-*-* } }
+
 #include <sstream>
 #include <cstdlib>
 #include <testsuite_hooks.h>

@@ -703,6 +703,14 @@ fivopts
 Common Report Var(flag_ivopts) Init(1) Optimization
 Optimize induction variables on trees
 
+fivopts-post-inc
+Common Report Var(flag_ivopts_post_inc) Init(1) Optimization
+When optimizing induction variables on trees, assume post_increment will be used.
+
+fivopts-post-modify
+Common Report Var(flag_ivopts_post_modify) Init(1) Optimization
+When optimizing induction variables on trees, assume post_modify will be used.
+
 fjump-tables
 Common Var(flag_jump_tables) Init(1) Optimization
 Use jump tables for sufficiently large switch statements
@@ -1226,6 +1234,15 @@ Enable automatic parallelization of loops
 ftree-pre
 Common Report Var(flag_tree_pre) Optimization
 Enable SSA-PRE optimization on trees
+
+ftree-pre-partial-partial
+Common Report Var(flag_tree_pre_partial_partial) Optimization
+In SSA-PRE optimization on trees, enable partial-partial redundancy elimination.
+
+ftree-pre-partial-partial-obliviously
+Common Report Var(flag_tree_pre_partial_partial_obliviously) Optimization
+In SSA-PRE optimization on trees, enable partial-partial redundancy
+elimination without regard for the cost of the inserted phi nodes.
 
 ftree-reassoc
 Common Report Var(flag_tree_reassoc) Init(1) Optimization

@@ -497,7 +497,11 @@ enum li_flags
   LI_INCLUDE_ROOT = 1,		/* Include the fake root of the loop tree.  */
   LI_FROM_INNERMOST = 2,	/* Iterate over the loops in the reverse order,
 				   starting from innermost ones.  */
-  LI_ONLY_INNERMOST = 4		/* Iterate only over innermost loops.  */
+  LI_ONLY_INNERMOST = 4,	/* Iterate only over innermost loops.  */
+  LI_REALLY_FROM_INNERMOST = 8	/* Iterate over the loops such that all child
+				   and nephew loops are visited first, i.e.
+				   the size of the loop father can be estimated
+				   looking at its child loops.  */
 };
 
 /* The iterator for loops.  */
@@ -531,9 +535,10 @@ fel_next (loop_iterator *li, loop_p *loop)
 static inline void
 fel_init (loop_iterator *li, loop_p *loop, unsigned flags)
 {
-  struct loop *aloop;
-  unsigned i;
+  struct loop *aloop, *floop;
+  unsigned i, j;
   int mn;
+  int visit_lim;
 
   li->idx = 0;
   if (!current_loops)
@@ -543,8 +548,9 @@ fel_init (loop_iterator *li, loop_p *loop, unsigned flags)
       return;
     }
 
-  li->to_visit = VEC_alloc (int, heap, number_of_loops ());
   mn = (flags & LI_INCLUDE_ROOT) ? 0 : 1;
+  visit_lim = number_of_loops () - mn;
+  li->to_visit = VEC_alloc (int, heap, visit_lim);
 
   if (flags & LI_ONLY_INNERMOST)
     {
@@ -553,6 +559,27 @@ fel_init (loop_iterator *li, loop_p *loop, unsigned flags)
 	    && aloop->inner == NULL
 	    && aloop->num >= mn)
 	  VEC_quick_push (int, li->to_visit, aloop->num);
+    }
+  else if (flags & LI_REALLY_FROM_INNERMOST)
+    {
+      VEC_safe_grow_cleared (int, heap, li->to_visit, visit_lim);
+      floop = current_loops->tree_root;
+      if (!mn)
+	VEC_replace (int, li->to_visit, --visit_lim, floop->num);
+      for (i = visit_lim;;)
+	{
+	  for (aloop = floop->inner; aloop; aloop = aloop->next)
+	    i--;
+	  for (aloop = floop->inner, j = i; aloop; aloop = aloop->next)
+	    VEC_replace (int, li->to_visit, j++, aloop->num);
+	  
+	  if (--visit_lim >= (int) i)
+	    floop = get_loop (VEC_index (int, li->to_visit, visit_lim));
+	  else
+	    break;
+	}
+      if (i)
+	VEC_block_remove (int, li->to_visit, 0, i);
     }
   else if (flags & LI_FROM_INNERMOST)
     {

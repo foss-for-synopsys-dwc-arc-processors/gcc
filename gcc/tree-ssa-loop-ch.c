@@ -132,7 +132,7 @@ copy_loop_headers (void)
   loop_iterator li;
   struct loop *loop;
   basic_block header;
-  edge exit, entry;
+  edge exit, new_exit, entry;
   basic_block *bbs, *copied_bbs;
   unsigned n_bbs;
   unsigned bbs_size;
@@ -180,9 +180,41 @@ copy_loop_headers (void)
 	  /* Find a successor of header that is inside a loop; i.e. the new
 	     header after the condition is copied.  */
 	  if (flow_bb_inside_loop_p (loop, EDGE_SUCC (header, 0)->dest))
-	    exit = EDGE_SUCC (header, 0);
+	    new_exit = EDGE_SUCC (header, 0);
 	  else
-	    exit = EDGE_SUCC (header, 1);
+	    new_exit = EDGE_SUCC (header, 1);
+	  /* If we already have copied a header that tests a variable,
+	     and all that we'd have left is an in/decrement of that variable,
+	     that variable is most likely the biv, and the 'header' we are
+	     currently looking at is the actual loop body.  This happens
+	     for instance with libgcc2.c:__gcc_bcmp .  */
+	  if (header != loop->header
+	      && single_succ_p (new_exit->dest)
+	      && EDGE_SUCC (new_exit->dest, 0)->dest == loop->header)
+	    {
+	      gimple cond = last_and_only_stmt (loop->header);
+	      gimple modify = last_stmt (new_exit->dest);
+
+	      if (cond && modify && gimple_code (modify) == GIMPLE_ASSIGN
+		  && modify == gsi_stmt (gsi_after_labels (new_exit->dest)))
+		{
+		  /* We checked earlier that cond is a GIMPLE_COND.  */
+		  tree var;
+		  tree m_var = gimple_get_lhs (modify);
+
+		  if (truth_value_p (gimple_cond_code (cond)))
+		    var = gimple_cond_lhs (cond);
+		  else
+		    /* If variable is used as dircetly condition, use that.  */
+		/* Abort so that we can use gdb to inspect this point live.  */
+		    gcc_unreachable ();
+		  if (TREE_CODE (var) == SSA_NAME
+		      && TREE_CODE (m_var) == SSA_NAME
+		      && SSA_NAME_VAR (var) == SSA_NAME_VAR (m_var))
+		    break;
+		}
+	    }
+	  exit = new_exit;
 	  bbs[n_bbs++] = header;
 	  gcc_assert (bbs_size > n_bbs);
 	  header = exit->dest;

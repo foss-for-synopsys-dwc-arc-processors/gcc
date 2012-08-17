@@ -181,10 +181,15 @@ proc scan-assembler-times { args } {
     set text [read $fd]
     close $fd
 
-    if { [llength [regexp -inline -all -- [lindex $args 0] $text]] == [lindex $args 1]} {
-	pass "$testcase scan-assembler-times [lindex $args 0] [lindex $args 1]"
+    set pattern [lindex $args 0]
+    set printable_pattern [string map {\t \\t \n \\n \r \\r \\ \\\\} $pattern]
+
+    # don't use regexp -inline - that gives bogus results with alternative
+    # subexpressions (e.g. "operation\.(this|that)" ).
+    if { [regexp -all -- $pattern $text] == [lindex $args 1]} {
+	pass "$testcase scan-assembler-times $printable_pattern [lindex $args 1]"
     } else {
-	fail "$testcase scan-assembler-times [lindex $args 0] [lindex $args 1]"
+	fail "$testcase scan-assembler-times $printable_pattern [lindex $args 1]"
     }
 }
 

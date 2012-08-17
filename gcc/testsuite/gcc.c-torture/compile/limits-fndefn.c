@@ -1,5 +1,10 @@
 /* { dg-skip-if "too complex for avr and picochip" { picochip-*-* avr-*-* } { "*" } { "" } } */
 /* { dg-timeout-factor 4.0 } */
+#ifndef STACK_SIZE
+#define STACK_SIZE 999999
+#endif
+#if STACK_SIZE >= 400004
+
 #define LIM1(x) x##0, x##1, x##2, x##3, x##4, x##5, x##6, x##7, x##8, x##9,
 #define LIM2(x) LIM1(x##0) LIM1(x##1) LIM1(x##2) LIM1(x##3) LIM1(x##4) \
 		LIM1(x##5) LIM1(x##6) LIM1(x##7) LIM1(x##8) LIM1(x##9)
@@ -17,3 +22,4 @@
 void func1 (LIM5(int p) int t)
 {
 }
+#endif /* STACK_SIZE */

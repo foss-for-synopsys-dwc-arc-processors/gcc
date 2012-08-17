@@ -7040,6 +7040,7 @@ instructions, but allow the compiler to schedule those calls.
 
 @menu
 * Alpha Built-in Functions::
+* ARC Built-in Functions::
 * ARM iWMMXt Built-in Functions::
 * ARM NEON Intrinsics::
 * Blackfin Built-in Functions::
@@ -7135,6 +7136,287 @@ PAL calls, but when invoked with @option{-mtls-kernel}, they invoke
 @smallexample
 void *__builtin_thread_pointer (void)
 void __builtin_set_thread_pointer (void *)
+@end smallexample
+
+@node ARC Built-in Functions
+@subsection ARC Built-in Functions
+
+SIMD instruction can be generated for ARC, using the built-in functions provided
+for the ARC cores when the @option{-msimd} switch is used:
+
+The set of builtins defined for ARC can be categorized according to their
+signatures into the following types:
+
+@smallexample
+I) Return type    :  v8hi
+   First argument :  v8hi
+   Second argument:  v8hi
+
+v8hi __builtin_arc_vaddaw (v8hi, v8hi)
+v8hi __builtin_arc_vaddw (v8hi, v8hi)
+v8hi __builtin_arc_vavb (v8hi, v8hi)
+v8hi __builtin_arc_vavrb (v8hi, v8hi)
+v8hi __builtin_arc_vdifaw (v8hi, v8hi)
+v8hi __builtin_arc_vdifw (v8hi, v8hi)
+v8hi __builtin_arc_vmaxaw (v8hi, v8hi)
+v8hi __builtin_arc_vmaxw (v8hi, v8hi)
+v8hi __builtin_arc_vminaw (v8hi, v8hi)
+v8hi __builtin_arc_vminw (v8hi, v8hi)
+v8hi __builtin_arc_vmulaw (v8hi, v8hi)
+v8hi __builtin_arc_vmulfaw (v8hi, v8hi)
+v8hi __builtin_arc_vmulfw (v8hi, v8hi)
+v8hi __builtin_arc_vmulw (v8hi, v8hi)
+v8hi __builtin_arc_vsubaw (v8hi, v8hi)
+v8hi __builtin_arc_vsubw (v8hi, v8hi)
+v8hi __builtin_arc_vsummw (v8hi, v8hi)
+v8hi __builtin_arc_vand (v8hi, v8hi)
+v8hi __builtin_arc_vandaw (v8hi, v8hi)
+v8hi __builtin_arc_vbic (v8hi, v8hi)
+v8hi __builtin_arc_vbicaw (v8hi, v8hi)
+v8hi __builtin_arc_vor (v8hi, v8hi)
+v8hi __builtin_arc_vxor (v8hi, v8hi)
+v8hi __builtin_arc_vxoraw (v8hi, v8hi)
+v8hi __builtin_arc_veqw (v8hi, v8hi)
+v8hi __builtin_arc_vlew (v8hi, v8hi)
+v8hi __builtin_arc_vltw (v8hi, v8hi)
+v8hi __builtin_arc_vnew (v8hi, v8hi)
+v8hi __builtin_arc_vmr1aw (v8hi, v8hi)
+v8hi __builtin_arc_vmr1w (v8hi, v8hi)
+v8hi __builtin_arc_vmr2aw (v8hi, v8hi)
+v8hi __builtin_arc_vmr2w (v8hi, v8hi)
+v8hi __builtin_arc_vmr3aw (v8hi, v8hi)
+v8hi __builtin_arc_vmr3w (v8hi, v8hi)
+v8hi __builtin_arc_vmr4aw (v8hi, v8hi)
+v8hi __builtin_arc_vmr4w (v8hi, v8hi)
+v8hi __builtin_arc_vmr5aw (v8hi, v8hi)
+v8hi __builtin_arc_vmr5w (v8hi, v8hi)
+v8hi __builtin_arc_vmr6aw (v8hi, v8hi)
+v8hi __builtin_arc_vmr6w (v8hi, v8hi)
+v8hi __builtin_arc_vmr7aw (v8hi, v8hi)
+v8hi __builtin_arc_vmr7w (v8hi, v8hi)
+v8hi __builtin_arc_vmrb (v8hi, v8hi)
+v8hi __builtin_arc_vh264f (v8hi, v8hi)
+v8hi __builtin_arc_vh264ft (v8hi, v8hi)
+v8hi __builtin_arc_vh264fw (v8hi, v8hi)
+v8hi __builtin_arc_vvc1f (v8hi, v8hi)
+v8hi __builtin_arc_vvc1ft (v8hi, v8hi)
+@end smallexample
+
+@smallexample
+II)  Return type    :  v8hi
+     First argument :  v8hi
+     Second argument:  int
+
+v8hi __builtin_arc_vbaddw (v8hi, int)
+v8hi __builtin_arc_vbmaxw (v8hi, int)
+v8hi __builtin_arc_vbminw (v8hi, int)
+v8hi __builtin_arc_vbmulaw (v8hi, int)
+v8hi __builtin_arc_vbmulfw (v8hi, int)
+v8hi __builtin_arc_vbmulw (v8hi, int)
+v8hi __builtin_arc_vbrsubw (v8hi, int)
+v8hi __builtin_arc_vbsubw (v8hi, int)
+@end smallexample
+
+@smallexample
+III)  Return type    :  v8hi
+      First argument :  v8hi
+      Second argument:  const int
+
+	The second argument in these builtins has to be an unsigned 3-bit
+integer constant, as it indicate the registers I0-I7:
+
+v8hi __builtin_arc_vasrw (v8hi, const int)
+v8hi __builtin_arc_vsr8 (v8hi, const int)
+v8hi __builtin_arc_vsr8aw (v8hi, const int)
+@end smallexample
+
+@smallexample
+IV)  Return type    :  v8hi
+     First argument :  v8hi
+     Second argument:  const int
+
+	The second argument in these builtins has to be an unsigned 6-bit
+integer constant:
+
+v8hi __builtin_arc_vasrrwi (v8hi, const int)
+v8hi __builtin_arc_vasrsrwi (v8hi, const int)
+v8hi __builtin_arc_vasrwi (v8hi, const int)
+v8hi __builtin_arc_vasrpwbi (v8hi, const int)
+v8hi __builtin_arc_vasrrpwbi (v8hi, const int)
+v8hi __builtin_arc_vsr8awi (v8hi, const int)
+v8hi __builtin_arc_vsr8i (v8hi, const int)
+@end smallexample
+
+@smallexample
+V)  Return type    :  v8hi
+    First argument :  v8hi
+    Second argument:  const int
+
+	The second argument in these builtins has to be an unsigned 8-bit
+integer constant:
+
+v8hi __builtin_arc_vmvaw (v8hi, const int)
+v8hi __builtin_arc_vmvw (v8hi, const int)
+v8hi __builtin_arc_vmvzw (v8hi, const int)
+v8hi __builtin_arc_vd6tapf (v8hi, const int)
+@end smallexample
+
+@smallexample
+VI)  Return type    :  v8hi
+     First argument :  int
+     Second argument:  const int
+
+	The second argument in these builtins has to be an unsigned 8-bit
+integer constant:
+
+v8hi __builtin_arc_vmovaw (int, const int)
+v8hi __builtin_arc_vmovw (int, const int)
+v8hi __builtin_arc_vmovzw (int, const int)
+@end smallexample
+
+@smallexample
+VII)  Return type    :  v8hi
+      First argument :  v8hi
+
+v8hi __builtin_arc_vabsaw (v8hi)
+v8hi __builtin_arc_vabsw (v8hi)
+v8hi __builtin_arc_vaddsuw (v8hi)
+v8hi __builtin_arc_vsignw (v8hi)
+v8hi __builtin_arc_vexch1 (v8hi)
+v8hi __builtin_arc_vexch2 (v8hi)
+v8hi __builtin_arc_vexch4 (v8hi)
+v8hi __builtin_arc_vupbaw (v8hi)
+v8hi __builtin_arc_vupbw (v8hi)
+v8hi __builtin_arc_vupsbaw (v8hi)
+v8hi __builtin_arc_vupsbw (v8hi)
+@end smallexample
+
+@smallexample
+VIII)  Return type     :  void
+       First argument  :  int
+       Second argument :  int
+
+void __builtin_arc_vdirun (int, int)
+void __builtin_arc_vdorun (int, int)
+@end smallexample
+
+@smallexample
+IX)  Return type     :  void
+     First argument  :  const int
+     Second argument :  int
+
+	The first argument in these builtins has to be an unsigned 3-bit
+integer constant, as it indicates DR0-DR7 DMA channel setup registers. The file
+arc-simd.h also profides defines which can be used in place of the DMA register
+numbers to facilitate better code readability:
+
+void __builtin_arc_vdiwr (const int, int)
+void __builtin_arc_vdowr (const int, int)
+@end smallexample
+
+@smallexample
+X)  Return type     :  void
+    First argument  :  int
+
+void __builtin_arc_vrec (int)
+void __builtin_arc_vrun (int)
+void __builtin_arc_vrecrun (int)
+void __builtin_arc_vendrec (int)
+@end smallexample
+
+@smallexample
+XI)  Return type      :  v8hi
+     First argument   :  v8hi
+     Second argument  :  const int
+     Third argument   :  const int
+
+	The second argument in these builtins has to be an unsigned 3-bit
+integer constant, as it indicates I0-I7 registers. The third argument has to be
+an unsigned 8-bit quantity The file arc-simd.h also profides defines which can
+be used in place of the I0-I7 registe numbers to facilitate better code readability:
+
+v8hi __builtin_arc_vld32wh (v8hi, const int, const int)
+v8hi __builtin_arc_vld32wl (v8hi, const int, const int)
+v8hi __builtin_arc_vld64 (v8hi, const int, const int)
+v8hi __builtin_arc_vld32 (v8hi, const int, const int)
+
+NOTE: Although the equivalent hardware instructions do not take a simd register
+      as an operand, these builtins overwrite the relevant bits of the v8hi
+      quantity provided as the first argument with the value loaded from 
+      [Ib, u8] location in the SDM.
+
+@end smallexample
+
+@smallexample
+XII)  Return type      :  v8hi
+      First argument   :  const int
+      Second argument  :  const int
+
+	The first argument in these builtins has to be an unsigned 3-bit
+integer constant, as it indicates I0-I7 registers. The second argument has to be
+an unsigned 8-bit quantity The file arc-simd.h also profides defines which can
+be used in place of the I0-I7 registe numbers to facilitate better code readability:
+
+v8hi __builtin_arc_vld64w (const int, const int)
+v8hi __builtin_arc_vld128 (const int, const int)
+@end smallexample
+
+@smallexample
+XIII)  Return type      :  void
+       First argument   :  v8hi
+       Second argument  :  const int
+       Third argument   :  const int
+
+	The second argument in these builtins has to be an unsigned 3-bit
+integer constant, as it indicates I0-I7 registers. The third argument has to be
+an unsigned 8-bit quantity The file arc-simd.h also profides defines which can
+be used in place of the I0-I7 registe numbers to facilitate better code readability:
+
+void __builtin_arc_vst128 (v8hi, const int, const int)
+void __builtin_arc_vst64 (v8hi, const int, const int)
+@end smallexample
+
+
+@smallexample
+XIV)  Return type      :  void
+      First argument   :  v8hi
+      Second argument  :  const int
+      Third argument   :  const int
+
+	The second argument has to be an unsigned 3-bit quantity to identify the
+16-bit subregister to be stored. The third argument in these builtins has to be
+an unsigned 3-bit integer constant, as it indicates I0-I7 registers. The fourth
+argument has to be an unsigned 8-bit quantity The file arc-simd.h also profides
+defines which can be used in place of the I0-I7 registe numbers to facilitate
+better code readability:
+
+void __builtin_arc_vst16_n (v8hi, const int, const int, const int)
+void __builtin_arc_vst32_n (v8hi, const int, const int, const int)
+@end smallexample
+
+
+@smallexample
+XIV)  Return type      :  void
+      First argument   :  const int
+
+	The argument has to be an unsigned 6-bit quantity.
+
+void __builtin_arc_vinti (const int)
+@end smallexample
+
+@smallexample
+NOTE: For all builtins __builtin_arc_<someinsn>, the header file arc-simd.h also
+      provides macros called _<someinsn> which can be used for programming ease
+      and improved readability. 
+
+     Besides these, the following extra defines and typedefs are also provided
+in the header file
+ 
+#define _setup_dma_in_channel_reg  _vdiwr
+#define _setup_dma_out_channel_reg _vdowr
+
+typedef int   __v4si  __attribute__((vector_size(16)));
+typedef short __v8hi  __attribute__((vector_size(16)));
 @end smallexample
 
 @node ARM iWMMXt Built-in Functions

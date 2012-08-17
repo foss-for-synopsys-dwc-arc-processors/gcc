@@ -2,6 +2,7 @@
    the stack arrays are too large.  Force to use 16-bit ints for it.  */
 /* { dg-do assemble } */
 /* { dg-xfail-if "" { m6811-*-* m6812-*-* } { "*" } { "-mshort" } } */
+/* { dg-skip-if "The array is too big" { "mxp-*-*" } { "*" } { "" } } */
 
 x(x){            return 3 + x;}
 a(x){int y[994]; return 3 + x;}

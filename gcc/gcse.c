@@ -2902,6 +2902,37 @@ constprop_register (rtx insn, rtx from, rtx to, bool alter_jumps)
 {
   rtx sset;
 
+  /* ??? This algorithm lacks proper infrastructure to do a const-benefit
+     analysis, since we would first have to tally the cost of all the users
+     of the constant and then compare it to the benefit of the constant
+     loading instruction saved.
+     In the absense of a proper way to tally costs, it is probably better
+     to punt on any cost-increasing changes; combine can still do
+     combinations where a constant is only used in one insn.
+     We could propably have a target hook here.
+     For now, hard-code ARC heuristic as proof of concept.  */
+  sset = single_set (insn);
+  /* Memory addresses and stored constants can be encoded as a long immediate,
+     but that costs an extra cycle.  */
+  if (sset
+      && (MEM_P (SET_SRC (sset))
+	  || ((GET_CODE (SET_SRC (sset)) == ZERO_EXTEND
+	       || GET_CODE (SET_SRC (sset)) == SIGN_EXTEND)
+	      && MEM_P (XEXP (SET_SRC (sset), 0)))
+	  || MEM_P (SET_DEST (sset)))
+      && (REG_N_REFS (REGNO (from)) > 2
+	  || rtx_cost (to, GET_CODE (to), SET) <= 1))
+    return 0;
+  /* Likewise, putting a long immediate costs an extra cycle.
+     We assum here that even if the instruction looks three-address now,
+     we could fix it up if necessary.  A more strict check would reject
+     constants that can't be encoded within a 32 bit opcode with the
+     prima facie number of operands.  */
+  if (sset && BINARY_P (SET_SRC (sset))
+      && REG_P (XEXP (SET_SRC (sset), 0))
+      && rtx_cost (to, GET_CODE (to), GET_CODE (SET_SRC (sset))) > 1
+      && REG_N_REFS (REGNO (from)) > 2)
+    return 0;
   /* Check for reg or cc0 setting instructions followed by
      conditional branch instructions first.  */
   if (alter_jumps
@@ -3353,6 +3384,15 @@ one_cprop_pass (int pass, bool cprop_jumps, bool bypass_jumps)
 {
   int changed = 0;
 
+  /* Make REG_N_REFS usable so that we can better assess the merit of
+     constant propagation.  Note that while constant propagation can
+     iterate a few times, we'll still consider the same regs to eliminate,
+     even though they might have been set to something prima facie
+     non-constant initially, and later are set to a literal constant.  */
+  df_note_add_problem ();
+  df_analyze ();
+  regstat_init_n_sets_and_refs ();
+
   global_const_prop_count = local_const_prop_count = 0;
   global_copy_prop_count = local_copy_prop_count = 0;
 
@@ -3383,6 +3423,7 @@ one_cprop_pass (int pass, bool cprop_jumps, bool bypass_jumps)
     }
 
   free_hash_table (&set_hash_table);
+  regstat_free_n_sets_and_refs ();
 
   if (dump_file)
     {

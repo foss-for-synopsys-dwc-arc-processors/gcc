@@ -1374,7 +1374,7 @@ if test "${ENABLE_PPL_CHECK}" = "yes"; then
   CFLAGS="$CFLAGS $pplinc $gmpinc"
   AC_MSG_CHECKING([for version $ppl_major_version.$ppl_minor_version of PPL])
   AC_TRY_COMPILE([#include "ppl_c.h"],[
-  #if PPL_VERSION_MAJOR != $ppl_major_version || PPL_VERSION_MINOR != $ppl_minor_version
+  #if PPL_VERSION_MAJOR != $ppl_major_version || PPL_VERSION_MINOR < $ppl_minor_version
   choke me
   #endif
   ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no]); ppllibs= ; pplinc= ])
@@ -2183,12 +2183,16 @@ case "${host}" in
 esac
 
 # Decide which environment variable is used to find dynamic libraries.
-case "${host}" in
-  *-*-hpux*) RPATH_ENVVAR=SHLIB_PATH ;;
-  *-*-darwin* | *-*-rhapsody* ) RPATH_ENVVAR=DYLD_LIBRARY_PATH ;;
-  *-*-mingw* | *-*-cygwin ) RPATH_ENVVAR=PATH ;;
-  *) RPATH_ENVVAR=LD_LIBRARY_PATH ;;
-esac
+if test x${host_cpu} = x${target_cpu} ; then
+  case "${host}" in
+    *-*-hpux*) RPATH_ENVVAR=SHLIB_PATH ;;
+    *-*-darwin* | *-*-rhapsody* ) RPATH_ENVVAR=DYLD_LIBRARY_PATH ;;
+    *-*-mingw* | *-*-cygwin ) RPATH_ENVVAR=PATH ;;
+    *) RPATH_ENVVAR=LD_LIBRARY_PATH ;;
+  esac
+else
+  RPATH_ENVVAR=LD_RUN_PATH
+fi
 
 # On systems where the dynamic library environment variable is PATH,
 # gcc/ will put dynamic libraries into a subdirectory to avoid adding
@@ -2585,7 +2589,7 @@ case " $target_configdirs " in
       # If we're building newlib, use its generic headers last, but search
       # for any libc-related directories first (so make it the last -B
       # switch).
-      FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -B$$r/$(TARGET_SUBDIR)/newlib/ -isystem $$r/$(TARGET_SUBDIR)/newlib/targ-include -isystem $$s/newlib/libc/include'
+      FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -B$$r/$(TARGET_SUBDIR)/newlib/ -isystem $$r/$(TARGET_SUBDIR)/newlib/targ-include -isystem $$s/newlib/libc/sys/'$target_cpu'/sys -isystem $$s/newlib/libc/include'
 
       # If we're building libgloss, find the startup file, simulator library
       # and linker script.

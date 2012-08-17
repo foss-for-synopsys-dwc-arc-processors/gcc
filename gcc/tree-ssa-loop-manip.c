@@ -623,6 +623,21 @@ gimple_duplicate_loop_to_header_edge (struct loop *loop, edge e,
   return true;
 }
 
+/* Return true if gimple_duplicate_loop_to_header_edge would return true,
+   without actually altering any trees.  */
+bool
+gimple_can_duplicate_loop_to_header_edge (struct loop *loop)
+{
+  basic_block *bbs;
+
+  if (!loops_state_satisfies_p (LOOPS_HAVE_SIMPLE_LATCHES))
+    return false;
+  if (!loops_state_satisfies_p (LOOPS_HAVE_PREHEADERS))
+    return false;
+  bbs = get_loop_body_in_dom_order (loop);
+  return can_copy_bbs_p (bbs, loop->num_nodes);
+}
+
 /* Returns true if we can unroll LOOP FACTOR times.  Number
    of iterations of the loop is returned in NITER.  */
 

@@ -842,8 +842,13 @@ DDG_H = ddg.h sbitmap.h $(DF_H)
 GCC_H = gcc.h version.h
 GGC_H = ggc.h gtype-desc.h statistics.h
 TIMEVAR_H = timevar.h timevar.def
+# START ARC LOCAL
+# insn-attr.h uses insn-addr.h, which uses vecprim.h, which requires vec.h
+# and statistics.h.
 INSN_ATTR_H = insn-attr.h $(INSN_ADDR_H) $(srcdir)/varray.h
-INSN_ADDR_H = $(srcdir)/insn-addr.h vecprim.h
+INSN_ADDR_H = $(srcdir)/insn-addr.h $(srcdir)/vecprim.h \
+  $(srcdir)/vec.h $(srcdir)/statistics.h
+# END ARC LOCAL
 C_COMMON_H = c-common.h $(SPLAY_TREE_H) $(CPPLIB_H) $(GGC_H)
 C_PRAGMA_H = c-pragma.h $(CPPLIB_H)
 C_TREE_H = c-tree.h $(C_COMMON_H) $(TOPLEV_H) $(DIAGNOSTIC_H)
@@ -1985,9 +1990,13 @@ s-options: $(ALL_OPT_FILES) Makefile $(srcdir)/opt-gather.awk
 	$(SHELL) $(srcdir)/../move-if-change tmp-optionlist optionlist
 	$(STAMP) s-options
 
-options.c: optionlist $(srcdir)/opt-functions.awk $(srcdir)/optc-gen.awk
-	$(AWK) -f $(srcdir)/opt-functions.awk -f $(srcdir)/optc-gen.awk \
-	       -v header_name="config.h system.h coretypes.h tm.h" < $< > $@
+# START ARC LOCAL
+# Add including insn-attr.h
+options.c: optionlist $(srcdir)/opt-functions.awk $(srcdir)/optc-gen.awk \
+    $(INSN_ATTR_H)
+	$(AWK) -f $(srcdir)/opt-functions.awk -f $(srcdir)/optc-gen.awk -v \
+	 header_name="config.h system.h coretypes.h tm.h insn-attr.h" < $< > $@
+# END ARC LOCAL
 
 options.h: s-options-h ; @true
 s-options-h: optionlist $(srcdir)/opt-functions.awk $(srcdir)/opth-gen.awk
@@ -2280,7 +2289,8 @@ tree-ssa-loop-ivopts.o : tree-ssa-loop-ivopts.c $(TREE_FLOW_H) $(CONFIG_H) \
    output.h $(DIAGNOSTIC_H) $(TIMEVAR_H) $(TM_H) coretypes.h $(TREE_DUMP_H) \
    tree-pass.h $(GGC_H) $(RECOG_H) insn-config.h $(HASHTAB_H) $(SCEV_H) \
    $(CFGLOOP_H) $(PARAMS_H) langhooks.h $(BASIC_BLOCK_H) hard-reg-set.h \
-   tree-chrec.h $(VARRAY_H) tree-affine.h pointer-set.h $(TARGET_H)
+   tree-chrec.h $(VARRAY_H) tree-affine.h pointer-set.h $(TARGET_H) \
+   gt-tree-ssa-loop-ivopts.h
 tree-affine.o : tree-affine.c tree-affine.h $(CONFIG_H) pointer-set.h \
    $(SYSTEM_H) $(RTL_H) $(TREE_H) $(TM_P_H) hard-reg-set.h $(GIMPLE_H) \
    output.h $(DIAGNOSTIC_H) $(TM_H) coretypes.h $(TREE_DUMP_H) $(FLAGS_H)
@@ -3300,6 +3310,7 @@ GTFILES = $(CPP_ID_DATA_H) $(srcdir)/input.h $(srcdir)/coretypes.h \
   $(srcdir)/tree-iterator.c $(srcdir)/gimplify.c \
   $(srcdir)/tree-chrec.h \
   $(srcdir)/tree-scalar-evolution.c \
+  $(srcdir)/tree-ssa-loop-ivopts.c \
   $(srcdir)/tree-ssa-operands.h \
   $(srcdir)/tree-profile.c $(srcdir)/tree-nested.c \
   $(srcdir)/varpool.c \
@@ -4487,6 +4498,10 @@ $(lang_checks_parallel): site.exp
 	$(MAKE) TESTSUITEDIR="testsuite.$$vardots" \
 	  RUNTESTFLAGS="--target_board=$$variant $(RUNTESTFLAGS)" \
 	  "$$target"
+
+# The above can't be used directly from the command line for -mcpu=
+# options, we need a way to quote the '=' .
+var-targets: $(TARGETS)
 
 TESTSUITEDIR = testsuite
 

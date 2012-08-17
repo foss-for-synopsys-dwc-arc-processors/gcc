@@ -235,6 +235,9 @@ static rtx true_rtx, false_rtx;
 
 static const char *alternative_name;
 static const char *length_str;
+/* START ARC LOCAL */
+static const char *lock_length_str;
+/* END ARC LOCAL */
 static const char *delay_type_str;
 static const char *delay_1_0_str;
 static const char *num_delay_slots_str;
@@ -1527,14 +1530,18 @@ substitute_address (rtx exp, rtx (*no_address_fn) (rtx),
   */
 
 static void
-make_length_attrs (void)
+/* START ARC LOCAL */
+make_length_attrs (const char **base)
+/* END ARC LOCAL */
 {
   static const char *new_names[] =
     {
-      "*insn_default_length",
-      "*insn_min_length",
-      "*insn_variable_length_p",
-      "*insn_current_length"
+      /* START ARC LOCAL */
+      "*insn_default_%s",
+      "*insn_min_%s",
+      "*insn_variable_%s_p",
+      "*insn_current_%s"
+      /* END ARC LOCAL */
     };
   static rtx (*const no_address_fn[]) (rtx)
     = {identity_fn,identity_fn, zero_fn, zero_fn};
@@ -1547,7 +1554,9 @@ make_length_attrs (void)
 
   /* See if length attribute is defined.  If so, it must be numeric.  Make
      it special so we don't output anything for it.  */
-  length_attr = find_attr (&length_str, 0);
+  /* START ARC LOCAL */
+  length_attr = find_attr (base, 0);
+  /* END ARC LOCAL */
   if (length_attr == 0)
     return;
 
@@ -1560,11 +1569,16 @@ make_length_attrs (void)
   /* Make each new attribute, in turn.  */
   for (i = 0; i < ARRAY_SIZE (new_names); i++)
     {
-      make_internal_attr (new_names[i],
+      /* START ARC LOCAL */
+      const char *p = attr_printf (strlen (new_names[i]) - 2 + strlen (*base),
+				   new_names[i], *base);
+
+      make_internal_attr (p,
 			  substitute_address (length_attr->default_val->value,
 					      no_address_fn[i], address_fn[i]),
 			  ATTR_NONE);
-      new_attr = find_attr (&new_names[i], 0);
+      new_attr = find_attr (&p, 0);
+      /* END ARC LOCAL */
       for (av = length_attr->first_value; av; av = av->next)
 	for (ie = av->first_insn; ie; ie = ie->next)
 	  {
@@ -4461,6 +4475,9 @@ main (int argc, char **argv)
 
   alternative_name = DEF_ATTR_STRING ("alternative");
   length_str = DEF_ATTR_STRING ("length");
+  /* START ARC LOCAL */
+  lock_length_str = DEF_ATTR_STRING ("lock_length");
+  /* END ARC LOCAL */
   delay_type_str = DEF_ATTR_STRING ("*delay_type");
   delay_1_0_str = DEF_ATTR_STRING ("*delay_1_0");
   num_delay_slots_str = DEF_ATTR_STRING ("*num_delay_slots");
@@ -4577,7 +4594,10 @@ from the machine description file `md'.  */\n\n");
       fill_attr (attr);
 
   /* Construct extra attributes for `length'.  */
-  make_length_attrs ();
+  /* START ARC LOCAL */
+  make_length_attrs (&length_str);
+  make_length_attrs (&lock_length_str);
+  /* END ARC LOCAL */
 
   /* Perform any possible optimizations to speed up compilation.  */
   optimize_attrs ();

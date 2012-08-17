@@ -79,6 +79,17 @@ print "#endif /* GCC_DRIVER */"
 print ""
 
 have_save = 0;
+# After sorting, a VarExists can end up earlier than an Init.  So look for
+# all variables with Init first, lest we get double definitions for GCC_DRIVER.
+for (i = 0; i < n_opts; i++) {
+	name = var_name(flags[i]);
+	if (name == "")
+		continue;
+	init = opt_args("Init", flags[i])
+	if (init == "")
+		continue;
+	var_seen[name] = 1;
+}
 for (i = 0; i < n_opts; i++) {
 	if (flag_set_p("Save", flags[i]))
 		have_save = 1;

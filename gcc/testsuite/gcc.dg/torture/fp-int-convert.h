@@ -80,7 +80,9 @@ do {							\
   ivin = (VAL);						\
   fv1 = (VAL);						\
   fv2 = ivin;						\
-  ivout = fv2;						\
+  /* (unsigned long long)(double)~0ULL invokes undefined behaviour.  */\
+  if (PREC_OK)						\
+    ivout = fv2;					\
   if (ivin != (VAL)					\
       || ((PREC_OK) && ivout != ivin)			\
       || ((PREC_OK) && ivout != (VAL))			\

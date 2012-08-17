@@ -274,6 +274,11 @@ alpha*-*-*)
 am33_2.0-*-linux*)
 	cpu_type=mn10300
 	;;
+# START ARC LOCAL
+arc*-*-*)
+	cpu_type=arc
+	;;
+# END ARC LOCAL
 arm*-*-*)
 	cpu_type=arm
 	extra_headers="mmintrin.h arm_neon.h"
@@ -683,10 +688,71 @@ alpha*-dec-*vms*)
 	prefix=/gnu
 	local_prefix=/gnu
 	;;
+# START ARC LOCAL
 arc-*-elf*)
-	tm_file="dbxelf.h elfos.h svr4.h ${tm_file}"
-	extra_parts="crtinit.o crtfini.o"
+	extra_headers="arc-simd.h"
+	tm_file="dbxelf.h elfos.h ${tm_file}"
+	tmake_file="arc/t-arc-newlib arc/t-arc"
+	case x"${with_cpu}" in
+	  xarc600|xarc601|xarc700)
+		target_cpu_default="TARGET_CPU_$with_cpu"
+		;;
+	esac
+	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
 	;;
+arc600-*-linux-uclibc*)
+	extra_headers="arc-simd.h"
+	tm_file="dbxelf.h elfos.h svr4.h linux.h  ${tm_file}"
+	tmake_file="arc/t-arc600-uClibc arc/t-arc"
+	tm_defines="${tm_defines} TARGET_CPU_DEFAULT_OPT=\\\"mARC600\\\""
+  	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
+	use_fixproto=yes
+	target_cpu_default="TARGET_CPU_ARC600"
+        ;;
+arc601-*-linux-uclibc*)
+	extra_headers="arc-simd.h"
+	tm_file="dbxelf.h elfos.h svr4.h linux.h  ${tm_file}"
+	tmake_file="arc/t-arc601-uClibc arc/t-arc"
+	# ??? FIXME there is no -mARC601 option, but the only place
+	# using TARGET_CPU_DEFAULT_OPT is in arc.h in DRIVER_SELF_SPECS
+	# which is #if 0'd out.
+	tm_defines="${tm_defines} TARGET_CPU_DEFAULT_OPT=\\\"mARC601\\\""
+  	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
+	use_fixproto=yes
+	target_cpu_default="TARGET_CPU_ARC601"
+        ;;
+arc*-*-linux-uclibc*)
+	extra_headers="arc-simd.h"
+	tm_file="dbxelf.h elfos.h svr4.h linux.h  ${tm_file}"
+	tmake_file="${tmake_file} arc/t-arc700-uClibc arc/t-arc"
+	case x"${with_cpu}" in
+	  xarc600|xarc601|xarc700)
+		target_cpu_default="TARGET_CPU_$with_cpu"
+		;;
+	esac
+  	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o"
+	use_fixproto=yes
+	if test x${with_endian} = x; then
+		case ${target} in
+		arc*be-*-* | arc*eb-*-*)	with_endian=big ;;
+		*)				with_endian=little ;;
+		esac
+	fi
+	case ${with_endian} in
+	big|little)		;;
+	*)	echo "with_endian=${with_endian} not supported."; exit 1 ;;
+	esac
+	case ${with_endian} in
+	big*)	tm_defines="DRIVER_ENDIAN_SELF_SPECS=\\\"%{!EL:%{!mlittle-endian:-mbig-endian}}\\\" ${tm_defines}"
+	esac
+        ;;
+# ARC mxp
+mxp-*-elf*)
+	tm_file="dbxelf.h elfos.h mxp/regset-config.h ${tm_file}"
+	extra_parts="crti.o crtn.o crtend.o crtbegin.o"
+	extra_objs=mxp-regset.o
+	;;
+# END ARC LOCAL
 arm-*-coff* | armel-*-coff*)
 	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h"
 	tmake_file="arm/t-arm arm/t-arm-coff"
@@ -2461,6 +2527,21 @@ esac
 # This block sets nothing except for with_cpu.
 if test x$with_cpu = x ; then
   case ${target} in
+    # START ARC LOCAL
+    arc*-*-*)
+      case ${target} in
+        arc600*-*-*) 
+	  with_cpu=arc600
+	  ;;
+        arc601*-*-*) 
+	  with_cpu=arc601
+	  ;;
+        arc700*-*-*) 
+	  with_cpu=arc700
+	  ;;
+      esac
+      ;;
+    # END ARC LOCAL
     i386-*-*)
       with_cpu=i386
       ;;
@@ -2649,6 +2730,19 @@ case "${target}" in
 			esac
 		done
 		;;
+
+	# START ARC LOCAL
+	arc*-*-*) # was:	arc*-*-linux-uclibc)
+		supported_defaults="cpu"
+		case $with_cpu in 
+		  arc600|arc601|arc700)
+			;;
+		  *) echo "Unknown cpu type"
+			exit 1
+			;;
+		esac 
+		;;
+	# END ARC LOCAL
 
 	arm*-*-*)
 		supported_defaults="arch cpu float tune fpu abi mode"

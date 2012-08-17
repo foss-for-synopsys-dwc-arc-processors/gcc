@@ -491,8 +491,13 @@ struct named_section GTY(()) {
    section.  The argument provides callback-specific data.  */
 typedef void (*unnamed_section_callback) (const void *);
 
-/* Information about a SECTION_UNNAMED section.  */
-struct unnamed_section GTY(()) {
+/* Information about a SECTION_UNNAMED section.
+   WARNING: this struct is unsuitable for garbage collection, because
+   the DATA member can point to malloced memory, which will change between
+   a pch-generating and a pch-using compilation, and the callback member
+   points to a function, which can change between a pch-generating and a
+   pch-using compilation when address space randomization is in effect.  */
+struct unnamed_section GTY((skip)) {
   struct section_common common;
 
   /* The callback used to switch to the section, and the data that
@@ -530,8 +535,8 @@ union section GTY ((desc ("SECTION_STYLE (&(%h))")))
 {
   struct section_common GTY ((skip)) common;
   struct named_section GTY ((tag ("SECTION_NAMED"))) named;
-  struct unnamed_section GTY ((tag ("SECTION_UNNAMED"))) unnamed;
-  struct noswitch_section GTY ((tag ("SECTION_NOSWITCH"))) noswitch;
+  struct unnamed_section GTY ((tag ("SECTION_UNNAMED"),skip)) unnamed;
+  struct noswitch_section GTY ((tag ("SECTION_NOSWITCH"),skip)) noswitch;
 };
 
 /* Return the style of section SECT.  */
@@ -540,22 +545,23 @@ union section GTY ((desc ("SECTION_STYLE (&(%h))")))
 struct object_block;
 
 /* Special well-known sections.  */
-extern GTY(()) section *text_section;
-extern GTY(()) section *data_section;
-extern GTY(()) section *readonly_data_section;
-extern GTY(()) section *sdata_section;
-extern GTY(()) section *ctors_section;
-extern GTY(()) section *dtors_section;
-extern GTY(()) section *bss_section;
-extern GTY(()) section *sbss_section;
+/* Don't GTY the unnamed / noswitch sections, see PR31634.  */
+extern /* unnamed */ section *text_section;
+extern /* unnamed */ section *data_section;
+extern /* unnamed */ section *readonly_data_section;
+extern /* unnamed */ section *sdata_section;
+extern /* unnamed */ section *ctors_section;
+extern /* unnamed */ section *dtors_section;
+extern /* unnamed */ section *bss_section;
+extern /* unnamed */ section *sbss_section;
 extern GTY(()) section *exception_section;
 extern GTY(()) section *eh_frame_section;
-extern GTY(()) section *tls_comm_section;
-extern GTY(()) section *comm_section;
-extern GTY(()) section *lcomm_section;
-extern GTY(()) section *bss_noswitch_section;
+extern /* noswitch */ section *tls_comm_section;
+extern /* noswitch */ section *comm_section;
+extern /* noswitch */ section *lcomm_section;
+extern /* noswitch */ section *bss_noswitch_section;
 
-extern GTY(()) section *in_section;
+extern /* unknown */ section *in_section;
 extern GTY(()) bool in_cold_section_p;
 
 extern section *get_unnamed_section (unsigned int, void (*) (const void *),
@@ -606,6 +612,8 @@ extern section *default_select_rtx_section (enum machine_mode, rtx,
 extern section *default_elf_select_rtx_section (enum machine_mode, rtx,
 						unsigned HOST_WIDE_INT);
 extern void default_encode_section_info (tree, rtx, int);
+extern void pickle_in_section (void);
+extern void unpickle_in_section (void);
 extern const char *default_strip_name_encoding (const char *);
 extern void default_asm_output_anchor (rtx);
 extern bool default_use_anchors_for_symbol_p (const_rtx);

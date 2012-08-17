@@ -1,3 +1,4 @@
+/* { dg-require-effective-target trampolines } */
 #ifndef NO_TRAMPOLINES
 int f1()
 {

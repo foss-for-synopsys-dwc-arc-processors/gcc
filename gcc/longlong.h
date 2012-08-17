@@ -191,6 +191,31 @@ extern UDItype __udiv_qrnnd (UDItype *, UDItype, UDItype, UDItype);
 	     "rIJ" ((USItype) (bh)),					\
 	     "r" ((USItype) (al)),					\
 	     "rIJ" ((USItype) (bl)))
+/* START ARC LOCAL */
+#ifdef __ARC_NORM__
+#define count_leading_zeros(count, x) \
+  do									\
+    {									\
+      SItype c_;							\
+									\
+      __asm__ ("norm.f\t%0,%1\n\tmov.mi\t%0,-1" : "=r" (c_) : "r" (x) : "cc");\
+      (count) = c_ + 1;							\
+    }									\
+  while (0)
+#define COUNT_LEADING_ZEROS_0 32
+#endif
+#ifdef __ARC700__
+#define umul_ppmm(w1, w0, u, v) \
+  __asm__ (								\
+       "mpyu\t%1,%2,%3\n\tmpyhu\t%0,%2,%3"				\
+	   : "=r" ((USItype)(w1)),					\
+	     "=&r" ((USItype)(w0))					\
+	   : "r" ((USItype)(u)),					\
+	     "r" ((USItype)(v)))
+#define UMUL_TIME 7
+#define __umulsidi3(u,v) ((UDItype)(USItype)u*(USItype)v)
+/* END ARC LOCAL */
+#else /* ! __ARC700__  */
 /* Call libgcc routine.  */
 #define umul_ppmm(w1, w0, u, v) \
 do {									\
@@ -202,6 +227,9 @@ do {									\
 #define __umulsidi3 __umulsidi3
 UDItype __umulsidi3 (USItype, USItype);
 #endif
+/* START ARC LOCAL */
+#endif
+/* END ARC LOCAL */
 
 #if defined (__arm__) && !defined (__thumb__) && W_TYPE_SIZE == 32
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
@@ -1518,7 +1546,12 @@ UDItype __umulsidi3 (USItype, USItype);
     count_leading_zeros (__ctz_c, __ctz_x & -__ctz_x);			\
     (count) = W_TYPE_SIZE - 1 - __ctz_c;				\
   } while (0)
-#endif
+/* START ARC LOCAL */
+#ifdef COUNT_LEADING_ZEROS_0
+#define COUNT_TRAILING_ZEROS_0 (W_TYPE_SIZE - 1 - COUNT_LEADING_ZEROS_0)
+#endif /* COUNT_LEADING_ZEROS_0 */
+#endif /* !defined (count_trailing_zeros) */
+/* END ARC LOCAL */
 
 #ifndef UDIV_NEEDS_NORMALIZATION
 #define UDIV_NEEDS_NORMALIZATION 0

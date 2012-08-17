@@ -1,0 +1,15 @@
+VECTOR_MODES (INT, 4); /* V4QI V2HI */
+VECTOR_MODES (INT, 8); /* V8QI V4HI V2SI */
+VECTOR_MODES (INT, 16); /* V16QI V8HI V4SI V2DI */
+PARTIAL_INT_MODE (SI);  /* Needed to make V2PSI / V4PSI.  */
+VECTOR_MODE (PARTIAL_INT, PSI, 2); /* V2PSI, flags for DImode arithmetic. */
+VECTOR_MODE (PARTIAL_INT, PSI, 4); /* V4PSI, flags for V2DImode arithmetic.  */
+VECTOR_MODES (FLOAT, 8); /* V2SF */
+VECTOR_MODES (FLOAT, 16); /* V4SF V2DF */
+#define CC_MODES(N) SIZED_CC_MODE (N, 2); \
+  VECTOR_MODE (CC, N, 2); VECTOR_MODE (CC, N, 4); VECTOR_MODE (CC, N, 8)
+CC_MODES (CCI); /* Ordinary integer flags.  */
+CC_MODES (CCZN); /* Only zero / negative flag relevant.  */
+CC_MODES (CCZ); /* Only zero flag relevant.  */
+VECTOR_MODE (CC, CC, 2); /* V2CCmode - flag clobber for DI arithmetic.  */
+VECTOR_MODE (CC, CC, 4); /* V4CCmode - flag clobber for V2DI arithmetic.  */

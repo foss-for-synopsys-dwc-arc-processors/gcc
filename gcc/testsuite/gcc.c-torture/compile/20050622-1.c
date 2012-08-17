@@ -1,3 +1,4 @@
+/* { dg-skip-if "The array is too big" { "mxp-*-*" } { "*" } { "" } } */
 #if __SCHAR_MAX__ == 127 && __INT_MAX__ >= 2147483647
 struct S { char buf[72*1024*1024]; };
 #else
