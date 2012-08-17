@@ -50,11 +50,11 @@ fp-bit.c: $(srcdir)/fp-bit.c
 
 # .init/.fini section routines
 
-crtg.o: $(srcdir)/config/arc/crtg.asm $(GCC_PASSES)
+crtg.o: $(srcdir)/config/arc/crtg.S $(GCC_PASSES)
 	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
 	-c -o $@  -x assembler-with-cpp $<
 
-crtgend.o: $(srcdir)/config/arc/crtgend.asm $(GCC_PASSES)
+crtgend.o: $(srcdir)/config/arc/crtgend.S $(GCC_PASSES)
 	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
 	-c -o $@  -x assembler-with-cpp $<
 
@@ -94,5 +94,3 @@ profil-uclibc.o: $(srcdir)/config/arc/gmon/profil-uclibc.c $(GCC_PASSES)
 
 libgmon.a: mcount.o gmon.o dcache_linesz.o $(PROFILE_OSDEP)
 	$(AR_CREATE_FOR_TARGET) $@ $^
-
-EXTRA_MULTILIB_PARTS = crtend.o crtbegin.o crtendS.o crtbeginS.o crti.o crtn.o libgmon.a crtg.o crtgend.o

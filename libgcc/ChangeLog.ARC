@@ -2,6 +2,13 @@
 
 	* config/arc/ieee-754/gtdf2.S: Remove redundant check.
 
+	* config.host (arc-*-elf*) <extra_parts>: Add libgmon.a, crtg.o and
+	crtgend.o .
+	(arc600-*-linux-uclibc*, (arc601-*-linux-uclibc*): Likewise.
+	(arc*-*-linux-uclibc*): Likewise.
+	* config/arc/t-arc (EXTRA_MULTILIB_PARTS): Remove.
+	(crtg.o, crtgend.o): Update source file name.
+
 2012-08-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.host (arc-*-elf*, arc600-*-linux-uclibc*): New configurations.
