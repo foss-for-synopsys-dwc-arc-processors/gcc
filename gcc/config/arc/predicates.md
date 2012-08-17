@@ -556,12 +556,10 @@
       return code == EQ || code == NE;
     case CC_Cmode:
       return code == LTU || code == GEU;
-      
-    /* Note: these need to match arc.c:arc_select_cc_mode. */
     case CC_FP_GTmode:
-      return code == LT || code == UNGE || code == GT || code == UNLE;
+      return code == GT || code == UNLE;
     case CC_FP_GEmode:
-      return code == LE || code == UNGT || code == GE || code == UNLT;
+      return code == GE || code == UNLT;
     case CC_FP_ORDmode:
       return code == ORDERED || code == UNORDERED;
     case CC_FP_UNEQmode:

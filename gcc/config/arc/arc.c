@@ -836,24 +836,18 @@ get_arc_condition_code (rtx comparison)
 	case GEU : return ARC_CC_NC;
 	default : gcc_unreachable ();
 	}
-
-    /* Note: these need to match arc.c:arc_select_cc_mode. */
     case CC_FP_GTmode:
       if (TARGET_ARGONAUT_SET && TARGET_SPFP)
 	switch (GET_CODE (comparison))
 	  {
-	  case LT  :
 	  case GT  : return ARC_CC_N;
-	  case UNGE:
 	  case UNLE: return ARC_CC_P;
 	  default : gcc_unreachable ();
 	}
       else
 	switch (GET_CODE (comparison))
 	  {
-	  case LT   : 
 	  case GT   : return ARC_CC_HI;
-	  case UNGE :
 	  case UNLE : return ARC_CC_LS;
 	  default : gcc_unreachable ();
 	}
@@ -861,13 +855,10 @@ get_arc_condition_code (rtx comparison)
       /* Same for FPX and non-FPX.  */
       switch (GET_CODE (comparison))
 	{
-	case LE   : 
 	case GE   : return ARC_CC_HS;
-	case UNGT : 
 	case UNLT : return ARC_CC_LO;
 	default : gcc_unreachable ();
 	}
-
     case CC_FP_UNEQmode:
       switch (GET_CODE (comparison))
 	{

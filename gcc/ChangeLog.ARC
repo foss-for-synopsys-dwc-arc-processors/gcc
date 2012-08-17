@@ -8,6 +8,12 @@
 	* testsuite/gcc.c-torture/execute/20101011-1.c [__arc__] (DO_TEST):
 	Set to 0.
 
+	* config/arc/predicates.md (proper_comparison_operator): Remove
+	cases added for non-existant comparisons.
+	pretending we can do stuff we can't.
+	* config/arc/arc.c (get_arc_condition_code): Restore sanity check
+	for above.
+
 2012-08-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc: Move ARC libgcc configuration bits into libgcc's
