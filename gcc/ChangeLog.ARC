@@ -1,3 +1,7 @@
+2012-08-20  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (ASM_COMMENT_START): Change to "#".
+
 2012-08-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Add newlib-stdint.h to tm_file.
