@@ -1,3 +1,7 @@
+2012-08-20  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (ASM_COMMENT_START): Change to "#".
+
 2012-07-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_print_operand): Don't mix up the

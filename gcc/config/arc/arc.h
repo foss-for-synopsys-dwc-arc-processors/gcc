@@ -1560,7 +1560,8 @@ extern const char *arc_text_section,*arc_data_section,*arc_rodata_section;
 /* A C string constant describing how to begin a comment in the target
    assembler language.  The compiler assumes that the comment will
    end at the end of the line.  */
-#define ASM_COMMENT_START ";"
+/* Gas needs this to be "#" in order to recognize line directives.  */
+#define ASM_COMMENT_START "#"
 
 /* Output to assembler file text saying following lines
    may contain character constants, extra white space, comments, etc.  */
