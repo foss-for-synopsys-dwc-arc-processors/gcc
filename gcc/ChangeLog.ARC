@@ -1,12 +1,5 @@
 2012-05-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
-	* config/arc/arc.opt (mno-epilogue-cfi, mepilogue-cfi): New options.
-	* config/arc/arc.c (arc_expand_epilogue): Unless TARGET_EPILOGUE_CFI
-	is active, clear RTX_FRAME_RELATED_P in all instructions in the
-	current sequence.
-
-2012-05-10  Joern Rennecke  <joern.rennecke@embecosm.com>
-
 	* config/arc/arc.md (doloop_begin_i): Call arc_clear_unalign
 	when emitting an alignment directive.
 
