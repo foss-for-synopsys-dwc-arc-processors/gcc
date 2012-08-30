@@ -8292,18 +8292,18 @@ arc_adjust_insn_length (rtx insn, int len)
 	  gcc_unreachable ();
 	}
     }
-  /* Restore extracted operands - otherwise splitters like the addsi3_mixed one
-     can go awry.  */
-  extract_constrain_insn_cached (insn);
-
   if (TARGET_ARC600)
     {
       rtx succ = next_real_insn (insn);
 
-      if (!succ || !INSN_P (succ))
-	return adj;
-      return adj + arc600_corereg_hazard (insn, succ);
+      if (succ && INSN_P (succ))
+	adj += arc600_corereg_hazard (insn, succ);
     }
+
+  /* Restore extracted operands - otherwise splitters like the addsi3_mixed one
+     can go awry.  */
+  extract_constrain_insn_cached (insn);
+
   return adj;
 }
 /* For ARC600: If a write to a core reg >=32 appears in a delay slot

@@ -1,3 +1,8 @@
+2012-08-29  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_adjust_insn_length): Move call to
+	extract_constrain_insn_cached after arc600_corereg_hazard call.
+
 2012-08-20  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (ASM_COMMENT_START): Change to "#".
