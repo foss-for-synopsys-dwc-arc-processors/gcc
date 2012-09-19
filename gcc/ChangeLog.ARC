@@ -1,3 +1,9 @@
+2012-09-19  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	From Vineet Gupta:
+	* config/arc/arc.h (LINK_COMMAND_SPEC): Use %G to include
+	libgcc in shared -nostdlib links.
+
 2012-08-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_adjust_insn_length): Move call to
