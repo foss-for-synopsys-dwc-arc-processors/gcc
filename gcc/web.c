@@ -96,6 +96,7 @@ union_match_dups (rtx insn, struct web_entry *def_entry,
   struct df_insn_info *insn_info = DF_INSN_INFO_GET (insn);
   df_ref *use_link = DF_INSN_INFO_USES (insn_info);
   df_ref *def_link = DF_INSN_INFO_DEFS (insn_info);
+  struct web_entry *dup_entry;
   int i;
 
   extract_insn (insn);
@@ -107,20 +108,38 @@ union_match_dups (rtx insn, struct web_entry *def_entry,
       df_ref *ref, *dupref;
       struct web_entry *entry;
 
-      for (dupref = use_link; *dupref; dupref++)
+      for (dup_entry = use_entry, dupref = use_link; *dupref; dupref++)
 	if (DF_REF_LOC (*dupref) == recog_data.dup_loc[i])
 	  break;
 
-      if (*dupref == NULL
-	  || DF_REF_REGNO (*dupref) < FIRST_PSEUDO_REGISTER)
+      if (*dupref == NULL)
+	{
+	  gcc_assert (type == OP_INOUT);
+
+	  for (dup_entry = def_entry, dupref = def_link; *dupref; dupref++)
+	    if (DF_REF_LOC (*dupref) == recog_data.dup_loc[i])
+	      break;
+	  gcc_assert (*dupref != NULL);
+
+	}
+      if (DF_REF_REGNO (*dupref) < FIRST_PSEUDO_REGISTER)
 	continue;
 
       ref = type == OP_IN ? use_link : def_link;
       entry = type == OP_IN ? use_entry : def_entry;
-      /* The loops terminates without match for 20000629-1.o -O3 */
       for (; *ref; ref++)
 	if (DF_REF_LOC (*ref) == recog_data.operand_loc[op])
-	  (*fun) (use_entry + DF_REF_ID (*dupref), entry + DF_REF_ID (*ref));
+	  break;
+
+      if (!*ref && type == OP_INOUT)
+	{
+	  for (ref = use_link, entry = use_entry; *ref; ref++)
+	    if (DF_REF_LOC (*ref) == recog_data.operand_loc[op])
+	      break;
+	}
+
+      gcc_assert (*ref);
+      (*fun) (dup_entry + DF_REF_ID (*dupref), entry + DF_REF_ID (*ref));
     }
 }
 

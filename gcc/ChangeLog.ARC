@@ -1,3 +1,7 @@
+2012-09-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* web.c (union_match_dups): Properly handle OP_INOUT match_dups.
+
 2012-08-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_adjust_insn_length): Move call to
