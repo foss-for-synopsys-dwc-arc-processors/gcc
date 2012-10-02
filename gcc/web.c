@@ -112,17 +112,22 @@ union_match_dups (rtx insn, struct web_entry *def_entry,
 	if (DF_REF_LOC (*dupref) == recog_data.dup_loc[i])
 	  break;
 
-      if (*dupref == NULL)
+      if (*dupref == NULL && type == OP_INOUT)
 	{
-	  gcc_assert (type == OP_INOUT);
 
 	  for (dup_entry = def_entry, dupref = def_link; *dupref; dupref++)
 	    if (DF_REF_LOC (*dupref) == recog_data.dup_loc[i])
 	      break;
-	  gcc_assert (*dupref != NULL);
-
 	}
-      if (DF_REF_REGNO (*dupref) < FIRST_PSEUDO_REGISTER)
+      /* ??? *DUPREF can still be zero, because when an operand matches
+	 a memory, DF_REF_LOC (use_entry[n]) points to the register part
+	 of the address, whereas recog_data.dup_loc[m] points to the
+	 entire memory ref, thus we fail to find the duplicate entry,
+         even though it is there.
+         Example: i686-pc-linux-gnu gcc.c-torture/compile/950607-1.c
+		  -O3 -fomit-frame-pointer -funroll-loops  */
+      if (*dupref == NULL
+	  || DF_REF_REGNO (*dupref) < FIRST_PSEUDO_REGISTER)
 	continue;
 
       ref = type == OP_IN ? use_link : def_link;

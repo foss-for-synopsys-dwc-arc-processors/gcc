@@ -1,3 +1,8 @@
+2012-10-02  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* web.c (union_match_dups): Remove asserts introduced in previous
+	patch.
+
 2012-09-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* web.c (union_match_dups): Properly handle OP_INOUT match_dups.
