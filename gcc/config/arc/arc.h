@@ -178,9 +178,12 @@ along with GCC; see the file COPYING3.  If not see
 		   %{pg|p|profile:-marclinux_prof;: -marclinux} \
 		   %{!z:-z max-page-size=0x1000 -z common-page-size=0x1000} \
 		   %{shared:-shared}"
-/* Like the standard LINK_COMMAND_SPEC, but add -lgcc_s when building
+/* Like the standard LINK_COMMAND_SPEC, but add %G when building
    a shared library with -nostdlib, so that the hidden functions of libgcc
-   will be incorporated.  */
+   will be incorporated.
+   N.B., we don't want a plain -lgcc, as this would lead to re-exporting
+   non-hidden functions, so we have to consider libgcc_s.so.* first, which in
+   turn should be wrapped with --as-needed.  */
 #define LINK_COMMAND_SPEC "\
 %{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:\
     %(linker) %l " LINK_PIE_SPEC "%X %{o*} %{A} %{d} %{e*} %{m} %{N} %{n} %{r}\
@@ -189,7 +192,7 @@ along with GCC; see the file COPYING3.  If not see
     %{fopenmp:%:include(libgomp.spec)%(link_gomp)} %(mflib)\
     %{fprofile-arcs|fprofile-generate|coverage:-lgcov}\
     %{!nostdlib:%{!nodefaultlibs:%(link_ssp) %(link_gcc_c_sequence)}}\
-    %{shared:%{nostdlib:%{!really-nostdlib: -lgcc_s }}} \
+    %{shared:%{nostdlib:%{!really-nostdlib: %G }}} \
     %{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} }}}}}}"
 
 #else

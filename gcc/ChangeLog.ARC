@@ -1,3 +1,9 @@
+2012-10-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	From Vineet Gupta:
+	* config/arc/arc.h (LINK_COMMAND_SPEC): Use %G to include
+	libgcc in shared -nostdlib links.
+
 2012-10-02  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* web.c (union_match_dups): Remove asserts introduced in previous
