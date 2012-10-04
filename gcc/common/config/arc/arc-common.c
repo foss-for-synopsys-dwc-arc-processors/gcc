@@ -34,7 +34,7 @@ arc_option_init_struct (struct gcc_options *opts ATTRIBUTE_UNUSED)
 {
   opts->x_flag_no_common = 255; /* Mark as not user-initialized.  */
 
-  /* Which cpu we're compiling for (A5, ARC600, ARC601, ARC700) */
+  /* Which cpu we're compiling for (A5, ARC600, ARC601, ARC700).  */
   arc_cpu = PROCESSOR_NONE;
 }
 

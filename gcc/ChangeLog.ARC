@@ -4,6 +4,14 @@
 	* config/arc/arc.h (LINK_COMMAND_SPEC): Use %G to include
 	libgcc in shared -nostdlib links.
 
+	* common/config/arc/arc-common.c: Whitespace fixes.
+	* config/arc/arc-opts.h, config/arc/arc-protos.h: Likewise.
+	* config/arc/arc-simd.h, config/arc/arc.c, config/arc/arc.h: Likewise.
+	* config/arc/arc.md, config/arc/arc.opt: Likewise.
+	* config/arc/arc700.md, config/arc/constraints.md: Likewise.
+	* config/arc/fpx.md, config/arc/predicates.md: Likewise.
+	* config/arc/simdext.md
+
 2012-10-02  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* web.c (union_match_dups): Remove asserts introduced in previous

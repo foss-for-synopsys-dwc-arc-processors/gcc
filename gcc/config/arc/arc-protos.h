@@ -86,9 +86,9 @@ extern int arc_ccfsm_branch_deleted_p (void);
 extern void arc_ccfsm_record_branch_deleted (void);
 
 extern rtx arc_legitimize_pic_address (rtx, rtx);
-void arc_asm_output_aligned_decl_local (FILE *, tree, const char *, 
-					unsigned HOST_WIDE_INT, 
-					unsigned HOST_WIDE_INT, 
+void arc_asm_output_aligned_decl_local (FILE *, tree, const char *,
+					unsigned HOST_WIDE_INT,
+					unsigned HOST_WIDE_INT,
 					unsigned HOST_WIDE_INT);
 extern rtx arc_return_addr_rtx (int , rtx );
 extern int check_if_valid_regno_const (rtx *, int );
@@ -99,7 +99,7 @@ extern int arc_legitimate_pc_offset_p (rtx);
 extern int arc_legitimate_pic_addr_p (rtx);
 extern void arc_assemble_name (FILE *, const char*);
 extern int symbolic_reference_mentioned_p (rtx);
-extern void emit_pic_move (rtx *, enum machine_mode); 
+extern void emit_pic_move (rtx *, enum machine_mode);
 extern int arc_raw_symbolic_reference_mentioned_p (rtx);
 extern bool arc_legitimate_pic_operand_p (rtx);
 extern const char * gen_bbit_insns(rtx *) ATTRIBUTE_UNUSED;

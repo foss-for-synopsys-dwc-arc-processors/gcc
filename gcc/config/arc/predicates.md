@@ -77,7 +77,7 @@
        (match_test "UNSIGNED_INT6 (INTVAL (op))"))
 )
 
-;; Return true if OP is a short immediate (shimm) value.  
+;; Return true if OP is a short immediate (shimm) value.
 (define_predicate "short_immediate_operand"
   (and (match_code "const_int")
        (match_test "SMALL_INT (INTVAL (op))"))
@@ -111,7 +111,7 @@
       break;
     }
   return 0;
-}  
+}
 )
 
 ;; Return true if OP is a MEM that when used as a load or store address will
@@ -165,7 +165,7 @@
 }
 )
 
-;; Return true if OP is any of R0-R3,R12-R15 for ARCompact 16-bit 
+;; Return true if OP is any of R0-R3,R12-R15 for ARCompact 16-bit
 ;; instructions
 (define_predicate "compact_register_operand"
   (match_code "reg, subreg")
@@ -187,11 +187,11 @@
   rtx addr, plus0, plus1;
   int size, off;
 
-  /* Eliminate non-memory operations */
+  /* Eliminate non-memory operations.  */
   if (GET_CODE (op) != MEM)
     return 0;
 
-  /* .di instructions have no 16-bit form */
+  /* .di instructions have no 16-bit form.  */
   if (!TARGET_VOLATILE_CACHE_SET)
      return 0;
 
@@ -200,7 +200,7 @@
 
   size = GET_MODE_SIZE (mode);
 
-  /* dword operations really put out 2 instructions, so eliminate them. */ 
+  /* dword operations really put out 2 instructions, so eliminate them.  */
   if (size > UNITS_PER_WORD)
     return 0;
 
@@ -212,12 +212,12 @@
       return (REGNO (addr) >= FIRST_PSEUDO_REGISTER
                 || COMPACT_GP_REG_P (REGNO (addr))
 	      || (SP_REG_P (REGNO (addr)) && (size != 2)));
-	/* Reverting for the moment since ldw_s  does not have sp as a valid
-	   parameter */
+	/* Reverting for the moment since ldw_s does not have sp as a valid
+	   parameter.  */
     case PLUS:
       plus0 = XEXP (addr, 0);
       plus1 = XEXP (addr, 1);
- 
+
       if ((GET_CODE (plus0) == REG)
           && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
               || COMPACT_GP_REG_P (REGNO (plus0)))
@@ -235,7 +235,7 @@
         {
           off = INTVAL (plus1);
 
-          /* negative offset is not supported in 16-bit load/store insns. */
+          /* Negative offset is not supported in 16-bit load/store insns.  */
           if (off < 0)
             return 0;
 
@@ -261,7 +261,7 @@
     default:
       break ;
       /* TODO: 'gp' and 'pcl' are to supported as base address operand
-               for 16-bit load instructions. */
+               for 16-bit load instructions.  */
     }
   return 0;
 
@@ -279,13 +279,13 @@
   if (mode == VOIDmode)
     mode = GET_MODE (op);
 
-  /* .di instructions have no 16-bit form */
+  /* .di instructions have no 16-bit form.  */
   if (!TARGET_VOLATILE_CACHE_SET)
      return 0;
 
   size = GET_MODE_SIZE (mode);
 
-  /* dword operations really put out 2 instructions, so eliminate them. */ 
+  /* dword operations really put out 2 instructions, so eliminate them.  */
   if (size > UNITS_PER_WORD)
     return 0;
 
@@ -297,11 +297,11 @@
       return (REGNO (addr) >= FIRST_PSEUDO_REGISTER
                 || COMPACT_GP_REG_P (REGNO (addr))
 	      || (SP_REG_P (REGNO (addr)) && (size != 2)));
-	/* stw_s does not support SP as a parameter */
+	/* stw_s does not support SP as a parameter.  */
     case PLUS:
       plus0 = XEXP (addr, 0);
       plus1 = XEXP (addr, 1);
- 
+
       if ((GET_CODE (plus0) == REG)
           && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
               || COMPACT_GP_REG_P (REGNO (plus0)))
@@ -309,7 +309,7 @@
         {
           off = INTVAL (plus1);
 
-          /* negative offset is not supported in 16-bit load/store insns. */
+          /* Negative offset is not supported in 16-bit load/store insns.  */
           if (off < 0)
             return 0;
 
@@ -416,13 +416,13 @@
   switch (GET_CODE (op))
     {
     case REG :
-     /* Program Counter register cannot be the target of a move.It is
-	 a readonly register */
+     /* Program Counter register cannot be the target of a move.  It is
+	 a readonly register.  */
       if (REGNO (op) == PROGRAM_COUNTER_REGNO)
 	return 0;
-      else if (TARGET_MULMAC_32BY16_SET 
+      else if (TARGET_MULMAC_32BY16_SET
                && (REGNO (op) == 56 || REGNO(op) == 57))
-        return 0; 
+        return 0;
       else if (TARGET_MUL64_SET
 	       && (REGNO (op) == 57 || REGNO(op) == 58 || REGNO(op) == 59 ))
 	return 0;
@@ -707,7 +707,7 @@
 {
   if ((GET_MODE (op) != mode) && (mode != VOIDmode))
     return 0;
-  
+
   return (GET_CODE (op) == REG
 		   && (REGNO (op) >= FIRST_PSEUDO_REGISTER
 			     || REGNO_REG_CLASS (REGNO (op)) == DOUBLE_REGS));
@@ -724,8 +724,8 @@
   (match_code "reg")
 {
   if ((GET_MODE (op) != mode) && (mode != VOIDmode))
-  return 0;
-  
+    return 0;
+
   return (GET_CODE (op) == REG
 	  && (REGNO (op) >= FIRST_PSEUDO_REGISTER
 	      || REGNO_REG_CLASS (REGNO (op)) == SIMD_VR_REGS));
@@ -738,11 +738,11 @@
   if ((GET_MODE (op) != mode) && (mode != VOIDmode))
     return 0;
 
-  if ((GET_CODE (op) == MEM) 
+  if ((GET_CODE (op) == MEM)
       && (mode == V8HImode)
       && GET_CODE (XEXP (op,0)) == REG)
     return 1;
-  
+
   return (GET_CODE (op) == REG
 	  && (REGNO (op) >= FIRST_PSEUDO_REGISTER
 	      || REGNO_REG_CLASS (REGNO (op)) == SIMD_VR_REGS));
@@ -757,7 +757,7 @@
 {
   if ((GET_MODE (op) != mode) && (mode != VOIDmode))
     return 0;
-  
+
   return (GET_CODE (op) == REG
 	  && (REGNO (op) >= FIRST_PSEUDO_REGISTER
 	      || REGNO_REG_CLASS (REGNO (op)) == SIMD_DMA_CONFIG_REGS));
@@ -766,15 +766,15 @@
 (define_predicate "acc1_operand"
   (and (match_code "reg")
        (match_test "REGNO (op) == (TARGET_BIG_ENDIAN ? 56 : 57)")))
-  
+
 (define_predicate "acc2_operand"
   (and (match_code "reg")
        (match_test "REGNO (op) == (TARGET_BIG_ENDIAN ? 57 : 56)")))
-  
+
 (define_predicate "mlo_operand"
   (and (match_code "reg")
        (match_test "REGNO (op) == (TARGET_BIG_ENDIAN ? 59 : 58)")))
-  
+
 (define_predicate "mhi_operand"
   (and (match_code "reg")
        (match_test "REGNO (op) == (TARGET_BIG_ENDIAN ? 58 : 59)")))

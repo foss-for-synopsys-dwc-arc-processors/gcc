@@ -7,7 +7,7 @@
 ;; Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
 ;; behalf of Synopsys Inc.
 
-;;    Position Independent Code support added,Code cleaned up, 
+;;    Position Independent Code support added,Code cleaned up,
 ;;    Comments and Support For ARC700 instructions added by
 ;;    Saurabh Verma (saurabh.verma@codito.com)
 ;;    Ramana Radhakrishnan(ramana.radhakrishnan@codito.com)
@@ -133,10 +133,10 @@
    (VUNSPEC_FLAG 20) ; blockage insn for flag generation
    (VUNSPEC_SLEEP 21) ; blockage insn for sleep generation
    (VUNSPEC_SWI 22) ; blockage insn for swi generation
-   (VUNSPEC_CORE_READ 23) ; blockage insn for reading a core register 
-   (VUNSPEC_CORE_WRITE 24) ; blockage insn for writing to a core register 
-   (VUNSPEC_LR 25) ; blockage insn for reading an auxiliary register 
-   (VUNSPEC_SR 26) ; blockage insn for writing to an auxiliary register 
+   (VUNSPEC_CORE_READ 23) ; blockage insn for reading a core register
+   (VUNSPEC_CORE_WRITE 24) ; blockage insn for writing to a core register
+   (VUNSPEC_LR 25) ; blockage insn for reading an auxiliary register
+   (VUNSPEC_SR 26) ; blockage insn for writing to an auxiliary register
    (VUNSPEC_TRAP_S 27) ; blockage insn for trap_s generation
    (VUNSPEC_UNIMP_S 28) ; blockage insn for unimp_s generation
 
@@ -148,7 +148,7 @@
 
    (VUNSPEC_DEXCL 32) ; blockage insn for reading an auxiliary register without LR support
    (VUNSPEC_DEXCL_NORES 33) ; blockage insn for reading an auxiliary register without LR support
-   (VUNSPEC_LR_HIGH 34) ; blockage insn for reading an auxiliary register 
+   (VUNSPEC_LR_HIGH 34) ; blockage insn for reading an auxiliary register
 
    (LP_COUNT 60)
    (CC_REG 61)
@@ -167,7 +167,7 @@
    multi,umulti, two_cycle_core,lr,sr,divaw,loop_setup,loop_end,return,
    misc,spfp,dpfp_mult,dpfp_addsub,mulmac_600,cc_arith,
    simd_vload, simd_vload128, simd_vstore, simd_vmove, simd_vmove_else_zero,
-   simd_vmove_with_acc, simd_varith_1cycle, simd_varith_2cycle, 
+   simd_vmove_with_acc, simd_varith_1cycle, simd_varith_2cycle,
    simd_varith_with_acc, simd_vlogic, simd_vlogic_with_acc,
    simd_vcompare, simd_vpermute, simd_vpack, simd_vpack_with_acc,
    simd_valign, simd_valign_with_acc, simd_vcontrol,
@@ -193,7 +193,7 @@
   (cond [(eq_attr "is_SIBCALL" "yes") (const_string "no")
 	 (eq_attr "is_CALL" "yes") (const_string "yes")]
 	(const_string "no")))
-  
+
 
 ;; Attribute describing the processor
 (define_attr "cpu" "A4,A5,ARC600,ARC700"
@@ -366,7 +366,7 @@
 
              (eq_attr "type" "cmove")
              (if_then_else (match_operand 1 "register_operand" "")
-                           (const_int 4) (const_int 8)) 
+                           (const_int 4) (const_int 8))
 
              (eq_attr "type" "multi") (const_int 8)
 		     (eq_attr "cond" "set,set_zn,clob") (const_int 8)
@@ -385,7 +385,7 @@
        (eq_attr "type" "sfunc")
        (const_int 12)]
       (const_int 4))
-  
+
     (eq_attr "iscompact" "true_limm,maybe_limm")
     (cond
       [(and (ne (symbol_ref "0") (const_int 0)) (eq (match_dup 0) (pc)))
@@ -414,10 +414,10 @@
 
 	         (eq_attr "type" "compare")
                  (if_then_else (match_operand 1 "long_immediate_operand" "")
- 			       (if_then_else (eq_attr "cpu" "ARC700") 
+ 			       (if_then_else (eq_attr "cpu" "ARC700")
  					     (const_int 8) (const_int 12))
-;			       (const_int 8) 
- 			       (if_then_else (eq_attr "cpu" "ARC700") 
+;			       (const_int 8)
+ 			       (if_then_else (eq_attr "cpu" "ARC700")
  					    (const_int 4) (const_int 8)))
 
 
@@ -431,12 +431,12 @@
                                   (symbol_ref "REGNO(operands[1])"))
                               (eq (match_operand 2 "u6_immediate_operand" "")
                                   (const_int 0))))
-                            
+
                     (const_int 8) (const_int 4))
 
                  (eq_attr "type" "cmove")
                     (if_then_else (match_operand 1 "register_operand" "")
-                                  (const_int 4) (const_int 8)) 
+                                  (const_int 4) (const_int 8))
 
                  (eq_attr "type" "call_no_delay_slot") (const_int 8)
                 ]
@@ -461,7 +461,7 @@
 
 (define_attr "in_delay_slot" "false,true"
   (cond [(eq_attr "type" "uncond_branch,jump,branch,
-			  call,sfunc,call_no_delay_slot, 
+			  call,sfunc,call_no_delay_slot,
                           brcc, brcc_no_delay_slot,loop_setup,loop_end")
 	 (const_string "false")
 	 (ne (symbol_ref "arc_write_ext_corereg (insn)") (const_int 0))
@@ -1132,7 +1132,7 @@
     	(set (match_dup 0) (plus:DF (match_dup 1) (match_dup 0))) ; r1 in op 0
     ])
 
-    ; We have to do this twice, once to read the value into R0 and 
+    ; We have to do this twice, once to read the value into R0 and
     ; second time to put back the contents which the first DEXCLx
     ; will have overwritten
     ; dexcl2 r0, r1, r0
@@ -1142,7 +1142,7 @@
     ; Generate the second, which makes sure operand5 and operand4 values
     ; are put back in the Dx register properly.
     (unspec_volatile:SI [(match_dup 1) (match_dup 5) (match_dup 4)] VUNSPEC_DEXCL_NORES )
-    
+
     ; Note: we cannot use a (clobber (match_scratch)) here because
     ; the combine pass will end up replacing uses of it with 0
   ]
@@ -1712,7 +1712,7 @@
 ;;          return \"add_s %0,%1,%2\";
 ;;        case 12:
 ;;          if (INTVAL (operands[2]) < 0)
-;;             return \"sub%? %0,%1,%n2\"; 
+;;             return \"sub%? %0,%1,%n2\";
 ;;          else
 ;;            return \"add%? %0,%1,%2\";
 ;;        case 2:
@@ -1793,9 +1793,9 @@
 ;;            if (intval < 0)
 ;;             {
 ;;               if (-intval< 0x20)
-;;                 return \"sub_s %0,%1,%n2\"; 
+;;                 return \"sub_s %0,%1,%n2\";
 ;;               else
-;;                 return \"sub %0,%1,%n2\"; 
+;;                 return \"sub %0,%1,%n2\";
 ;;             }
 ;;          else
 ;;            return \"add_s %0,%1,%2\";
@@ -1804,12 +1804,12 @@
 ;;          return \"add_s %0,%1,%S2\";
 ;;        case 9:
 ;;          if (INTVAL (operands[2]) < 0)
-;;             return \"sub%? %0,%1,%n2\"; 
+;;             return \"sub%? %0,%1,%n2\";
 ;;          else
 ;;            return \"add%? %0,%1,%2\";
 ;;        case 10:
 ;;          if (INTVAL (operands[2]) < 0)
-;;             return \"sub %0,%1,%n2\"; 
+;;             return \"sub %0,%1,%n2\";
 ;;          else
 ;;            return \"add %0,%1,%2\";
 ;;        case 11:
@@ -2274,7 +2274,7 @@
 	(plus:SI (match_operand:SI 1 "register_operand" "")
 		 (match_operand:SI 2 "nonmemory_operand" "")))]
   ""
-  "if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[2]) ) 
+  "if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[2]) )
      {
        operands[2]=force_reg(SImode, operands[2]);
      }
@@ -2337,7 +2337,7 @@
   rtx l2 = operand_subword (operands[2], lo, 0, DImode);
   rtx h2 = operand_subword (operands[2], hi, 0, DImode);
 
-  
+
   if (l2 == const0_rtx)
     {
       if (!rtx_equal_p (l0, l1) && !rtx_equal_p (l0, h1))
@@ -2517,7 +2517,7 @@
       operands[1] = force_reg (SImode, operands[1]);
       c = 2;
     }
-  if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[c]) ) 
+  if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[c]) )
     operands[c] = force_reg (SImode, operands[c]);
   else if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[c], Pmode))
       operands[c] = force_reg (SImode, arc_rewrite_small_data (operands[c]));
@@ -2739,8 +2739,8 @@
 
 ; ??? check if combine matches this.
 (define_insn "*bset"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w") 
-	(ior:SI (ashift:SI (const_int 1) 
+  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w")
+	(ior:SI (ashift:SI (const_int 1)
 			   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c"))
 		(match_operand:SI 2 "nonmemory_operand" "0,c,Cal")))]
   "TARGET_ARCOMPACT"
@@ -2751,9 +2751,9 @@
 
 ; ??? check if combine matches this.
 (define_insn "*bxor"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w") 
-	(xor:SI (ashift:SI (const_int 1) 
-			   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c")) 
+  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w")
+	(xor:SI (ashift:SI (const_int 1)
+			   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c"))
 		(match_operand:SI 2 "nonmemory_operand" "0,c,Cal")))]
   "TARGET_ARCOMPACT"
   "bxor%? %0,%2,%1"
@@ -2763,9 +2763,9 @@
 
 ; ??? check if combine matches this.
 (define_insn "*bclr"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w") 
-	(and:SI (not:SI (ashift:SI (const_int 1) 
-				   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c"))) 
+  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w")
+	(and:SI (not:SI (ashift:SI (const_int 1)
+				   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c")))
 		(match_operand:SI 2 "nonmemory_operand" "0,c,Cal")))]
   "TARGET_ARCOMPACT"
   "bclr%? %0,%2,%1"
@@ -2779,9 +2779,9 @@
 
 ; see also iorsi3 for use with constant bit number.
 (define_insn "*bset_insn"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w") 
-	(ior:SI (match_operand:SI 1 "nonmemory_operand" "0,c,Cal") 
-		(ashift:SI (const_int 1) 
+  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w")
+	(ior:SI (match_operand:SI 1 "nonmemory_operand" "0,c,Cal")
+		(ashift:SI (const_int 1)
 			   (match_operand:SI 2 "nonmemory_operand" "cL,cL,c"))) ) ]
   "TARGET_ARCOMPACT"
   "@
@@ -2793,9 +2793,9 @@
 
 ; see also xorsi3 for use with constant bit number.
 (define_insn "*bxor_insn"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w") 
-	(xor:SI (match_operand:SI 1 "nonmemory_operand" "0,c,Cal") 
-		(ashift:SI (const_int 1) 
+  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w")
+	(xor:SI (match_operand:SI 1 "nonmemory_operand" "0,c,Cal")
+		(ashift:SI (const_int 1)
 			(match_operand:SI 2 "nonmemory_operand" "cL,cL,c"))) ) ]
   "TARGET_ARCOMPACT"
   "@
@@ -2853,7 +2853,7 @@
 
 (define_insn "andsi3_i"
   [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcq,Rcqq,Rcqq,Rcqq,Rcw,Rcw,Rcw,Rcw,Rcw,Rcw,  w,  w,  w,  w,w,Rcw,  w,  W")
-	(and:SI (match_operand:SI 1 "nonimmediate_operand" "%0,Rcq,   0,   0,Rcqq,  0,  c,  0,  0,  0,  0,  c,  c,  c,  c,0,  0,  c,  o") 
+	(and:SI (match_operand:SI 1 "nonimmediate_operand" "%0,Rcq,   0,   0,Rcqq,  0,  c,  0,  0,  0,  0,  c,  c,  c,  c,0,  0,  c,  o")
 		(match_operand:SI 2 "nonmemory_operand" " Rcqq,  0, C1p, Ccp, Cux, cL,  0,C1p,Ccp,CnL,  I, Lc,C1p,Ccp,CnL,I,Cal,Cal,Cux")))]
   "TARGET_ARCOMPACT
    && ((register_operand (operands[1], SImode)
@@ -4294,7 +4294,7 @@
    && arc_dead_or_set_postreload_p (insn, operands[0])"
   "*{
     DROSS (\"addn_peephole\");
-    /* This handles commutativity */
+    /* This handles commutativity.  */
     if (which_alternative == 1)
       operands[4] = operands[5];
     switch (INTVAL (operands[2])) {
@@ -4377,7 +4377,7 @@
        || true_regnum (operands[5]) == true_regnum (operands[1]))"
   [(set (match_dup 3)
 	(ior:SI (match_dup 4)
-		(ashift:SI (const_int 1) (match_dup 2))))]  
+		(ashift:SI (const_int 1) (match_dup 2))))]
   "DROSS (\"bset peephole2\");
    if (true_regnum (operands[4]) == true_regnum (operands[1]))
       operands[4] = operands[5];"
@@ -4386,7 +4386,7 @@
 
 ;; -------------------------------------------------------------
 ;; Pattern 1 : r0 = r1 << {i}
-;;             r3 = r4 - r0 
+;;             r3 = r4 - r0
 ;;                 ||
 ;;                 \/
 ;;             sub{i} r3,r4,r1
@@ -4455,14 +4455,14 @@
   [(set (match_operand:SI 0 "dest_reg_operand" "")
        (ashift:SI (match_operand:SI 1 "register_operand" "")
                   (match_operand:SI 2 "immediate_operand" "")))
-   (set (match_operand:SI 3 "dest_reg_operand" "") 
+   (set (match_operand:SI 3 "dest_reg_operand" "")
 	(match_operand:SI 4 "immediate_operand" ""))
    (set (match_operand:SI 5 "dest_reg_operand" "")
 	(minus:SI (match_dup 3)
 		  (match_dup 0)))]
   "TARGET_ARCOMPACT
    && TARGET_DROSS
-   && GET_CODE (operands[2]) == CONST_INT 
+   && GET_CODE (operands[2]) == CONST_INT
    && (INTVAL (operands[2]) == 1
        || INTVAL (operands[2]) == 2
        || INTVAL (operands[2]) == 3)
@@ -4480,7 +4480,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand" "=w")
        (ashift:SI (match_operand:SI 1 "register_operand" "c")
                   (match_operand:SI 2 "immediate_operand" "Cal")))
-   (set (match_operand:SI 3 "dest_reg_operand" "=w") 
+   (set (match_operand:SI 3 "dest_reg_operand" "=w")
 	(match_operand:SI 4 "immediate_operand" "Cal"))
    (set (match_operand:SI 5 "dest_reg_operand" "=w")
        (minus:SI (match_dup 3)
@@ -4488,7 +4488,7 @@
 		))]
   "TARGET_ARCOMPACT
    && TARGET_DROSS
-   && GET_CODE (operands[2]) == CONST_INT 
+   && GET_CODE (operands[2]) == CONST_INT
    && (INTVAL (operands[2]) == 1
        ||  INTVAL (operands[2]) == 2
        ||  INTVAL (operands[2]) == 3)
@@ -4517,7 +4517,7 @@
                    (match_operand:SI 2 "register_operand" "")))
   (set (match_operand:SI 3 "dest_reg_operand" "")
        (xor:SI (match_operand:SI 4 "nonmemory_operand" "")
-	       (match_operand:SI 5 "nonmemory_operand" ""))) 
+	       (match_operand:SI 5 "nonmemory_operand" "")))
 ]
  "
   TARGET_ARCOMPACT
@@ -4539,7 +4539,7 @@
   "
 )
 
-;; bclr peephole2 optimization 
+;; bclr peephole2 optimization
 (define_peephole2
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(const_int 1))
@@ -4549,7 +4549,7 @@
    (set (match_operand:SI 3 "dest_reg_operand" "")
 	(and:SI	(not:SI (match_dup 1))
 		(match_operand:SI 4 "nonmemory_operand" "")))]
-  "TARGET_ARCOMPACT 
+  "TARGET_ARCOMPACT
    && TARGET_DROSS
    && ( peep2_reg_dead_p (2, operands[0]) || true_regnum(operands[1])==true_regnum(operands[0]) )
    && ( peep2_reg_dead_p (3, operands[1]) || true_regnum(operands[3])==true_regnum(operands[1]) )"
@@ -4560,7 +4560,7 @@
   "DROSS (\"bclr peephole2\");"
 )
 
-;; bmsk peephole2 optimization 
+;; bmsk peephole2 optimization
 (define_peephole2
   [(set (match_operand:SI 0 "dest_reg_operand" "")
        (plus:SI (match_operand:SI 1 "register_operand" "")
@@ -4571,11 +4571,11 @@
        (ashift:SI (match_dup 2)
 		  (match_dup 0)))
   (set (match_operand:SI 4 "dest_reg_operand" "")
-       (plus:SI (match_dup 3) 
+       (plus:SI (match_dup 3)
 		 (const_int -1) ))
   (set (match_operand:SI 5 "dest_reg_operand" "")
        (and:SI (match_operand:SI 6 "nonmemory_operand" "")
-	       (match_operand:SI 7 "nonmemory_operand" ""))) 
+	       (match_operand:SI 7 "nonmemory_operand" "")))
   ]
   "TARGET_ARCOMPACT
    && TARGET_DROSS
@@ -4596,7 +4596,6 @@
   "
 )
 
-;; START ARC LOCAL
 ; When using the high single bit, the result of a multiply is either
 ; the original number or zero.  But MPY costs 4 cycles, which we
 ; can replace with the 2 cycles for the pair of TST_S and ADD.NE.
@@ -4650,7 +4649,6 @@
      (eq (reg:CC_Z CC_REG) (const_int 0))
      (set (match_dup 4) (const_int 0)))]
  "operands[5] = operands[rtx_equal_p (operands[0], operands[2]) ? 3 : 2];")
-;; END ARC LOCAL
 
 ;; Instructions generated through builtins
 
@@ -5574,7 +5572,7 @@
    ? \"brne.d %0,1,%1\;sub %0,%0,1\"
    : \"breq %0,1,0f\;b.d %1\;sub %0,%0,1\\n0:\";"
   [(set (attr "length")
-	(if_then_else (and (ge (minus (match_dup 1) (pc)) (const_int -256)) 
+	(if_then_else (and (ge (minus (match_dup 1) (pc)) (const_int -256))
  			   (le (minus (match_dup 1) (pc)) (const_int 244)))
  		      (const_int 8) (const_int 12)))
    (set_attr "type" "brcc_no_delay_slot")
@@ -5596,7 +5594,7 @@
    ? \"sub %0,%0,1\;brne.d %0,0,%1\;st%U2%V2 %0,%2\"
    : \"sub %0,%0,1\;breq %0,0,0f\;b.d %1\\n0:\tst%U2%V2 %0,%2\";"
   [(set (attr "length")
-	(if_then_else (and (ge (minus (match_dup 1) (pc)) (const_int -252)) 
+	(if_then_else (and (ge (minus (match_dup 1) (pc)) (const_int -252))
  			   (le (minus (match_dup 1) (pc)) (const_int 244)))
  		      (const_int 12) (const_int 16)))
    (set_attr "type" "brcc_no_delay_slot")
@@ -5652,7 +5650,7 @@
   "*return arc_output_libcall (\"__<cmp>sf2\");"
   [(set_attr "is_sfunc" "yes")]
 )
-	      
+
 ;; N.B. for "*cmpdf_ord":
 ;; double precision fpx sets bit 31 for NaNs.  We need bit 51 set
 ;; for the floating point emulation to recognize the NaN.
@@ -5674,7 +5672,7 @@
    (set_attr "iscompact" "maybe,false,false")
    (set_attr "length" "2,4,4")
    (set_attr "cond" "canuse,canuse,nocond")])
-	      
+
 (define_insn "negsf2"
   [(set (match_operand:SF 0 "dest_reg_operand" "=Rcw,w")
 	(neg:SF (match_operand:SF 1 "register_operand" "0,c")))]
@@ -5695,7 +5693,7 @@
   return "";
 }
   [(set_attr "type" "call")])
-	      
+
 (define_insn "*millicode_thunk_ld"
   [(match_parallel 0 "millicode_load_clob_operation"
      [(set (reg:SI 13) (mem:SI (reg:SI SP_REG)))])]
@@ -5722,7 +5720,7 @@
 }
   [(set_attr "type" "call")
    (set_attr "is_SIBCALL" "yes")])
-	      
+
 ;; If hardware floating point is available, don't define a negdf pattern;
 ;; it would be something like:
 ;;(define_insn "negdf2"
@@ -5750,7 +5748,7 @@
 ;; this would not work right for -0.  OTOH optabs.c has already code
 ;; to synthesyze nagate by flipping the sign bit.
 
-	      
+
 ;; include the arc-FPX instructions
 (include "fpx.md")
 

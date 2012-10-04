@@ -134,14 +134,12 @@ Target Report Mask(SPFP_COMPACT_SET) MaskExists
 FPX: Generate Single Precision FPX (compact) instructions.
 
 mspfp_fast
-Target Report Mask(SPFP_FAST_SET) 
+Target Report Mask(SPFP_FAST_SET)
 FPX: Generate Single Precision FPX (fast) instructions.
 
-; START ARC LOCAL
 margonaut
 Target Report Mask(ARGONAUT_SET)
 FPX: Enable Argonaut ARC CPU Double Precision Floating Point extensions.
-; END ARC LOCAL
 
 mdpfp
 Target Report Mask(DPFP_COMPACT_SET)
@@ -152,14 +150,12 @@ Target Report Mask(DPFP_COMPACT_SET) MaskExists
 FPX: Generate Double Precision FPX (compact) instructions.
 
 mdpfp_fast
-Target Report Mask(DPFP_FAST_SET) 
+Target Report Mask(DPFP_FAST_SET)
 FPX: Generate Double Precision FPX (fast) instructions.
 
-; START ARC LOCAL
 mno-dpfp-lrsr
 Target Report Mask(DPFP_DISABLE_LRSR)
 Disable LR and SR instructions from using FPX extension aux registers.
-; END ARC LOCAL
 
 msimd
 Target Report Mask(SIMD_SET)
@@ -232,7 +228,7 @@ mtune=ARC725D
 Target RejectNegative Var(arc_tune, TUNE_ARC700_4_2_XMAC)
 Tune for ARC700 R4.2 Cpu with XMAC block.
 
-mtune=ARC750D 
+mtune=ARC750D
 Target RejectNegative Var(arc_tune, TUNE_ARC700_4_2_XMAC)
 Tune for ARC700 R4.2 Cpu with XMAC block.
 
@@ -311,7 +307,6 @@ Target Var(TARGET_EXPAND_ADDDI)
 Expand adddi3 and subdi3 at rtl generation time into add.f / adc etc.
 
 
-; START ARC LOCAL
 ; Flags used by the assembler, but for which we define preprocessor
 ; macro symbols as well.
 mcrc
@@ -360,4 +355,3 @@ Disable generation of cfi for epilogues.
 mepilogue-cfi
 Target RejectNegative Mask(EPILOGUE_CFI)
 Enable generation of cfi for epilogues.
-; END ARC LOCAL

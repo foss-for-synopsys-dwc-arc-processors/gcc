@@ -244,7 +244,7 @@
 ;; daddh{0}{1} 0, {reg_pair}2.hi, {reg_pair}2.lo  /* operand 4 = 1*/
 ;; OR
 ;; daddh{0}{1} 0, reg3, limm2.lo /* operand 4 = 0 */
-;; 
+;;
 (define_insn "adddf3_insn"
   [(set (match_operand:DF 0 "arc_double_register_operand"          "=D,D")
 	(plus:DF (match_operand:DF 1 "arc_double_register_operand" "D,D")
@@ -326,7 +326,7 @@
         tmp = force_reg (SImode, high);
         emit_insn(gen_subdf3_insn(operands[0], operands[1], operands[2],tmp,const0_rtx));
      }
-   else 
+   else
      emit_insn(gen_subdf3_insn(operands[0], operands[1], operands[2],const1_rtx,const1_rtx));
 
    DONE;
@@ -396,7 +396,7 @@
 ;;   (set (match_operand:DF 5 "register_operand" "")
 ;;        (match_dup 0))
 ;;   (set (match_dup 0)
-;;        (match_operand:DF 6 "register_operand" "")) 
+;;        (match_operand:DF 6 "register_operand" ""))
 ;;   ]
 ;;   "TARGET_DPFP"
 ;;   [
@@ -454,7 +454,7 @@
   (set (match_operand:DF 7 "register_operand" "")
        (match_dup 0))
   (set (match_dup 0)
-       (match_operand:DF 8 "register_operand" "")) 
+       (match_operand:DF 8 "register_operand" ""))
   ]
   "TARGET_DPFP && !TARGET_DPFP_DISABLE_LRSR"
   [
@@ -506,7 +506,7 @@
 ;; 				      (match_operand:DF 3 "nonmemory_operand" "")]))
 ;; 	     (use (match_operand:SI 4 "" ""))])
 ;;   (set (match_operand:DF 5 "register_operand" "")
-;;        (match_dup 0)) 
+;;        (match_dup 0))
 ;;   ]
 ;;   "TARGET_DPFP"
 ;;   [
@@ -555,7 +555,7 @@
 	     (use (match_operand:SI 5 "" ""))
 	     (use (match_operand:SI 6 "" ""))])
   (set (match_operand:DF 7 "register_operand" "")
-       (match_dup 0)) 
+       (match_dup 0))
   ]
   "TARGET_DPFP  && !TARGET_DPFP_DISABLE_LRSR"
   [

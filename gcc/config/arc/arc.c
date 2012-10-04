@@ -7,7 +7,7 @@
    Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
    behalf of Synopsys Inc.
 
-   Position Independent Code support added,Code cleaned up, 
+   Position Independent Code support added,Code cleaned up,
    Comments and Support For ARC700 instructions added by
    Saurabh Verma (saurabh.verma@codito.com)
    Ramana Radhakrishnan(ramana.radhakrishnan@codito.com)
@@ -60,7 +60,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "reload.h" /* For operands_match_p */
 #include "df.h"
 
-/* Which cpu we're compiling for (A5, ARC600, ARC601, ARC700) */
+/* Which cpu we're compiling for (A5, ARC600, ARC601, ARC700).  */
 static const char *arc_cpu_string = "";
 
 /* ??? Loads can handle any constant, stores can only handle small ones.  */
@@ -78,7 +78,7 @@ static const char *arc_cpu_string = "";
   && ((INDEX && RTX_OK_FOR_INDEX_P (XEXP (X, 1), (STRICT)) \
        && GET_MODE_SIZE ((MODE)) <= 4) \
       || RTX_OK_FOR_OFFSET_P (MODE, XEXP (X, 1))))
-    
+
 #define LEGITIMATE_SCALED_ADDRESS_P(MODE, X, STRICT) \
 (GET_CODE (X) == PLUS \
  && GET_CODE (XEXP (X, 0)) == MULT \
@@ -146,12 +146,8 @@ struct GTY (()) arc_ccfsm
       || get_attr_iscompact (INSN) == ISCOMPACT_TRUE_LIMM) \
    : get_attr_iscompact (INSN) != ISCOMPACT_FALSE)
 
-/* local obstack */
+/* Local obstack.  */
 static struct obstack arc_local_obstack;
-
-/* The following definition was shifted to arc.h, since #defines from arc.h
-   can be freely used in predicates.md */
-/* #define PROGRAM_COUNTER_REGNO 63 */
 
 /* The maximum number of insns skipped which will be conditionalised if
    possible.  */
@@ -182,10 +178,10 @@ static struct obstack arc_local_obstack;
    this to be no less than the 1/p  */
 #define MAX_INSNS_SKIPPED 3
 
-/* The values of unspec's first field */
-enum { 
-  ARC_UNSPEC_PLT = 3, 
-  ARC_UNSPEC_GOT, 
+/* The values of unspec's first field.  */
+enum {
+  ARC_UNSPEC_PLT = 3,
+  ARC_UNSPEC_GOT,
   ARC_UNSPEC_GOTOFF
 } ;
 
@@ -211,11 +207,9 @@ enum arc_builtins {
   ARC_BUILTIN_SWI        =   19,
   ARC_BUILTIN_TRAP_S     =   20,
   ARC_BUILTIN_UNIMP_S    =   21,
-  /* START ARC LOCAL */
   ARC_BUILTIN_ALIGNED    =   22,
-  /* END ARC LOCAL */
 
-  /* Sentinel to mark start of simd builtins */
+  /* Sentinel to mark start of simd builtins.  */
   ARC_SIMD_BUILTIN_BEGIN      = 1000,
 
   ARC_SIMD_BUILTIN_VADDAW     = 1001,
@@ -267,7 +261,7 @@ enum arc_builtins {
   ARC_SIMD_BUILTIN_VVC1F      = 1047,
   ARC_SIMD_BUILTIN_VVC1FT     = 1048,
 
-  /* Va, Vb, rlimm instructions */
+  /* Va, Vb, rlimm instructions.  */
   ARC_SIMD_BUILTIN_VBADDW     = 1050,
   ARC_SIMD_BUILTIN_VBMAXW     = 1051,
   ARC_SIMD_BUILTIN_VBMINW     = 1052,
@@ -277,12 +271,12 @@ enum arc_builtins {
   ARC_SIMD_BUILTIN_VBRSUBW    = 1056,
   ARC_SIMD_BUILTIN_VBSUBW     = 1057,
 
-  /* Va, Vb, Ic instructions */
+  /* Va, Vb, Ic instructions.  */
   ARC_SIMD_BUILTIN_VASRW      = 1060,
   ARC_SIMD_BUILTIN_VSR8       = 1061,
   ARC_SIMD_BUILTIN_VSR8AW     = 1062,
 
-  /* Va, Vb, u6 instructions */
+  /* Va, Vb, u6 instructions.  */
   ARC_SIMD_BUILTIN_VASRRWi    = 1065,
   ARC_SIMD_BUILTIN_VASRSRWi   = 1066,
   ARC_SIMD_BUILTIN_VASRWi     = 1067,
@@ -291,18 +285,18 @@ enum arc_builtins {
   ARC_SIMD_BUILTIN_VSR8AWi    = 1070,
   ARC_SIMD_BUILTIN_VSR8i      = 1071,
 
-  /* Va, Vb, u8 (simm) instructions*/
+  /* Va, Vb, u8 (simm) instructions.  */
   ARC_SIMD_BUILTIN_VMVAW      = 1075,
   ARC_SIMD_BUILTIN_VMVW       = 1076,
   ARC_SIMD_BUILTIN_VMVZW      = 1077,
   ARC_SIMD_BUILTIN_VD6TAPF    = 1078,
 
-  /* Va, rlimm, u8 (simm) instructions*/
+  /* Va, rlimm, u8 (simm) instructions.  */
   ARC_SIMD_BUILTIN_VMOVAW     = 1080,
   ARC_SIMD_BUILTIN_VMOVW      = 1081,
   ARC_SIMD_BUILTIN_VMOVZW     = 1082,
 
-  /* Va, Vb instructions */
+  /* Va, Vb instructions.  */
   ARC_SIMD_BUILTIN_VABSAW     = 1085,
   ARC_SIMD_BUILTIN_VABSW      = 1086,
   ARC_SIMD_BUILTIN_VADDSUW    = 1087,
@@ -349,7 +343,7 @@ enum arc_builtins {
 
 static int get_arc_condition_code (rtx);
 /* Initialized arc_attribute_table to NULL since arc doesnot have any
-   machine specific supported attributes. */
+   machine specific supported attributes.  */
 const struct attribute_spec arc_attribute_table[] =
 {
  /* { name, min_len, max_len, decl_req, type_req, fn_type_req, handler,
@@ -419,7 +413,7 @@ arc_vector_mode_supported_p (enum machine_mode mode)
   return false;
 }
 
-/* to be defined for interrupt attribute addition */
+/* To be defined for interrupt attribute addition.  */
 /*static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);*/
 
 
@@ -513,7 +507,7 @@ static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 #undef TARGET_DEFAULT_TARGET_FLAGS
 #define TARGET_DEFAULT_TARGET_FLAGS  (MASK_VOLATILE_CACHE_SET|DEFAULT_NO_SDATA)
 
-#undef  TARGET_SCHED_ADJUST_PRIORITY 
+#undef  TARGET_SCHED_ADJUST_PRIORITY
 #define TARGET_SCHED_ADJUST_PRIORITY arc_sched_adjust_priority
 
 #undef TARGET_VECTOR_MODE_SUPPORTED_P
@@ -572,7 +566,7 @@ static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 #undef TARGET_ASM_ALIGNED_SI_OP
 #define TARGET_ASM_ALIGNED_SI_OP "\t.word\t"
 
-/* Try to keep the (mov:DF _, reg) as early as possible so 
+/* Try to keep the (mov:DF _, reg) as early as possible so
    that the d<add/sub/mul>h-lr insns appear together and can
    use the peephole2 pattern
 */
@@ -580,11 +574,11 @@ static int
 arc_sched_adjust_priority (rtx insn ATTRIBUTE_UNUSED, int priority)
 {
   rtx set = single_set (insn);
-  if (set 
+  if (set
       && GET_MODE (SET_SRC(set)) == DFmode
       && GET_CODE (SET_SRC(set)) == REG)
     {
-      /* Incrementing priority by 20 (empirically derived). */
+      /* Incrementing priority by 20 (empirically derived).  */
       return priority + 20;
     }
 
@@ -596,10 +590,8 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl,
 		      enum machine_mode mode ATTRIBUTE_UNUSED,
 		      secondary_reload_info *sri ATTRIBUTE_UNUSED)
 {
-  /* START ARC LOCAL fpx support */
   if (cl == DOUBLE_REGS)
     return GENERAL_REGS;
-  /* END ARC LOCAL fpx support */
 
   /* The loop counter register can be stored, but not loaded directly.  */
   if ((cl == LPCOUNT_REG || cl == WRITABLE_CORE_REGS)
@@ -668,36 +660,36 @@ arc_init (void)
 	break;
       }
 
-  /* Support mul64 generation only for A5 and ARC600 */
+  /* Support mul64 generation only for A5 and ARC600.  */
   if (TARGET_MUL64_SET && TARGET_ARC700)
       error ("-mmul64 not supported for ARC700");
 
-  /* MPY instructions valid only for ARC700 */
+  /* MPY instructions valid only for ARC700.  */
   if (TARGET_NOMPY_SET && !TARGET_ARC700)
       error ("-mno-mpy supported only for ARC700");
 
-  /* mul/mac instructions only for ARC600 */
+  /* mul/mac instructions only for ARC600.  */
   if (TARGET_MULMAC_32BY16_SET && !(TARGET_ARC600 || TARGET_ARC601))
       error ("-mmul32x16 supported only for ARC600 or ARC601");
 
   if (!TARGET_DPFP && TARGET_DPFP_DISABLE_LRSR)
       error ("-mno-dpfp-lrsr suppforted only with -mdpfp");
 
-  /* FPX-1. No fast and compact together */
+  /* FPX-1. No fast and compact together.  */
   if ((TARGET_DPFP_FAST_SET && TARGET_DPFP_COMPACT_SET)
       || (TARGET_SPFP_FAST_SET && TARGET_SPFP_COMPACT_SET))
     error ("FPX fast and compact options cannot be specified together");
 
-  /* FPX-2. No fast-spfp for arc600 or arc601 */
+  /* FPX-2. No fast-spfp for arc600 or arc601.  */
   if (TARGET_SPFP_FAST_SET && (TARGET_ARC600 || TARGET_ARC601))
     error ("-mspfp_fast not available on ARC600 or ARC601");
 
-  /* FPX-3. No FPX extensions on pre-ARC600 cores */
-  if ((TARGET_DPFP || TARGET_SPFP) 
+  /* FPX-3. No FPX extensions on pre-ARC600 cores.  */
+  if ((TARGET_DPFP || TARGET_SPFP)
       && !(TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700))
     error ("FPX extensions not available on pre-ARC600 cores");
 
-  /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic */
+  /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
   if (flag_pic && !TARGET_ARC700)
     {
       warning (DK_WARNING, "PIC is not supported for %s. Generating non-PIC code only..", arc_cpu_string);
@@ -731,14 +723,14 @@ static struct arc_cpu_type
   const char *string;
   enum processor_type ptype;
 } arc_cpu_types[] =
-{ 
-  { "A5", PROCESSOR_A5 }, 
-  { "ARC600", PROCESSOR_ARC600 }, 
-  { "ARC601", PROCESSOR_ARC601 }, 
+{
+  { "A5", PROCESSOR_A5 },
+  { "ARC600", PROCESSOR_ARC600 },
+  { "ARC601", PROCESSOR_ARC601 },
   { "ARC700", PROCESSOR_ARC700 },
   { 0, PROCESSOR_NONE }
-}; 
-   
+};
+
 
 /* Check ARC options, generate derived target attributes.  */
 static void
@@ -750,19 +742,19 @@ arc_override_options (void)
   if (arc_size_opt_level == 3)
     optimize_size = 1;
 
-  if (flag_pic) 
+  if (flag_pic)
     target_flags |= MASK_NO_SDATA_SET;
 
   if (flag_no_common == 255)
-    flag_no_common = !TARGET_NO_SDATA_SET; 
+    flag_no_common = !TARGET_NO_SDATA_SET;
 
   /* TARGET_COMPACT_CASESI needs the "q" register class.  */ \
-  if (TARGET_MIXED_CODE) 
-    TARGET_Q_CLASS = 1; 
-  if (!TARGET_Q_CLASS) 
+  if (TARGET_MIXED_CODE)
+    TARGET_Q_CLASS = 1;
+  if (!TARGET_Q_CLASS)
     TARGET_COMPACT_CASESI = 0;
-  if (TARGET_COMPACT_CASESI) 
-    TARGET_CASE_VECTOR_PC_RELATIVE = 1; 
+  if (TARGET_COMPACT_CASESI)
+    TARGET_CASE_VECTOR_PC_RELATIVE = 1;
 
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
@@ -894,7 +886,7 @@ get_arc_condition_code (rtx comparison)
    return the mode to be used for the comparison.  */
 
 enum machine_mode
-arc_select_cc_mode (enum rtx_code op,	
+arc_select_cc_mode (enum rtx_code op,
 		    rtx x ATTRIBUTE_UNUSED,
 		    rtx y ATTRIBUTE_UNUSED)
 {
@@ -991,7 +983,7 @@ enum arc_mode_class {
 /* Modes for double-word and smaller quantities.  */
 #define D_MODES (S_MODES | (1 << (int) D_MODE) | (1 << DF_MODE))
 
-/* Mode for 8-byte DF values only */
+/* Mode for 8-byte DF values only.  */
 #define DF_MODES (1 << DF_MODE)
 
 /* Modes for quad-word and smaller quantities.  */
@@ -1060,7 +1052,7 @@ arc_init_reg_tables (void)
 	    arc_mode_class[i] = 1 << (int) T_MODE;
 	  else if (GET_MODE_SIZE (i) == 32)
 	    arc_mode_class[i] = 1 << (int) O_MODE;
-	  else 
+	  else
 	    arc_mode_class[i] = 0;
 	  break;
 	case MODE_FLOAT:
@@ -1073,7 +1065,7 @@ arc_init_reg_tables (void)
 	    arc_mode_class[i] = 1 << (int) TF_MODE;
 	  else if (GET_MODE_SIZE (i) == 32)
 	    arc_mode_class[i] = 1 << (int) OF_MODE;
-	  else 
+	  else
 	    arc_mode_class[i] = 0;
 	  break;
 	case MODE_VECTOR_INT:
@@ -1192,7 +1184,7 @@ arc_conditional_register_usage (void)
 	CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], regno);
 
       /* If they have used -ffixed-lp_count, make sure it takes
-         effect. */
+         effect.  */
       if (fixed_regs[LP_COUNT])
       {
 	CLEAR_HARD_REG_BIT (reg_class_contents[LPCOUNT_REG], LP_COUNT);
@@ -1200,7 +1192,7 @@ arc_conditional_register_usage (void)
 	CLEAR_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], LP_COUNT);
 
 	/* Instead of taking out SF_MODE like below, forbit it
-	   outright. */
+	   outright.  */
 	arc_hard_regno_mode_ok[60] = 0;
       }
       else
@@ -1227,9 +1219,7 @@ arc_conditional_register_usage (void)
 		 && TEST_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], i))
 		? CHEAP_CORE_REGS : WRITABLE_CORE_REGS));
       else
-        {
-          arc_regno_reg_class[i] = NO_REGS;
-        } /* if */
+        arc_regno_reg_class[i] = NO_REGS;
     }
 
     /* ARCOMPACT16_REGS is empty, if TARGET_Q_CLASS has not been activated.  */
@@ -1241,12 +1231,12 @@ arc_conditional_register_usage (void)
 
     gcc_assert (FIRST_PSEUDO_REGISTER >= 144);
 
-    /* Handle Special Registers */
-    arc_regno_reg_class[29] = LINK_REGS; /* ilink1 register */
-    arc_regno_reg_class[30] = LINK_REGS; /* ilink2 register */
-    arc_regno_reg_class[31] = LINK_REGS; /* blink register */
+    /* Handle Special Registers.  */
+    arc_regno_reg_class[29] = LINK_REGS; /* ilink1 register.  */
+    arc_regno_reg_class[30] = LINK_REGS; /* ilink2 register.  */
+    arc_regno_reg_class[31] = LINK_REGS; /* blink register.  */
     arc_regno_reg_class[60] = LPCOUNT_REG;
-    arc_regno_reg_class[61] = NO_REGS;      /* CC_REG: must be NO_REGS */
+    arc_regno_reg_class[61] = NO_REGS;      /* CC_REG: must be NO_REGS.  */
     arc_regno_reg_class[62] = GENERAL_REGS;
 
     if (TARGET_DPFP)
@@ -1261,7 +1251,7 @@ arc_conditional_register_usage (void)
 	  if (!TARGET_ARGONAUT_SET)
   	  {
 	    /* Make sure no 'c', 'w', 'W', or 'Rac' constraint is
-	       interpreted to mean they can use D1 or D2 in their insn. */
+	       interpreted to mean they can use D1 or D2 in their insn.  */
 	    CLEAR_HARD_REG_BIT(reg_class_contents[CHEAP_CORE_REGS       ], i);
 	    CLEAR_HARD_REG_BIT(reg_class_contents[ALL_CORE_REGS         ], i);
 	    CLEAR_HARD_REG_BIT(reg_class_contents[WRITABLE_CORE_REGS    ], i);
@@ -1272,7 +1262,7 @@ arc_conditional_register_usage (void)
     else
       {
 	/* Disable all DOUBLE_REGISTER settings,
-	   if not generating DPFP code */
+	   if not generating DPFP code.  */
 	arc_regno_reg_class[40] = ALL_REGS;
 	arc_regno_reg_class[41] = ALL_REGS;
 	arc_regno_reg_class[42] = ALL_REGS;
@@ -1341,7 +1331,7 @@ arc_comp_type_attributes (const_tree type1,
 			  const_tree type2)
 {
   int l1, l2, s1, s2;
-  
+
   /* Check for mismatch of non-default calling convention.  */
   if (TREE_CODE (type1) != FUNCTION_TYPE)
     return 1;
@@ -1363,7 +1353,7 @@ arc_comp_type_attributes (const_tree type1,
       if ((l1 & s2) || (l2 & s1))
 	return 0;
     }
-  
+
 
   return 1;
 }
@@ -1390,7 +1380,7 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
   rtx tmp, cc_reg;
   enum machine_mode mode, cmode;
 
-  
+
   cmode = GET_MODE (x);
   if (cmode == VOIDmode)
     cmode = GET_MODE (y);
@@ -1441,7 +1431,7 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
 	  break;
 	default:
 	  gcc_unreachable ();
-	}	    
+	}
       if (cmode == SFmode)
       {
 	emit_insn (gen_cmpsfpx_raw (x, y));
@@ -1505,7 +1495,7 @@ arc_double_limm_p (rtx value)
 
   gcc_assert (GET_CODE (value) == CONST_DOUBLE);
 
-  if(TARGET_DPFP) 
+  if(TARGET_DPFP)
     return 1;
 
   low = CONST_DOUBLE_LOW (value);
@@ -1541,14 +1531,14 @@ arc_setup_incoming_varargs (cumulative_args_t args_so_far,
   CUMULATIVE_ARGS next_cum;
 
   /* We must treat `__builtin_va_alist' as an anonymous arg.  */
-  
+
   next_cum = *get_cumulative_args (args_so_far);
   arc_function_arg_advance (pack_cumulative_args (&next_cum), mode, type, 1);
   first_anon_arg = next_cum;
 
   if (first_anon_arg < MAX_ARC_PARM_REGS)
     {
-      /* First anonymous (unnamed) argument is in a reg */
+      /* First anonymous (unnamed) argument is in a reg.  */
 
       /* Note that first_reg_offset < MAX_ARC_PARM_REGS.  */
       int first_reg_offset = first_anon_arg;
@@ -1729,32 +1719,32 @@ frame_stack_add (HOST_WIDE_INT offset)
         |                       |       |                       |
  SP+16->+-----------------------+FP+48->+-----------------------+
         | 4 word save area for  |       |  reg parm save area,  |
-        | return addr, prev %fp |       |  only created for     |    
-  SP+0->+-----------------------+       |  variable argument    |    
-                                        |  functions            |    
-                                 FP+16->+-----------------------+    
-                                        | 4 word save area for  |    
-                                        | return addr, prev %fp |    
-                                  FP+0->+-----------------------+    
-                                        |                       |    
-                                        |  local variables      |    
-                                        |                       |    
-                                        +-----------------------+    
-                                        |                       |    
-                                        |  register save area   |    
-                                        |                       |    
-                                        +-----------------------+    
-                                        |                       |    
-                                        |  alloca allocations   |    
-                                        |                       |    
-                                        +-----------------------+    
-                                        |                       |    
-                                        |  arguments on stack   |    
-                                        |                       |    
+        | return addr, prev %fp |       |  only created for     |
+  SP+0->+-----------------------+       |  variable argument    |
+                                        |  functions            |
+                                 FP+16->+-----------------------+
+                                        | 4 word save area for  |
+                                        | return addr, prev %fp |
+                                  FP+0->+-----------------------+
+                                        |                       |
+                                        |  local variables      |
+                                        |                       |
+                                        +-----------------------+
+                                        |                       |
+                                        |  register save area   |
+                                        |                       |
+                                        +-----------------------+
+                                        |                       |
+                                        |  alloca allocations   |
+                                        |                       |
+                                        +-----------------------+
+                                        |                       |
+                                        |  arguments on stack   |
+                                        |                       |
                                  SP+16->+-----------------------+
-   low                                  | 4 word save area for  |    
-   memory                               | return addr, prev %fp |    
-                                  SP+0->+-----------------------+    
+   low                                  | 4 word save area for  |
+   memory                               | return addr, prev %fp |
+                                  SP+0->+-----------------------+
 
 ARCompact stack frames look like:
 
@@ -1777,11 +1767,11 @@ ARCompact stack frames look like:
         |                       |       |                       |
         |  local/temp variables |       | local/temp variables  |
         |                       |       |                       |
-        +-----------------------+       +-----------------------+    
-        |                       |       |                       |    
-        |  arguments on stack   |       | arguments on stack    |    
-        |                       |       |                       |    
-    SP  +-----------------------+       +-----------------------+    
+        +-----------------------+       +-----------------------+
+        |                       |       |                       |
+        |  arguments on stack   |       | arguments on stack    |
+        |                       |       |                       |
+    SP  +-----------------------+       +-----------------------+
                                         | reg parm save area    |
                                         | only created for      |
                                         | variable arg fns      |
@@ -1799,11 +1789,11 @@ ARCompact stack frames look like:
                                         |                       |
                                         | local/temp variables  |
                                         |                       |
-                                        +-----------------------+    
-                                        |                       |    
-                                        | arguments on stack    |    
-  low                                   |                       |    
-  mem                               SP  +-----------------------+    
+                                        +-----------------------+
+                                        |                       |
+                                        | arguments on stack    |
+  low                                   |                       |
+  mem                               SP  +-----------------------+
 
 Notes:
 1) The "reg parm save area" does not exist for non variable argument fns.
@@ -1828,7 +1818,7 @@ struct GTY (()) arc_frame_info
   bool save_return_addr;
 };
 
-/* Defining data structures for per-function information */
+/* Defining data structures for per-function information.  */
 
 typedef struct GTY (()) machine_function
 {
@@ -1993,7 +1983,7 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   */
   frame_info->save_return_addr
     = (!crtl->is_leaf || df_regs_ever_live_p (RETURN_ADDR_REGNUM));
-  /* Saving blink reg in case of leaf function for millicode thunk calls */
+  /* Saving blink reg in case of leaf function for millicode thunk calls.  */
   if (optimize_size && !TARGET_NO_MILLICODE_THUNK_SET)
     {
       if (arc_compute_millicode_save_restore_regs (gmask, frame_info))
@@ -2009,18 +1999,18 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   /* 5) Space for variable arguments passed in registers */
   pretend_size	= crtl->args.pretend_args_size;
 
-  /* Ensure everything before the locals is aligned appropriately */
+  /* Ensure everything before the locals is aligned appropriately.  */
   if (TARGET_ARCOMPACT)
-    { 
+    {
        unsigned int extra_plus_reg_size;
        unsigned int extra_plus_reg_size_aligned;
 
        extra_plus_reg_size = extra_size + reg_size;
        extra_plus_reg_size_aligned = ARC_STACK_ALIGN(extra_plus_reg_size);
        reg_size = extra_plus_reg_size_aligned - extra_size;
-    } /* if */
+    }
 
-  /* Compute total frame size */
+  /* Compute total frame size.  */
   total_size = var_size + args_size + extra_size + pretend_size + reg_size;
 
   total_size = ARC_STACK_ALIGN (total_size);
@@ -2055,8 +2045,8 @@ arc_save_restore (rtx base_reg, unsigned int offset,
   int regno;
   struct arc_frame_info *frame = &cfun->machine->frame_info;
   rtx sibthunk_insn = NULL_RTX;
-                      
-  if (gmask)      
+
+  if (gmask)
     {
       /* Millicode thunks implementation:
 	 Generates calls to millicodes for registers starting from r13 to r25
@@ -2066,7 +2056,7 @@ arc_save_restore (rtx base_reg, unsigned int offset,
 	    to store r13-14, r16-r25 will only generate calls to store and
 	    load r13 to r14 while store and load insns will be generated for
 	    r16 to r25 in the prologue and epilogue respectively.
-    
+
             > Presently library only supports register ranges starting from
 	    r13
       */
@@ -2081,7 +2071,7 @@ arc_save_restore (rtx base_reg, unsigned int offset,
 
 	  if (*first_offset)
 	    {
-	      /* "reg_size" won't be more than 127 */
+	      /* "reg_size" won't be more than 127 .  */
 	      gcc_assert (epilogue_p || abs (*first_offset <= 127));
 	      frame_add (base_reg, *first_offset);
 	      *first_offset = 0;
@@ -2156,19 +2146,20 @@ arc_save_restore (rtx base_reg, unsigned int offset,
 
 /* Target hook to assemble an integer object.  The ARC version needs to
    emit a special directive for references to labels and function
-   symbols. */  
+   symbols.  */
 
 static bool
 arc_assemble_integer (rtx x, unsigned int size, int aligned_p)
 {
-    if (size == UNITS_PER_WORD && aligned_p
-	&& ((GET_CODE (x) == SYMBOL_REF && ARC_FUNCTION_NAME_PREFIX_P(* (XSTR (x, 0))))
-	    || GET_CODE (x) == LABEL_REF))
+  if (size == UNITS_PER_WORD && aligned_p
+      && ((GET_CODE (x) == SYMBOL_REF
+	   && ARC_FUNCTION_NAME_PREFIX_P (*XSTR (x, 0)))
+	  || GET_CODE (x) == LABEL_REF))
     {
-	fputs ("\t.word\t", asm_out_file);
-	output_addr_const (asm_out_file, x);
-	fputs("\n", asm_out_file);
-	return true;
+      fputs ("\t.word\t", asm_out_file);
+      output_addr_const (asm_out_file, x);
+      fputs("\n", asm_out_file);
+      return true;
     }
   return default_assemble_integer (x, size, aligned_p);
 }
@@ -2191,12 +2182,12 @@ arc_expand_prologue (void)
 
   size = ARC_STACK_ALIGN (size);
 
-  /* Compute/get total frame size */
+  /* Compute/get total frame size.  */
   size = (!cfun->machine->frame_info.initialized
 	   ? arc_compute_frame_size (size)
 	   : cfun->machine->frame_info.total_size);
 
-  /* Keep track of frame size to be allocated */
+  /* Keep track of frame size to be allocated.  */
   frame_size_to_allocate = size;
 
   /* These cases shouldn't happen.  Catch them now.  */
@@ -2205,14 +2196,14 @@ arc_expand_prologue (void)
   /* Allocate space for register arguments if this is a variadic function.  */
   if (cfun->machine->frame_info.pretend_size != 0)
     {
-       /* Ensure pretend_size is maximum of 8 * word_size */
+       /* Ensure pretend_size is maximum of 8 * word_size.  */
       gcc_assert (cfun->machine->frame_info.pretend_size <= 32);
 
       frame_stack_add (-(HOST_WIDE_INT)cfun->machine->frame_info.pretend_size);
       frame_size_to_allocate -= cfun->machine->frame_info.pretend_size;
     }
-    
-  /* The home-grown ABI says link register is saved first. */
+
+  /* The home-grown ABI says link register is saved first.  */
   if (MUST_SAVE_RETURN_ADDR)
     {
       rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
@@ -2231,22 +2222,22 @@ arc_expand_prologue (void)
       /* N.B. FRAME_POINTER_MASK and RETURN_ADDR_MASK are cleared in gmask.  */
       arc_save_restore (stack_pointer_rtx, 0, gmask, 0, &first_offset);
       frame_size_to_allocate -= cfun->machine->frame_info.reg_size;
-    } /* if */
+    }
 
 
-  /* Save frame pointer if needed */
+  /* Save frame pointer if needed.  */
   if (frame_pointer_needed)
     {
       rtx addr = gen_rtx_PLUS (Pmode, stack_pointer_rtx,
 			       GEN_INT (-UNITS_PER_WORD + first_offset));
-      rtx mem = gen_frame_mem (Pmode, gen_rtx_PRE_MODIFY (Pmode, 
+      rtx mem = gen_frame_mem (Pmode, gen_rtx_PRE_MODIFY (Pmode,
 							  stack_pointer_rtx,
 						 	  addr));
       frame_move_inc (mem, frame_pointer_rtx, stack_pointer_rtx, 0);
       frame_size_to_allocate -= UNITS_PER_WORD;
       first_offset = 0;
       frame_move (frame_pointer_rtx, stack_pointer_rtx);
-    } /* if */
+    }
 
   /* ??? We don't handle the case where the saved regs are more than 252
      bytes away from sp.  This can be handled by decrementing sp once, saving
@@ -2258,14 +2249,14 @@ arc_expand_prologue (void)
   /* Allocate the stack frame.  */
   if (frame_size_to_allocate > 0)
     frame_stack_add ((HOST_WIDE_INT) 0 - frame_size_to_allocate);
-    
-  /* Setup the gp register, if needed */
+
+  /* Setup the gp register, if needed.  */
   if (crtl->uses_pic_offset_table)
     arc_finalize_pic ();
 }
 
 /* Do any necessary cleanup after a function to restore stack, frame,
-   and regs. */
+   and regs.  */
 
 void
 arc_expand_epilogue (int sibcall_p)
@@ -2281,8 +2272,8 @@ arc_expand_epilogue (int sibcall_p)
   if (1)
     {
       unsigned int pretend_size = cfun->machine->frame_info.pretend_size;
-      unsigned int frame_size; 
-      unsigned int size_to_deallocate; 
+      unsigned int frame_size;
+      unsigned int size_to_deallocate;
       int restored;
 #if 0
       bool fp_restored_p;
@@ -2294,7 +2285,7 @@ arc_expand_epilogue (int sibcall_p)
       size_to_deallocate = size;
 
       frame_size = size - (pretend_size +
-                           cfun->machine->frame_info.reg_size + 
+                           cfun->machine->frame_info.reg_size +
                            cfun->machine->frame_info.extra_size);
 
       /* ??? There are lots of optimizations that can be done here.
@@ -2306,7 +2297,7 @@ arc_expand_epilogue (int sibcall_p)
 	gcc_assert (frame_pointer_needed);
 
       /* Restore stack pointer to the beginning of saved register area for
-         ARCompact ISA */
+         ARCompact ISA.  */
       if (TARGET_ARCOMPACT && frame_size)
 	{
 	  if (frame_pointer_needed)
@@ -2314,12 +2305,12 @@ arc_expand_epilogue (int sibcall_p)
 	  else
 	    first_offset = frame_size;
           size_to_deallocate -= frame_size;
-        } /* if */
+        }
       else if (!can_trust_sp_p)
 	frame_stack_add (-frame_size);
 
 
-      /* Restore any saved registers. */
+      /* Restore any saved registers.  */
       if (frame_pointer_needed)
         {
 	      rtx addr = gen_rtx_POST_INC (Pmode, stack_pointer_rtx);
@@ -2327,7 +2318,7 @@ arc_expand_epilogue (int sibcall_p)
 	      frame_move_inc (frame_pointer_rtx, gen_frame_mem (Pmode, addr),
 			      stack_pointer_rtx, 0);
               size_to_deallocate -= UNITS_PER_WORD;
-        } /* if */
+        }
 
       /* Load blink after the calls to thunk calls in case of optimize size.  */
       if (millicode_p)
@@ -2367,7 +2358,7 @@ arc_expand_epilogue (int sibcall_p)
 	  int ra_offs = cfun->machine->frame_info.reg_size + first_offset;
 	  rtx addr = plus_constant (Pmode, stack_pointer_rtx, ra_offs);
 
-	  /* If the load of blink would need a LIMM, but we can add 
+	  /* If the load of blink would need a LIMM, but we can add
 	     the offset quickly to sp, do the latter.  */
 	  if (!SMALL_INT (ra_offs >> 2)
 	      && !cfun->machine->frame_info.gmask
@@ -2417,7 +2408,7 @@ arc_expand_epilogue (int sibcall_p)
       */
 
       /* Keep track of how much of the stack pointer we've restored.
-	 It makes the following a lot more readable. */
+	 It makes the following a lot more readable.  */
       size_to_deallocate += first_offset;
       restored = size - size_to_deallocate;
 #if 0
@@ -2493,19 +2484,19 @@ arc_eligible_for_epilogue_delay (rtx trial,int slot)
 
 /* Emit special PIC prologues and epilogues.  */
 /* If the function has any GOTOFF relocations, then the GOTBASE
- * register has to be setup in the prologue 
+ * register has to be setup in the prologue
  * The instruction needed at the function start for setting up the
  * GOTBASE register is
- *    add rdest, pc, 
+ *    add rdest, pc,
  * ----------------------------------------------------------
  * The rtl to be emitted for this should be:
- *   set ( reg basereg) 
- *       ( plus ( reg pc) 
- *              ( const (unspec (symref _DYNAMIC) 3))) 
+ *   set ( reg basereg)
+ *       ( plus ( reg pc)
+ *              ( const (unspec (symref _DYNAMIC) 3)))
  * ----------------------------------------------------------
  */
-/* Can be used when rtl pro/epilog comes in. 
-   Unused till then */
+/* Can be used when rtl pro/epilog comes in.
+   Unused till then.  */
 rtx
 arc_finalize_pic (void)
 {
@@ -2516,11 +2507,11 @@ arc_finalize_pic (void)
     return NULL_RTX;
 
   gcc_assert (flag_pic != 0);
-  
+
   pat = gen_rtx_SYMBOL_REF (Pmode, "_DYNAMIC");
   pat = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, pat), ARC_UNSPEC_GOT);
   pat = gen_rtx_CONST (Pmode, pat);
-  
+
   pat = gen_rtx_SET (VOIDmode, baseptr_rtx, pat);
 
   return emit_insn (pat);
@@ -2539,7 +2530,7 @@ arc_finalize_pic (void)
    This can be optimized (deleted) in the case of 1 bit shifts.  */
 /* ??? We use the loop register here.  We don't use it elsewhere (yet) and
    using it here will give us a chance to play with it.  */
-/* FIXME:  This probably can be done using a define_split in arc.md.  
+/* FIXME:  This probably can be done using a define_split in arc.md.
    Alternately, generate rtx rather than output instructions.  */
 
 const char *
@@ -2570,7 +2561,7 @@ output_shift (rtx *operands)
     {
       int n = INTVAL (operands[2]);
 
-      /* Only consider the lower 5 bits of the shift count */
+      /* Only consider the lower 5 bits of the shift count.  */
       n = n & 0x1f;
 
       /* If the count is negative, take only lower 5 bits.  */
@@ -2751,7 +2742,7 @@ arc_print_operand (FILE *file,rtx x,int code)
 	fprintf (file, "%d",exact_log2(INTVAL (x) + 1) - 1 );
       else
 	output_operand_lossage ("invalid operand to %%Z code");
-      
+
       return;
 
     case 'z':
@@ -2759,7 +2750,7 @@ arc_print_operand (FILE *file,rtx x,int code)
 	fprintf (file, "%d",exact_log2(INTVAL (x)) );
       else
 	output_operand_lossage ("invalid operand to %%z code");
-      
+
       return;
 
     case 'M':
@@ -2767,7 +2758,7 @@ arc_print_operand (FILE *file,rtx x,int code)
 	fprintf (file, "%d",exact_log2(~INTVAL (x)) );
       else
 	output_operand_lossage ("invalid operand to %%M code");
-      
+
       return;
 
     case '#' :
@@ -2850,7 +2841,7 @@ arc_print_operand (FILE *file,rtx x,int code)
 		/* This insn is executed for either path, so don't
 		   conditionalize it at all.  */
 		output_short_suffix (file);
-	      
+
 	    }
 	}
       else
@@ -2914,13 +2905,13 @@ arc_print_operand (FILE *file,rtx x,int code)
 	{
           output_addr_const (file, x);
 	  return;
-	} 
+	}
       break;
     case 'H' :
     case 'L' :
       if (GET_CODE (x) == REG)
 	{
-	  /* L = least significant word, H = most significant word */
+	  /* L = least significant word, H = most significant word.  */
 	  if ((WORDS_BIG_ENDIAN != 0) ^ (code == 'L'))
 	    fputs (reg_names[REGNO (x)], file);
 	  else
@@ -2939,8 +2930,8 @@ arc_print_operand (FILE *file,rtx x,int code)
 	  else
 	      fprintf (file, "0x%08lx",
 		       code == 'L' ? INTVAL (second) : INTVAL (first));
-	      
-	  
+
+
 	  }
       else
 	output_operand_lossage ("invalid operand to %%H/%%L code");
@@ -3004,7 +2995,7 @@ arc_print_operand (FILE *file,rtx x,int code)
       else
 	output_operand_lossage ("invalid operand to %%V code");
       return;
-      /* plt code */
+      /* plt code.  */
     case 'P':
     case 0 :
       /* Do nothing special.  */
@@ -3016,7 +3007,7 @@ arc_print_operand (FILE *file,rtx x,int code)
 	/* This punctuation character is needed because label references are
 	printed in the output template using %l. This is a front end
 	character, and when we want to emit a '@' before it, we have to use
-	this '^'. */
+	this '^'.  */
 
 	fputc('@',file);
 	return;
@@ -3036,14 +3027,14 @@ arc_print_operand (FILE *file,rtx x,int code)
 	case LSHIFTRT:	fputs ("lsr", file); return;
 	case ROTATERT:	fputs ("ror", file); return;
 	case MULT:	fputs ("mpy", file); return;
-	case ABS:	fputs ("abs", file); return; /* unconditional */
+	case ABS:	fputs ("abs", file); return; /* Unconditional.  */
 	case NEG:	fputs ("neg", file); return;
 	case SS_NEG:	fputs ("negs", file); return;
-	case NOT:	fputs ("not", file); return; /* unconditional */
+	case NOT:	fputs ("not", file); return; /* Unconditional.  */
 	case ZERO_EXTEND:
 	  fputs ("ext", file); /* bmsk allows predication.  */
 	  goto size_suffix;
-	case SIGN_EXTEND: /* unconditional */
+	case SIGN_EXTEND: /* Unconditional.  */
 	  fputs ("sex", file);
 	size_suffix:
 	  switch (GET_MODE (XEXP (x, 0)))
@@ -3063,7 +3054,7 @@ arc_print_operand (FILE *file,rtx x,int code)
     case 'o':
       if (GET_CODE (x) == SYMBOL_REF)
 	{
-	  assemble_name (file, XSTR (x, 0));    
+	  assemble_name (file, XSTR (x, 0));
 	  return;
 	}
       break;
@@ -3202,7 +3193,7 @@ arc_print_operand_address (FILE *file , rtx addr)
 	gcc_assert (GET_CODE (XEXP (c, 1)) == CONST_INT);
 
 	output_address(XEXP(addr,0));
-	
+
 	break;
       }
     case PRE_INC :
@@ -3354,15 +3345,15 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
      an if/then/else), and things need to be reversed.  */
   int reverse = 0;
 
-  /* If we start with a return insn, we only succeed if we find another one. */
+  /* If we start with a return insn, we only succeed if we find another one.  */
   int seeking_return = 0;
-  
+
   /* START_INSN will hold the insn from where we start looking.  This is the
      first insn after the following code_label if REVERSE is true.  */
   rtx start_insn = insn;
 
-  /* Type of the jump_insn. Brcc insns don't affect ccfsm changes, 
-     since they don't rely on a cmp preceding them */
+  /* Type of the jump_insn. Brcc insns don't affect ccfsm changes,
+     since they don't rely on a cmp preceding the.  */
   enum attr_type jump_insn_type;
 
   /* Allow -mdebug-ccfsm to turn this off so we can see how well it does.
@@ -3524,9 +3515,9 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
 
 	    case BARRIER:
 	      /* Succeed if the following insn is the target label.
-		 Otherwise fail.  
-		 If return insns are used then the last insn in a function 
-		 will be a barrier. */
+		 Otherwise fail.
+		 If return insns are used then the last insn in a function
+		 will be a barrier.  */
 	      next_must_be_target_label_p = TRUE;
 	      break;
 
@@ -3545,7 +3536,8 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
       	      /* If this is an unconditional branch to the same label, succeed.
 		 If it is to another label, do nothing.  If it is conditional,
 		 fail.  */
-	      /* ??? Probably, the test for the SET and the PC are unnecessary. */
+	      /* ??? Probably, the test for the SET and the PC are
+		 unnecessary.  */
 
 	      if (GET_CODE (scanbody) == SET
 		  && GET_CODE (SET_DEST (scanbody)) == PC)
@@ -3603,7 +3595,7 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
 	        {
 		  this_insn = next_nonnote_insn (this_insn);
 
-		  gcc_assert (!this_insn || 
+		  gcc_assert (!this_insn ||
 			      (GET_CODE (this_insn) != BARRIER
 			       && GET_CODE (this_insn) != CODE_LABEL));
 	        }
@@ -3632,7 +3624,7 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
       /* Restore recog_operand.  Getting the attributes of other insns can
 	 destroy this array, but final.c assumes that it remains intact
 	 across this call; since the insn has been recognized already we
-	 call insn_extract direct. */
+	 call insn_extract direct.  */
       extract_insn_cached (insn);
     }
 }
@@ -4034,12 +4026,12 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
     }
 
   /* Only specific conditions involving SPFP can result in a short
-     branch insn. */
+     branch insn.  */
   if (TARGET_SPFP && !TARGET_ARGONAUT_SET
       && jump_p && any_condjump_p (insn))
   {
     rtx set = pc_set (insn);
-    /* any_condjump_p verified that we have an IF_THEN_ELSE */
+    /* any_condjump_p verified that we have an IF_THEN_ELSE.  */
     rtx cond = XEXP (SET_SRC (set), 0);
     int ccode = get_arc_condition_code (cond);
     switch (ccode)
@@ -4221,7 +4213,7 @@ arc_final_prescan_insn (rtx insn,rtx *opvec ATTRIBUTE_UNUSED,
       && PREV_INSN (NEXT_INSN (insn)) == insn
       && arc_hazard (prev_real_insn (insn), insn))
     {
-      current_output_insn = 
+      current_output_insn =
 	emit_insn_before (gen_nop (), NEXT_INSN (PREV_INSN (insn)));
       final_scan_insn (current_output_insn, asm_out_file, optimize, 1, NULL);
       current_output_insn = insn;
@@ -4291,20 +4283,20 @@ arc_frame_pointer_required (void)
 }
 
 
-/* Generate a bbit{0,1} insn for the current pattern  
- * bbit instructions are used as an optimized alternative to 
+/* Generate a bbit{0,1} insn for the current pattern
+ * bbit instructions are used as an optimized alternative to
  * a sequence of bic,cmp and branch instructions
  * Similar to gen_bbit_insns(), with conditions reversed
  */
 const char *
 gen_bbit_bic_insns(rtx * operands)
 {
-  
+
   switch (INTVAL(operands[3]))
   {
     /*  bic r%0,imm%1,r%2
      *  cmp r%0,0<- the value we have switched on
-     *  b{eq,ne} label%5 
+     *  b{eq,ne} label%5
      *  ||
      *	\/
      * bbit{0,1} r%1,log2(imm%2),label%5
@@ -4317,14 +4309,14 @@ gen_bbit_bic_insns(rtx * operands)
       return "bbit0%# %1,%z2,%^%l5";
     else
       gcc_unreachable();
-    
+
     /*  bic r%0,imm%1,r%2
      *  cmp r%0,0<- the value we have switched on
-     *  b{eq,ne} label%5 
+     *  b{eq,ne} label%5
      *  ||
      *	\/
      * bbit{0,1} r%1,log2(imm%2),label%5
-     * the bne case does not make sense here as it gives too little 
+     * the bne case does not make sense here as it gives too little
      * information for us to generate an insn.
      * Such a case is therefore disallowed in the condition itself.
      * ( ref: valid_bbit_pattern_p )
@@ -4342,19 +4334,19 @@ gen_bbit_bic_insns(rtx * operands)
 
 
 
-/* Generate a bbit{0,1} insn for the current pattern  
- * bbit instructions are used as an optimized alternative to 
- * a sequence of and,cmp and branch instructions   
+/* Generate a bbit{0,1} insn for the current pattern
+ * bbit instructions are used as an optimized alternative to
+ * a sequence of and,cmp and branch instructions
  */
 const char *
 gen_bbit_insns(rtx * operands)
 {
-  
+
   switch (INTVAL(operands[3]))
   {
     /* and r%0,r%1,imm%2
      *  cmp r%0,0<- the value we have switched on
-     *  b{eq,ne} label%5 
+     *  b{eq,ne} label%5
      *  ||
      *	\/
      * bbit{0,1} r%0,log2(imm%2),label%5
@@ -4366,14 +4358,14 @@ gen_bbit_insns(rtx * operands)
       return "bbit1%# %1,%z2,%^%l5";
     else
       gcc_unreachable();
-    
+
     /* and r%0,r%1,imm%2
      *  cmp r%0,1<- the value we have switched on
-     *  beq label%5 
+     *  beq label%5
      *  ||
      *	\/
      * bbit1 r%0,log2(imm%2),label%5
-     * the bne case does not make sense here as it gives too little 
+     * the bne case does not make sense here as it gives too little
      * information for us to generate an insn.
      * Such a case is therefore disallowed in the condition itself.
      * ( ref: valid_bbit_pattern_p )
@@ -4409,7 +4401,7 @@ branch_dest (rtx branch)
 }
 
 
-/* Predicate for judging if a pattern is valid for bbit generation 
+/* Predicate for judging if a pattern is valid for bbit generation
  * The rtl pattern is:
  *       and r%0,r%1,imm%2
  *       cmp r%0, imm%3
@@ -4423,18 +4415,18 @@ branch_dest (rtx branch)
 int
 valid_bbit_pattern_p (rtx * operands,rtx insn)
 {
-  int retval; 
+  int retval;
 
   /* ret = (imm%2 == power of 2 */
   retval = !( (INTVAL(operands[2]) & (INTVAL(operands[2]) - 1)) );
-  
-  /* now check for the right combinations 
+
+  /* now check for the right combinations
    * ( ref: comments in gen_bbit_insns above )
    */
-  retval = retval && 
+  retval = retval &&
     (
      ( INTVAL(operands[3]) == 1 && GET_CODE (operands[4]) == EQ )
-     || ( ( INTVAL(operands[3]) == 0) 
+     || ( ( INTVAL(operands[3]) == 0)
 	  && ( GET_CODE (operands[4]) == EQ || GET_CODE (operands[4]) == NE))
      );
 
@@ -4472,7 +4464,7 @@ static void
 arc_encode_section_info (tree decl, rtx rtl, int first)
 {
   /* Check if it is a function, and whether it has the [long/short]_call
-     attribute specified */
+     attribute specified.  */
   if (TREE_CODE (decl) == FUNCTION_DECL)
     {
       tree attr = (TREE_TYPE (decl) != error_mark_node
@@ -4494,7 +4486,7 @@ arc_encode_section_info (tree decl, rtx rtl, int first)
 	SYMBOL_REF_FLAG (XEXP (rtl, 0)) = 1;
     }
 
-  /* for sdata and SYMBOL_FLAG_FUNCTION */
+  /* For sdata and SYMBOL_FLAG_FUNCTION.  */
   default_encode_section_info (decl, rtl, first);
 }
 
@@ -4519,9 +4511,9 @@ static void arc_file_start (void)
 
 static void arc_asm_file_end (void)
 {
-  /* Free the obstack */
+  /* Free the obstack.  */
   /*    obstack_free (&arc_local_obstack, NULL);*/
- 
+
 }
 /* Cost functions.  */
 
@@ -4539,7 +4531,7 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
     case CONST_INT:
       {
 	bool nolimm = false; /* Can we do without long immediate?  */
-	bool fast = false; /* Is the result available immediately? */
+	bool fast = false; /* Is the result available immediately?  */
 	bool condexec = false; /* Does this allow conditiobnal execution?  */
 	bool compact = false; /* Is a 16 bit opcode available?  */
         /* CONDEXEC also implies that we can have an unconditional
@@ -4656,7 +4648,7 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
       else if (speed)
 	*total= arc_multcost;
       /* We do not want synth_mult sequences when optimizing
-	 for size */
+	 for size.  */
       else if (TARGET_MUL64_SET || (TARGET_ARC700 && !TARGET_NOMPY_SET))
 	*total = COSTS_N_INSNS (1);
       else
@@ -4901,7 +4893,7 @@ arc_legitimate_pic_addr_p (rtx addr)
 
 
 
-/* Returns 1 if OP contains a symbol reference */
+/* Returns 1 if OP contains a symbol reference.  */
 
 int
 symbolic_reference_mentioned_p (rtx op)
@@ -5006,7 +4998,7 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
   else if (GET_CODE (addr) == SYMBOL_REF)
     {
       /* This symbol must be referenced via a load from the
-	 Global Offset Table (@GOTPC). */
+	 Global Offset Table (@GOTPC).  */
 
       pat = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), ARC_UNSPEC_GOT);
       pat = gen_rtx_CONST (Pmode, pat);
@@ -5025,7 +5017,7 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 	  addr = XEXP (addr, 0);
 	  if (GET_CODE (addr) == UNSPEC)
 	    {
-	      /* Check that the unspec is one of the ones we generate? */
+	      /* Check that the unspec is one of the ones we generate?  */
 	    }
 	  else
 	    gcc_assert (GET_CODE (addr) == PLUS);
@@ -5098,7 +5090,7 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
     case SYMBOL_REF:
       output_addr_const (file, x);
 
-      /* Local functions do not get references through the PLT */
+      /* Local functions do not get references through the PLT.  */
       if (code == 'P' && ! SYMBOL_REF_FLAG (x))
 	fputs ("@plt", file);
       break;
@@ -5140,7 +5132,7 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
       break;
 
     case PLUS:
-      /* FIXME: Not needed here */
+      /* FIXME: Not needed here.  */
       /* Some assemblers need integer constants to appear last (eg masm).  */
       if (GET_CODE (XEXP (x, 0)) == CONST_INT)
 	{
@@ -5233,7 +5225,7 @@ emit_pic_move (rtx *operands, enum machine_mode mode ATTRIBUTE_UNUSED)
 }
 
 
-/* Prepend the symbol passed as argument to the name */
+/* Prepend the symbol passed as argument to the name.  */
 static void
 arc_encode_symbol (tree decl, const char prefix)
 {
@@ -5258,7 +5250,7 @@ arc_encode_symbol (tree decl, const char prefix)
    Otherwise NAME is transformed in an implementation-defined way
    (usually by the addition of an underscore).
    Many macros in the tm file are defined to call this function.  */
-/* FIXME: This can be deleted */
+/* FIXME: This can be deleted.  */
 void
 arc_assemble_name (FILE *file, const char *name)
 {
@@ -5287,15 +5279,15 @@ arc_assemble_name (FILE *file, const char *name)
    to be used by the caller for this argument; likewise
    `FUNCTION_INCOMING_ARG', for the called function.
 
-   The function is used to implement macro FUNCTION_ARG_PARTIAL_NREGS. */
+   The function is used to implement macro FUNCTION_ARG_PARTIAL_NREGS.  */
 
-/* if REGNO is the least arg reg available then what is the total number of arg
-   regs available */
+/* If REGNO is the least arg reg available then what is the total number of arg
+   regs available.  */
 #define GPR_REST_ARG_REGS(REGNO) ( ((REGNO) <= (MAX_ARC_PARM_REGS))  \
 				   ? ((MAX_ARC_PARM_REGS) - (REGNO)) \
                                    : 0 )
 
-/* since arc parm regs are contiguous */
+/* Since arc parm regs are contiguous.  */
 #define ARC_NEXT_ARG_REG(REGNO) ( (REGNO) + 1 )
 
 /* Implement TARGET_ARG_PARTIAL_BYTES.  */
@@ -5354,7 +5346,7 @@ arc_arg_partial_bytes (cumulative_args_t cum_v, enum machine_mode mode,
    defined, the argument will be computed in the stack and then loaded
    into a register.
 
-   The function is used to implement macro FUNCTION_ARG. */
+   The function is used to implement macro FUNCTION_ARG.  */
 /* On the ARC the first MAX_ARC_PARM_REGS args are normally in registers
    and the rest are pushed.  */
 
@@ -5398,13 +5390,13 @@ arc_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
    passed on the stack.  The compiler knows how to track the amount of
    stack space used for arguments without any special help.
 
-   The function is used to implement macro FUNCTION_ARG_ADVANCE. */
+   The function is used to implement macro FUNCTION_ARG_ADVANCE.  */
 /* For the ARC: the cum set here is passed on to function_arg where we
    look at its value and say which reg to use. Strategy: advance the
    regnumber here till we run out of arg regs, then set *cum to last
    reg. In function_arg, since *cum > last arg reg we would return 0
    and thus the arg will end up on the stack. For straddling args of
-   course function_arg_partial_nregs will come into play */
+   course function_arg_partial_nregs will come into play.  */
 static void
 arc_function_arg_advance (cumulative_args_t cum_v, enum machine_mode mode,
 			  const_tree type, bool named ATTRIBUTE_UNUSED)
@@ -5440,7 +5432,7 @@ arc_function_value (const_tree valtype,
   return gen_rtx_REG (mode, 0);
 }
 
-/* Returns the return address that is used by builtin_return_address */
+/* Returns the return address that is used by builtin_return_address.  */
 rtx
 arc_return_addr_rtx (int count, ATTRIBUTE_UNUSED rtx frame)
 {
@@ -5453,7 +5445,7 @@ arc_return_addr_rtx (int count, ATTRIBUTE_UNUSED rtx frame)
 /* Nonzero if the constant value X is a legitimate general operand
    when generating PIC code.  It is given that flag_pic is on and
    that X satisfies CONSTANT_P or is a CONST_DOUBLE.  */
-/* TODO: This should not be a separate function */
+/* TODO: This should not be a separate function.  */
 bool
 arc_legitimate_pic_operand_p (rtx x)
 {
@@ -5499,7 +5491,7 @@ arc_legitimate_constant_p (enum machine_mode mode ATTRIBUTE_UNUSED, rtx x)
       if ( arc_raw_symbolic_reference_mentioned_p (x))
 	return false;
 
-      /* return true */
+      /* Return true.  */
       break;
 
     case LABEL_REF:
@@ -5567,7 +5559,7 @@ arc_mode_dependent_address_p (const_rtx addr)
   return false;
 }
 
-/* Determine if it's legal to put X into the constant pool. */
+/* Determine if it's legal to put X into the constant pool.  */
 static bool
 arc_cannot_force_const_mem (enum machine_mode mode, rtx x)
 {
@@ -5575,7 +5567,7 @@ arc_cannot_force_const_mem (enum machine_mode mode, rtx x)
 }
 
 
-/* Generic function to define a builtin */
+/* Generic function to define a builtin.  */
 #define def_mbuiltin(MASK, NAME, TYPE, CODE)				\
   do									\
     {									\
@@ -5598,7 +5590,6 @@ arc_init_builtins (void)
 	= build_function_type (integer_type_node,
 			   tree_cons (NULL_TREE, integer_type_node, endlink));
 
-    /* START ARC LOCAL */
     tree pcvoid_type_node
 	= build_pointer_type (build_qualified_type (void_type_node, TYPE_QUAL_CONST));
     tree int_ftype_pcvoid_int
@@ -5606,7 +5597,6 @@ arc_init_builtins (void)
 			   tree_cons (NULL_TREE, pcvoid_type_node,
 			       tree_cons (NULL_TREE, integer_type_node,
 				    endlink)));
-    /* END ARC LOCAL */
 
     tree int_ftype_short_int
 	= build_function_type (integer_type_node,
@@ -5634,7 +5624,7 @@ arc_init_builtins (void)
 	= build_function_type (void_type_node,
 			   tree_cons (NULL_TREE, long_unsigned_type_node, endlink));
 
-    /* Add the builtins */
+    /* Add the builtins.  */
     def_mbuiltin (1,"__builtin_arc_nop", void_ftype_void, ARC_BUILTIN_NOP);
     def_mbuiltin (TARGET_NORM, "__builtin_arc_norm", int_ftype_int, ARC_BUILTIN_NORM);
     def_mbuiltin (TARGET_NORM, "__builtin_arc_normw", int_ftype_short_int, ARC_BUILTIN_NORMW);
@@ -5654,9 +5644,7 @@ arc_init_builtins (void)
     def_mbuiltin (1,"__builtin_arc_sr", void_ftype_usint_usint, ARC_BUILTIN_SR);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
-    /* START ARC LOCAL */
     def_mbuiltin (1,"__builtin_arc_aligned", int_ftype_pcvoid_int, ARC_BUILTIN_ALIGNED);
-    /* END ARC LOCAL */
 
     if (TARGET_SIMD_SET)
       arc_init_simd_builtins ();
@@ -5711,32 +5699,32 @@ arc_expand_builtin (tree exp,
 
     case ARC_BUILTIN_NORMW:
 
-	/* FIXME : This should all be HI mode, not SI mode */
+	/* FIXME : This should all be HImode, not SImode.  */
 	icode = CODE_FOR_normw;
 	arg0 = CALL_EXPR_ARG (exp, 0);
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	mode0 =  insn_data[icode].operand[1].mode;
 	target = gen_reg_rtx (SImode);
-	
+
 	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
 	  op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
-	
+
 	emit_insn (gen_normw (target, op0));
 	return target;
-	
+
     case ARC_BUILTIN_MUL64:
 	icode = CODE_FOR_mul64;
 	arg0 = CALL_EXPR_ARG (exp, 0);
 	arg1 = CALL_EXPR_ARG (exp, 1);
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	
+
 	mode0 =  insn_data[icode].operand[0].mode;
 	mode1 =  insn_data[icode].operand[1].mode;
-	
+
 	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
-	
+
 	if (! (*insn_data[icode].operand[1].predicate) (op1, mode1))
 	op1 = copy_to_mode_reg (mode1, op1);
 
@@ -5749,13 +5737,13 @@ arc_expand_builtin (tree exp,
 	arg1 = CALL_EXPR_ARG (exp, 1);
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	
+
 	mode0 =  insn_data[icode].operand[0].mode;
 	mode1 =  insn_data[icode].operand[1].mode;
-	
+
 	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
-	
+
 	if (! (*insn_data[icode].operand[0].predicate) (op1, mode1))
 	op1 = copy_to_mode_reg (mode1, op1);
 
@@ -5781,7 +5769,7 @@ arc_expand_builtin (tree exp,
 
 	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
-	
+
 	emit_insn (gen_swap (target,op0));
 	return target;
 
@@ -5789,20 +5777,20 @@ arc_expand_builtin (tree exp,
 	icode = CODE_FOR_divaw;
 	arg0 = CALL_EXPR_ARG (exp, 0);
 	arg1 = CALL_EXPR_ARG (exp, 1);
-	
+
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	target = gen_reg_rtx (SImode);
 
 	mode0 =  insn_data[icode].operand[0].mode;
 	mode1 =  insn_data[icode].operand[1].mode;
-	
+
 	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
 	    op0 = copy_to_mode_reg (mode0, op0);
-	
+
 	if (! (*insn_data[icode].operand[1].predicate) (op1, mode1))
 	    op1 = copy_to_mode_reg (mode1, op1);
-	
+
 	emit_insn (gen_divaw (target,op0,op1));
 	return target;
 
@@ -5816,7 +5804,7 @@ arc_expand_builtin (tree exp,
 	arg0 = CALL_EXPR_ARG (exp, 0);
 
 	fold (arg0);
-	
+
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	mode0 = insn_data[icode].operand[1].mode;
 
@@ -5827,7 +5815,7 @@ arc_expand_builtin (tree exp,
 	icode = CODE_FOR_swi;
 	emit_insn (gen_swi (const1_rtx));
 	return NULL_RTX;
-	
+
     case ARC_BUILTIN_FLAG:
 	icode = CODE_FOR_flag;
 	arg0 = CALL_EXPR_ARG (exp, 0);
@@ -5836,7 +5824,7 @@ arc_expand_builtin (tree exp,
 
 	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
 	  op0 = copy_to_mode_reg (mode0, op0);
-	
+
 	emit_insn (gen_flag (op0));
 	return NULL_RTX;
 
@@ -5846,10 +5834,10 @@ arc_expand_builtin (tree exp,
 	target = gen_reg_rtx (SImode);
 
 	fold (arg0);
-	
+
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	mode0 = insn_data[icode].operand[1].mode;
-	
+
 	emit_insn (gen_core_read (target, op0));
 	return target;
 
@@ -5857,9 +5845,9 @@ arc_expand_builtin (tree exp,
 	icode = CODE_FOR_core_write;
 	arg0 = CALL_EXPR_ARG (exp, 0);
 	arg1 = CALL_EXPR_ARG (exp, 1);
-	
+
 	fold (arg1);
-	
+
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 
@@ -5875,10 +5863,10 @@ arc_expand_builtin (tree exp,
 	target = gen_reg_rtx (SImode);
 
 	fold (arg0);
-	
+
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	mode0 = insn_data[icode].operand[1].mode;
-	
+
 	emit_insn (gen_lr (target, op0));
 	return target;
 
@@ -5886,9 +5874,9 @@ arc_expand_builtin (tree exp,
 	icode = CODE_FOR_sr;
 	arg0 = CALL_EXPR_ARG (exp, 0);
 	arg1 = CALL_EXPR_ARG (exp, 1);
-	
+
 	fold (arg1);
-	
+
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 
@@ -5903,7 +5891,7 @@ arc_expand_builtin (tree exp,
 	arg0 = CALL_EXPR_ARG (exp, 0);
 
 	fold (arg0);
-	
+
 	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	mode0 = insn_data[icode].operand[1].mode;
 
@@ -5915,7 +5903,6 @@ arc_expand_builtin (tree exp,
 	emit_insn (gen_unimp_s (const1_rtx));
 	return NULL_RTX;
 
-    /* START ARC LOCAL */
     case ARC_BUILTIN_ALIGNED:
 	/* __builtin_arc_aligned (void* val, int alignval) */
 #ifdef CALL_EXPR_ARG
@@ -5930,7 +5917,7 @@ arc_expand_builtin (tree exp,
 	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 	target = gen_reg_rtx (SImode);
 
-	/* Default to false. */
+	/* Default to false.  */
 	emit_insn (gen_movsi (target, const0_rtx));
 
 	if (GET_CODE (op0) == CONST_INT)
@@ -5950,7 +5937,7 @@ arc_expand_builtin (tree exp,
 		break
 		;;
 	    }
-	
+
 	    if ((align & alignTest) == 0)
 	    {
 		emit_insn (gen_movsi (target, const1_rtx));
@@ -5970,7 +5957,6 @@ arc_expand_builtin (tree exp,
 	}
 
 	return target;
-    /* END ARC LOCAL */
 
     default:
 	break;
@@ -5981,7 +5967,7 @@ arc_expand_builtin (tree exp,
 }
 
 /* Returns if the operands[ opno ] is a valid compile-time constant to be used
-   as register number in the code for builtins. Else it flags an error. */
+   as register number in the code for builtins. Else it flags an error.  */
 
 int
 check_if_valid_regno_const (rtx *operands, int opno)
@@ -6031,15 +6017,15 @@ arc_function_ok_for_sibcall (tree decl, tree exp ATTRIBUTE_UNUSED)
       if (decl == NULL)
 	return false;
 
-      /* Extract the function name from the decl node */
+      /* Extract the function name from the decl node.  */
       fname = XSTR (XEXP (DECL_RTL (decl), 0), 0);
 
       /* ARC does not have a branch [reg], so no sibcalls with -mlong-calls, unless
-	 the called function has short_call attribute set */
+	 the called function has short_call attribute set.  */
       if (TARGET_LONG_CALLS_SET && !ARC_ENCODED_SHORT_CALL_ATTR_P(fname))
 	return false;
 
-      /* Is this a long_call attributed function. If so, return false */
+      /* Is this a long_call attributed function. If so, return false.  */
       if (ARC_ENCODED_LONG_CALL_ATTR_P(fname))
 	return false;
     }
@@ -6071,7 +6057,7 @@ arc_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
     mi_delta = - mi_delta;
 
   /* Add DELTA.  When possible use a plain add, otherwise load it into
-     a register first. */
+     a register first.  */
 
   while (mi_delta != 0)
     {
@@ -6203,7 +6189,7 @@ arc_return_in_memory (const_tree type, const_tree fntype ATTRIBUTE_UNUSED)
   If the item being stored in or clobbered is a SUBREG of a hard register,
   the SUBREG will be passed.  */
 
-/* For now */ static
+/* For now.  */ static
 void
 walk_stores (rtx x, void (*fun) (rtx, rtx, void *), void *data)
 {
@@ -6240,9 +6226,6 @@ walk_stores (rtx x, void (*fun) (rtx, rtx, void *), void *data)
       walk_stores (XVECEXP (x, 0, i), fun, data);
 }
 
-/* ashwin : taken from gcc-4.2-FSF clean sources */
-/* For ARC, All aggregates and arguments greater than 8 bytes are
-   passed by reference.  */
 static bool
 arc_pass_by_reference (cumulative_args_t ca_v ATTRIBUTE_UNUSED,
 		       enum machine_mode mode ATTRIBUTE_UNUSED,
@@ -6520,8 +6503,8 @@ this'll work more often (could also test in arc_reorg if the block is
 'close enough' to be eligible for condexec to make this likely, and
 estimate required size increase).
  */
-  /* Generate BRcc insns, by combining cmp and Bcc insns wherever possible */
-   /* BRcc only for arcompact ISA */
+  /* Generate BRcc insns, by combining cmp and Bcc insns wherever possible.  */
+   /* BRcc only for arcompact ISA.  */
    if (!TARGET_ARCOMPACT || TARGET_NO_BRCC_SET)
      return;
 
@@ -6534,7 +6517,7 @@ estimate required size increase).
       init_insn_lengths();
       changed = 0;
 
-      /* Call shorten_branches to calculate the insn lengths */
+      /* Call shorten_branches to calculate the insn lengths.  */
       shorten_branches (get_insns());
       cfun->machine->ccfsm_current_insn = NULL_RTX;
 
@@ -6546,7 +6529,7 @@ estimate required size increase).
  	  rtx label;
  	  enum attr_type insn_type;
 
- 	  /* If a non-jump insn (or a casesi jump table), continue */
+ 	  /* If a non-jump insn (or a casesi jump table), continue.  */
  	  if (GET_CODE (insn) != JUMP_INSN ||
  	      GET_CODE (PATTERN (insn)) == ADDR_VEC
  	      || GET_CODE (PATTERN (insn)) == ADDR_DIFF_VEC)
@@ -6575,15 +6558,15 @@ estimate required size increase).
  	      || insn_type == TYPE_BRCC_NO_DELAY_SLOT)
  	    continue;
 
- 	  /* OK. so we have a jump insn */
- 	  /* We need to check that it is a bcc */
+ 	  /* OK. so we have a jump insn.  */
+ 	  /* We need to check that it is a bcc.  */
  	  /* Bcc => set (pc) (if_then_else ) */
  	  pattern = PATTERN (insn);
  	  if (GET_CODE (pattern) != SET ||
  	      GET_CODE (SET_SRC(pattern)) != IF_THEN_ELSE)
  	    continue;
 
- 	  /* Now check if the jump is beyond the s9 range */
+ 	  /* Now check if the jump is beyond the s9 range.  */
 	  if (find_reg_note (insn, REG_CROSSING_JUMP, NULL_RTX))
 	    continue;
  	  offset = branch_dest (insn) - INSN_ADDRESSES (INSN_UID (insn));
@@ -6593,7 +6576,7 @@ estimate required size increase).
 
  	  pc_target = SET_SRC (pattern);
 
- 	  /* Now go back and search for the set cc insn */
+ 	  /* Now go back and search for the set cc insn.  */
 
  	  label = XEXP (pc_target, 1);
 
@@ -6617,12 +6600,12 @@ estimate required size increase).
 	      if (! link_insn)
 		continue;
 	      else
- 	        /* Check if this is a data dependency */
+ 	        /* Check if this is a data dependency.  */
  		{
  		  rtx op, cc_clob_rtx, op0, op1, brcc_insn, note;
 		  rtx cmp0, cmp1;
 
- 		  /* ok this is the set cc. copy args here */
+ 		  /* Ok this is the set cc. copy args here.  */
  		  op = XEXP (pc_target, 0);
 
 		  op0 = cmp0 = XEXP (SET_SRC (pat), 0);
@@ -6641,14 +6624,14 @@ estimate required size increase).
 		    continue;
 		  /* Be careful not to break what cmpsfpx_raw is
 		     trying to create for checking equality of
-		     single-precision floats. */
+		     single-precision floats.  */
 		  else if (TARGET_SPFP
 		  	   && GET_MODE (op0) == SFmode
 			   && GET_MODE (op1) == SFmode)
 		    continue;
 
  		  /* None of the two cmp operands should be set between the
- 		     cmp and the branch */
+ 		     cmp and the branch.  */
  		  if (reg_set_between_p (op0, link_insn, insn))
  		    continue;
 
@@ -6656,13 +6639,14 @@ estimate required size increase).
  		    continue;
 
  		  /* Since the MODE check does not work, check that this is
- 		     CC reg's last set location before insn, and also no instruction
-		     between the cmp and branch uses the condition codes */
+ 		     CC reg's last set location before insn, and also no
+		     instruction between the cmp and branch uses the
+		     condition codes.  */
  		  if ((reg_set_between_p (SET_DEST (pat), link_insn, insn))
 		      || (reg_used_between_p (SET_DEST (pat), link_insn, insn)))
  		    continue;
 
- 		  /* CC reg should be dead after insn */
+ 		  /* CC reg should be dead after insn.  */
  		  if (!find_regno_note (insn, REG_DEAD, CC_REG))
  		    continue;
 
@@ -6722,26 +6706,26 @@ estimate required size increase).
 		      XEXP (note, 1) = REG_NOTES (brcc_insn);
 		      REG_NOTES (brcc_insn) = note;
 		    }
- 		
+
  		  changed = 1;
 
- 		  /* Delete the bcc insn */
+ 		  /* Delete the bcc insn.  */
 		  set_insn_deleted (insn);
 
- 		  /* Delete the cmp insn */
+ 		  /* Delete the cmp insn.  */
 		  set_insn_deleted (link_insn);
 
  		}
  	    }
 	}
-      /* Clear out insn_addresses */
+      /* Clear out insn_addresses.  */
       INSN_ADDRESSES_FREE ();
 
     } while (changed);
 
   if (INSN_ADDRESSES_SET_P())
     fatal_error ("Insn addresses not freed\n");
-   
+
   arc_reorg_in_progress = 0;
 }
 
@@ -6816,7 +6800,7 @@ arc_in_small_data_p (const_tree decl)
       if (!DECL_EXTERNAL (decl))
 	  return true;
     }
-  /* Only global variables go into sdata section for now */
+  /* Only global variables go into sdata section for now.  */
   else if (1)
     {
       /* Don't put constants into the small data section: we want them
@@ -6836,12 +6820,12 @@ arc_in_small_data_p (const_tree decl)
 	return false;
 
       /* To ensure -mvolatile-cache works
-	 ld.di does not have a gp-relative variant */
+	 ld.di does not have a gp-relative variant.  */
       if (TREE_THIS_VOLATILE (decl))
 	return false;
     }
 
-  /* Disable sdata references to weak variables */
+  /* Disable sdata references to weak variables.  */
   if (DECL_WEAK (decl))
     return false;
 
@@ -6850,7 +6834,7 @@ arc_in_small_data_p (const_tree decl)
 /*   if (AGGREGATE_TYPE_P (TREE_TYPE (decl))) */
 /*     return false; */
 
-  /* Allow only <=4B long data types into sdata */
+  /* Allow only <=4B long data types into sdata.  */
   return (size > 0 && size <= 4);
 }
 
@@ -6878,7 +6862,7 @@ arc_rewrite_small_data_p (rtx x)
 static int
 arc_rewrite_small_data_1 (rtx *loc, void *data ATTRIBUTE_UNUSED)
 {
-  if (arc_rewrite_small_data_p (*loc))     
+  if (arc_rewrite_small_data_p (*loc))
     {
       rtx top;
 
@@ -6938,11 +6922,11 @@ small_data_pattern (rtx op, enum machine_mode mode ATTRIBUTE_UNUSED)
 }
 
 /* Return true if OP is an acceptable memory operand for ARCompact
-   16-bit gp-relative load instructions. 
+   16-bit gp-relative load instructions.
    op shd look like : [r26, symref@sda]
    i.e. (mem (plus (reg 26) (symref with smalldata flag set))
   */
-/* volatile cache option still to be handled */
+/* volatile cache option still to be handled.  */
 
 int
 compact_sda_memory_operand (rtx op,enum machine_mode  mode)
@@ -6950,7 +6934,7 @@ compact_sda_memory_operand (rtx op,enum machine_mode  mode)
   rtx addr;
   int size;
 
-  /* Eliminate non-memory operations */
+  /* Eliminate non-memory operations.  */
   if (GET_CODE (op) != MEM)
     return 0;
 
@@ -6959,7 +6943,7 @@ compact_sda_memory_operand (rtx op,enum machine_mode  mode)
 
   size = GET_MODE_SIZE (mode);
 
-  /* dword operations really put out 2 instructions, so eliminate them. */ 
+  /* dword operations really put out 2 instructions, so eliminate them.  */
   if (size > UNITS_PER_WORD)
     return 0;
 
@@ -6970,7 +6954,7 @@ compact_sda_memory_operand (rtx op,enum machine_mode  mode)
 }
 
 void
-arc_asm_output_aligned_decl_local (FILE * stream, tree decl, const char * name, 
+arc_asm_output_aligned_decl_local (FILE * stream, tree decl, const char * name,
 				   unsigned HOST_WIDE_INT size,
 				   unsigned HOST_WIDE_INT align,
 				   unsigned HOST_WIDE_INT globalize_p)
@@ -7028,7 +7012,7 @@ arc_asm_output_aligned_decl_local (FILE * stream, tree decl, const char * name,
 
 
 
-/* SIMD builtins support */
+/* SIMD builtins support.  */
 enum simd_insn_args_type {
   Va_Vb_Vc,
   Va_Vb_rlimm,
@@ -7062,7 +7046,7 @@ struct builtin_description
 
 static const struct builtin_description arc_simd_builtin_desc_list[] =
 {
-  /* VVV builtins go first */
+  /* VVV builtins go first.  */
 #define SIMD_BUILTIN(type,code, string, builtin) \
   { type,CODE_FOR_##code, "__builtin_arc_" string, \
     ARC_SIMD_BUILTIN_##builtin },
@@ -7125,12 +7109,12 @@ static const struct builtin_description arc_simd_builtin_desc_list[] =
   SIMD_BUILTIN (Va_Vb_rlimm,   vbrsubw_insn,  "vbrsubw",    VBRSUBW)
   SIMD_BUILTIN (Va_Vb_rlimm,    vbsubw_insn,   "vbsubw",     VBSUBW)
 
-  /* Va, Vb, Ic instructions */
-  SIMD_BUILTIN (Va_Vb_Ic,        vasrw_insn,    "vasrw",      VASRW) 
-  SIMD_BUILTIN (Va_Vb_Ic,         vsr8_insn,     "vsr8",       VSR8) 
-  SIMD_BUILTIN (Va_Vb_Ic,       vsr8aw_insn,   "vsr8aw",     VSR8AW) 
+  /* Va, Vb, Ic instructions.  */
+  SIMD_BUILTIN (Va_Vb_Ic,        vasrw_insn,    "vasrw",      VASRW)
+  SIMD_BUILTIN (Va_Vb_Ic,         vsr8_insn,     "vsr8",       VSR8)
+  SIMD_BUILTIN (Va_Vb_Ic,       vsr8aw_insn,   "vsr8aw",     VSR8AW)
 
-  /* Va, Vb, u6 instructions */
+  /* Va, Vb, u6 instructions.  */
   SIMD_BUILTIN (Va_Vb_u6,      vasrrwi_insn,  "vasrrwi",    VASRRWi)
   SIMD_BUILTIN (Va_Vb_u6,     vasrsrwi_insn, "vasrsrwi",   VASRSRWi)
   SIMD_BUILTIN (Va_Vb_u6,       vasrwi_insn,   "vasrwi",     VASRWi)
@@ -7139,18 +7123,18 @@ static const struct builtin_description arc_simd_builtin_desc_list[] =
   SIMD_BUILTIN (Va_Vb_u6,      vsr8awi_insn,  "vsr8awi",    VSR8AWi)
   SIMD_BUILTIN (Va_Vb_u6,        vsr8i_insn,    "vsr8i",      VSR8i)
 
-  /* Va, Vb, u8 (simm) instructions */
+  /* Va, Vb, u8 (simm) instructions.  */
   SIMD_BUILTIN (Va_Vb_u8,        vmvaw_insn,    "vmvaw",      VMVAW)
   SIMD_BUILTIN (Va_Vb_u8,         vmvw_insn,     "vmvw",       VMVW)
   SIMD_BUILTIN (Va_Vb_u8,        vmvzw_insn,    "vmvzw",      VMVZW)
   SIMD_BUILTIN (Va_Vb_u8,      vd6tapf_insn,  "vd6tapf",    VD6TAPF)
 
-  /* Va, rlimm, u8 (simm) instructions */
+  /* Va, rlimm, u8 (simm) instructions.  */
   SIMD_BUILTIN (Va_rlimm_u8,    vmovaw_insn,   "vmovaw",     VMOVAW)
   SIMD_BUILTIN (Va_rlimm_u8,     vmovw_insn,    "vmovw",      VMOVW)
   SIMD_BUILTIN (Va_rlimm_u8,    vmovzw_insn,   "vmovzw",     VMOVZW)
 
-  /* Va, Vb instructions */
+  /* Va, Vb instructions.  */
   SIMD_BUILTIN (Va_Vb,          vabsaw_insn,   "vabsaw",     VABSAW)
   SIMD_BUILTIN (Va_Vb,           vabsw_insn,    "vabsw",      VABSW)
   SIMD_BUILTIN (Va_Vb,         vaddsuw_insn,  "vaddsuw",    VADDSUW)
@@ -7162,22 +7146,22 @@ static const struct builtin_description arc_simd_builtin_desc_list[] =
   SIMD_BUILTIN (Va_Vb,           vupbw_insn,    "vupbw",      VUPBW)
   SIMD_BUILTIN (Va_Vb,         vupsbaw_insn,  "vupsbaw",    VUPSBAW)
   SIMD_BUILTIN (Va_Vb,          vupsbw_insn,   "vupsbw",     VUPSBW)
-  
-  /* DIb, rlimm, rlimm instructions */
+
+  /* DIb, rlimm, rlimm instructions.  */
   SIMD_BUILTIN (Da_rlimm_rlimm,  vdirun_insn,  "vdirun",     VDIRUN)
   SIMD_BUILTIN (Da_rlimm_rlimm,  vdorun_insn,  "vdorun",     VDORUN)
 
-  /* DIb, limm, rlimm instructions */
+  /* DIb, limm, rlimm instructions.  */
   SIMD_BUILTIN (Da_u3_rlimm,   vdiwr_insn,    "vdiwr",      VDIWR)
   SIMD_BUILTIN (Da_u3_rlimm,    vdowr_insn,    "vdowr",     VDOWR)
 
-  /* rlimm instructions */
+  /* rlimm instructions.  */
   SIMD_BUILTIN (void_rlimm,        vrec_insn,     "vrec",      VREC)
   SIMD_BUILTIN (void_rlimm,        vrun_insn,     "vrun",      VRUN)
   SIMD_BUILTIN (void_rlimm,     vrecrun_insn,  "vrecrun",   VRECRUN)
   SIMD_BUILTIN (void_rlimm,     vendrec_insn,  "vendrec",   VENDREC)
 
-  /* Va, [Ib,u8] instructions */
+  /* Va, [Ib,u8] instructions.  */
   SIMD_BUILTIN (Va_Vb_Ic_u8,       vld32wh_insn,  "vld32wh",   VLD32WH)
   SIMD_BUILTIN (Va_Vb_Ic_u8,       vld32wl_insn,  "vld32wl",   VLD32WL)
   SIMD_BUILTIN (Va_Vb_Ic_u8,         vld64_insn,    "vld64",     VLD64)
@@ -7188,7 +7172,7 @@ static const struct builtin_description arc_simd_builtin_desc_list[] =
   SIMD_BUILTIN (void_Va_Ib_u8,      vst128_insn,   "vst128",   VST128)
   SIMD_BUILTIN (void_Va_Ib_u8,       vst64_insn,    "vst64",    VST64)
 
-  /* Va, [Ib, u8] instructions */
+  /* Va, [Ib, u8] instructions.  */
   SIMD_BUILTIN (void_Va_u3_Ib_u8,  vst16_n_insn,  "vst16_n",   VST16_N)
   SIMD_BUILTIN (void_Va_u3_Ib_u8,  vst32_n_insn,  "vst32_n",   VST32_N)
 
@@ -7214,20 +7198,20 @@ arc_init_simd_builtins (void)
   tree v8hi_ftype_v8hi_int_int
     = build_function_type (V8HI_type_node,
 			   tree_cons (NULL_TREE, V8HI_type_node,
-				      tree_cons (NULL_TREE, integer_type_node, 
+				      tree_cons (NULL_TREE, integer_type_node,
 						 tree_cons (NULL_TREE, integer_type_node, endlink))));
 
   tree void_ftype_v8hi_int_int
     = build_function_type (void_type_node,
 			   tree_cons (NULL_TREE, V8HI_type_node,
-				      tree_cons (NULL_TREE, integer_type_node, 
+				      tree_cons (NULL_TREE, integer_type_node,
 						 tree_cons (NULL_TREE, integer_type_node, endlink))));
 
   tree void_ftype_v8hi_int_int_int
     = build_function_type (void_type_node,
 			   tree_cons (NULL_TREE, V8HI_type_node,
-				      tree_cons (NULL_TREE, integer_type_node, 
-						 tree_cons (NULL_TREE, integer_type_node, 
+				      tree_cons (NULL_TREE, integer_type_node,
+						 tree_cons (NULL_TREE, integer_type_node,
 							    tree_cons (NULL_TREE, integer_type_node, endlink)))));
 
   tree v8hi_ftype_int_int
@@ -7248,7 +7232,7 @@ arc_init_simd_builtins (void)
     = build_function_type (V8HI_type_node, tree_cons (NULL_TREE, V8HI_type_node,endlink));
 
   /* These asserts have been introduced to ensure that the order of builtins
-     does not get messed up, else the initialization goes wrong */
+     does not get messed up, else the initialization goes wrong.  */
   gcc_assert (arc_simd_builtin_desc_list [0].args_type == Va_Vb_Vc);
   for (i=0; arc_simd_builtin_desc_list [i].args_type == Va_Vb_Vc; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  v8hi_ftype_v8hi_v8hi, arc_simd_builtin_desc_list [i].code);
@@ -7256,7 +7240,7 @@ arc_init_simd_builtins (void)
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == Va_Vb_rlimm);
   for (; arc_simd_builtin_desc_list [i].args_type == Va_Vb_rlimm; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  v8hi_ftype_v8hi_int, arc_simd_builtin_desc_list [i].code);
- 
+
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == Va_Vb_Ic);
   for (; arc_simd_builtin_desc_list [i].args_type == Va_Vb_Ic; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  v8hi_ftype_v8hi_int, arc_simd_builtin_desc_list [i].code);
@@ -7264,7 +7248,7 @@ arc_init_simd_builtins (void)
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == Va_Vb_u6);
   for (; arc_simd_builtin_desc_list [i].args_type == Va_Vb_u6; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  v8hi_ftype_v8hi_int, arc_simd_builtin_desc_list [i].code);
- 
+
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == Va_Vb_u8);
   for (; arc_simd_builtin_desc_list [i].args_type == Va_Vb_u8; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  v8hi_ftype_v8hi_int, arc_simd_builtin_desc_list [i].code);
@@ -7280,7 +7264,7 @@ arc_init_simd_builtins (void)
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == Da_rlimm_rlimm);
   for (; arc_simd_builtin_desc_list [i].args_type == Da_rlimm_rlimm; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  void_ftype_int_int, arc_simd_builtin_desc_list [i].code);
-  
+
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == Da_u3_rlimm);
   for (; arc_simd_builtin_desc_list [i].args_type == Da_u3_rlimm; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  void_ftype_int_int, arc_simd_builtin_desc_list [i].code);
@@ -7304,7 +7288,7 @@ arc_init_simd_builtins (void)
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == void_Va_u3_Ib_u8);
   for (; arc_simd_builtin_desc_list [i].args_type == void_Va_u3_Ib_u8; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  void_ftype_v8hi_int_int_int, arc_simd_builtin_desc_list [i].code);
-  
+
   gcc_assert (arc_simd_builtin_desc_list [i].args_type == void_u6);
   for (; arc_simd_builtin_desc_list [i].args_type == void_u6; i++)
     def_mbuiltin (TARGET_SIMD_SET, arc_simd_builtin_desc_list [i].name,  void_ftype_int, arc_simd_builtin_desc_list [i].code);
@@ -7344,7 +7328,7 @@ arc_expand_simd_builtin (tree exp,
     if (d->code == (const enum arc_builtins) fcode)
       break;
 
-  /* We must get an enty here */
+  /* We must get an entry here.  */
   gcc_assert (i < ARRAY_SIZE (arc_simd_builtin_desc_list));
 
   switch (d->args_type) {
@@ -7354,21 +7338,21 @@ arc_expand_simd_builtin (tree exp,
     arg1 = CALL_EXPR_ARG (exp, 1);
     op0 = expand_expr (arg0, NULL_RTX, V8HImode, EXPAND_NORMAL);
     op1 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL);
-    
+
     target = gen_reg_rtx (V8HImode);
     mode0 =  insn_data[icode].operand[1].mode;
     mode1 =  insn_data[icode].operand[2].mode;
-    
+
     if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
 
     if (! (*insn_data[icode].operand[2].predicate) (op1, mode1))
 	op1 = copy_to_mode_reg (mode1, op1);
-     
+
     pat = GEN_FCN (icode) (target, op0, op1);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return target;
 
@@ -7379,26 +7363,26 @@ arc_expand_simd_builtin (tree exp,
     arg1 = CALL_EXPR_ARG (exp, 1);
     op0 = expand_expr (arg0, NULL_RTX, V8HImode, EXPAND_NORMAL);
     op1 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL);
-    
+
     target = gen_reg_rtx (V8HImode);
     mode0 =  insn_data[icode].operand[1].mode;
     mode1 =  insn_data[icode].operand[2].mode;
-    
+
     if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
 
     if ((! (*insn_data[icode].operand[2].predicate) (op1, mode1))
-	||  (d->args_type == Va_Vb_u6 && !(UNSIGNED_INT6 (INTVAL (op1))))   
-	||  (d->args_type == Va_Vb_u8 && !(UNSIGNED_INT8 (INTVAL (op1))))   
+	||  (d->args_type == Va_Vb_u6 && !(UNSIGNED_INT6 (INTVAL (op1))))
+	||  (d->args_type == Va_Vb_u8 && !(UNSIGNED_INT8 (INTVAL (op1))))
 	)
-      error ("Operand 2 of %s instruction should be an unsigned %d-bit value.", 
+      error ("Operand 2 of %s instruction should be an unsigned %d-bit value.",
 	     d->name,
 	     (d->args_type == Va_Vb_u6)? 6: 8);
-    
+
     pat = GEN_FCN (icode) (target, op0, op1);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return target;
 
@@ -7408,23 +7392,23 @@ arc_expand_simd_builtin (tree exp,
     arg1 = CALL_EXPR_ARG (exp, 1);
     op0 = expand_expr (arg0, NULL_RTX, SImode, EXPAND_NORMAL);
     op1 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL);
-    
+
     target = gen_reg_rtx (V8HImode);
     mode0 =  insn_data[icode].operand[1].mode;
     mode1 =  insn_data[icode].operand[2].mode;
-    
+
     if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
 
     if ( (!(*insn_data[icode].operand[2].predicate) (op1, mode1))
 	 || !(UNSIGNED_INT8 (INTVAL (op1))))
-      error ("Operand 2 of %s instruction should be an unsigned 8-bit value.", 
+      error ("Operand 2 of %s instruction should be an unsigned 8-bit value.",
 	     d->name);
-    
+
     pat = GEN_FCN (icode) (target, op0, op1);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return target;
 
@@ -7439,7 +7423,7 @@ arc_expand_simd_builtin (tree exp,
     target = gen_reg_rtx (V8HImode);
     mode0 =  insn_data[icode].operand[1].mode;
     mode1 =  insn_data[icode].operand[2].mode;
-    
+
     if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
 
@@ -7447,11 +7431,11 @@ arc_expand_simd_builtin (tree exp,
 	 || !(UNSIGNED_INT3 (INTVAL (op1))))
       error ("Operand 2 of %s instruction should be an unsigned 3-bit value (I0-I7).",
 	     d->name);
-    
+
     pat = GEN_FCN (icode) (target, op0, op1, op2);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return target;
 
@@ -7461,21 +7445,21 @@ arc_expand_simd_builtin (tree exp,
     arg1 = CALL_EXPR_ARG (exp, 1);
     op0 = expand_expr (arg0, NULL_RTX, V8HImode, EXPAND_NORMAL);
     op1 = expand_expr (arg1, NULL_RTX, V8HImode, EXPAND_NORMAL);
-    
+
     target = gen_reg_rtx (V8HImode);
     mode0 =  insn_data[icode].operand[1].mode;
     mode1 =  insn_data[icode].operand[2].mode;
-    
+
     if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
-    
+
     if (! (*insn_data[icode].operand[2].predicate) (op1, mode1))
       op1 = copy_to_mode_reg (mode1, op1);
-    
+
     pat = GEN_FCN (icode) (target, op0, op1);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return target;
 
@@ -7483,17 +7467,17 @@ arc_expand_simd_builtin (tree exp,
     icode = d->icode;
     arg0 = CALL_EXPR_ARG (exp, 0);
     op0 = expand_expr (arg0, NULL_RTX, V8HImode, EXPAND_NORMAL);
-    
+
     target = gen_reg_rtx (V8HImode);
     mode0 =  insn_data[icode].operand[1].mode;
-    
+
     if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
-    
+
     pat = GEN_FCN (icode) (target, op0);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return target;
 
@@ -7504,7 +7488,7 @@ arc_expand_simd_builtin (tree exp,
     op0 = expand_expr (arg0, NULL_RTX, SImode, EXPAND_NORMAL);
     op1 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL);
 
-    
+
     if (icode == CODE_FOR_vdirun_insn)
       target = gen_rtx_REG (SImode, 131);
     else if (icode == CODE_FOR_vdorun_insn)
@@ -7514,18 +7498,18 @@ arc_expand_simd_builtin (tree exp,
 
     mode0 =  insn_data[icode].operand[1].mode;
     mode1 =  insn_data[icode].operand[2].mode;
-    
+
     if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
 
     if (! (*insn_data[icode].operand[2].predicate) (op1, mode1))
       op1 = copy_to_mode_reg (mode1, op1);
 
-    
+
     pat = GEN_FCN (icode) (target, op0, op1);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return NULL_RTX;
 
@@ -7536,72 +7520,72 @@ arc_expand_simd_builtin (tree exp,
     op0 = expand_expr (arg0, NULL_RTX, SImode, EXPAND_NORMAL);
     op1 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL);
 
-    
+
     if (! (GET_CODE (op0) == CONST_INT)
 	|| !(UNSIGNED_INT3 (INTVAL (op0))))
       error ("Operand 1 of %s instruction should be an unsigned 3-bit value (DR0-DR7).",
 	     d->name);
-      
+
     mode1 =  insn_data[icode].operand[1].mode;
 
     if (icode == CODE_FOR_vdiwr_insn)
-      target = gen_rtx_REG (SImode, ARC_FIRST_SIMD_DMA_CONFIG_IN_REG + INTVAL (op0)); 
+      target = gen_rtx_REG (SImode, ARC_FIRST_SIMD_DMA_CONFIG_IN_REG + INTVAL (op0));
     else if (icode == CODE_FOR_vdowr_insn)
       target = gen_rtx_REG (SImode, ARC_FIRST_SIMD_DMA_CONFIG_OUT_REG + INTVAL (op0));
     else
       gcc_unreachable ();
-    
+
     if (! (*insn_data[icode].operand[2].predicate) (op1, mode1))
       op1 = copy_to_mode_reg (mode1, op1);
 
     pat = GEN_FCN (icode) (target, op1);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return NULL_RTX;
 
   case void_u6:
     icode = d->icode;
     arg0 = CALL_EXPR_ARG (exp, 0);
-    
+
     fold (arg0);
-    
+
     op0 = expand_expr (arg0, NULL_RTX, SImode, EXPAND_NORMAL);
     mode0 = insn_data[icode].operand[0].mode;
 
-    /* op0 should be u6 */
+    /* op0 should be u6.  */
     if (! (*insn_data[icode].operand[0].predicate) (op0, mode0)
 	|| !(UNSIGNED_INT6 (INTVAL (op0))))
       error ("Operand of %s instruction should be an unsigned 6-bit value.",
 	     d->name);
-    
+
     pat = GEN_FCN (icode) (op0);
     if (! pat)
       return 0;
-    
+
     emit_insn (pat);
     return NULL_RTX;
-    
+
   case void_rlimm:
     icode = d->icode;
     arg0 = CALL_EXPR_ARG (exp, 0);
-    
+
     fold (arg0);
-    
+
     op0 = expand_expr (arg0, NULL_RTX, SImode, EXPAND_NORMAL);
     mode0 = insn_data[icode].operand[0].mode;
-    
+
     if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
       op0 = copy_to_mode_reg (mode0, op0);
-    
+
     pat = GEN_FCN (icode) (op0);
     if (! pat)
       return 0;
-    
+
     emit_insn (pat);
     return NULL_RTX;
-    
+
   case Va_Vb_Ic_u8:
     {
       rtx src_vreg;
@@ -7614,14 +7598,14 @@ arc_expand_simd_builtin (tree exp,
       op0 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL);    /* [I]0-7 */
       op1 = expand_expr (arg2, NULL_RTX, SImode, EXPAND_NORMAL);    /* u8 */
       op2 = gen_rtx_REG (V8HImode, ARC_FIRST_SIMD_VR_REG);	    /* VR0 */
-    
+
       /* target <- src vreg */
       emit_insn (gen_move_insn (target, src_vreg));
 
       /* target <- vec_concat: target, mem(Ib, u8) */
       mode0 =  insn_data[icode].operand[3].mode;
       mode1 =  insn_data[icode].operand[1].mode;
-    
+
       if ( (!(*insn_data[icode].operand[3].predicate) (op0, mode0))
 	   || !(UNSIGNED_INT3 (INTVAL (op0))))
 	error ("Operand 1 of %s instruction should be an unsigned 3-bit value (I0-I7).",
@@ -7631,11 +7615,11 @@ arc_expand_simd_builtin (tree exp,
 	   || !(UNSIGNED_INT8 (INTVAL (op1))))
 	error ("Operand 2 of %s instruction should be an unsigned 8-bit value.",
 	       d->name);
-    
+
       pat = GEN_FCN (icode) (target, op1, op2, op0);
       if (! pat)
 	return 0;
-  
+
       emit_insn (pat);
       return target;
     }
@@ -7650,12 +7634,12 @@ arc_expand_simd_builtin (tree exp,
     op1 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL);   /* I[0-7] */
     op2 = expand_expr (arg2, NULL_RTX, SImode, EXPAND_NORMAL);   /* u8     */
     op3 = expand_expr (arg0, NULL_RTX, V8HImode, EXPAND_NORMAL); /* Vdest  */
-    
+
     mode0 =  insn_data[icode].operand[0].mode;
     mode1 =  insn_data[icode].operand[1].mode;
     mode2 =  insn_data[icode].operand[2].mode;
     mode3 =  insn_data[icode].operand[3].mode;
-    
+
     if ( (!(*insn_data[icode].operand[1].predicate) (op1, mode1))
 	 || !(UNSIGNED_INT3 (INTVAL (op1))))
       error ("Operand 2 of %s instruction should be an unsigned 3-bit value (I0-I7).",
@@ -7665,14 +7649,14 @@ arc_expand_simd_builtin (tree exp,
 	 || !(UNSIGNED_INT8 (INTVAL (op2))))
       error ("Operand 3 of %s instruction should be an unsigned 8-bit value.",
 	     d->name);
-    
+
     if (!(*insn_data[icode].operand[3].predicate) (op3, mode3))
       op3 = copy_to_mode_reg (mode3, op3);
-      
+
     pat = GEN_FCN (icode) (op0, op1, op2, op3);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return NULL_RTX;
 
@@ -7684,7 +7668,7 @@ arc_expand_simd_builtin (tree exp,
     op0 = gen_rtx_REG (V8HImode, ARC_FIRST_SIMD_VR_REG);       /* VR0    */
     op1 = expand_expr (arg0, NULL_RTX, SImode, EXPAND_NORMAL); /* I[0-7] */
     op2 = expand_expr (arg1, NULL_RTX, SImode, EXPAND_NORMAL); /* u8     */
-    
+
     /* target <- src vreg */
     target = gen_reg_rtx (V8HImode);
 
@@ -7692,7 +7676,7 @@ arc_expand_simd_builtin (tree exp,
     mode0 =  insn_data[icode].operand[1].mode;
     mode1 =  insn_data[icode].operand[2].mode;
     mode2 =  insn_data[icode].operand[3].mode;
-    
+
     if ( (!(*insn_data[icode].operand[2].predicate) (op1, mode1))
 	 || !(UNSIGNED_INT3 (INTVAL (op1))))
       error ("Operand 1 of %s instruction should be an unsigned 3-bit value (I0-I7).",
@@ -7702,11 +7686,11 @@ arc_expand_simd_builtin (tree exp,
 	 || !(UNSIGNED_INT8 (INTVAL (op2))))
       error ("Operand 2 of %s instruction should be an unsigned 8-bit value.",
 	     d->name);
-    
+
     pat = GEN_FCN (icode) (target, op0, op1, op2);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return target;
 
@@ -7727,8 +7711,8 @@ arc_expand_simd_builtin (tree exp,
     mode2 =  insn_data[icode].operand[2].mode;
     mode3 =  insn_data[icode].operand[3].mode;
     mode4 =  insn_data[icode].operand[4].mode;
-    
-    /* correctness checks for the operands */
+
+    /* Do some correctness checks for the operands.  */
     if ( (!(*insn_data[icode].operand[0].predicate) (op0, mode0))
 	 || !(UNSIGNED_INT8 (INTVAL (op0))))
       error ("Operand 4 of %s instruction should be an unsigned 8-bit value (0-255).",
@@ -7741,12 +7725,12 @@ arc_expand_simd_builtin (tree exp,
 
     if (!(*insn_data[icode].operand[3].predicate) (op3, mode3))
       op3 = copy_to_mode_reg (mode3, op3);
-      
+
     if ( (!(*insn_data[icode].operand[4].predicate) (op4, mode4))
 	 || !(UNSIGNED_INT3 (INTVAL (op4))))
       error ("Operand 2 of %s instruction should be an unsigned 3-bit value (subreg 0-7).",
 	     d->name);
-    else if (icode == CODE_FOR_vst32_n_insn 
+    else if (icode == CODE_FOR_vst32_n_insn
 	     && ((INTVAL(op4) % 2 ) != 0))
       error ("Operand 2 of %s instruction should be an even 3-bit value (subreg 0,2,4,6).",
 	     d->name);
@@ -7754,7 +7738,7 @@ arc_expand_simd_builtin (tree exp,
     pat = GEN_FCN (icode) (op0, op1, op2, op3, op4);
     if (! pat)
       return 0;
-  
+
     emit_insn (pat);
     return NULL_RTX;
 
@@ -7798,7 +7782,7 @@ arc_register_move_cost (enum machine_mode mode ATTRIBUTE_UNUSED,
 	  || from_class == WRITABLE_CORE_REGS))
     return 8;
 
-  /* Force an attempt to 'mov Dy,Dx' to spill. */
+  /* Force an attempt to 'mov Dy,Dx' to spill.  */
   if (TARGET_ARC700 && TARGET_DPFP
       && from_class == DOUBLE_REGS && to_class == DOUBLE_REGS)
       return 100;
@@ -7856,7 +7840,7 @@ arc_output_addsi (rtx *operands, const char *cond)
   return ""; \
 } while (0)
 #define ADDSI_OUTPUT1(FORMAT) ADDSI_OUTPUT ((format, FORMAT, cond))
-  
+
   /* Now try to emit a 32 bit insn without long immediate.  */
   if (!match && match2 && REG_P (operands[1]))
     ADDSI_OUTPUT1 ("add%s %%0,%%2,%%1");
@@ -8029,7 +8013,7 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
 
 	  /* Take care of the REG_EQUAL note that will be attached to mark the
 	     output reg equal to the initial symbol_ref after this code is
-	     executed. */
+	     executed.  */
 	  emit_move_insn (operands[0], operands[0]);
 	  return 1;
 	}
@@ -8095,7 +8079,7 @@ prepare_extend_operands (rtx *operands, enum rtx_code code,
 
       /* Take care of the REG_EQUAL note that will be attached to mark the
 	 output reg equal to the initial extension after this code is
-	 executed. */
+	 executed.  */
       emit_move_insn (operands[0], operands[0]);
       return 1;
     }
@@ -8682,15 +8666,13 @@ arc_process_double_reg_moves (rtx *operands)
   enum usesDxState state = none;
 
   if (refers_to_regno_p (40, 44, src, 0))
-  {
-     state = srcDx;
-  }
+    state = srcDx;
   if (refers_to_regno_p (40, 44, dest, 0))
-  {
-     /* Via arc_register_move_cost, we should never see D,D moves.  */
-     gcc_assert (state == none);
-     state = destDx;
-  }
+    {
+      /* Via arc_register_move_cost, we should never see D,D moves.  */
+      gcc_assert (state == none);
+      state = destDx;
+    }
 
   if (state == none)
     return NULL_RTX;
@@ -8699,24 +8681,24 @@ arc_process_double_reg_moves (rtx *operands)
 
   if (state == srcDx)
     {
-	/* Without the LR insn, we need to split this into a
-	   sequence of insns which will use the DEXCLx and DADDHxy
-	   insns to be able to read the Dx register in question. */
-	if (TARGET_DPFP_DISABLE_LRSR)
+      /* Without the LR insn, we need to split this into a
+	 sequence of insns which will use the DEXCLx and DADDHxy
+	 insns to be able to read the Dx register in question.  */
+      if (TARGET_DPFP_DISABLE_LRSR)
 	{
 	  /* gen *movdf_insn_nolrsr */
 	  rtx set = gen_rtx_SET (VOIDmode, dest, src);
 	  rtx use1 = gen_rtx_USE (VOIDmode, const1_rtx);
 	  emit_insn (gen_rtx_PARALLEL (VOIDmode, gen_rtvec (2, set, use1)));
 	}
-	else
+      else
 	{
 	  /* When we have 'mov D, r' or 'mov D, D' then get the target
 	     register pair for use with LR insn.  */
 	  rtx destHigh = simplify_gen_subreg(SImode, dest, DFmode, 4);
 	  rtx destLow  = simplify_gen_subreg(SImode, dest, DFmode, 0);
 
-	  /* Produce the two LR insns to get the high and low parts. */
+	  /* Produce the two LR insns to get the high and low parts.  */
 	  emit_insn (gen_rtx_SET (VOIDmode,
 	  			  destHigh,
 	  			  gen_rtx_UNSPEC_VOLATILE (Pmode, gen_rtvec (1, src),
@@ -8727,7 +8709,7 @@ arc_process_double_reg_moves (rtx *operands)
 				  VUNSPEC_LR)));
 	}
     }
-    else if (state == destDx)
+  else if (state == destDx)
     {
       /* When we have 'mov r, D' or 'mov D, D' and we have access to the
          LR insn get the target register pair.  */
@@ -8739,12 +8721,12 @@ arc_process_double_reg_moves (rtx *operands)
 		 			  VUNSPEC_DEXCL_NORES));
 
     }
-    else
-      gcc_unreachable ();
-    
-    val = get_insns ();
-    end_sequence ();
-    return val;    
+  else
+    gcc_unreachable ();
+
+  val = get_insns ();
+  end_sequence ();
+  return val;
 }
 
 /* operands 0..1 are the operands of a 64 bit move instruction.
@@ -8816,7 +8798,7 @@ arc_split_move (rtx *operands)
   operands[3+swap] = xop[1];
   operands[4-swap] = xop[2];
   operands[5-swap] = xop[3];
-  
+
   start_sequence ();
   emit_insn (gen_rtx_SET (VOIDmode, operands[2], operands[3]));
   emit_insn (gen_rtx_SET (VOIDmode, operands[4], operands[5]));

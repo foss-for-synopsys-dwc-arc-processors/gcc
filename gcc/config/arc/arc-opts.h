@@ -27,4 +27,4 @@ enum processor_type
   PROCESSOR_ARC600,
   PROCESSOR_ARC601,
   PROCESSOR_ARC700
-};  
+};

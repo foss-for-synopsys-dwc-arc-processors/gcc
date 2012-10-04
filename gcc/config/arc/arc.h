@@ -7,7 +7,7 @@
    Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
    behalf of Synopsys Inc.
 
-   Position Independent Code support added,Code cleaned up, 
+   Position Independent Code support added,Code cleaned up,
    Comments and Support For ARC700 instructions added by
    Saurabh Verma (saurabh.verma@codito.com)
    Ramana Radhakrishnan(ramana.radhakrishnan@codito.com)
@@ -34,10 +34,10 @@ along with GCC; see the file COPYING3.  If not see
 /* Things to do:
 
    - incscc, decscc?
-	
+
 */
 
-/* ************************************************************************* 
+/* *************************************************************************
  * Role of the SYMBOL_REF_FLAG in the rtx:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * This is to document the change in the role of the SYMBOL_REF_FLAG
@@ -52,16 +52,13 @@ along with GCC; see the file COPYING3.  If not see
  * pc+ symbolname@GOTOFF instead of symbolname@GOT.Also references to
  * local functions are made relative instead of going through the PLT.
  *      The earlier work of the flag is accomplished by mangling the
- * name of the symbol(adding an *_CALL_FLAG_CHAR at the start) and modifying 
+ * name of the symbol(adding an *_CALL_FLAG_CHAR at the start) and modifying
  * the print_operand routine to unmangle it and print the reference as
- * %st(symbol_name_unmangled) instead. The convention used for mangling 
+ * %st(symbol_name_unmangled) instead. The convention used for mangling
  * accomodates the long_call and short_call function attributes by using one
  * of (LONG_/SHORT_/SIMPLE_)CALL_FLAG_CHAR characters as the prefix.
  * ************************************************************************/
 
-
-/* ashwin : include options.h */
-/* #include "options.h" */
 
 #undef ASM_SPEC
 #undef LINK_SPEC
@@ -214,7 +211,7 @@ along with GCC; see the file COPYING3.  If not see
 #define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s} crtend.o%s} \
   %{shared:crtendS.o%s} crtn.o%s"
 
-#endif 
+#endif
 
 #if UCLIBC_DEFAULT
 #undef LIB_SPEC
@@ -271,8 +268,8 @@ along with GCC; see the file COPYING3.  If not see
  * default for A7, and only for pre A7 cores when -mswap is given.  */
 #define TARGET_SWAP (TARGET_ARC700 || TARGET_SWAP_SET)
 
-/* Non-zero means the cpu supports min and max instructions.  This flag is set by
- * default. */
+/* Non-zero means the cpu supports min and max instructions.
+   This flag is set by  default.  */
 #define TARGET_MINMAX (TARGET_ARCOMPACT || TARGET_MINMAX_SET)
 
 /* Provide some macros for size / scheduling features of the ARC700, so
@@ -307,13 +304,13 @@ along with GCC; see the file COPYING3.  If not see
 
 #ifndef MULTILIB_DEFAULTS
 /* FIXME:  Is this the best way to specify the default?  */
-#define MULTILIB_DEFAULTS { "mARC700", "EL" } 
+#define MULTILIB_DEFAULTS { "mARC700", "EL" }
 #endif
 
 /* Target machine storage layout.  */
 
 /* Define to use software floating point emulator for REAL_ARITHMETIC and
-   decimal <-> binary conversion. */
+   decimal <-> binary conversion.  */
 /*#define REAL_ARITHMETIC*/
 
 /* We want zero_extract to mean the same
@@ -340,7 +337,7 @@ along with GCC; see the file COPYING3.  If not see
 #define UNITS_PER_WORD 4
 
 /* Define this macro if it is advisable to hold scalars in registers
-   in a wider mode than that declared by the program.  In such cases, 
+   in a wider mode than that declared by the program.  In such cases,
    the value is constrained to be within the bounds of the declared
    type, but kept valid in the wider mode.  The signedness of the
    extension may differ from that of the type.  */
@@ -362,7 +359,7 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 /* TOCHECK: Changed from 64 to 32 */
 #define STACK_BOUNDARY 32
 
-/* ALIGN FRAMES on word boundaries */
+/* ALIGN FRAMES on word boundaries.  */
 #define ARC_STACK_ALIGN(LOC) \
   (((LOC) + STACK_BOUNDARY / BITS_PER_UNIT - 1) & -STACK_BOUNDARY/BITS_PER_UNIT)
 
@@ -461,11 +458,11 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 
    Registers 61, 62, and 63 are not really registers and we needn't treat
    them as such.  We still need a register for the condition code and
-   argument pointer */
+   argument pointer.  */
 
 /* r63 is pc, r64-r127 = simd vregs, r128-r143 = simd dma config regs
    r144, r145 = lp_start, lp_end
-   and therefore the pseudo registers start from r146 */
+   and therefore the pseudo registers start from r146. */
 #define FIRST_PSEUDO_REGISTER 146
 
 /* 1 for registers that have pervasive standard uses
@@ -499,10 +496,7 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
    31    - return address register
 
    By default, the extension registers are not available.  */
-/* Size of this and value of FIRST_PSEUDO_REGISTER should be equal, *\/ */
-/* hence the added another '1' at the end */
-/*    reference : init_reg_sets() in regclass.c:290 */
-/* Present implementations only have VR0-VR23 only */
+/* Present implementations only have VR0-VR23 only.  */
 /* ??? FIXME: r27 and r31 should not be fixed registers.  */
 #define FIXED_REGISTERS \
 { 0, 0, 0, 0, 0, 0, 0, 0,	\
@@ -535,10 +529,6 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
    The latter must include the registers where values are returned
    and the register where structure-value addresses are passed.
    Aside from that, you can include as many other registers as you like.  */
-
-/* Size of this and value of FIRST_PSEUDO_REGISTER should be equal, *\/ */
-/* hence the added another '1' at the end */
-/*    reference : init_reg_sets() in regclass.c:290 */
 #define CALL_USED_REGISTERS     \
 {                               \
   1, 1, 1, 1, 1, 1, 1, 1,	\
@@ -639,9 +629,9 @@ extern unsigned int arc_mode_class[];
    It is important that any condition codes have class NO_REGS.
    See `register_operand'.  */
 
-enum reg_class 
+enum reg_class
 {
-   NO_REGS, 
+   NO_REGS,
    R0_REG,			/* 'x' */
    GP_REG,			/* 'Rgp' */
    FP_REG,			/* 'f' */
@@ -687,7 +677,7 @@ enum reg_class
   "CHEAP_CORE_REGS",	  \
   "ALL_CORE_REGS",	  \
   "ALL_REGS"          	  \
-} 
+}
 
 /* Define which registers fit in which classes.
    This is an initializer for a vector of HARD_REG_SET
@@ -720,7 +710,7 @@ enum reg_class
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
-/* local macros to mark the first and last regs of different classes */
+/* Local macros to mark the first and last regs of different classes.  */
 #define ARC_FIRST_SIMD_VR_REG              64
 #define ARC_LAST_SIMD_VR_REG               127
 
@@ -738,8 +728,8 @@ extern enum reg_class arc_regno_reg_class[];
 
 #define REGNO_REG_CLASS(REGNO) (arc_regno_reg_class[REGNO])
 
-/* The class value for valid index registers. An index register is 
-   one used in an address where its value is either multiplied by 
+/* The class value for valid index registers. An index register is
+   one used in an address where its value is either multiplied by
    a scale factor or added to another register (as well as added to a
    displacement).  */
 
@@ -778,13 +768,11 @@ extern enum reg_class arc_regno_reg_class[];
 (( GET_MODE_SIZE (MODE) == 16 && CLASS == SIMD_VR_REGS) ? 1: \
 ((GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD))
 
-/* local to this file */
 #define SMALL_INT(X) ((unsigned) ((X) + 0x100) < 0x200)
 #define SMALL_INT_RANGE(X, OFFSET, SHIFT) \
   ((unsigned) (((X) >> (SHIFT)) + 0x100) \
    < 0x200 - ((unsigned) (OFFSET) >> (SHIFT)))
 #define SIGNED_INT12(X) ((unsigned) ((X) + 0x800) < 0x1000)
-/* local to this file */
 #define LARGE_INT(X) \
 (((X) < 0) \
  ? (X) >= (-(HOST_WIDE_INT) 0x7fffffff - 1) \
@@ -807,7 +795,6 @@ extern enum reg_class arc_regno_reg_class[];
    is at the high-address end of the local variables;
    that is, each additional local variable allocated
    goes at a more negative offset in the frame.  */
-/* ashwin : need to give some value to this macro */
 #define FRAME_GROWS_DOWNWARD 1
 
 /* Offset within stack frame to start allocating local variables at.
@@ -852,7 +839,7 @@ arc_return_addr_rtx(COUNT,FRAME)
 #define FRAME_POINTER_REGNUM 27
 
 /* Base register for access to arguments of the function. This register
-   will be eliminated into either fp or sp. */
+   will be eliminated into either fp or sp.  */
 #define ARG_POINTER_REGNUM 62
 
 #define RETURN_ADDR_REGNUM 31
@@ -911,7 +898,7 @@ arc_return_addr_rtx(COUNT,FRAME)
    + 1)
 
 /* Special characters prefixed to function names
-   in order to encode attribute like information. */
+   in order to encode attribute like information.  */
 #define SIMPLE_CALL_FLAG_CHAR   '&'
 #define SHORT_CALL_FLAG_CHAR	'!'
 #define LONG_CALL_FLAG_CHAR	'#'
@@ -1239,7 +1226,7 @@ extern const char *arc_text_section,*arc_data_section,*arc_rodata_section;
 #define SDATA_SECTION_ASM_OP	"\t.section .sdata"
 #define SBSS_SECTION_ASM_OP	"\t.section .sbss"
 
-/* Expression whose value is a string, including spacing, containing the 
+/* Expression whose value is a string, including spacing, containing the
    assembler operation to identify the following data as initialization/termination
    code. If not defined, GCC will assume such a section does not exist. */
 #define INIT_SECTION_ASM_OP "\t.section\t.init"
@@ -1374,14 +1361,14 @@ do { assemble_name (FILE, NAME); fputs (":\n", FILE); } while (0)
    dwarfout.c that says it should be using ASM_OUTPUT_INTERNAL_LABEL.  */
 #define ASM_OUTPUT_LABELREF(FILE, NAME1) \
 do {							\
-  const char *NAME;                                     \
-  NAME=(*targetm.strip_name_encoding)(NAME1);           \
+  const char *NAME;					\
+  NAME = (*targetm.strip_name_encoding)(NAME1);		\
   if ((NAME)[0] == '.' && (NAME)[1] == 'L')		\
-         fprintf (FILE, "%s", NAME);			\
+    fprintf (FILE, "%s", NAME);				\
   else							\
     {							\
-      if (!ASM_NAME_P (NAME1))                           \
-      fprintf (FILE, "%s", user_label_prefix);		\
+      if (!ASM_NAME_P (NAME1))				\
+	fprintf (FILE, "%s", user_label_prefix);	\
       fprintf (FILE, "%s", NAME);			\
     }							\
 } while (0)
@@ -1418,7 +1405,7 @@ do {							\
 /*  A C string containing the appropriate assembler directive to
     specify the size of a symbol, without any arguments.  On systems
     that use ELF, the default (in `config/elfos.h') is `"\t.size\t"';
-    on other systems, the default is not to define this macro. */
+    on other systems, the default is not to define this macro.  */
 #undef SIZE_ASM_OP
 #define SIZE_ASM_OP "\t.size\t"
 
@@ -1553,7 +1540,7 @@ do { \
 
 /*  ASM_OUTPUT_ALIGNED_DECL_LOCAL (STREAM, DECL, NAME, SIZE, ALIGNMENT)
     Define this macro when you need to see the variable's decl in order to
-    chose what to output. */
+    chose what to output.  */
 #define ASM_OUTPUT_ALIGNED_DECL_LOCAL(STREAM, DECL, NAME, SIZE, ALIGNMENT) \
 arc_asm_output_aligned_decl_local (STREAM, DECL, NAME, SIZE, ALIGNMENT, 0)
 
@@ -1596,33 +1583,20 @@ extern int arc_return_address_regs[4];
 
 #define INCOMING_RETURN_ADDR_RTX  gen_rtx_REG (Pmode, 31)
 
-/* Frame info */
+/* Frame info.  */
 /* Force the generation of dwarf .debug_frame sections even if not
-   compiling -g.  This guarantees that we can unwind the stack. */
+   compiling -g.  This guarantees that we can unwind the stack.  */
 
 #define DWARF2_FRAME_INFO 1
 
 /* Define this macro to 0 if your target supports DWARF 2 frame unwind
-   information, but it does not yet work with exception handling. */
+   information, but it does not yet work with exception handling.  */
 #define DWARF2_UNWIND_INFO 0
 
 
 /* Turn off splitting of long stabs.  */
 #define DBX_CONTIN_LENGTH 0
 
-/* A C statement to output DBX debugging information at the end of
-   compilation of the main source file NAME. If you don't define this macro,
-   nothing special is output at the end of compilation, which is correct for
-   most machines. */
-    
-/* ashwin */
-/* #undef DBX_OUTPUT_MAIN_SOURCE_FILE_END */
-/* #define DBX_OUTPUT_MAIN_SOURCE_FILE_END(FILE, FILENAME)			\ */
-/* do {									\ */
-/*   text_section ();							\ */
-/*   fprintf ((FILE), "\t.stabs \"\",%d,0,0,.Letext\n.Letext:\n", N_SO);	\ */
-/* } while (0) */
-    
 /* Miscellaneous.  */
 
 /* Specify the machine mode that this machine uses
@@ -1635,7 +1609,7 @@ extern int arc_return_address_regs[4];
 /* Define as C expression which evaluates to nonzero if the tablejump
    instruction expects the table to contain offsets from the address of the
    table.
-   Do not define this if the table should contain absolute addresses. */
+   Do not define this if the table should contain absolute addresses.  */
 #define CASE_VECTOR_PC_RELATIVE TARGET_CASE_VECTOR_PC_RELATIVE
 
 #define CASE_VECTOR_SHORTEN_MODE(MIN_OFFSET, MAX_OFFSET, BODY) \
@@ -1713,10 +1687,6 @@ extern int arc_return_address_regs[4];
    since it hasn't been defined!  */
 extern struct rtx_def *arc_compare_op0, *arc_compare_op1;
 
-/* Define the function that build the compare insn for scc and bcc.  */
-/*extern struct rtx_def *gen_compare_reg ();*/
-
-
 /* ARC function types.   */
 enum arc_function_type {
   ARC_FUNCTION_UNKNOWN, ARC_FUNCTION_NORMAL,
@@ -1740,7 +1710,7 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
 	TEXT_SECTION_ASM_OP);
 
 /* This macro expands to the name of the scratch register r12, used for
- * temporary calculations according to the ABI */
+   temporary calculations according to the ABI.  */
 #define ARC_TEMP_SCRATCH_REG "r12"
 
 /* The C++ compiler must use one bit to indicate whether the function
@@ -1751,8 +1721,8 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
    is in use.  But, on some platforms function pointers can be odd,
    and so this doesn't work.  In that case, we use the low-order bit
    of the `delta' field, and shift the remainder of the `delta' field
-   to the left. We need to this for A4 because the address is always 
-   shifted and thus can be odd. */
+   to the left. We need to this for A4 because the address is always
+   shifted and thus can be odd.  */
 #define TARGET_PTRMEMFUNC_VBIT_LOCATION \
   (ptrmemfunc_vbit_in_pfn)
 

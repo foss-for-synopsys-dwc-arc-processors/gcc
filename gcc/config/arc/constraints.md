@@ -101,7 +101,7 @@
 
 (define_constraint "I"
   "@internal
-   A signed 12-bit integer constant." 
+   A signed 12-bit integer constant."
   (and (match_code "const_int")
        (match_test "SIGNED_INT12 (ival)")))
 
