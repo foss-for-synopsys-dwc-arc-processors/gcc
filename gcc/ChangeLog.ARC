@@ -1,3 +1,13 @@
+2012-10-07  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc: Remove mentions of A4 from comments.
+	* config/arc/arc.h (ASM_SPEC): Reove !mA4 condition.
+	(TARGET_PTRMEMFUNC_VBIT_LOCATION): Put comment about A4 into past tense.
+	* config/arc/arc.md: Remove mentions of A4 from comments.
+	(attribute "cpu"): Replace "A4" with "none".
+	(attributes "cond", "length"): Remove "A4" case.
+	* config/arc/arc.opt (-mA4): Remove -mA4 option.
+	
 2012-10-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	From Vineet Gupta:

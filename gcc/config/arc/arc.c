@@ -1705,48 +1705,7 @@ frame_stack_add (HOST_WIDE_INT offset)
      stalls after function return.  */
 /* Function prologue/epilogue handlers.  */
 
-/* ARCtangent-A4 stack frames look like:
-
-             Before call                       After call
-        +-----------------------+       +-----------------------+
-        |                       |       |                       |
-   high |  local variables,     |       |  local variables,     |
-   mem  |  reg save area, etc.  |       |  reg save area, etc.  |
-        |                       |       |                       |
-        +-----------------------+       +-----------------------+
-        |                       |       |                       |
-        |  arguments on stack.  |       |  arguments on stack.  |
-        |                       |       |                       |
- SP+16->+-----------------------+FP+48->+-----------------------+
-        | 4 word save area for  |       |  reg parm save area,  |
-        | return addr, prev %fp |       |  only created for     |
-  SP+0->+-----------------------+       |  variable argument    |
-                                        |  functions            |
-                                 FP+16->+-----------------------+
-                                        | 4 word save area for  |
-                                        | return addr, prev %fp |
-                                  FP+0->+-----------------------+
-                                        |                       |
-                                        |  local variables      |
-                                        |                       |
-                                        +-----------------------+
-                                        |                       |
-                                        |  register save area   |
-                                        |                       |
-                                        +-----------------------+
-                                        |                       |
-                                        |  alloca allocations   |
-                                        |                       |
-                                        +-----------------------+
-                                        |                       |
-                                        |  arguments on stack   |
-                                        |                       |
-                                 SP+16->+-----------------------+
-   low                                  | 4 word save area for  |
-   memory                               | return addr, prev %fp |
-                                  SP+0->+-----------------------+
-
-ARCompact stack frames look like:
+/* ARCompact stack frames look like:
 
            Before call                     After call
   high  +-----------------------+       +-----------------------+
@@ -1974,11 +1933,6 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
 
   /* 4) Space for back trace data structure.
 
-        For ARCtangent-A4:
-          <return addr reg size> + <fp size> + <static link reg size> +
-          <reserved-word>
-
-        For ARCompact:
           <return addr reg size> (if required) + <fp size> (if required)
   */
   frame_info->save_return_addr

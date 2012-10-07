@@ -71,7 +71,6 @@
 ;;
 ;;   H  fp 16-bit constant
 ;;   I signed 12-bit immediate (for ARCompact)
-;;      signed 9-bit immediate (for ARCtangent-A4)
 ;;   J  long immediate (signed 32-bit immediate)
 ;;   K  unsigned 3-bit immediate (for ARCompact)
 ;;   L  unsigned 6-bit immediate (for ARCompact)
@@ -196,7 +195,7 @@
 
 
 ;; Attribute describing the processor
-(define_attr "cpu" "A4,A5,ARC600,ARC700"
+(define_attr "cpu" "none,A5,ARC600,ARC700"
   (const (symbol_ref "arc_cpu_attr")))
 
 ;; true for compact instructions (those with _s suffix)
@@ -220,80 +219,59 @@
 ;; NOCOND: This insn can't use and doesn't affect the condition codes.
 
 (define_attr "cond" "use,canuse,canuse_limm,canuse_limm_add,set,set_zn,clob,nocond"
-  (if_then_else (eq_attr "cpu" "A4")
-      (cond [(and (eq_attr "type" "unary,move")
-                  (match_operand 1 "register_operand" ""))
-             (const_string "canuse")
+  (if_then_else (eq_attr "iscompact" "maybe,false")
+      (cond [(eq_attr "type" "unary,move")
+	     (if_then_else
+		(ior (match_operand 1 "u6_immediate_operand" "")
+		     (match_operand 1 "long_immediate_operand" ""))
+		(const_string "canuse")
+		(const_string "nocond"))
 
-             (and (eq_attr "type" "binary")
-                  (match_operand 2 "register_operand" ""))
-             (const_string "canuse")
+	     (eq_attr "type" "binary")
+	     (cond [(ne (symbol_ref "REGNO (operands[0])")
+			(symbol_ref "REGNO (operands[1])"))
+		    (const_string "nocond")
+		    (match_operand 2 "register_operand" "")
+		    (const_string "canuse")
+		    (match_operand 2 "u6_immediate_operand" "")
+		    (const_string "canuse")
+		    (match_operand 2 "long_immediate_operand" "")
+		    (const_string "canuse")
+		    (match_operand 2 "const_int_operand" "")
+		    (const_string "canuse_limm")]
+		   (const_string "nocond"))
 
-             (eq_attr "type" "compare")
-             (const_string "set")
+	     (eq_attr "type" "compare")
+	     (const_string "set")
 
-             (eq_attr "type" "cmove,branch")
-             (const_string "use")
+	     (eq_attr "type" "cmove,branch")
+	     (const_string "use")
 
-             (eq_attr "type" "multi,misc,shift")
-             (const_string "clob")
-            ]
+	     (eq_attr "is_sfunc" "yes")
+	     (cond [(ne (symbol_ref "(TARGET_MEDIUM_CALLS
+				      && !TARGET_LONG_CALLS_SET
+				      && flag_pic)")
+			(const_int 0))
+		    (const_string "canuse_limm_add")
+		    (ne (symbol_ref "(TARGET_MEDIUM_CALLS
+				      && !TARGET_LONG_CALLS_SET)")
+			(const_int 0))
+		    (const_string "canuse_limm")]
+		   (const_string "canuse"))
 
-            (const_string "nocond"))
+	    ]
 
-      (if_then_else (eq_attr "iscompact" "maybe,false")
-          (cond [(eq_attr "type" "unary,move")
-                 (if_then_else
-                    (ior (match_operand 1 "u6_immediate_operand" "")
-                         (match_operand 1 "long_immediate_operand" ""))
-                    (const_string "canuse")
-                    (const_string "nocond"))
+	    (const_string "nocond"))
 
-		 (eq_attr "type" "binary")
-		 (cond [(ne (symbol_ref "REGNO (operands[0])")
-                            (symbol_ref "REGNO (operands[1])"))
-			(const_string "nocond")
-			(match_operand 2 "register_operand" "")
-			(const_string "canuse")
-                        (match_operand 2 "u6_immediate_operand" "")
-			(const_string "canuse")
-                        (match_operand 2 "long_immediate_operand" "")
-			(const_string "canuse")
-                        (match_operand 2 "const_int_operand" "")
-			(const_string "canuse_limm")]
-		       (const_string "nocond"))
+      (cond [(eq_attr "type" "compare")
+	     (const_string "set")
 
-                 (eq_attr "type" "compare")
-                 (const_string "set")
+	     (eq_attr "type" "cmove,branch")
+	     (const_string "use")
 
-                 (eq_attr "type" "cmove,branch")
-                 (const_string "use")
+	    ]
 
-		 (eq_attr "is_sfunc" "yes")
-		 (cond [(ne (symbol_ref "(TARGET_MEDIUM_CALLS
-					  && !TARGET_LONG_CALLS_SET
-					  && flag_pic)")
-			    (const_int 0))
-		        (const_string "canuse_limm_add")
-			(ne (symbol_ref "(TARGET_MEDIUM_CALLS
-					  && !TARGET_LONG_CALLS_SET)")
-			    (const_int 0))
-		        (const_string "canuse_limm")]
-		       (const_string "canuse"))
-
-                ]
-
-                (const_string "nocond"))
-
-          (cond [(eq_attr "type" "compare")
-                 (const_string "set")
-
-                 (eq_attr "type" "cmove,branch")
-                 (const_string "use")
-
-                ]
-
-                (const_string "nocond")))))
+	    (const_string "nocond"))))
 
 (define_attr "verify_short" "no,yes"
   (if_then_else
@@ -345,34 +323,6 @@
 (define_attr "length" ""
   (cond
    [(eq_attr "lock_length" "!0") (const_int 2)
-    (eq_attr "cpu" "A4")
-      (cond [(eq_attr "type" "load")
-             (if_then_else
-                 (match_operand 1 "long_immediate_loadstore_operand" "")
-                 (const_int 8) (const_int 4))
-
-             (eq_attr "type" "store")
-             (if_then_else
-                 (match_operand 0 "long_immediate_loadstore_operand" "")
-                 (const_int 8) (const_int 4))
-
-             (eq_attr "type" "move,unary,compare")
-             (if_then_else (match_operand 1 "long_immediate_operand" "")
-                           (const_int 8) (const_int 4))
-
-             (eq_attr "type" "binary")
-             (if_then_else (match_operand 2 "long_immediate_operand" "")
-                           (const_int 8) (const_int 4))
-
-             (eq_attr "type" "cmove")
-             (if_then_else (match_operand 1 "register_operand" "")
-                           (const_int 4) (const_int 8))
-
-             (eq_attr "type" "multi") (const_int 8)
-		     (eq_attr "cond" "set,set_zn,clob") (const_int 8)
-            ]
-
-            (const_int 4))
 
     (eq_attr "iscompact" "true,maybe")
     ; The length can vary because of ADJUST_INSN_LENGTH.

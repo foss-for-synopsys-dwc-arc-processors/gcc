@@ -148,7 +148,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
 %{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
 %{msimd} \
-%{mmac_d16} %{mmac_24} %{!mA4:%{mdsp_packa}} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
+%{mmac_d16} %{mmac_24} %{mdsp_packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
 %{mcpu=ARC700|mARC700|mA7:%{mlock}} \
 %{mcpu=ARC700|mARC700|mA7:%{mswape}} \
 %{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
@@ -1721,8 +1721,8 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
    is in use.  But, on some platforms function pointers can be odd,
    and so this doesn't work.  In that case, we use the low-order bit
    of the `delta' field, and shift the remainder of the `delta' field
-   to the left. We need to this for A4 because the address is always
-   shifted and thus can be odd.  */
+   to the left. We needed to do this for A4 because the address was always
+   shifted and thus could be odd.  */
 #define TARGET_PTRMEMFUNC_VBIT_LOCATION \
   (ptrmemfunc_vbit_in_pfn)
 

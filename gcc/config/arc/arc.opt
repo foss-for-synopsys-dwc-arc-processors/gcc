@@ -41,10 +41,6 @@ mno-cond-exec
 Target Report RejectNegative Mask(NO_COND_EXEC)
 Disable ARCompact specific pass to generate conditional execution instructions
 
-mA4
-Target Report
-Generate code for ARCtangent-A4 processor. No longer supported.
-
 mA5
 Target Report
 Generate ARCompact 32-bit code for ARCtangent-A5 processor
