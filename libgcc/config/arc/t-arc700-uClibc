@@ -18,7 +18,6 @@
 # <http://www.gnu.org/licenses/>.
 
 CRTSTUFF_T_CFLAGS += -mno-sdata
-MULTILIB_EXTRA_OPTS = mno-sdata
 
 # Compile crtbeginS.o and crtendS.o with pic.
 CRTSTUFF_T_CFLAGS_S = $(CRTSTUFF_T_CFLAGS) -mA7 -fPIC

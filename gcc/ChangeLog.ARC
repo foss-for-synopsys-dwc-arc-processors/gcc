@@ -1,5 +1,14 @@
 2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/t-arc-uClibc: New file, to control multilib building.
+	* config/arc/t-arc-newlib: Likewise.  No endianness multilib for now.
+	* config.gcc: (arc-*-elf*) <tmake_file>: Add arc/t-arc-newlib.
+	(arc600-*-linux-uclibc*) <tmake_file>: Add arc/t-arc-uClibc.
+	(arc601-*-linux-uclibc*) <tmake_file>: Likewise.
+	(arc*-*-linux-uclibc*) <tmake_file>: Likewise.
+
+2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.c (arc_text_section, arc_data_section): Remove.
 	(arc_rodata_section): Likewise.
 	(arc_init): Remove initialization of deleted variables.

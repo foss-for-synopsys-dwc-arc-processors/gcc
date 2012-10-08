@@ -1,3 +1,9 @@
+2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/t-arc-newlib: Remove multilib settings.
+	* config/arc/t-arc600-uClibc: Likewise.
+	* config/arc/t-arc700-uClibc: Likewise.
+
 2012-08-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/ieee-754/gtdf2.S: Remove redundant check.

@@ -1,4 +1,4 @@
-# GCC Makefile fragment for ARC ARCompact CPU with uClibc on ARC600.
+# GCC Makefile fragment for ARC ARCompact CPU with uClibc
 
 # Copyright 2007-2012 Synopsys Inc.
 
@@ -17,11 +17,4 @@
 # with GCC; see the file COPYING3.  If not see
 # <http://www.gnu.org/licenses/>.
 
-CRTSTUFF_T_CFLAGS += -mno-sdata
-
-#
-CRTSTUFF_T_CFLAGS_S = $(CRTSTUFF_T_CFLAGS) -mA6
-
-TARGET_LIBGCC2_CFLAGS = -mA6
-
-PROFILE_OSDEP = prof-freq.o
+MULTILIB_EXTRA_OPTS = mno-sdata
