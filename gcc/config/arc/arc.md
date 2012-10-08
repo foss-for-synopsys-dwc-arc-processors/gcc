@@ -4198,6 +4198,11 @@
 ;;                 \/
 ;;             add{i} r3,r4/INT,r1
 ;; -------------------------------------------------------------
+;; ??? This should be covered by combine, alas, at times combine gets
+;; too clever for it's own good: when the shifted input is known to be
+;; either 0 or 1, the operation will be made into an if-then-else, and
+;; thus fail to match the add_n pattern.  Example: _mktm_r, line 85 in
+;; newlib/libc/time/mktm_r.c .
 
 (define_peephole2
   [(set (match_operand:SI 0 "dest_reg_operand" "")
@@ -4207,7 +4212,6 @@
        (plus:SI (match_operand:SI 4 "nonmemory_operand" "")
 		(match_operand:SI 5 "nonmemory_operand" "")))]
   "TARGET_ARCOMPACT
-   && TARGET_DROSS
    && (INTVAL (operands[2]) == 1
        || INTVAL (operands[2]) == 2
        || INTVAL (operands[2]) == 3)
@@ -4220,8 +4224,7 @@
 	(plus:SI (mult:SI (match_dup 1)
 			  (match_dup 2))
 		 (match_dup 4)))]
-  "DROSS (\"addn peephole2\");
-   if (true_regnum (operands[4]) == true_regnum (operands[0]))
+  "if (true_regnum (operands[4]) == true_regnum (operands[0]))
       operands[4] = operands[5];
    operands[2] = GEN_INT (1 << INTVAL (operands[2]));"
 )
@@ -4341,6 +4344,11 @@
 ;;                 \/
 ;;             sub{i} r3,r4,r1
 ;; -------------------------------------------------------------
+;; ??? This should be covered by combine, alas, at times combine gets
+;; too clever for it's own good: when the shifted input is known to be
+;; either 0 or 1, the operation will be made into an if-then-else, and
+;; thus fail to match the sub_n pattern.  Example: __ieee754_yn, line 239 in
+;; newlib/libm/math/e_jn.c .
 
 (define_peephole2
   [(set (match_operand:SI 0 "dest_reg_operand" "")
@@ -4350,17 +4358,16 @@
 	(minus:SI (match_operand:SI 4 "nonmemory_operand" "")
 		  (match_dup 0)))]
   "TARGET_ARCOMPACT
-   && TARGET_DROSS
    && (INTVAL (operands[2]) == 1
        || INTVAL (operands[2]) == 2
        || INTVAL (operands[2]) == 3)
-   && (peep2_reg_dead_p (2, operands[0]) || (true_regnum (operands[3]) == true_regnum (operands[0])))"
+   && (peep2_reg_dead_p (2, operands[0])
+       || (true_regnum (operands[3]) == true_regnum (operands[0])))"
   [(set (match_dup 3)
 	(minus:SI (match_dup 4)
 		  (mult:SI (match_dup 1)
 			   (match_dup 2))))]
-  "DROSS (\"subn peephole2 1/2\");
-   operands[2] = GEN_INT (1 << INTVAL (operands[2]));"
+  "operands[2] = GEN_INT (1 << INTVAL (operands[2]));"
 )
 
 (define_peephole

@@ -1,5 +1,10 @@
 2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.md (flush_icache+1): Remove TARGET_DROSS / DROSS.
+	(flush_icache+6): Likewise.
+
+2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/t-arc-uClibc: New file, to control multilib building.
 	* config/arc/t-arc-newlib: Likewise.  No endianness multilib for now.
 	* config.gcc: (arc-*-elf*) <tmake_file>: Add arc/t-arc-newlib.
