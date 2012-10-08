@@ -1,5 +1,10 @@
 2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.h (TARGET_DROSS, DROSS): Remove.
+	* config/arc/arc.md: Remove TARGET_DROSS peepholes.
+
+2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.md (flush_icache+1): Remove TARGET_DROSS / DROSS.
 	(flush_icache+6): Likewise.
 

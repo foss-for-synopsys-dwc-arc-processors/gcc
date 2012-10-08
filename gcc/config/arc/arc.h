@@ -1742,20 +1742,6 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
 #define ARG_POINTER_CFA_OFFSET(FNDECL) \
   (FIRST_PARM_OFFSET (FNDECL) + arc_decl_pretend_args ((FNDECL)))
 
-/* There are a number of peepholes which are most likely the result of
-   the original authers being ignorant of the combine pass and/or how
-   to drive it properly with matching instruction and splitter patterns.
-   We need at some point investigate if we can remove these patterns
-   without degadation in the quality oft he generated code.  */
-/* Should we perform the questionable peepholes?  */
-#define TARGET_DROSS 1
-/* Emit some warning / error when any of the questionable optimizations
-   trigger.  IDENT is a string constant identifying the peephole.  */
-#define DROSS(ident) \
-do { \
-/* FIXME.  */ \
-} while (0)
-
 /* Issue warning or error if -m<arch> is specified.  */
 #define ISSUE_MARCH_WARNING 0
 #define ISSUE_MARCH_ERROR 0
