@@ -100,11 +100,6 @@ static const char *arc_cpu_string = "";
   && SYMBOL_REF_SMALL_P (XEXP(XEXP (XEXP(X,1),0),0)) \
   && GET_CODE (XEXP(XEXP (XEXP(X,1),0), 1)) == CONST_INT)))
 
-/* Name of text, data, and rodata sections used in varasm.c.  */
-const char *arc_text_section;
-const char *arc_data_section;
-const char *arc_rodata_section;
-
 /* Array of valid operand punctuation characters.  */
 char arc_punct_chars[256];
 
@@ -695,14 +690,6 @@ arc_init (void)
       warning (DK_WARNING, "PIC is not supported for %s. Generating non-PIC code only..", arc_cpu_string);
       flag_pic = 0;
     }
-
-  /* Set the pseudo-ops for the various standard sections.  */
-  arc_text_section = tmp = XNEWVEC (char, strlen (arc_text_string) + sizeof (ARC_SECTION_FORMAT) + 1);
-  sprintf (tmp, ARC_SECTION_FORMAT, arc_text_string);
-  arc_data_section = tmp = XNEWVEC (char, strlen (arc_data_string) + sizeof (ARC_SECTION_FORMAT) + 1);
-  sprintf (tmp, ARC_SECTION_FORMAT, arc_data_string);
-  arc_rodata_section = tmp = XNEWVEC (char, strlen (arc_rodata_string) + sizeof (ARC_SECTION_FORMAT) + 1);
-  sprintf (tmp, ARC_SECTION_FORMAT, arc_rodata_string);
 
   arc_init_reg_tables ();
 

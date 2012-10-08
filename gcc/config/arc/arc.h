@@ -1201,30 +1201,12 @@ arc_select_cc_mode (OP, X, Y)
 /* Section selection.  */
 /* WARNING: These section names also appear in dwarfout.c.  */
 
-/* The names of the text, data, and readonly-data sections are runtime
-   selectable.  */
+#define TEXT_SECTION_ASM_OP	"\t.section\t.text"
+#define DATA_SECTION_ASM_OP	"\t.section\t.data"
 
-#define ARC_SECTION_FORMAT		"\t.section %s"
-#define ARC_DEFAULT_TEXT_SECTION	".text"
-#define ARC_DEFAULT_DATA_SECTION	".data"
-#define ARC_DEFAULT_RODATA_SECTION	".rodata"
-
-extern const char *arc_text_section,*arc_data_section,*arc_rodata_section;
-
-/* initfini.c uses this in an asm.  */
-#if defined (CRT_INIT) || defined (CRT_FINI) || defined (CRT_BEGIN) || defined (CRT_END)
-#define TEXT_SECTION_ASM_OP	"\t.section .text"
-#else
-#define TEXT_SECTION_ASM_OP	arc_text_section /*"\t.section .text"*/
-#endif
-#define DATA_SECTION_ASM_OP	arc_data_section /*"\t.section .data"*/
-
-#undef  READONLY_DATA_SECTION_ASM_OP
-#define READONLY_DATA_SECTION_ASM_OP	arc_rodata_section  /*"\t.section .rodata"*/
-
-#define BSS_SECTION_ASM_OP	"\t.section .bss"
-#define SDATA_SECTION_ASM_OP	"\t.section .sdata"
-#define SBSS_SECTION_ASM_OP	"\t.section .sbss"
+#define BSS_SECTION_ASM_OP	"\t.section\t.bss"
+#define SDATA_SECTION_ASM_OP	"\t.section\t.sdata"
+#define SBSS_SECTION_ASM_OP	"\t.section\t.sbss"
 
 /* Expression whose value is a string, including spacing, containing the
    assembler operation to identify the following data as initialization/termination

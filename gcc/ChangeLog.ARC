@@ -1,3 +1,19 @@
+2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_text_section, arc_data_section): Remove.
+	(arc_rodata_section): Likewise.
+	(arc_init): Remove initialization of deleted variables.
+	* config/arc/arc.h (ARC_SECTION_FORMAT): Don't define.
+	(ARC_DEFAULT_TEXT_SECTION, ARC_DEFAULT_DATA_SECTION): Likewise.
+	(ARC_DEFAULT_RODATA_SECTION): Likewise.
+	(TEXT_SECTION_ASM_OP, DATA_SECTION_ASM_OP): Make constant.
+	(ARC_DEFAULT_RODATA_SECTION): Don't override.
+	(arc_text_section, arc_data_section): Don't declare.
+	(arc_rodata_section): Likewise.
+	(BSS_SECTION_ASM_OP): Use tab after .section.
+	(SDATA_SECTION_ASM_OP, SBSS_SECTION_ASM_OP): Likewise.
+	* config/arc/arc.opt (-mtext=, -mdata=, -mrodata=): Remove options.
+
 2012-10-07  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc: Remove mentions of A4 from comments.
