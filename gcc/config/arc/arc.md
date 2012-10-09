@@ -4229,58 +4229,6 @@
    operands[2] = GEN_INT (1 << INTVAL (operands[2]));"
 )
 
-; ??? For ARC700, bbit peepholes should be replaced with a combiner pattern
-; combining a CC_Z btst with a bne/beq, and then properly branch shortened.
-; The combined pattern should be grokked by the ccfsm machinery.
-; For ARC600, the peephole should be adjusted to use btst as input.
-;
-; bbit0, bbit1 peephole that incorporates bic
-(define_peephole
-  [(set (match_operand:SI 0 "dest_reg_operand" "=w")
-	(and:SI (not:SI (match_operand:SI 1 "register_operand" "c"))
-		(match_operand:SI 2 "immediate_operand" "Cal")))
-   (set (reg:CC_ZN CC_REG)
-	(compare:CC_ZN (match_dup 0)
-		       (match_operand:SI 3 "immediate_operand" "Cal")))
-   (set (pc)
- 	(if_then_else (match_operator 4 "proper_comparison_operator"
- 				      [(reg CC_REG) (const_int 0)])
- 		      (label_ref (match_operand 5 "" ""))
- 		      (pc)))
-  ]
-  "TARGET_ARCOMPACT
-   && valid_bbit_pattern_p (operands,insn)
-   && arc_dead_or_set_postreload_p (prev_nonnote_insn (insn), operands[0])
-   && arc_dead_or_set_postreload_p (insn, XEXP (operands[4], 0))"
-   "* return gen_bbit_bic_insns (operands);"
-   [(set_attr "type" "branch")
-    (set_attr "length" "4")]
-)
-
-
-; bbit0,bbit1 peephole optimization
-
-(define_peephole
-  [(set (match_operand:SI 0 "dest_reg_operand" "=w")
-	(and:SI (match_operand:SI 1 "register_operand" "%c")
-		(match_operand:SI 2 "immediate_operand" "Cal")))
-   (set (reg:CC_ZN CC_REG)
-	(compare:CC_ZN (match_dup 0)
-		       (match_operand:SI 3 "immediate_operand" "Cal")))
-   (set (pc)
-	(if_then_else (match_operator 4 "proper_comparison_operator"
-			[(reg CC_REG) (const_int 0)])
-		      (label_ref (match_operand 5 "" ""))
-		      (pc)))
- ]
-  "TARGET_ARCOMPACT
-   && valid_bbit_pattern_p (operands,insn)
-   && arc_dead_or_set_postreload_p (prev_nonnote_insn(insn), operands [0])"
-  "* return gen_bbit_insns(operands);"
-  [ (set_attr "type" "branch")
-    (set_attr "length" "4")])
-
-
 ;; -------------------------------------------------------------
 ;; Pattern 1 : r0 = r1 << {i}
 ;;             r3 = r4 - r0

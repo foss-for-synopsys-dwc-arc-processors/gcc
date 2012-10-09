@@ -1,5 +1,12 @@
 2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc-protos.h (gen_bbit_bic_insns): Don't declare.
+	(gen_bbit_insns, valid_bbit_pattern_p): Likewise.
+	* config/arc/arc.c (gen_bbit_bic_insns, gen_bbit_insns): Delete.
+	(valid_bbit_pattern_p): Likewise.
+
+2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* common/config/arc/arc-common.c (arc_handle_option):
 	Avoid spurious warning about (alleged) duplicated -mcpu option.
 	* config/arc/arc.h (LINK_SPEC): Pass through -marclinux* options.
