@@ -29,9 +29,7 @@ PROFILE_OSDEP = prof-freq.o
 
 # Override t-slibgcc-elf-ver to hide some lib1func
 # routines which should not be called via PLT.
-SHLIB_MAPFILES = \
-	$(srcdir)/libgcc-std.ver \
-	$(srcdir)/config/arc/libgcc-excl.ver
+SHLIB_MAPFILES = libgcc-std.ver $(srcdir)/config/arc/libgcc-excl.ver
 
 # Override SHLIB_LINK and SHLIB_INSTALL to use linker script
 # libgcc_s.so.

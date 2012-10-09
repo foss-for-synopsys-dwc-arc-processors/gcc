@@ -1,3 +1,8 @@
+2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/t-arc700-uClibc (SHLIB_MAPFILES) <libgcc-std.ver>:
+	Remove $(srcdir)/ prefix.
+
 2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/t-arc-newlib: Remove multilib settings.
