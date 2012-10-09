@@ -72,10 +72,6 @@ along with GCC; see the file COPYING3.  If not see
 #undef ASM_APP_OFF
 #undef CC1_SPEC
 
-#ifndef UCLIBC_DEFAULT
-#define UCLIBC_DEFAULT 0
-#endif
-
 /* Names to predefine in the preprocessor for this target machine.  */
 /*
    ??? check whether __base__ definition can be removed. If it can be
@@ -154,7 +150,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
 "
 
-#if UCLIBC_DEFAULT
+#if DEFAULT_LIBC == LIBC_UCLIBC
 #if 1
 /* Note that the default is to link against dynamic libraries, if they are
    available.  While it is a bit simpler to get started with static linking,
@@ -197,7 +193,7 @@ along with GCC; see the file COPYING3.  If not see
   %{pg|p:-marcelf_prof;mA7|mARC700|mcpu=arc700|mcpu=ARC700: -marcelf}"
 #endif
 
-#if !UCLIBC_DEFAULT
+#if DEFAULT_LIBC != LIBC_UCLIBC
 #define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} crtbegin.o%s"
 #else
 #define STARTFILE_SPEC   "%{!shared:%{!mkernel:crt1.o%s}} crti.o%s \
@@ -205,7 +201,7 @@ along with GCC; see the file COPYING3.  If not see
 
 #endif
 
-#if !UCLIBC_DEFAULT
+#if DEFAULT_LIBC != LIBC_UCLIBC
 #define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
 #else
 #define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s} crtend.o%s} \
@@ -213,7 +209,7 @@ along with GCC; see the file COPYING3.  If not see
 
 #endif
 
-#if UCLIBC_DEFAULT
+#if DEFAULT_LIBC == LIBC_UCLIBC
 #undef LIB_SPEC
 #define LIB_SPEC  \
   "%{pthread:-lpthread} \

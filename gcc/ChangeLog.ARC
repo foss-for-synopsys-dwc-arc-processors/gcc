@@ -1,3 +1,11 @@
+2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h: Replace #if UCLIBC_DEFAULT with
+	#if DEFAULT_LIBC == LIBC_UCLIBC .
+	* config.gcc (arc600-*-linux-uclibc*) <tm_file>: Remove svr4.h .
+	(arc601-*-linux-uclibc*) <tm_file>: Likewise.
+	(arc*-*-linux-uclibc*) <tm_file>: Likewise.
+
 2012-10-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (TARGET_DROSS, DROSS): Remove.
