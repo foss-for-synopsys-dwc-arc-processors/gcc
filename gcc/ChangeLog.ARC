@@ -1,5 +1,14 @@
 2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* common/config/arc/arc-common.c (arc_handle_option):
+	Avoid spurious warning about (alleged) duplicated -mcpu option.
+	* config/arc/arc.h (LINK_SPEC): Pass through -marclinux* options.
+	* config/arc/arc.opt (EB, EL, marclinux, marclinux_prof):
+	Duplicate option specification, according to:
+	http://gcc.gnu.org/ml/gcc-patches/2012-05/msg01854.html
+
+2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.h: Replace #if UCLIBC_DEFAULT with
 	#if DEFAULT_LIBC == LIBC_UCLIBC .
 	* config.gcc (arc600-*-linux-uclibc*) <tm_file>: Remove svr4.h .

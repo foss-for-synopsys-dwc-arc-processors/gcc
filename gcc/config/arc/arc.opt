@@ -339,3 +339,19 @@ Disable generation of cfi for epilogues.
 mepilogue-cfi
 Target RejectNegative Mask(EPILOGUE_CFI)
 Enable generation of cfi for epilogues.
+
+EB
+Target
+Pass -EB option through to linker.
+
+EL
+Target
+Pass -EL option through to linker.
+
+marclinux
+target
+pass -marclinux option through to linker.
+
+marclinux_prof
+target
+pass -marclinux_prof option through to linker.
