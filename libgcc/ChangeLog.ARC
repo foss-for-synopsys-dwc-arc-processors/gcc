@@ -1,5 +1,16 @@
 2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/t-arc (crtg.o, crtgend.o): Use $(crt_compile).
+	Don't depend on $(GCC_PASSES).
+	(mcount.o, gmon.o, prof-freq-stub.o, prof-freq.o): Use $(gcc_compile).
+	Don't depend on $(GCC_PASSES).
+	(dcache_linesz.o, profil.o, profil-uclibc.o): Likewise.
+	* config/arc/t-arc700-uClibc (SHLIB_LINK, SHLIB_INSTALL): Delete.
+	* config.host (arc*-*-linux-uclibc*) <tmake_file>:
+	Add t-slibgcc-libgcc t-slibgcc-nolc-override.
+
+2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/t-arc700-uClibc (SHLIB_MAPFILES) <libgcc-std.ver>:
 	Remove $(srcdir)/ prefix.
 
