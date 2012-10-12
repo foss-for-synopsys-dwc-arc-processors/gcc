@@ -4287,13 +4287,7 @@ arc_encode_section_info (tree decl, rtx rtl, int first)
 	arc_encode_symbol (decl, SIMPLE_CALL_FLAG_CHAR);
     }
 
-  if (flag_pic)
-    {
-      if (!DECL_P (decl) || targetm.binds_local_p (decl))
-	SYMBOL_REF_FLAG (XEXP (rtl, 0)) = 1;
-    }
-
-  /* For sdata and SYMBOL_FLAG_FUNCTION.  */
+  /* For sdata, SYMBOL_FLAG_LOCAL and SYMBOL_FLAG_FUNCTION.  */
   default_encode_section_info (decl, rtl, first);
 }
 
@@ -4780,7 +4774,7 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
     ; /* Do nothing.  */
   else if (GET_CODE (addr) == SYMBOL_REF
 	   && (CONSTANT_POOL_ADDRESS_P (addr)
-	       || SYMBOL_REF_FLAG (addr)))
+	       || SYMBOL_REF_LOCAL_P (addr)))
     {
       /* This symbol may be referenced via a displacement from the PIC
 	 base address (@GOTOFF).  */
@@ -4839,7 +4833,7 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 	  if ((GET_CODE (op0) == LABEL_REF
 	       || (GET_CODE (op0) == SYMBOL_REF
 		   && (CONSTANT_POOL_ADDRESS_P (op0)
-		       || SYMBOL_REF_FLAG (op0))))
+		       || SYMBOL_REF_LOCAL_P (op0))))
 	      && GET_CODE (op1) == CONST_INT)
 	    {
 	      /* FIXME: like above, could do without gp reference.  */
@@ -4898,7 +4892,7 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
       output_addr_const (file, x);
 
       /* Local functions do not get references through the PLT.  */
-      if (code == 'P' && ! SYMBOL_REF_FLAG (x))
+      if (code == 'P' && ! SYMBOL_REF_LOCAL_P (x))
 	fputs ("@plt", file);
       break;
 

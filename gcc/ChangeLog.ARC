@@ -1,3 +1,10 @@
+2012-10-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_encode_section_info): Remove
+	SYMBOL_REF_FLAG setting.
+	(arc_legitimize_pic_address): Use SYMBOL_REF_LOCAL_P.
+	(arc_output_pic_addr_const): Likewise.
+
 2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (gen_bbit_bic_insns): Don't declare.
