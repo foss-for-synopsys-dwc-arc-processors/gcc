@@ -37,28 +37,16 @@ along with GCC; see the file COPYING3.  If not see
 
 */
 
-/* *************************************************************************
- * Role of the SYMBOL_REF_FLAG in the rtx:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * This is to document the change in the role of the SYMBOL_REF_FLAG
- * from the PIC enabled version of the toolchain onwards.
- * Before the PIC support was added to the compiler, the machine
- * specific SYMBOL_REF_FLAG was used to mark a function's symbol so
- * that a symbol reference to a function ( as in obtaining a pointer to
- * that function ) is printed as %st(<<functionname>>).
- *
- *   The PIC version of the compiler uses this flag to mark a locally
- * defined symbol, for which references in the code have to be made as
- * pc+ symbolname@GOTOFF instead of symbolname@GOT.Also references to
- * local functions are made relative instead of going through the PLT.
- *      The earlier work of the flag is accomplished by mangling the
- * name of the symbol(adding an *_CALL_FLAG_CHAR at the start) and modifying
- * the print_operand routine to unmangle it and print the reference as
- * %st(symbol_name_unmangled) instead. The convention used for mangling
- * accomodates the long_call and short_call function attributes by using one
- * of (LONG_/SHORT_/SIMPLE_)CALL_FLAG_CHAR characters as the prefix.
- * ************************************************************************/
+#define SYMBOL_FLAG_SHORT_CALL	(SYMBOL_FLAG_MACH_DEP << 0)
+#define SYMBOL_FLAG_LONG_CALL	(SYMBOL_FLAG_MACH_DEP << 1)
 
+/* Check if this symbol has a long_call attribute in its declaration */
+#define SYMBOL_REF_LONG_CALL_P(X)	\
+	((SYMBOL_REF_FLAGS (X) & SYMBOL_FLAG_LONG_CALL) != 0)
+
+/* Check if this symbol has a short_call attribute in its declaration */
+#define SYMBOL_REF_SHORT_CALL_P(X)	\
+	((SYMBOL_REF_FLAGS (X) & SYMBOL_FLAG_SHORT_CALL) != 0)
 
 #undef ASM_SPEC
 #undef LINK_SPEC
@@ -894,26 +882,6 @@ arc_return_addr_rtx(COUNT,FRAME)
   ((((CUM) - 1) | (ARC_FUNCTION_ARG_BOUNDARY ((MODE), (TYPE)) - 1)/BITS_PER_WORD)\
    + 1)
 
-/* Special characters prefixed to function names
-   in order to encode attribute like information.  */
-#define SIMPLE_CALL_FLAG_CHAR   '&'
-#define SHORT_CALL_FLAG_CHAR	'!'
-#define LONG_CALL_FLAG_CHAR	'#'
-
-/* Local macros to identify the function name symbols, prefixed with one of
-   the (LONG_CALL/SHORT_CALL/)FLAG_CHAR flags */
-#define ARC_FUNCTION_NAME_PREFIX_P(ch) (((ch) == SIMPLE_CALL_FLAG_CHAR) ||   \
-				    ((ch) == LONG_CALL_FLAG_CHAR)   ||   \
-				    ((ch) == SHORT_CALL_FLAG_CHAR))
-
-/* Check if this symbol has a long_call attribute in its declaration */
-#define ARC_ENCODED_LONG_CALL_ATTR_P(SYMBOL_NAME)	\
-  (*(SYMBOL_NAME) == LONG_CALL_FLAG_CHAR)
-
-/* Check if this symbol has a short_call attribute in its declaration */
-#define ARC_ENCODED_SHORT_CALL_ATTR_P(SYMBOL_NAME)	\
-  (*(SYMBOL_NAME) == SHORT_CALL_FLAG_CHAR)
-
 /* Return boolean indicating arg of type TYPE and mode MODE will be passed in
    a reg.  This includes arguments that have to be passed by reference as the
    pointer to them is passed in a reg if one is available (and that is what
@@ -1252,10 +1220,6 @@ arc_select_cc_mode (OP, X, Y)
 
 /* Control the assembler format that we output.  */
 
-/* Output at beginning of assembler file.  */
-#undef TARGET_ASM_FILE_START
-#define TARGET_ASM_FILE_START(FILE) arc_asm_file_start (FILE)
-
 /* A C string constant describing how to begin a comment in the target
    assembler language.  The compiler assumes that the comment will
    end at the end of the line.  */
@@ -1329,14 +1293,12 @@ do {									\
 #define ASM_OUTPUT_LABEL(FILE, NAME) \
 do { assemble_name (FILE, NAME); fputs (":\n", FILE); } while (0)
 
-#define ASM_NAME_P(NAME) ( NAME[(ARC_FUNCTION_NAME_PREFIX_P (NAME[0]))?1:0]=='*')
+#define ASM_NAME_P(NAME) ( NAME[0]=='*')
 
 /* This is how to output a reference to a user-level label named NAME.
    `assemble_name' uses this.  */
-/* We mangle all user labels to provide protection from linking code
-   compiled for different cpus.  */
 /* We work around a dwarfout.c deficiency by watching for labels from it and
-   not adding the '_' prefix nor the cpu suffix.  There is a comment in
+   not adding the '_' prefix.  There is a comment in
    dwarfout.c that says it should be using ASM_OUTPUT_INTERNAL_LABEL.  */
 #define ASM_OUTPUT_LABELREF(FILE, NAME1) \
 do {							\

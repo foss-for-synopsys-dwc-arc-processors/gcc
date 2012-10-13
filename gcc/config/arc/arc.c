@@ -141,9 +141,6 @@ struct GTY (()) arc_ccfsm
       || get_attr_iscompact (INSN) == ISCOMPACT_TRUE_LIMM) \
    : get_attr_iscompact (INSN) != ISCOMPACT_FALSE)
 
-/* Local obstack.  */
-static struct obstack arc_local_obstack;
-
 /* The maximum number of insns skipped which will be conditionalised if
    possible.  */
 /* When optimizing for speed:
@@ -352,23 +349,18 @@ const struct attribute_spec arc_attribute_table[] =
   { "short_call",   0, 0, false, true,  true,  NULL, false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
-static bool arc_assemble_integer (rtx, unsigned int, int);
 static int arc_comp_type_attributes (const_tree, const_tree);
 static void arc_file_start (void);
-static void arc_asm_file_start (FILE *)  ATTRIBUTE_UNUSED;
-static void arc_asm_file_end (void);
 static void arc_internal_label (FILE *, const char *, unsigned long);
 static void arc_output_mi_thunk (FILE *, tree, HOST_WIDE_INT, HOST_WIDE_INT,
 				 tree);
 static int arc_address_cost (rtx, bool);
 static void arc_encode_section_info (tree decl, rtx rtl, int first);
-static const char *arc_strip_name_encoding (const char *name);
 
 static void arc_init_builtins (void);
 static rtx arc_expand_builtin (tree, rtx, rtx, enum machine_mode, int);
 
 static int branch_dest (rtx);
-static void arc_encode_symbol (tree, const char);
 
 static void  arc_output_pic_addr_const (FILE *,  rtx, int);
 int symbolic_reference_mentioned_p (rtx);
@@ -422,14 +414,10 @@ static void arc_function_arg_advance (cumulative_args_t, enum machine_mode,
 static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 
 /* initialize the GCC target structure.  */
-#undef TARGET_ASM_INTEGER
-#define TARGET_ASM_INTEGER arc_assemble_integer
 #undef  TARGET_COMP_TYPE_ATTRIBUTES
 #define TARGET_COMP_TYPE_ATTRIBUTES arc_comp_type_attributes
 #undef TARGET_ASM_FILE_START
 #define TARGET_ASM_FILE_START arc_file_start
-#undef TARGET_ASM_FILE_END
-#define TARGET_ASM_FILE_END arc_asm_file_end
 #undef TARGET_ATTRIBUTE_TABLE
 #define TARGET_ATTRIBUTE_TABLE arc_attribute_table
 #undef TARGET_ASM_INTERNAL_LABEL
@@ -441,9 +429,6 @@ static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 
 #undef TARGET_ENCODE_SECTION_INFO
 #define TARGET_ENCODE_SECTION_INFO arc_encode_section_info
-
-#undef TARGET_STRIP_NAME_ENCODING
-#define TARGET_STRIP_NAME_ENCODING arc_strip_name_encoding
 
 #undef TARGET_CANNOT_FORCE_CONST_MEM
 #define TARGET_CANNOT_FORCE_CONST_MEM arc_cannot_force_const_mem
@@ -701,7 +686,6 @@ arc_init (void)
   arc_punct_chars['!'] = 1;
   arc_punct_chars['^'] = 1;
   arc_punct_chars['&'] = 1;
-  gcc_obstack_init (&arc_local_obstack);
 }
 
 /*  Map processor name to processor type.  Must be in sync with processor_type.  */
@@ -2085,26 +2069,6 @@ arc_save_restore (rtx base_reg, unsigned int offset,
 } /* arc_save_restore */
 
 
-/* Target hook to assemble an integer object.  The ARC version needs to
-   emit a special directive for references to labels and function
-   symbols.  */
-
-static bool
-arc_assemble_integer (rtx x, unsigned int size, int aligned_p)
-{
-  if (size == UNITS_PER_WORD && aligned_p
-      && ((GET_CODE (x) == SYMBOL_REF
-	   && ARC_FUNCTION_NAME_PREFIX_P (*XSTR (x, 0)))
-	  || GET_CODE (x) == LABEL_REF))
-    {
-      fputs ("\t.word\t", asm_out_file);
-      output_addr_const (asm_out_file, x);
-      fputs("\n", asm_out_file);
-      return true;
-    }
-  return default_assemble_integer (x, size, aligned_p);
-}
-
 int arc_return_address_regs[4]
   = {0, RETURN_ADDR_REGNUM, ILINK1_REGNUM, ILINK2_REGNUM};
 
@@ -2625,15 +2589,6 @@ static rtx
 arc_trampoline_adjust_address (rtx addr)
 {
   return plus_constant (Pmode, addr, 2);
-}
-
-/* Set the cpu type and print out other fancy things,
-   at the top of the file.  */
-
-void
-arc_asm_file_start (FILE *file)
-{
-  fprintf (file, "\t.cpu %s\n", arc_cpu_string);
 }
 
 /* This is set briefly to 1 when we output a ".as" address modifer, and then
@@ -4249,46 +4204,32 @@ branch_dest (rtx branch)
    since we won't be calculating al of the offsets necessary to do this
    simplification.  */
 
-/* On the ARC, function addresses are not the same as normal addresses.
-   Branch to absolute address insns take an address that is right-shifted
-   by 2.  We encode the fact that we have a function here, and then emit a
-   special assembler op when outputting the address.
-   The encoding involves adding an *_CALL_FLAG_CHAR to the symbol name
-   (depending on whether any of short_call/long_call attributes were specified
-   in the function's declaration) and  unmangling the name at the time of
-   printing the symbol name.
-
-   Also if the symbol is a local, then the machine specific
-   SYMBOL_REF_FLAG is set in the rtx.This flag is later used to print
-   the reference to local symbols as @GOTOFF references instead of
-   @GOT references so that the symbol does not get a GOT entry unlike
-   the global symbols.
-   Also calls to local functions are relative and not through the
-   Procedure Linkage Table.
-*/
-
 static void
 arc_encode_section_info (tree decl, rtx rtl, int first)
 {
+  /* For sdata, SYMBOL_FLAG_LOCAL and SYMBOL_FLAG_FUNCTION.
+     This clears machine specific flags, so has to come first.  */
+  default_encode_section_info (decl, rtl, first);
+
   /* Check if it is a function, and whether it has the [long/short]_call
      attribute specified.  */
   if (TREE_CODE (decl) == FUNCTION_DECL)
     {
+      rtx symbol = XEXP (rtl, 0);
+      int flags = SYMBOL_REF_FLAGS (symbol);
+
       tree attr = (TREE_TYPE (decl) != error_mark_node
 		   ? TYPE_ATTRIBUTES (TREE_TYPE (decl)) : NULL_TREE);
       tree long_call_attr = lookup_attribute ("long_call", attr);
       tree short_call_attr = lookup_attribute ("short_call", attr);
 
       if (long_call_attr != NULL_TREE)
-	arc_encode_symbol (decl, LONG_CALL_FLAG_CHAR);
+	flags |= SYMBOL_FLAG_LONG_CALL;
       else if (short_call_attr != NULL_TREE)
-	arc_encode_symbol (decl, SHORT_CALL_FLAG_CHAR);
-      else
-	arc_encode_symbol (decl, SIMPLE_CALL_FLAG_CHAR);
-    }
+	flags |= SYMBOL_FLAG_SHORT_CALL;
 
-  /* For sdata, SYMBOL_FLAG_LOCAL and SYMBOL_FLAG_FUNCTION.  */
-  default_encode_section_info (decl, rtl, first);
+      SYMBOL_REF_FLAGS (symbol) = flags;
+    }
 }
 
 /* This is how to output a definition of an internal numbered label where
@@ -4310,12 +4251,6 @@ static void arc_file_start (void)
   fprintf (asm_out_file, "\t.cpu %s\n", arc_cpu_string);
 }
 
-static void arc_asm_file_end (void)
-{
-  /* Free the obstack.  */
-  /*    obstack_free (&arc_local_obstack, NULL);*/
-
-}
 /* Cost functions.  */
 
 /* Compute a (partial) cost for rtx X.  Return true if the complete
@@ -4617,23 +4552,6 @@ abort ();
 
   return addr_rtx;
 }
-
-/* Return a pointer to a function's name with any
-   and all prefix encodings stripped from it.  */
-const char *
-arc_strip_name_encoding (const char *name)
-{
-  switch (*name)
-    {
-    case SIMPLE_CALL_FLAG_CHAR:
-    case LONG_CALL_FLAG_CHAR:
-    case SHORT_CALL_FLAG_CHAR:
-      name++;
-    }
-  return (name) + ((name)[0] == '*') ;
-}
-
-
 
 /* An address that needs to be expressed as an explicit sum of pcl + offset.  */
 int
@@ -5025,26 +4943,6 @@ emit_pic_move (rtx *operands, enum machine_mode mode ATTRIBUTE_UNUSED)
     operands[1] = arc_legitimize_pic_address (operands[1], temp);
 }
 
-
-/* Prepend the symbol passed as argument to the name.  */
-static void
-arc_encode_symbol (tree decl, const char prefix)
-{
-  const char *str = XSTR (XEXP (DECL_RTL (decl), 0), 0);
-  int len = strlen (str);
-  char *newstr;
-
-  if(*str == prefix)
-    return;
-  newstr = (char*) obstack_alloc (&arc_local_obstack, len + 2);
-
-  strcpy (newstr + 1, str);
-  *newstr = prefix;
-  XSTR (XEXP (DECL_RTL (decl), 0), 0) = newstr;
-
-  return;
-
-}
 
 /* Output to FILE a reference to the assembler name of a C-level name NAME.
    If NAME starts with a *, the rest of NAME is output verbatim.
@@ -5812,25 +5710,6 @@ arc_function_ok_for_sibcall (tree decl, tree exp ATTRIBUTE_UNUSED)
 {
   const char * fname;
 
-  if (!TARGET_ARCOMPACT)
-    {
-      /* Never tailcall something for which we have no decl.  */
-      if (decl == NULL)
-	return false;
-
-      /* Extract the function name from the decl node.  */
-      fname = XSTR (XEXP (DECL_RTL (decl), 0), 0);
-
-      /* ARC does not have a branch [reg], so no sibcalls with -mlong-calls, unless
-	 the called function has short_call attribute set.  */
-      if (TARGET_LONG_CALLS_SET && !ARC_ENCODED_SHORT_CALL_ATTR_P(fname))
-	return false;
-
-      /* Is this a long_call attributed function. If so, return false.  */
-      if (ARC_ENCODED_LONG_CALL_ATTR_P(fname))
-	return false;
-    }
-
   /* Never tailcall from an ISR routine - it needs a special exit sequence.  */
   if (ARC_INTERRUPT_P (arc_compute_function_type (cfun)))
     return false;
@@ -5852,7 +5731,7 @@ arc_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
   int shift = 0;
   int this_regno
     = aggregate_value_p (TREE_TYPE (TREE_TYPE (function)), function) ? 1 : 0;
-  const char *fname;
+  rtx fnaddr;
 
   if (mi_delta < 0)
     mi_delta = - mi_delta;
@@ -5891,14 +5770,13 @@ arc_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
 		   reg_names[this_regno], ARC_TEMP_SCRATCH_REG);
     }
 
-  fname = XSTR (XEXP (DECL_RTL (function), 0), 0);
-  if (TARGET_LONG_CALLS_SET
-      ? !ARC_ENCODED_SHORT_CALL_ATTR_P (fname)
-      : ARC_ENCODED_LONG_CALL_ATTR_P (fname))
+  fnaddr = XEXP (DECL_RTL (function), 0);
+
+  if (arc_is_longcall_p (fnaddr))
     fputs ("\tj\t", file);
   else
     fputs ("\tb\t", file);
-  assemble_name (file, XSTR (XEXP (DECL_RTL (function), 0), 0));
+  assemble_name (file, XSTR (fnaddr, 0));
   fputc ('\n', file);
 }
 
@@ -5919,8 +5797,8 @@ arc_is_longcall_p (rtx sym_ref)
   if (GET_CODE (sym_ref) != SYMBOL_REF)
     return 0;
 
-  return  ARC_ENCODED_LONG_CALL_ATTR_P (XSTR (sym_ref, 0))
-    || ( TARGET_LONG_CALLS_SET && !ARC_ENCODED_SHORT_CALL_ATTR_P (XSTR (sym_ref,0)));
+  return (SYMBOL_REF_LONG_CALL_P (sym_ref)
+	  || (TARGET_LONG_CALLS_SET && !SYMBOL_REF_SHORT_CALL_P (sym_ref)));
 
 }
 

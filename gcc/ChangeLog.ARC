@@ -1,5 +1,15 @@
 2012-10-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.c (local_obstack, arc_assemble_integer): Delete.  
+	(arc_asm_file_start, arc_asm_file_end): Likewise.
+	(arc_strip_name_encoding, arc_encode_symbol): Likewise.
+	(TARGET_ASM_INTEGER, TARGET_ASM_FILE_END): Don't redefine.
+	(TARGET_STRIP_NAME_ENCODING): Likewise.
+	(arc_init): Don't initialize arc_local_obstack.
+	(arc_encode_section_info): Put information into SYMBOL_REF_FLAGS.
+
+2012-10-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.c (arc_encode_section_info): Remove
 	SYMBOL_REF_FLAG setting.
 	(arc_legitimize_pic_address): Use SYMBOL_REF_LOCAL_P.
