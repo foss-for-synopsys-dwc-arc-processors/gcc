@@ -1,3 +1,7 @@
+2012-10-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/t-arc (gmon.o): Use -fno-strict-aliasing.
+
 2012-10-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/t-arc (crtg.o, crtgend.o): Use $(crt_compile).

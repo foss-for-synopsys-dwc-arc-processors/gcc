@@ -64,6 +64,7 @@ mcount.o: $(srcdir)/config/arc/gmon/mcount.c
 
 gmon.o: $(srcdir)/config/arc/gmon/gmon.c
 	$(gcc_compile) -isystem $(srcdir)/config/arc/gmon -mno-sdata -c $< \
+	-fno-strict-aliasing \
 	-Wno-extra # suppress inane warning about missing initializer.
 	# Adding initializers for the remaining elements of gmonparam would
 	# make the code more brittle.
