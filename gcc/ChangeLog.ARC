@@ -1,3 +1,15 @@
+2012-10-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (regno_clobbered_p): Declare.
+	* config/arc/arc.c (arc_init): Remove unused variable tmp.
+	(struct arc_cpu_type, arc_cpu_types): Remove unused struct / variable.
+	(output_shift): Remove dead code.
+	(arc_function_ok_for_sibcall): Add ATTRIBUTE_UNUSED to parameter decl.
+	Remove unused varaible fname.
+	(arc_legitimize_address): Rename new to new_x.
+	* config/arc/arc.h (EPILOGUE_USES): Cast REGNO to "int".
+	* config/arc/arc.opt (arc_cpu): Initialize to PROCESSOR_NONE.
+
 2012-10-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (local_obstack, arc_assemble_integer): Delete.  

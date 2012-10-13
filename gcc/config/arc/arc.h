@@ -920,8 +920,10 @@ arc_return_addr_rtx(COUNT,FRAME)
    No definition is equivalent to always zero.  */
 #define EXIT_IGNORE_STACK 0
 
+/* In resource.c and reorg.c, the parameter REGNO of EPILOGUE_USES is "int",
+   but in df-scan.c, it is "unsigned int".  */
 #define EPILOGUE_USES(REGNO) \
-  ((REGNO) == arc_return_address_regs[arc_compute_function_type (cfun)])
+  ((int) (REGNO) == arc_return_address_regs[arc_compute_function_type (cfun)])
 
 /* Epilogue delay slots.  */
 #define DELAY_SLOTS_FOR_EPILOGUE arc_delay_slots_for_epilogue ()

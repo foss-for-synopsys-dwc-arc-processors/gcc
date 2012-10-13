@@ -584,7 +584,6 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl,
 void
 arc_init (void)
 {
-  char *tmp;
   enum attr_tune tune_dflt = TUNE_NONE;
 
   if (TARGET_A5)
@@ -687,21 +686,6 @@ arc_init (void)
   arc_punct_chars['^'] = 1;
   arc_punct_chars['&'] = 1;
 }
-
-/*  Map processor name to processor type.  Must be in sync with processor_type.  */
-static struct arc_cpu_type
-{
-  const char *string;
-  enum processor_type ptype;
-} arc_cpu_types[] =
-{
-  { "A5", PROCESSOR_A5 },
-  { "ARC600", PROCESSOR_ARC600 },
-  { "ARC601", PROCESSOR_ARC601 },
-  { "ARC700", PROCESSOR_ARC700 },
-  { 0, PROCESSOR_NONE }
-};
-
 
 /* Check ARC options, generate derived target attributes.  */
 static void
@@ -2468,17 +2452,6 @@ output_shift (rtx *operands)
 
       /* Only consider the lower 5 bits of the shift count.  */
       n = n & 0x1f;
-
-      /* If the count is negative, take only lower 5 bits.  */
-      /* FIXME: No longer needed */
-      if (n < 0)
-	n = n & 0x1f;
-
-      /* If the count is too big, truncate it.
-         ANSI says shifts of GET_MODE_BITSIZE are undefined - we choose to
-	 do the intuitive thing.  */
-      else if (n > GET_MODE_BITSIZE (mode))
-	n = GET_MODE_BITSIZE (mode);
 
       /* First see if we can do them inline.  */
       if (n <= 3)
@@ -5706,10 +5679,9 @@ check_if_valid_sleep_operand (rtx *operands, int opno)
 
 /* Return nonzero if it is ok to make a tail-call to DECL.  */
 static bool
-arc_function_ok_for_sibcall (tree decl, tree exp ATTRIBUTE_UNUSED)
+arc_function_ok_for_sibcall (tree decl ATTRIBUTE_UNUSED,
+			     tree exp ATTRIBUTE_UNUSED)
 {
-  const char * fname;
-
   /* Never tailcall from an ISR routine - it needs a special exit sequence.  */
   if (ARC_INTERRUPT_P (arc_compute_function_type (cfun)))
     return false;
@@ -8048,10 +8020,10 @@ arc_legitimize_address_0 (rtx x, rtx oldx ATTRIBUTE_UNUSED,
 static rtx
 arc_legitimize_address (rtx orig_x, rtx oldx, enum machine_mode mode)
 {
-  rtx new = arc_legitimize_address_0 (orig_x, oldx, mode);
+  rtx new_x = arc_legitimize_address_0 (orig_x, oldx, mode);
 
-  if (new)
-    return new;
+  if (new_x)
+    return new_x;
   return orig_x;
 }
 
