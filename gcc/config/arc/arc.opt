@@ -176,10 +176,6 @@ Enum(processor_type) String(ARC601) Value(PROCESSOR_ARC601)
 EnumValue
 Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
 
-mexperimental-mask=
-Target RejectNegative Joined UInteger Var(arc_experimental_mask) Init(1)
-For experimental options
-
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
 size optimization level: 0:none 1:opportunistic 2: regalloc 3:drop align, -Os

@@ -5159,7 +5159,7 @@
    (use (match_operand:QI 3 "const_int_operand" ""))
    (use (label_ref (match_operand 4 "" "")))
    (use (match_operand:QI 5 "const_int_operand" ""))]
-  "(TARGET_ARC600 || TARGET_ARC700) && arc_experimental_mask & 1"
+  "TARGET_ARC600 || TARGET_ARC700"
 {
   if (INTVAL (operands[3]) > 1)
     FAIL;

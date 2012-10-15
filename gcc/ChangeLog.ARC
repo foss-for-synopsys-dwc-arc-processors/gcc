@@ -1,5 +1,10 @@
 2012-10-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.md (doloop_end): Remove experimental_mask condition.
+	* config/arc/arc.opt (-mexpermental-mask=): Remove option.
+
+2012-10-15  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc-protos.h (emit_shift): Declare.
 	* config/arc/arc.c (emit_shift): New function.
 	(output_shift): Increase shift count ranges for which loop-free
