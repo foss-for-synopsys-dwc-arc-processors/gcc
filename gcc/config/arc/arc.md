@@ -3072,15 +3072,7 @@
 {
   if (!TARGET_BARREL_SHIFTER)
     {
-/* ashwin : all gen_rtx (VAR.. ) are converted to gen_rtx_VAR (..) */
-      emit_insn (gen_rtx_PARALLEL
-		 (VOIDmode,
-		  gen_rtvec (3,
-			     gen_rtx_SET (VOIDmode, operands[0],
-				      gen_rtx_ASHIFT (SImode, operands[1], operands[2])),
-			     gen_rtx_CLOBBER (VOIDmode, gen_rtx_SCRATCH (SImode)),
-			     gen_rtx_CLOBBER (VOIDmode, gen_rtx_REG (CCmode, CC_REG))
-			)));
+      emit_shift (ASHIFT, operands[0], operands[1], operands[2]);
       DONE;
     }
 }")
@@ -3094,13 +3086,7 @@
 {
   if (!TARGET_BARREL_SHIFTER)
     {
-      emit_insn (gen_rtx_PARALLEL
-		 (VOIDmode,
-		  gen_rtvec (3,
-			     gen_rtx_SET (VOIDmode, operands[0],
-				      gen_rtx_ASHIFTRT (SImode, operands[1], operands[2])),
-			     gen_rtx_CLOBBER (VOIDmode, gen_rtx_SCRATCH (SImode)),
-			     gen_rtx_CLOBBER (VOIDmode, gen_rtx_REG (CCmode, CC_REG)))));
+      emit_shift (ASHIFTRT, operands[0], operands[1], operands[2]);
       DONE;
     }
 }")
@@ -3114,23 +3100,33 @@
 {
   if (!TARGET_BARREL_SHIFTER)
     {
-      emit_insn (gen_rtx_PARALLEL
-		 (VOIDmode,
-		  gen_rtvec (3,
-			     gen_rtx_SET (VOIDmode, operands[0],
-				      gen_rtx_LSHIFTRT (SImode, operands[1], operands[2])),
-	 		     gen_rtx_CLOBBER (VOIDmode, gen_rtx_SCRATCH (SImode)),
-                             gen_rtx_CLOBBER (VOIDmode, gen_rtx_REG (CCmode,CC_REG)))));
-						      DONE;
+      emit_shift (LSHIFTRT, operands[0], operands[1], operands[2]);
+      DONE;
     }
 }")
 
-(define_insn "*shift_si3"
+(define_insn "shift_si3"
+  [(set (match_operand:SI 0 "dest_reg_operand" "=r")
+	(match_operator:SI 3 "shift4_operator"
+			   [(match_operand:SI 1 "register_operand" "0")
+			    (match_operand:SI 2 "const_int_operand" "J")]))
+   (clobber (match_scratch:SI 4 "=&r"))
+   (clobber (reg:CC CC_REG))
+  ]
+  "!TARGET_BARREL_SHIFTER"
+  "* return output_shift (operands);"
+  [(set_attr "type" "shift")
+   (set_attr "length" "16")])
+
+(define_insn "shift_si3_loop"
   [(set (match_operand:SI 0 "dest_reg_operand" "=r")
 	(match_operator:SI 3 "shift_operator"
 			   [(match_operand:SI 1 "register_operand" "0")
 			    (match_operand:SI 2 "nonmemory_operand" "rJ")]))
-   (clobber (match_scratch:SI 4 "=&r"))
+   (clobber (match_scratch:SI 4 "=X"))
+   (clobber (reg:SI LP_COUNT))
+   (clobber (reg:SI LP_START))
+   (clobber (reg:SI LP_END))
    (clobber (reg:CC CC_REG))
   ]
   "!TARGET_BARREL_SHIFTER"

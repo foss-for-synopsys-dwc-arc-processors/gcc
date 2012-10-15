@@ -666,6 +666,31 @@
   (match_code "ashiftrt, lshiftrt, ashift")
 )
 
+;; Return true if OP is a left shift operator that can be implemented in
+;; four insn words or less without a barrel shifter or multiplier.
+(define_predicate "shiftl4_operator"
+  (and (match_code "ashift")
+       (match_test "const_int_operand (XEXP (op, 1), VOIDmode) ")
+       (match_test "UINTVAL (XEXP (op, 1)) <= 9U
+		    || INTVAL (XEXP (op, 1)) == 29
+		    || INTVAL (XEXP (op, 1)) == 30
+		    || INTVAL (XEXP (op, 1)) == 31")))
+
+;; Return true if OP is a right shift operator that can be implemented in
+;; four insn words or less without a barrel shifter or multiplier.
+(define_predicate "shiftr4_operator"
+  (and (match_code "ashiftrt, lshiftrt")
+       (match_test "const_int_operand (XEXP (op, 1), VOIDmode) ")
+       (match_test "UINTVAL (XEXP (op, 1)) <= 4U
+		    || INTVAL (XEXP (op, 1)) == 30
+		    || INTVAL (XEXP (op, 1)) == 31")))
+
+;; Return true if OP is a shift operator that can be implemented in
+;; four insn words or less without a barrel shifter or multiplier.
+(define_predicate "shift4_operator"
+  (ior (match_operand 0 "shiftl4_operator")
+       (match_operand 0 "shiftr4_operator")))
+
 (define_predicate "commutative_operator"
   (ior (match_code "plus,ior,xor,and")
        (and (match_code "mult") (match_test "TARGET_ARC700"))

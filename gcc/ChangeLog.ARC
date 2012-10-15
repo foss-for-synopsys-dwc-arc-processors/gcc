@@ -1,3 +1,15 @@
+2012-10-15  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (emit_shift): Declare.
+	* config/arc/arc.c (emit_shift): New function.
+	(output_shift): Increase shift count ranges for which loop-free
+	code is being output.
+	* config/arc/arc.md (ashlsi3, ashrsi3, lshrsi3): Use emit_shift.
+	(shift_si3): Only accept integer shift counts.
+	(shift_si3_loop): New pattern.
+	* config/arc/predicates.md (shiftl4_operator): New predicate.
+	(shiftr4_operator, shift4_operator): Likewise.
+
 2012-10-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (regno_clobbered_p): Declare.

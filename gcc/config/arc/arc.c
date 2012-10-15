@@ -2405,6 +2405,19 @@ arc_finalize_pic (void)
 
   return emit_insn (pat);
 }
+
+/* !TARGET_BARREL_SHIFTER support.  */
+/* Emit a shift insn to set OP0 to OP1 shifted by OP2; CODE specifies what
+   kind of shift.  */
+void
+emit_shift (enum rtx_code code, rtx op0, rtx op1, rtx op2)
+{
+  rtx shift = gen_rtx_fmt_ee (code, SImode, op1, op2);
+  rtx pat
+    = ((shift4_operator (shift, SImode) ?  gen_shift_si3 : gen_shift_si3_loop)
+	(op0, op1, op2, shift));
+  emit_insn (pat);
+}
 
 /* Output the assembler code for doing a shift.
    We go to a bit of trouble to generate efficient code as the ARC only has
@@ -2415,10 +2428,6 @@ arc_finalize_pic (void)
 
    This function is not used if the variable shift insns are present.  */
 
-/* ??? We assume the output operand is the same as operand 1.
-   This can be optimized (deleted) in the case of 1 bit shifts.  */
-/* ??? We use the loop register here.  We don't use it elsewhere (yet) and
-   using it here will give us a chance to play with it.  */
 /* FIXME:  This probably can be done using a define_split in arc.md.
    Alternately, generate rtx rather than output instructions.  */
 
@@ -2435,9 +2444,9 @@ output_shift (rtx *operands)
 
   switch (code)
     {
-    case ASHIFT:   shift_one = "asl %0,%0"; break;
-    case ASHIFTRT: shift_one = "asr %0,%0"; break;
-    case LSHIFTRT: shift_one = "lsr %0,%0"; break;
+    case ASHIFT:   shift_one = "add %0,%1,%1"; break;
+    case ASHIFTRT: shift_one = "asr %0,%1"; break;
+    case LSHIFTRT: shift_one = "lsr %0,%1"; break;
     default:       gcc_unreachable ();
     }
 
@@ -2454,10 +2463,26 @@ output_shift (rtx *operands)
       n = n & 0x1f;
 
       /* First see if we can do them inline.  */
-      if (n <= 3)
+      /* ??? We could get better scheduling & shorter code (using short insns)
+	 by using splitters.  Alas, that'd be even more verbose.  */
+      if (code == ASHIFT && n <= 9 && n > 2
+	  && dest_reg_operand (operands[4], SImode))
+	{
+	  output_asm_insn ("mov %4,0\n\tadd3 %0,%4,%1", operands);
+	  for (n -=3 ; n >= 3; n -= 3)
+	    output_asm_insn ("add3 %0,%4,%0", operands);
+	  if (n == 2)
+	    output_asm_insn ("add2 %0,%4,%0", operands);
+	  else if (n)
+	    output_asm_insn ("add %0,%0,%0", operands);
+	}
+      else if (n <= 4)
 	{
 	  while (--n >= 0)
-	    output_asm_insn (shift_one, operands);
+	    {
+	      output_asm_insn (shift_one, operands);
+	      operands[1] = operands[0];
+	    }
 	}
       /* See if we can use a rotate/and.  */
       else if (n == BITS_PER_WORD - 1)
@@ -2465,24 +2490,57 @@ output_shift (rtx *operands)
 	  switch (code)
 	    {
 	    case ASHIFT :
-	      output_asm_insn ("and %0,%0,1\n\tror %0,%0", operands);
+	      output_asm_insn ("and %0,%1,1\n\tror %0,%0", operands);
 	      break;
 	    case ASHIFTRT :
 	      /* The ARC doesn't have a rol insn.  Use something else.  */
-	      output_asm_insn ("asl.f 0,%0\n\tsbc %0,0,0", operands);
+	      output_asm_insn ("add.f 0,%1,%1\n\tsbc %0,%0,%0", operands);
 	      break;
 	    case LSHIFTRT :
 	      /* The ARC doesn't have a rol insn.  Use something else.  */
-	      output_asm_insn ("asl.f 0,%0\n\tadc %0,0,0", operands);
+	      output_asm_insn ("add.f 0,%1,%1\n\trlc %0,0", operands);
 	      break;
             default:
               break;
 	    }
 	}
+      else if (n == BITS_PER_WORD - 2 && dest_reg_operand (operands[4], SImode))
+	{
+	  switch (code)
+	    {
+	    case ASHIFT :
+	      output_asm_insn ("and %0,%1,3\n\tror %0,%0\n\tror %0,%0", operands);
+	      break;
+	    case ASHIFTRT :
+#if 1 /* Need some scheduling comparisons.  */
+	      output_asm_insn ("add.f %4,%1,%1\n\tsbc %0,%0,%0\n\t"
+			       "add.f 0,%4,%4\n\trlc %0,%0", operands);
+#else
+	      output_asm_insn ("add.f %4,%1,%1\n\tbxor %0,%4,31\n\t"
+			       "sbc.f %0,%0,%4\n\trlc %0,%0", operands);
+#endif
+	      break;
+	    case LSHIFTRT :
+#if 1
+	      output_asm_insn ("add.f %4,%1,%1\n\trlc %0,0\n\t"
+			       "add.f 0,%4,%4\n\trlc %0,%0", operands);
+#else
+	      output_asm_insn ("add.f %0,%1,%1\n\trlc.f %0,0\n\t"
+			       "and %0,%0,1\n\trlc %0,%0", operands);
+#endif
+	      break;
+            default:
+              break;
+	    }
+	}
+      else if (n == BITS_PER_WORD - 3 && code == ASHIFT)
+	output_asm_insn ("and %0,%1,7\n\tror %0,%0\n\tror %0,%0\n\tror %0,%0",
+			 operands);
       /* Must loop.  */
       else
 	{
-	  output_asm_insn ("and.f lp_count, %2, 0x1f", operands);
+	  operands[2] = GEN_INT (n);
+	  output_asm_insn ("mov.f lp_count, %2", operands);
 
 	shiftloop:
 	    {
@@ -2497,7 +2555,7 @@ output_shift (rtx *operands)
 
   return "";
 }
-
+
 /* Nested function support.  */
 
 /* Directly store VALUE into memory object BLOCK at OFFSET.  */
