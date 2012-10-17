@@ -175,7 +175,6 @@ SYM(__mulsi3):
 	.section .text
 	.align 4
 
-#ifdef __base__
 	.global SYM(__umulsidi3)
 SYM(__umulsidi3):
 
@@ -227,7 +226,6 @@ SYM(__umulsidi3):
 	mov r1,r3
 	ENDFUNC(__umulsidi3)
 #endif /* !__ARC700__*/
-#endif
 #endif
 
 #endif /* L_umulsidi3 */
@@ -506,7 +504,6 @@ SYM(__udivmodsi4):
 	.section .text
 	.align 4
 
-#ifdef __base__
 	.global SYM(__udivsi3)
 	FUNC(__udivsi3)
 SYM(__udivsi3):
@@ -518,7 +515,6 @@ SYM(__udivsi3):
 	.long SYM(__udivmodsi4)
 	.long 65536
 #endif
-#endif
 
 #endif /* L_udivsi3 */
 
@@ -526,7 +522,6 @@ SYM(__udivsi3):
 	.section .text
 	.align 4
 
-#ifdef __base__
 	.global SYM(__divsi3)
 	FUNC(__divsi3)
 
@@ -910,8 +905,6 @@ SYM(__divsi3):
 
 #endif	/* ifndef __ARC700__ */
 	ENDFUNC(__divsi3)
-#endif  /* __base__ */
-
 
 	
 #endif /* L_divsi3 */
@@ -920,7 +913,6 @@ SYM(__divsi3):
 	.section .text
 	.align 4
 
-#ifdef __base__
 	.global SYM(__umodsi3)
 	FUNC(__umodsi3)
 SYM(__umodsi3):
@@ -935,7 +927,6 @@ SYM(__umodsi3):
 	.long SYM(__udivmodsi4)
 	.long 65536
 #endif
-#endif
 
 #endif /* L_umodsi3 */
 
@@ -943,7 +934,6 @@ SYM(__umodsi3):
 	.section .text
 	.align 4
 
-#ifdef __base__
 	.global SYM (__modsi3)
 	FUNC(__modsi3)
 SYM(__modsi3):
@@ -993,7 +983,6 @@ SYM(__modsi3):
 	sub.hs	r0,r0,r5
 #endif /* __ARC700__ */
 	ENDFUNC(__modsi3)
-#endif
 
 #endif /* L_modsi3 */
 

@@ -1,3 +1,7 @@
+2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* libgcc/config/arc/lib1funcs.S (entire file): Remove #ifdef __base__.
+
 2012-10-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/t-arc (gmon.o): Use -fno-strict-aliasing.

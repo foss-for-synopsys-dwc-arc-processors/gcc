@@ -1,5 +1,9 @@
 2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Remove __base__.
+
+2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc-protos.h (arc_short_comparison_p): Declare.
 	* config/arc/arc.c (arc_short_comparison_p): New function.
 	(arc_verify_short): Add to comment.

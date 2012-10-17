@@ -61,10 +61,6 @@ along with GCC; see the file COPYING3.  If not see
 #undef CC1_SPEC
 
 /* Names to predefine in the preprocessor for this target machine.  */
-/*
-   ??? check whether __base__ definition can be removed. If it can be
-       removed, "#ifdef __base__" has to be removed from lib1funcs.asm.
-*/
 #define TARGET_CPU_CPP_BUILTINS()	\
  do {					\
     builtin_define ("__arc__");		\
@@ -93,7 +89,6 @@ along with GCC; see the file COPYING3.  If not see
       builtin_define ("__ARC_MUL64__");\
     if (TARGET_MULMAC_32BY16_SET)	\
       builtin_define ("__ARC_MUL32BY16__");\
-    builtin_define ("__base__");	\
     if (TARGET_SIMD_SET)        	\
       builtin_define ("__ARC_SIMD__");	\
     if (TARGET_BARREL_SHIFTER)		\
