@@ -149,5 +149,6 @@ extern int arc_text_label (rtx);
 extern int arc_decl_pretend_args (tree decl);
 extern int arc_dead_or_set_postreload_p (const_rtx insn, const_rtx reg);
 extern void emit_shift (enum rtx_code, rtx, rtx, rtx);
+extern bool arc_short_comparison_p (rtx, int);
 /* insn-attrtab.c doesn't include reload.h, which declares regno_clobbered_p. */
 extern int regno_clobbered_p (unsigned int, rtx, enum machine_mode, int);

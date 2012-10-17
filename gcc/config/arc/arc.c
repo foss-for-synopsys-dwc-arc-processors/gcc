@@ -837,6 +837,24 @@ get_arc_condition_code (rtx comparison)
   return (42);
 }
 
+/* Return true if COMPARISON has a short form that can accomodate OFFSET.  */
+bool
+arc_short_comparison_p (rtx comparison, int offset)
+{
+  gcc_assert (ARC_CC_NC == ARC_CC_HS);
+  gcc_assert (ARC_CC_C == ARC_CC_LO);
+  switch (get_arc_condition_code (comparison))
+    {
+    case ARC_CC_EQ: case ARC_CC_NE:
+      return offset >= -512 && offset <= 506;
+    case ARC_CC_GT: case ARC_CC_LE: case ARC_CC_GE: case ARC_CC_LT:
+    case ARC_CC_HI: case ARC_CC_LS: case ARC_CC_LO: case ARC_CC_HS:
+      return offset >= -64 && offset <= 58;
+    default:
+      return false;
+    }
+}
+
 /* Given a comparison code (EQ, NE, etc.) and the first operand of a COMPARE,
    return the mode to be used for the comparison.  */
 
@@ -3736,6 +3754,10 @@ arc_next_active_insn (rtx insn, struct arc_ccfsm *statep)
      indicates the insn is conditionalized.  However, a further refinement
      could be to not conditionalize an insn if the destination register(s)
      is/are dead in the non-executed case.  */
+/* Return non-zero if INSN should be output as a short insn.  UNALIGN is
+   zero if the current insn is aligned to a 4-byte-boundary, two otherwise.
+   If CHECK_ATTR is greater than 0, check the iscompact attribute first.
+   If CHECK_ATTR is 0, skip the call to arc_ccfsm_advance_to.  */
 int
 arc_verify_short (rtx insn, int unalign, int check_attr)
 {
@@ -3951,27 +3973,6 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
 	}
       goto found_align;
     }
-
-  /* Only specific conditions involving SPFP can result in a short
-     branch insn.  */
-  if (TARGET_SPFP && !TARGET_ARGONAUT_SET
-      && jump_p && any_condjump_p (insn))
-  {
-    rtx set = pc_set (insn);
-    /* any_condjump_p verified that we have an IF_THEN_ELSE.  */
-    rtx cond = XEXP (SET_SRC (set), 0);
-    int ccode = get_arc_condition_code (cond);
-    switch (ccode)
-    {
-      case ARC_CC_N:
-      case ARC_CC_P:
-      case ARC_CC_C:
-      case ARC_CC_NC:
-        *rp = "Specific comparisons are not supported with shortened bcc_s";
-        odd = 0;
-	goto found_align;
-    }
-  }
 
   scan = arc_next_active_insn (insn, statep);
 

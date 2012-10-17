@@ -1,3 +1,20 @@
+2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_short_comparison_p): Declare.
+	* config/arc/arc.c (arc_short_comparison_p): New function.
+	(arc_verify_short): Add to comment.
+	Remove TARGET_SPFP stuff.
+	* config/arc/arc.md (branch_insn, rev_branch_insn): Before calling
+	verify_short, verify that a short branch code is available.
+
+2012-10-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (entire file): Remove TARGET_ARCOMPACT.
+	* config/arc/arc.h: Likewise.  Remove TARGET_MINMAX
+	* config/arc/arc.md: Likewise.  Use match_test.
+	* config/arc/arc.opt (-mmin_max: Delete.
+	* config/arc/arc600.md, config/arc/fpx.md: Use match_test.
+
 2012-10-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (doloop_end): Remove experimental_mask condition.
