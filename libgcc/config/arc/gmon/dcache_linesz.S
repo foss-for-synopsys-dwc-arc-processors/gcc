@@ -19,7 +19,6 @@
 #include "../asm.h"
 #include "auxreg.h"
 /*  This file contains code to do profiling.  */
-#ifndef __A4__
 	.weak	__profile_timer_cycles
 	.global __profile_timer_cycles
 	.set	__profile_timer_cycles, 200
@@ -45,4 +44,3 @@ __dcache_linesz:
 .Lsz_nocache:
 	mov_s	r0,1
 	j_s	[blink]
-#endif /* !A4 */

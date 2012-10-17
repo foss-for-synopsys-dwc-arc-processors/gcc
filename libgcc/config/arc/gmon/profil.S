@@ -19,7 +19,6 @@
 #include "../asm.h"
 #include "auxreg.h"
 /*  This file contains code to do profiling.  */
-#ifndef __A4__
 	.weak	__profile_timer_cycles
 	.global __profile_timer_cycles
 	.set	__profile_timer_cycles, 200
@@ -142,4 +141,3 @@ nostore:pop_s	r1
 	pop_s	r0
 	j	[ilink1]
 #endif /* 0 */
-#endif /* !A4 */

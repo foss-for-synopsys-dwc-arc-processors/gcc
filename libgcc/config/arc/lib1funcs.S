@@ -71,24 +71,7 @@ SYM(__mulsi3):
     }
 */
 
-#ifdef __A4__
-	FUNC(__mulsi3)
-	mov r2,0		; Accumulate result here.
-.Lloop:
-	sub.f 0,r0,0		; while (a)
-	nop
-	beq.nd @.Ldone
-	and.f 0,r0,1		; if (a & 1)
-	nop	
-	add.nz r2,r2,r1		; r += b
-	lsr r0,r0		; a >>= 1
-	b.d @.Lloop
-	asl r1,r1		; b <<= 1
-.Ldone:
-	j.d [blink]
-	mov r0,r2
-	ENDFUNC(__mulsi3)
-#elif defined (__ARC_MUL64__)
+#if defined (__ARC_MUL64__)
 	FUNC(__mulsi3)
 	mulu64 r0,r1
 	j_s.d [blink]
@@ -235,24 +218,6 @@ SYM(__umulsidi3):
 ; Utilities used by all routines.
 
 	.section .text
-	.align 4
-
-; inputs: r0 = numerator, r1 = denominator
-; outputs: positive r0/r1,
-;          r6.bit1 = sign of numerator, r6.bit0 = sign of result
-
-#ifdef __A4__
-	.global SYM(__divnorm)
-SYM(__divnorm):
-	mov r6,0		; keep sign in r6
-	sub.f 0,r0,0		; is numerator -ve?
-	sub.lt r0,0,r0		; negate numerator
-	mov.lt r6,3		; sign is -ve
-	sub.f 0,r1,0		; is denominator -ve?
-	sub.lt r1,0,r1		; negate denominator
-	xor.lt r6,r6,1		; toggle sign
-	j.nd [blink]
-#endif
 
 /*
 unsigned long
@@ -289,40 +254,7 @@ udivmodsi4(int modwanted, unsigned long num, unsigned long den)
 	FUNC(__udivmodsi4)
 SYM(__udivmodsi4):
 
-#ifdef __A4__	
-	mov r2,1		; bit = 1
-	mov r3,0		; res = 0
-.Lloop1:
-	sub.f 0,r1,r0		; while (den < num
-	nop
-	bnc.nd @.Lloop2
-	sub.f 0,r2,0		; && bit
-	nop
-	bz.nd @.Lloop2
-	asl.f 0,r1		; && !(den & (1<<31))
-	nop
-	bc.nd @.Lloop2
-	asl r1,r1		; den <<= 1
-	b.d @.Lloop1
-	asl r2,r2		; bit <<= 1
-.Lloop2:
-	sub.f 0,r2,0		; while (bit)
-	nop
-	bz.nd @.Ldivmodend
-	sub.f 0,r0,r1		; if (num >= den)
-	nop
-	bc.nd @.Lshiftdown
-	sub r0,r0,r1		; num -= den
-	or r3,r3,r2		; res |= bit
-.Lshiftdown:
-	lsr r2,r2		; bit >>= 1
-	b.d @.Lloop2
-	lsr r1,r1		; den >>= 1
-.Ldivmodend:
-	mov r1,r0		; r1 = mod
-	j.d [blink]
-	mov r0,r3		; r0 = res
-#elif defined (__ARC700__)
+#if defined (__ARC700__)
 /* Normalize divisor and divident, and then use the appropriate number of
    divaw (the number of result bits, or one more) to produce the result.
    There are some special conditions that need to be tested:
@@ -527,14 +459,7 @@ SYM(__udivsi3):
 
 #ifndef __ARC700__
 SYM(__divsi3):
-#ifdef __A4__
-	mov r7,blink
-	bl.nd @SYM(__divnorm)
-	bl.nd @SYM(__udivmodsi4)
-	and.f 0,r6,1
-	sub.nz r0,0,r0		; cannot go in delay slot, has limm value
-	j.nd [r7]
-#else /* !__A4__, i.e. A5 / ARC600 */
+	/* A5 / ARC60? */
 	mov r7,blink
 	xor r6,r0,r1
 	abs_s r0,r0
@@ -543,7 +468,6 @@ SYM(__divsi3):
 	tst r6,r6
 	j.d [r7]
 	 neg.mi r0,r0
-#endif /* __A4__ */
 #else 	/* !ifndef __ARC700__ */
 	;; We can use the abs, norm, divaw and mpy instructions for ARC700
 #define MULDIV
@@ -938,15 +862,7 @@ SYM(__umodsi3):
 	FUNC(__modsi3)
 SYM(__modsi3):
 #ifndef __ARC700__
-#ifdef __A4__
-	mov r7,blink
-	bl.nd @SYM(__divnorm)
-	bl.nd @SYM(__udivmodsi4)
-	and.f 0,r6,2
-	sub.nz r1,0,r1
-	j.d [r7]
-	mov r0,r1
-#else /* !__A4__, i.e. A5 / ARC600 */
+	/* A5 / ARC60? */
 	mov_s r12,blink
 	mov_s r6,r0
 	abs_s r0,r0
@@ -956,7 +872,6 @@ SYM(__modsi3):
 	neg_s r0,r1
 	j_s.d [r12]
 	 mov.pl r0,r1
-#endif /* __A4__ */
 #else /* __ARC700__ */
 	abs_s	r2,r1
 	norm.f	r4,r0
@@ -1014,7 +929,7 @@ SYM(__clzsi2):
 	j_s.d [blink]
 	add.pl r0,r0,1
 	ENDFUNC(__clzsi2)
-#elif !defined (__A4__)
+#else
 	FUNC(__clzsi2)
 	asl.f 0,r0,2
 	mov r1,-1
@@ -1035,17 +950,9 @@ SYM(__clzsi2):
 	j_s.d [blink]
 	sub_s r0,r1,1
 	ENDFUNC(__clzsi2)
-#else
-	mov	lp_count,32
-	lp	@SYM(.Ldone)
-	and.f	%r1,%r0,0x80000000
-	bnz	@SYM(.Ldone)
-	asl	%r0,%r0
-.Ldone:
-	sub	%r0,32,lp_count
-	j	[%blink]
 #endif
-#endif
+#endif /* L_clzsi2 */
+       .section .text
 
 
 ;;; MILLICODE THUNK LIB ;***************
@@ -1096,7 +1003,6 @@ SYM(__clzsi2):
 ;;  
 ;#endif
 
-#ifndef __A4__
 #ifdef L_millicodethunk_st
 	.section .text
 	.align 4
@@ -1305,7 +1211,6 @@ SYM(__ld_r13_to_r14_ret):
 	ENDFUNC(__ld_r13_to_r25_ret)
 
 #endif /* L_millicodethunk_ret */
-#endif  /*__A4__*/
 
 #ifdef  L_adddf3
 #ifdef __ARC_NORM__

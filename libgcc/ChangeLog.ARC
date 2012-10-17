@@ -1,5 +1,11 @@
 2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* crtg.S, crtgend.S, gmon/dcache_linesz.S: Remove __A4__ code.
+	* gmon/dcache_linesz.S, gmon/prof-freq-stub.S: Likewise.
+	* gmon/profil.S, lib1funcs.S: Likewise.
+
+2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* libgcc/config/arc/lib1funcs.S (entire file): Remove #ifdef __base__.
 
 2012-10-13  Joern Rennecke  <joern.rennecke@embecosm.com>

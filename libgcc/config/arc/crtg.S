@@ -20,8 +20,6 @@
    with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
 
-#ifndef __A4__
-
 	.section .init
 	.global _init
 	.global _fini
@@ -46,4 +44,3 @@ __arc_profile_counters_secstart:
 	.section .fini
 	.global _mcleanup
 	jl	_mcleanup
-#endif /* !A4 */
