@@ -3566,9 +3566,9 @@
 
 ; When estimating sizes during arc_reorg, when optimizing for speed, there
 ; are three reasons why we need to consider branches to be length 6:
-; - unnull-false delay slot insns are implemented using conditional execution,
+; - annull-false delay slot insns are implemented using conditional execution,
 ;   thus preventing short insn formation where used.
-; - for ARC600: unnul-true delay slot isnns are implemented where possile
+; - for ARC600: annull-true delay slot isnns are implemented where possile
 ;   using conditional execution, preventing short insn formation where used.
 ; - for ARC700: likely or somewhat likely taken branches are made long and
 ;   unaligned if possible to avoid branch penalty.
