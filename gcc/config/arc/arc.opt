@@ -63,7 +63,11 @@ Same as -mA7
 
 mmixed-code
 Target Report Mask(MIXED_CODE_SET)
-Generate ARCompact 16-bit instructions intermixed with 32-bit instructions for ARCtangent-A5 and higher processors
+Tweak register allocation to help 16-bit instruction generation
+; originally this was:
+;Generate ARCompact 16-bit instructions intermixed with 32-bit instructions for ARCtangent-A5 and higher processors
+; but we do that without -mmixed-code, too, it's just a different instruction
+; count / size tradeoff.
 
 mvolatile-cache
 Target Report Mask(VOLATILE_CACHE_SET)

@@ -1,5 +1,9 @@
 2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.opt (-mmixed-code): Update description.
+
+2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Remove __base__.
 
 2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
