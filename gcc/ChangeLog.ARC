@@ -1,5 +1,9 @@
 2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc-protos.h (emit_shift): Move inside RTX_CODE guard.
+
+2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc: Update Copyright of all files
 	in anticipation of FSF submission.
 	* common/config/arc/arc-common.c: Likewise.

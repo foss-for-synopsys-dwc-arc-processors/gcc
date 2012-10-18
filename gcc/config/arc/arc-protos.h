@@ -69,6 +69,7 @@ extern const char *arc_output_addsi (rtx *operands, const char *);
 extern int arc_expand_movmem (rtx *operands);
 extern int prepare_move_operands (rtx *operands, enum machine_mode mode);
 extern void arc_split_dilogic (rtx *, enum rtx_code);
+extern void emit_shift (enum rtx_code, rtx, rtx, rtx);
 #endif /* RTX_CODE */
 
 #ifdef TREE_CODE
@@ -146,7 +147,6 @@ extern int arc_need_delay (rtx insn);
 extern int arc_text_label (rtx);
 extern int arc_decl_pretend_args (tree decl);
 extern int arc_dead_or_set_postreload_p (const_rtx insn, const_rtx reg);
-extern void emit_shift (enum rtx_code, rtx, rtx, rtx);
 extern bool arc_short_comparison_p (rtx, int);
 /* insn-attrtab.c doesn't include reload.h, which declares regno_clobbered_p. */
 extern int regno_clobbered_p (unsigned int, rtx, enum machine_mode, int);
