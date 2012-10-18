@@ -1,5 +1,10 @@
 2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config.host (arc600-*-linux-uclibc, arc601-*-linux-uclibc): Delete.
+	* config/arc/t-arc600-uClibc: Delete file.
+
+2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc: Update Copyright and License of all files
 	in anticipation of FSF submission.
 

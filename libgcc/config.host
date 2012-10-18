@@ -307,14 +307,6 @@ arc-*-elf*)
 	tmake_file="arc/t-arc-newlib arc/t-arc"
 	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
 	;;
-arc600-*-linux-uclibc*)
-	tmake_file="arc/t-arc600-uClibc arc/t-arc"
-	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
-	;;
-arc601-*-linux-uclibc*)
-	tmake_file="arc/t-arc601-uClibc arc/t-arc"
-	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
-	;;
 arc*-*-linux-uclibc*)
 	tmake_file="${tmake_file} t-slibgcc-libgcc t-slibgcc-nolc-override arc/t-arc700-uClibc arc/t-arc"
 	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
