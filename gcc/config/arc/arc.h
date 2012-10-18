@@ -134,23 +134,16 @@ along with GCC; see the file COPYING3.  If not see
 "
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
-#if 1
 /* Note that the default is to link against dynamic libraries, if they are
-   available.  While it is a bit simpler to get started with static linking,
-   it is much easier to comply with the LGPL when you use dynamic linking, and
-   thus get a product that you can legally ship.  */
-#define STATIC_LINK_SPEC "%{static:-Bstatic}"
-#else /* Make ease of use of producing something the main concern.  */
-#define STATIC_LINK_SPEC "%{!mdynamic:%{!shared:-Bstatic}}"
-#endif
+   available.  Override with -static.  */
 #define LINK_SPEC "%{h*} %{version:-v} \
-                   %{b} %{Wl,*:%*} \
-                   "STATIC_LINK_SPEC" \
-                   %{symbolic:-Bsymbolic} \
-                   %{rdynamic:-export-dynamic}\
-                   %{!dynamic-linker:-dynamic-linker /lib/ld-uClibc.so.0}\
-                   -X %{mbig-endian:-EB} \
-                   %{EB} %{EL} \
+		   %{b} %{Wl,*:%*} \
+		   %{static:-Bstatic} \
+		   %{symbolic:-Bsymbolic} \
+		   %{rdynamic:-export-dynamic}\
+		   %{!dynamic-linker:-dynamic-linker /lib/ld-uClibc.so.0}\
+		   -X %{mbig-endian:-EB} \
+		   %{EB} %{EL} \
 		   %{marclinux*} \
 		   %{!marclinux*: %{pg|p|profile:-marclinux_prof;: -marclinux}} \
 		   %{!z:-z max-page-size=0x1000 -z common-page-size=0x1000} \
@@ -215,12 +208,6 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC601:-mcpu=ARC601 %<mARC601}" \
   "%{mARC700:-mcpu=ARC700 %<mARC700}"
 
-#if 0
-/* -mA7 is invalid for TARGET_CPU_OPT, it would have to be -mA7 -mnorm.  */
-#define DRIVER_SELF_SPECS \
-  "%{!mA*:-" TARGET_CPU_DEFAULT_OPT "}%{mA7|mARC700:-mnorm}"
-#endif
-
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
 /* ARCOMPACT is true for all supported architectures.  */
@@ -283,8 +270,7 @@ along with GCC; see the file COPYING3.  If not see
 #define ARC_EXTENSION_CPU(cpu) 0
 
 #ifndef MULTILIB_DEFAULTS
-/* FIXME:  Is this the best way to specify the default?  */
-#define MULTILIB_DEFAULTS { "mARC700", "EL" }
+#define MULTILIB_DEFAULTS { "mARC700" }
 #endif
 
 /* Target machine storage layout.  */
@@ -550,8 +536,8 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
    This is ordinarily the length in words of a value of mode MODE
    but can be less for certain modes in special long registers.  */
 #define HARD_REGNO_NREGS(REGNO, MODE) \
-((GET_MODE_SIZE (MODE) == 16 && REGNO>=64 && REGNO<88)?1:                             \
-          (GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
+((GET_MODE_SIZE (MODE) == 16 && REGNO >= 64 && REGNO < 88) ? 1 \
+ : (GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
 
 /* Value is 1 if hard register REGNO can hold a value of machine-mode MODE.  */
 extern unsigned int arc_hard_regno_mode_ok[];

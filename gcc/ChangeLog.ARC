@@ -1,3 +1,12 @@
+2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.gcc (arc600-*-linux-uclibc*): Remove.
+	(arc601-*-linux-uclibc*): Likewise.
+	* config/arc/arc.h (STATIC_LINK_SPEC): Integrate into ..
+	(LINK_SPEC): .. here.
+	(MULTILIB_DEFAULTS): Remove endian setting.
+	(HARD_REGNO_NREGS): Fix formatting.
+
 2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt (-mmixed-code): Update description.

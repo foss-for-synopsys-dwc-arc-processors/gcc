@@ -823,23 +823,6 @@ arc-*-elf*)
 		;;
 	esac
 	;;
-arc600-*-linux-uclibc*)
-	extra_headers="arc-simd.h"
-	tm_file="dbxelf.h elfos.h linux.h  ${tm_file}"
-	tmake_file="arc/t-arc-uClibc arc/t-arc"
-	tm_defines="${tm_defines} TARGET_CPU_DEFAULT_OPT=\\\"mARC600\\\""
-	target_cpu_default="TARGET_CPU_ARC600"
-        ;;
-arc601-*-linux-uclibc*)
-	extra_headers="arc-simd.h"
-	tm_file="dbxelf.h elfos.h linux.h  ${tm_file}"
-	tmake_file="arc/t-arc-uClibc arc/t-arc"
-	# ??? FIXME there is no -mARC601 option, but the only place
-	# using TARGET_CPU_DEFAULT_OPT is in arc.h in DRIVER_SELF_SPECS
-	# which is #if 0'd out.
-	tm_defines="${tm_defines} TARGET_CPU_DEFAULT_OPT=\\\"mARC601\\\""
-	target_cpu_default="TARGET_CPU_ARC601"
-        ;;
 arc*-*-linux-uclibc*)
 	extra_headers="arc-simd.h"
 	tm_file="dbxelf.h elfos.h linux.h  ${tm_file}"
