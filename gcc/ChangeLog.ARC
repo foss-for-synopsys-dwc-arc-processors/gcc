@@ -1,5 +1,11 @@
 2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc: Update Copyright of all files
+	in anticipation of FSF submission.
+	* common/config/arc/arc-common.c: Likewise.
+
+2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config.gcc (arc600-*-linux-uclibc*): Remove.
 	(arc601-*-linux-uclibc*): Likewise.
 	* config/arc/arc.h (STATIC_LINK_SPEC): Integrate into ..

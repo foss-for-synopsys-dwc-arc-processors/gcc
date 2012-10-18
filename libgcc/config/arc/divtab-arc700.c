@@ -1,6 +1,6 @@
-/* Copyright (C) 2004, 2006, 2007 Free Software Foundation, Inc.
-
-   Copyright 2007-2012 Synopsys Inc.
+/* Copyright (C) 2004, 2006, 2007-2012 Free Software Foundation, Inc.
+   Contributor: Joern Rennecke <joern.rennecke@embecosm.com>
+		on behalf of Synopsys Inc.
 
 This file is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

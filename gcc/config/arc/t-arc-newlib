@@ -1,6 +1,6 @@
-# GCC Makefile fragment for ARC ARCompact CPU with newlib.
+# GCC Makefile fragment for Synopsys DesignWare ARC with newlib.
 
-# Copyright 2007-2012 Synopsys Inc.
+# Copyright (C) 2007-2012 Free Software Foundation, Inc.
 
 # This file is part of GCC.
 

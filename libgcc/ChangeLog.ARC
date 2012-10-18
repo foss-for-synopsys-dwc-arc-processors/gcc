@@ -1,3 +1,8 @@
+2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc: Update Copyright and License of all files
+	in anticipation of FSF submission.
+
 2012-10-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* crtg.S, crtgend.S, gmon/dcache_linesz.S: Remove __A4__ code.

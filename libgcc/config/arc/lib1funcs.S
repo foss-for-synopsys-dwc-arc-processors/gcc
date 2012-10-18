@@ -1,18 +1,20 @@
-; libgcc1 routines for ARC cpu.
+; libgcc1 routines for Synopsys DesignWare ARC cpu.
 
-/* Copyright (C) 1995, 1997, 2007, 2008 Free Software Foundation, Inc.
+/* Copyright (C) 1995, 1997, 2007-2012 Free Software Foundation, Inc.
+   Contributor: Joern Rennecke <joern.rennecke@embecosm.com>
+		on behalf of Synopsys Inc.
 
-   Copyright 2007-2012 Synopsys Inc.
+This file is part of GCC.
 
-This file is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 3, or (at your option) any
-later version.
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
 
-This file is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-General Public License for more details.
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
 
 Under Section 7 of GPL version 3, you are granted additional
 permissions described in the GCC Runtime Library Exception, version

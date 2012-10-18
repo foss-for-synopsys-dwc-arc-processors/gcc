@@ -1,7 +1,5 @@
-/* Definitions of target machine for GNU compiler, ARC ARCompact cpu.
-   Copyright (C) 2000, 2007, 2008, 2009, 2010 Free Software Foundation, Inc.
-
-   Copyright 2007-2012 Synopsys Inc.
+/* Definitions of target machine for GNU compiler, Synopsys DesignWare ARC cpu.
+   Copyright (C) 2000, 2007-2012 Free Software Foundation, Inc.
 
 This file is part of GCC.
 

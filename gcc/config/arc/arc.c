@@ -1,8 +1,6 @@
-/* Subroutines used for code generation on the ARC ARCompact cpu.
-   Copyright (C) 1994, 1995, 1997, 2004, 2007, 2008, 2009, 2010
+/* Subroutines used for code generation on the Synopsys DesignWare ARC cpu.
+   Copyright (C) 1994, 1995, 1997, 2004, 2007-2012
    Free Software Foundation, Inc.
-
-   Copyright 2007-2012 Synopsys Inc.
 
    Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
    behalf of Synopsys Inc.
@@ -11,6 +9,9 @@
    Comments and Support For ARC700 instructions added by
    Saurabh Verma (saurabh.verma@codito.com)
    Ramana Radhakrishnan(ramana.radhakrishnan@codito.com)
+
+   Fixing ABI inconsistencies, optimizations for ARC600 / ARC700 pipelines,
+   profiling support added by Joern Rennecke <joern.rennecke@embecosm.com>
 
 This file is part of GCC.
 

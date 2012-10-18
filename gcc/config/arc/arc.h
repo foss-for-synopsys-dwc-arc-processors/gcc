@@ -1,8 +1,6 @@
-/* Definitions of target machine for GNU compiler, Argonaut ARC cpu.
-   Copyright (C) 1994, 1995, 1997, 1998, 2007, 2008, 2009, 2010
+/* Definitions of target machine for GNU compiler, Synopsys DesignWare ARC cpu.
+   Copyright (C) 1994, 1995, 1997, 1998, 2007-2012
    Free Software Foundation, Inc.
-
-   Copyright 2007-2012 Synopsys Inc.
 
    Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
    behalf of Synopsys Inc.

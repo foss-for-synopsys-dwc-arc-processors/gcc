@@ -1,5 +1,5 @@
-;; Machine description of the Argonaut ARC cpu for GNU C compiler
-;; Copyright (C) 2007-2012 Synopsys Inc.
+;; Machine description of the Synopsys DesignWare ARC cpu for GNU C compiler
+;; Copyright (C) 2007-2012 Free Software Foundation, Inc.
 
 ;; This file is part of GCC.
 

@@ -1,5 +1,5 @@
-/* ARC SIMD include file.
-   Copyright 2007-2012 Synopsys Inc.
+/* Synopsys DesignWare ARC SIMD include file.
+   Copyright (C) 2007-2012 Free Software Foundation, Inc.
    Written by Saurabh Verma (saurabh.verma@celunite.com) on behalf os Synopsys
    Inc.
 

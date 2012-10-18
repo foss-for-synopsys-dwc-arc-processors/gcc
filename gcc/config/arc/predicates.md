@@ -1,7 +1,5 @@
-;; Predicate definitions for ARC.
-;; Copyright (C) 2007, 2008, 2009, 2010 Free Software Foundation, Inc.
-;;
-;; Copyright 2007-2012 Synopsys Inc.
+;; Predicate definitions for Synopsys DesignWare ARC.
+;; Copyright (C) 2007-2012 Free Software Foundation, Inc.
 ;;
 ;; This file is part of GCC.
 ;;
