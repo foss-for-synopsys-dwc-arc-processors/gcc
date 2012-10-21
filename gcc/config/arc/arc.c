@@ -2476,7 +2476,9 @@ output_shift (rtx *operands)
     }
   else
     {
-      int n = INTVAL (operands[2]);
+      int n;
+
+      n = INTVAL (operands[2]);
 
       /* Only consider the lower 5 bits of the shift count.  */
       n = n & 0x1f;
