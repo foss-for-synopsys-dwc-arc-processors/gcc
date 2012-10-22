@@ -1,3 +1,25 @@
+2012-10-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* doc/md.texi (Defining Attributes): Document that we are defining
+	HAVE_ATTR_name macors as 1 for defined attributes, and as 0
+	for undefined special attributes.
+	* final.c (asm_insn_count, align_fuzz): Always define.
+	(insn_current_reference_address): Likewise.
+	(init_insn_lengths): Use if (HAVE_ATTR_length) instead of
+	#ifdef HAVE_ATTR_length.
+	(get_attr_length_1, shorten_branches, final): Likewise.
+	(final_scan_insn, output_asm_name): Likewise.
+	* genattr.c (gen_attr): Define HAVE_ATTR_name macros for
+	defined attributes as 1.
+	Remove ancient get_attr_alternative compatibility code.
+	For special purpose attributes not provided, define HAVE_ATTR_name
+	as 0.
+	In case no length attribute is given, provide stub definitions
+	for insn_*_length* functions, and also include insn-addr.h.
+	* genattrtab.c (write_length_unit_log): Always write a definition.
+	* recog.c: Use #if instead of #ifndef / #if defined for
+	HAVE_ATTR_enabled and HAVE_ATTR_length.
+
 2012-10-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (output_shift): Avoid initializing n.

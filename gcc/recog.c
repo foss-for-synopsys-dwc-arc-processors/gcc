@@ -57,7 +57,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 #endif
 
-#ifndef HAVE_ATTR_enabled
+#if !HAVE_ATTR_enabled
 static inline bool
 get_attr_enabled (rtx insn ATTRIBUTE_UNUSED)
 {
@@ -3804,7 +3804,7 @@ struct rtl_opt_pass pass_split_after_reload =
 static bool
 gate_handle_split_before_regstack (void)
 {
-#if defined (HAVE_ATTR_length) && defined (STACK_REGS)
+#if (HAVE_ATTR_length) && defined (STACK_REGS)
   /* If flow2 creates new instructions which need splitting
      and scheduling after reload is not done, they might not be
      split until final which doesn't allow splitting
@@ -3888,7 +3888,7 @@ struct rtl_opt_pass pass_split_before_sched2 =
 static bool
 gate_do_final_split (void)
 {
-#if defined (HAVE_ATTR_length) && !defined (STACK_REGS)
+#if (HAVE_ATTR_length) && !defined (STACK_REGS)
   return 1;
 #else
   return 0;
