@@ -1,5 +1,16 @@
 2012-10-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	From Easwaran Raman  <eraman@google.com>:
+	PR middle-end/54957
+	* optabs.c (emit_cmp_and_jump_insn_1): Remove bogus assert.
+	* stmt.c (get_outgoing_edge_probs): Check default_edge / stmt_bb
+	for NULL before dereferencing.
+	(emit_case_dispatch_table): Check default_edge for NULL before
+	dereferencing.
+	Provide sane basic block parameter to emit_case_dispatch_table.
+
+2012-10-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* doc/md.texi (Defining Attributes): Document that we are defining
 	HAVE_ATTR_name macors as 1 for defined attributes, and as 0
 	for undefined special attributes.
