@@ -7515,6 +7515,9 @@ The @code{length} attribute is used to calculate the length of emitted
 code chunks.  This is especially important when verifying branch
 distances. @xref{Insn Lengths}.
 
+@item lock_length
+The @code{lock_length} attribute.
+
 @item enabled
 The @code{enabled} attribute can be defined to prevent certain
 alternatives of an insn definition from being used during code
@@ -8037,6 +8040,22 @@ as follows:
                       (const_int 4)
                       (const_int 6)))])
 @end smallexample
+
+@cindex lock_length
+Usually, when doing optimizing branch shortening, the instruction length
+is calculated by avaluating the @code{length} attribute, applying
+@code{ADJUST_INSN_LENGTH}, and taking the maximum of the resultant
+value and the length of the instruction in the previous iteration.
+
+If you define the @code{lock_length} attribute, the @code{lock_length}
+attribute will be evaluated, and then the maximum with of @code{lock_length}
+value from the previous iteration will be formed and saved.
+Then the maximum of that value with the @code{length} attribute will
+be formed, and @code{ADJUST_INSN_LENGTH} will be applied.
+Thus, you can allow the length to vary downwards as well as upwards
+across iterations with suitable definitions of the @code{length} attribute
+and/or @code{ADJUST_INSN_LENGTH}.  Care has to be taken that this does not
+lead to infinite loops.
 
 @end ifset
 @ifset INTERNALS

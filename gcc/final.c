@@ -308,6 +308,7 @@ dbr_sequence_length (void)
    `insn_current_length'.  */
 
 static int *insn_lengths;
+static int *uid_lock_length;
 
 VEC(int,heap) *insn_addresses_;
 
@@ -430,13 +431,40 @@ get_attr_length_1 (rtx insn, int (*fallback_fn) (rtx))
   return length;
 }
 
+/* Calculate the maximum length of INSN.  */
+static int
+insn_max_length (rtx insn)
+{
+  int length, lock_length;
+
+  length = insn_default_length (insn);
+  if (HAVE_ATTR_lock_length)
+    {
+      lock_length = insn_default_lock_length (insn);
+      if (length < lock_length)
+	length = lock_length;
+    }
+  return length;
+}
+
 /* Obtain the current length of an insn.  If branch shortening has been done,
    get its actual length.  Otherwise, get its maximum length.  */
 int
 get_attr_length (rtx insn)
 {
-  return get_attr_length_1 (insn, insn_default_length);
+  return get_attr_length_1 (insn, insn_max_length);
 }
+
+int
+get_attr_lock_length (rtx insn)
+{
+  if (uid_lock_length && insn_lengths_max_uid > INSN_UID (insn))
+    return uid_lock_length[INSN_UID (insn)];
+  return get_attr_length_1 (insn, insn_min_lock_length);
+}
+
+#define INSN_VARIABLE_LENGTH_P(INSN) \
+  (insn_variable_length_p (INSN) || insn_variable_lock_length_p (INSN))
 
 /* Obtain the current length of an insn.  If branch shortening has been done,
    get its actual length.  Otherwise, get its minimum length.  */
@@ -966,6 +994,11 @@ shorten_branches (rtx first)
   /* Allocate the rest of the arrays.  */
   insn_lengths = XNEWVEC (int, max_uid);
   insn_lengths_max_uid = max_uid;
+  if (HAVE_ATTR_lock_length)
+    uid_lock_length = XCNEWVEC (int, max_uid);
+  else
+    uid_lock_length = insn_lengths;
+
   /* Syntax errors can lead to labels being outside of the main insn stream.
      Initialize insn_addresses, so that we get reproducible results.  */
   INSN_ADDRESSES_ALLOC (max_uid);
@@ -1064,7 +1097,7 @@ shorten_branches (rtx first)
 #endif /* CASE_VECTOR_SHORTEN_MODE */
 
   /* Compute initial lengths, addresses, and varying flags for each insn.  */
-  int (*length_fun) (rtx) = increasing ? insn_min_length : insn_default_length;
+  int (*length_fun) (rtx) = increasing ? insn_min_length : insn_max_length;
 
   for (insn_current_address = 0, insn = first;
        insn != 0;
@@ -1106,7 +1139,7 @@ shorten_branches (rtx first)
 	  /* Alignment is handled by ADDR_VEC_ALIGN.  */
 	}
       else if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
-	insn_lengths[uid] = asm_insn_count (body) * insn_default_length (insn);
+	insn_lengths[uid] = asm_insn_count (body) * insn_max_length (insn);
       else if (GET_CODE (body) == SEQUENCE)
 	{
 	  int i;
@@ -1117,7 +1150,7 @@ shorten_branches (rtx first)
 	  const_delay_slots = 0;
 #endif
 	  int (*inner_length_fun) (rtx)
-	    = const_delay_slots ? length_fun : insn_default_length;
+	    = const_delay_slots ? length_fun : insn_max_length;
 	  /* Inside a delay slot sequence, we do not do any branch shortening
 	     if the shortening could change the number of delay slots
 	     of the branch.  */
@@ -1130,7 +1163,7 @@ shorten_branches (rtx first)
 	      if (GET_CODE (body) == ASM_INPUT
 		  || asm_noperands (PATTERN (XVECEXP (body, 0, i))) >= 0)
 		inner_length = (asm_insn_count (PATTERN (inner_insn))
-				* insn_default_length (inner_insn));
+				* insn_max_length (inner_insn));
 	      else
 		inner_length = inner_length_fun (inner_insn);
 
@@ -1138,7 +1171,7 @@ shorten_branches (rtx first)
 	      if (const_delay_slots)
 		{
 		  if ((varying_length[inner_uid]
-		       = insn_variable_length_p (inner_insn)) != 0)
+		       = INSN_VARIABLE_LENGTH_P (inner_insn)) != 0)
 		    varying_length[uid] = 1;
 		  INSN_ADDRESSES (inner_uid) = (insn_current_address
 						+ insn_lengths[uid]);
@@ -1151,7 +1184,7 @@ shorten_branches (rtx first)
       else if (GET_CODE (body) != USE && GET_CODE (body) != CLOBBER)
 	{
 	  insn_lengths[uid] = length_fun (insn);
-	  varying_length[uid] = insn_variable_length_p (insn);
+	  varying_length[uid] = INSN_VARIABLE_LENGTH_P (insn);
 	}
 
       /* If needed, do any adjustment.  */
@@ -1354,7 +1387,7 @@ shorten_branches (rtx first)
 		{
 		  rtx inner_insn = XVECEXP (body, 0, i);
 		  int inner_uid = INSN_UID (inner_insn);
-		  int inner_length;
+		  int inner_length, lock_length;
 
 		  INSN_ADDRESSES (inner_uid) = insn_current_address;
 
@@ -1365,16 +1398,23 @@ shorten_branches (rtx first)
 		  else
 		    inner_length = insn_current_length (inner_insn);
 
-		  if (inner_length != insn_lengths[inner_uid])
+		  lock_length
+		    = (HAVE_ATTR_lock_length
+		       ? insn_current_lock_length (inner_insn) : inner_length);
+		  if (lock_length != uid_lock_length[inner_uid])
 		    {
-		      if (!increasing || inner_length > insn_lengths[inner_uid])
+		      if (!increasing
+			  || lock_length > uid_lock_length[inner_uid])
 			{
-			  insn_lengths[inner_uid] = inner_length;
+			  uid_lock_length[inner_uid] = lock_length;
 			  something_changed = 1;
 			}
 		      else
-			inner_length = insn_lengths[inner_uid];
+			lock_length = uid_lock_length[inner_uid];
 		    }
+		  if (inner_length < lock_length)
+		    inner_length = lock_length;
+		  insn_lengths[inner_uid] = inner_length;
 		  insn_current_address += inner_length;
 		  new_length += inner_length;
 		}
@@ -1382,6 +1422,17 @@ shorten_branches (rtx first)
 	  else
 	    {
 	      new_length = insn_current_length (insn);
+	      if (HAVE_ATTR_lock_length)
+		{
+		  int lock_length = insn_current_lock_length (insn);
+
+		  if (!increasing || lock_length > uid_lock_length[uid])
+		    uid_lock_length[uid] = lock_length;
+		  else
+		    lock_length = uid_lock_length[uid];
+		  if (new_length < lock_length)
+		    new_length = lock_length;
+		}
 	      insn_current_address += new_length;
 	    }
 
@@ -1393,7 +1444,8 @@ shorten_branches (rtx first)
 #endif
 
 	  if (new_length != insn_lengths[uid]
-	      && (!increasing || new_length > insn_lengths[uid]))
+	      && (!increasing || HAVE_ATTR_lock_length
+		  || new_length > insn_lengths[uid]))
 	    {
 	      insn_lengths[uid] = new_length;
 	      something_changed = 1;
@@ -1407,6 +1459,11 @@ shorten_branches (rtx first)
     }
 
   free (varying_length);
+  if (HAVE_ATTR_lock_length)
+    {
+      free (uid_lock_length);
+      uid_lock_length = 0;
+    }
 }
 
 /* Given the body of an INSN known to be generated by an ASM statement, return
