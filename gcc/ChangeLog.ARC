@@ -1,3 +1,7 @@
+2012-10-24  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/doc/md.texi (lock_length): Fix typo.
+
 2012-10-23  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* doc/md.texi (node Defining Attributes): Add lock_length to

@@ -8048,7 +8048,7 @@ is calculated by avaluating the @code{length} attribute, applying
 value and the length of the instruction in the previous iteration.
 
 If you define the @code{lock_length} attribute, the @code{lock_length}
-attribute will be evaluated, and then the maximum with of @code{lock_length}
+attribute will be evaluated, and then the maximum with the @code{lock_length}
 value from the previous iteration will be formed and saved.
 Then the maximum of that value with the @code{length} attribute will
 be formed, and @code{ADJUST_INSN_LENGTH} will be applied.
