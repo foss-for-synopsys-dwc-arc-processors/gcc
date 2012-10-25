@@ -2383,19 +2383,17 @@ arc_eligible_for_epilogue_delay (rtx trial,int slot)
 
 /* Emit special PIC prologues and epilogues.  */
 /* If the function has any GOTOFF relocations, then the GOTBASE
- * register has to be setup in the prologue
- * The instruction needed at the function start for setting up the
- * GOTBASE register is
- *    add rdest, pc,
- * ----------------------------------------------------------
- * The rtl to be emitted for this should be:
- *   set ( reg basereg)
- *       ( plus ( reg pc)
- *              ( const (unspec (symref _DYNAMIC) 3)))
- * ----------------------------------------------------------
- */
-/* Can be used when rtl pro/epilog comes in.
-   Unused till then.  */
+   register has to be setup in the prologue
+   The instruction needed at the function start for setting up the
+   GOTBASE register is
+      add rdest, pc,
+   ----------------------------------------------------------
+   The rtl to be emitted for this should be:
+     set ( reg basereg)
+         ( plus ( reg pc)
+                ( const (unspec (symref _DYNAMIC) 3)))
+   ----------------------------------------------------------  */
+
 rtx
 arc_finalize_pic (void)
 {
@@ -4699,11 +4697,10 @@ arc_raw_symbolic_reference_mentioned_p (rtx op)
   return 0;
 }
 
-/* Legitimize a pic address reference
- *    orig = src
- *    oldx = target if reload_in_progress
- *           src       otherwise
- */
+/* Legitimize a pic address reference in ORIG.
+   The return value is the legitimated address.
+   If OLDX is non-zero, it is the target to assign the address to first.  */
+
 rtx
 arc_legitimize_pic_address (rtx orig, rtx oldx)
 {
@@ -4782,7 +4779,8 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 	    {
 	      /* FIXME: like above, could do without gp reference.  */
 	      crtl->uses_pic_offset_table = 1;
-	      pat = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, op0), ARC_UNSPEC_GOTOFF);
+	      pat
+		= gen_rtx_UNSPEC (Pmode, gen_rtvec (1, op0), ARC_UNSPEC_GOTOFF);
 	      pat = gen_rtx_PLUS (Pmode, pat, op1);
 	      pat = gen_rtx_CONST (Pmode, pat);
 	      pat = gen_rtx_PLUS (Pmode, pic_offset_table_rtx, pat);
