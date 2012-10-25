@@ -1,5 +1,11 @@
 2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* target.def (adjust_insn_length): Document relation to
+	ADJUST_INSN_LENGTH.
+	* doc/tm.texi: Regenerate.
+
+2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc-protos.h (arc_adjust_insn_length): Update prototype.
 	* config/arc/arc.c (TARGET_ADJUST_INSN_LENGTH): Define.
 	* config/arc/arc.c (arc_verify_short): Use get_attr_length

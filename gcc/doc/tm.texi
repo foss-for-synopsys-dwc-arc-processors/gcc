@@ -11313,5 +11313,5 @@ This value should be set if the result written by @code{atomic_test_and_set} is 
 @end deftypevr
 
 @deftypefn {Target Hook} int TARGET_ADJUST_INSN_LENGTH (rtx @var{insn}, int @var{length}, bool @var{in_delay_sequence}, int *@var{iteration_threshold})
-Return an adjusted length for @var{insn}.  @var{length} is the value that has been calculated using the @code{length} instruction attribute.  @var{in_delay_sequence} if @var{insn} forms part of a delay sequence.  *@var{iteration_threshold} specifies the number of branch shortening  iterations before length decreases are inhibited.
+Return an adjusted length for @var{insn}.  @var{length} is the value that has been calculated using the @code{length} instruction attribute.  @var{in_delay_sequence} if @var{insn} forms part of a delay sequence.  *@var{iteration_threshold} specifies the number of branch shortening iterations before length decreases are inhibited.  The default implementation uses @code{ADJUST_INSN_LENGTH}, if defined.
 @end deftypefn
