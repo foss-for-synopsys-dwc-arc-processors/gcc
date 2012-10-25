@@ -71,10 +71,6 @@ extern int insn_default_length (rtx);\n\
 extern int insn_min_length (rtx);\n\
 extern int insn_variable_length_p (rtx);\n\
 extern int insn_current_length (rtx);\n\n\
-extern int insn_default_lock_length (rtx);\n\
-extern int insn_min_lock_length (rtx);\n\
-extern int insn_variable_lock_length_p (rtx);\n\
-extern int insn_current_lock_length (rtx);\n\n\
 #include \"insn-addr.h\"\n");
     }
 }
@@ -341,8 +337,7 @@ main (int argc, char **argv)
     }
 
   /* Special-purpose atributes should be tested with if, not #ifdef.  */
-  const char * const special_attrs[]
-    = { "length", "lock_length", "enabled", 0 };
+  const char * const special_attrs[] = { "length", "enabled", 0 };
   for (const char * const *p = special_attrs; *p; p++)
     {
       printf ("#ifndef HAVE_ATTR_%s\n"
@@ -351,19 +346,13 @@ main (int argc, char **argv)
     }
   /* We make an exception here to provide stub definitions for
      insn_*_length* functions.  */
-  puts ("extern int hook_int_rtx_0 (rtx);\n"
-	"#if !HAVE_ATTR_length\n"
+  puts ("#if !HAVE_ATTR_length\n"
+	"extern int hook_int_rtx_0 (rtx);\n"
 	"#define insn_default_length hook_int_rtx_0\n"
 	"#define insn_min_length hook_int_rtx_0\n"
 	"#define insn_variable_length_p hook_int_rtx_0\n"
 	"#define insn_current_length hook_int_rtx_0\n"
 	"#include \"insn-addr.h\"\n"
-	"#endif\n"
-	"#if !HAVE_ATTR_lock_length\n"
-	"#define insn_default_lock_length hook_int_rtx_0\n"
-	"#define insn_min_lock_length hook_int_rtx_0\n"
-	"#define insn_variable_lock_length_p hook_int_rtx_0\n"
-	"#define insn_current_lock_length hook_int_rtx_0\n"
 	"#endif\n");
 
   /* Output flag masks for use by reorg.

@@ -40,30 +40,6 @@
 	* config.gcc (arc*-*-linux-uclibc*): Add gnu-user.h / glibc-stdint.h
 	to tm_file.
 
-2012-10-24  Joern Rennecke  <joern.rennecke@embecosm.com>
-
-	* config/doc/md.texi (lock_length): Fix typo.
-
-2012-10-23  Joern Rennecke  <joern.rennecke@embecosm.com>
-
-	* doc/md.texi (node Defining Attributes): Add lock_length to
-	table of special attributes.
-	(node Insn Lengths): Document lock_length attribute.
-	* final.c (uid_lock_length): New variable.
-	(insn_max_length, get_attr_lock_length): New functions.
-	(get_attr_length): Use insn_max_length.
-	(get_attr_length_1): Use direct recursion rather than
-	calling get_attr_length.
-	(INSN_VARIABLE_LENGTH_P): Define.
-	(shorten_branches): Implement lock_length attribute functionality.
-	* genattrtab.c (lock_length_str): New variable.
-	(make_length_attrs): New parameter base.
-	(main): Initialize lock_length_str.
-	Generate lock_lengths attributes.
-	* genattr.c (gen_attr): Emit declarations for lock_length attribute
-	related functions.
-	(main): Emit stub defines for lock_length attribute related functions.
-
 2012-10-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	From Easwaran Raman  <eraman@google.com>:
