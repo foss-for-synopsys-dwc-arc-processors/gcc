@@ -1522,4 +1522,20 @@ default_member_type_forces_blk (const_tree, enum machine_mode)
   return false;
 }
 
+/* Default version of adjust_insn_length.  */
+
+int
+default_adjust_insn_length (rtx insn, int length, bool in_delay_sequence,
+			    int *iter_threshold)
+{
+  if (in_delay_sequence)
+    *iter_threshold = INT_MAX;
+#ifdef ADJUST_INSN_LENGTH
+  else
+    ADJUST_INSN_LENGTH (insn, length);
+#endif
+  return length;
+}
+
+
 #include "gt-targhooks.h"

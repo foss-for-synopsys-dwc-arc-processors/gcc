@@ -424,10 +424,8 @@ get_attr_length_1 (rtx insn, int (*fallback_fn) (rtx))
 	break;
       }
 
-#ifdef ADJUST_INSN_LENGTH
-  ADJUST_INSN_LENGTH (insn, length);
-#endif
-  return length;
+  int dummy = -1;
+  return targetm.adjust_insn_length (insn, length, false, &dummy);
 }
 
 /* Obtain the current length of an insn.  If branch shortening has been done,
@@ -827,6 +825,39 @@ struct rtl_opt_pass pass_compute_alignments =
 };
 
 
+static int
+adjust_length (rtx insn, int new_length, int uid, int *insn_lengths,
+	       int *uid_lock_length, bool seq_p, int *niter,
+	       bool *something_changed)
+
+{
+  int iter_threshold = 0;
+  new_length
+    = targetm.adjust_insn_length (insn, new_length, seq_p, &iter_threshold);
+  if (new_length < 0)
+    fatal_insn ("negative insn length", insn);
+  if (iter_threshold < 0)
+    fatal_insn ("negative shorten_branches iteration threshold", insn);
+  if (new_length != insn_lengths[uid])
+    {
+      if (new_length < uid_lock_length[uid])
+	new_length = uid_lock_length[uid];
+      if (new_length == insn_lengths[uid])
+	; /* done here.  */
+      else if (*niter < iter_threshold
+	       || new_length > insn_lengths[uid])
+	{
+	  if (*niter >= iter_threshold)
+	    uid_lock_length[uid] = new_length, *niter = 0;
+	  insn_lengths[uid] = new_length;
+	  *something_changed = true;
+	}
+      else
+	new_length = insn_lengths[uid];
+    }
+  return new_length;
+}
+
 /* Make a pass over all insns and compute their actual lengths by shortening
    any branches of variable length if possible.  */
 
@@ -848,7 +879,7 @@ shorten_branches (rtx first)
   int max_skip;
 #define MAX_CODE_ALIGN 16
   rtx seq;
-  int something_changed = 1;
+  bool something_changed = true;
   char *varying_length;
   rtx body;
   int uid;
@@ -964,7 +995,8 @@ shorten_branches (rtx first)
     return;
 
   /* Allocate the rest of the arrays.  */
-  insn_lengths = XNEWVEC (int, max_uid);
+  insn_lengths = XCNEWVEC (int, max_uid);
+  int *uid_lock_length = XCNEWVEC (int, max_uid);
   insn_lengths_max_uid = max_uid;
   /* Syntax errors can lead to labels being outside of the main insn stream.
      Initialize insn_addresses, so that we get reproducible results.  */
@@ -1065,14 +1097,13 @@ shorten_branches (rtx first)
 
   /* Compute initial lengths, addresses, and varying flags for each insn.  */
   int (*length_fun) (rtx) = increasing ? insn_min_length : insn_default_length;
+  int niter = increasing ? 0 : -1;
 
   for (insn_current_address = 0, insn = first;
        insn != 0;
        insn_current_address += insn_lengths[uid], insn = NEXT_INSN (insn))
     {
       uid = INSN_UID (insn);
-
-      insn_lengths[uid] = 0;
 
       if (LABEL_P (insn))
 	{
@@ -1093,6 +1124,8 @@ shorten_branches (rtx first)
       if (INSN_DELETED_P (insn))
 	continue;
 
+      int length = 0;
+
       body = PATTERN (insn);
       if (GET_CODE (body) == ADDR_VEC || GET_CODE (body) == ADDR_DIFF_VEC)
 	{
@@ -1100,13 +1133,12 @@ shorten_branches (rtx first)
 	     section.  */
 	  if (JUMP_TABLES_IN_TEXT_SECTION
 	      || readonly_data_section == text_section)
-	    insn_lengths[uid] = (XVECLEN (body,
-					  GET_CODE (body) == ADDR_DIFF_VEC)
-				 * GET_MODE_SIZE (GET_MODE (body)));
+	    length = (XVECLEN (body, GET_CODE (body) == ADDR_DIFF_VEC)
+		      * GET_MODE_SIZE (GET_MODE (body)));
 	  /* Alignment is handled by ADDR_VEC_ALIGN.  */
 	}
       else if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
-	insn_lengths[uid] = asm_insn_count (body) * insn_default_length (insn);
+	length = asm_insn_count (body) * insn_default_length (insn);
       else if (GET_CODE (body) == SEQUENCE)
 	{
 	  int i;
@@ -1134,7 +1166,10 @@ shorten_branches (rtx first)
 	      else
 		inner_length = inner_length_fun (inner_insn);
 
-	      insn_lengths[inner_uid] = inner_length;
+	      insn_lengths[inner_uid] = inner_length
+		= adjust_length (insn, inner_length, inner_uid, insn_lengths,
+				 uid_lock_length, true, &niter,
+				 &something_changed);
 	      if (const_delay_slots)
 		{
 		  if ((varying_length[inner_uid]
@@ -1145,21 +1180,19 @@ shorten_branches (rtx first)
 		}
 	      else
 		varying_length[inner_uid] = 0;
-	      insn_lengths[uid] += inner_length;
+	      length += inner_length;
 	    }
 	}
       else if (GET_CODE (body) != USE && GET_CODE (body) != CLOBBER)
 	{
-	  insn_lengths[uid] = length_fun (insn);
+	  length = length_fun (insn);
 	  varying_length[uid] = insn_variable_length_p (insn);
 	}
-
+	
       /* If needed, do any adjustment.  */
-#ifdef ADJUST_INSN_LENGTH
-      ADJUST_INSN_LENGTH (insn, insn_lengths[uid]);
-      if (insn_lengths[uid] < 0)
-	fatal_insn ("negative insn length", insn);
-#endif
+      insn_lengths[uid]
+	= adjust_length (insn, length, uid, insn_lengths, uid_lock_length,
+			 false, &niter, &something_changed);
     }
 
   /* Now loop over all the insns finding varying length insns.  For each,
@@ -1168,16 +1201,16 @@ shorten_branches (rtx first)
 
   while (something_changed)
     {
-      something_changed = 0;
+      if (increasing)
+	niter++;
+
+      something_changed = false;
       insn_current_align = MAX_CODE_ALIGN - 1;
       for (insn_current_address = 0, insn = first;
 	   insn != 0;
 	   insn = NEXT_INSN (insn))
 	{
 	  int new_length;
-#ifdef ADJUST_INSN_LENGTH
-	  int tmp_length;
-#endif
 	  int length_align;
 
 	  uid = INSN_UID (insn);
@@ -1363,17 +1396,13 @@ shorten_branches (rtx first)
 		  if (! varying_length[inner_uid])
 		    inner_length = insn_lengths[inner_uid];
 		  else
-		    inner_length = insn_current_length (inner_insn);
-
-		  if (inner_length != insn_lengths[inner_uid])
 		    {
-		      if (!increasing || inner_length > insn_lengths[inner_uid])
-			{
-			  insn_lengths[inner_uid] = inner_length;
-			  something_changed = 1;
-			}
-		      else
-			inner_length = insn_lengths[inner_uid];
+		      inner_length = insn_current_length (inner_insn);
+
+		      inner_length
+			= adjust_length (insn, inner_length, inner_uid,
+					 insn_lengths, uid_lock_length, true,
+					 &niter, &something_changed);
 		    }
 		  insn_current_address += inner_length;
 		  new_length += inner_length;
@@ -1385,21 +1414,13 @@ shorten_branches (rtx first)
 	      insn_current_address += new_length;
 	    }
 
-#ifdef ADJUST_INSN_LENGTH
 	  /* If needed, do any adjustment.  */
-	  tmp_length = new_length;
-	  ADJUST_INSN_LENGTH (insn, new_length);
+	  int tmp_length = new_length;
+	  new_length
+	    = adjust_length (insn, new_length, uid, insn_lengths,
+			     uid_lock_length, false, &niter,
+			     &something_changed);
 	  insn_current_address += (new_length - tmp_length);
-#endif
-
-	  if (new_length != insn_lengths[uid]
-	      && (!increasing || new_length > insn_lengths[uid]))
-	    {
-	      insn_lengths[uid] = new_length;
-	      something_changed = 1;
-	    }
-	  else
-	    insn_current_address += insn_lengths[uid] - new_length;
 	}
       /* For a non-optimizing compile, do only a single pass.  */
       if (!increasing)

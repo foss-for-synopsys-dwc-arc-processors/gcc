@@ -2769,6 +2769,16 @@ DEFHOOK
  enum unwind_info_type, (void),
  default_debug_unwind_info)
 
+DEFHOOK
+(adjust_insn_length,
+ "Return an adjusted length for @var{insn}.  @var{length} is the value that\
+ has been calculated using the @code{length} instruction attribute. \
+ @var{in_delay_sequence} if @var{insn} forms part of a delay sequence. \
+ *@var{iteration_threshold} specifies the number of branch shortening \
+ iterations before length decreases are inhibited.",
+ int, (rtx insn, int length, bool in_delay_sequence, int *iteration_threshold),
+ default_adjust_insn_length)
+
 DEFHOOKPOD
 (atomic_test_and_set_trueval,
  "This value should be set if the result written by\

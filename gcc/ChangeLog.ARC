@@ -1,5 +1,17 @@
 2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* doc/tm.texi.in (@hook TARGET_ADJUST_INSN_LENGTH): Add.
+	* doc/tm.texi: Regenerate.
+	* final.c (get_attr_length_1): Use targetm.adjust_insn_length
+	instead of ADJUST_INSN_LENGTH.
+	(adjust_length): New function.
+	(shorten_branches): Use adjust_length istead of ADJUST_INSN_LENGTH.
+	* target.def (adjust_insn_length): New hook.
+	* targhooks.c (default_adjust_insn_length): New function.
+	* targhooks.h (default_adjust_insn_length): Declare.
+
+2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* common/config/arc/arc-common.c (arc_option_init_struct):
 	Remove incorrect ATTRIBUTE_UNUSED for opts.
 	(arc_handle_option): Use warning_at.
