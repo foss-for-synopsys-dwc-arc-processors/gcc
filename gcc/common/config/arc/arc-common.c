@@ -30,7 +30,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "flags.h"
 
 static void
-arc_option_init_struct (struct gcc_options *opts ATTRIBUTE_UNUSED)
+arc_option_init_struct (struct gcc_options *opts)
 {
   opts->x_flag_no_common = 255; /* Mark as not user-initialized.  */
 
@@ -65,7 +65,7 @@ static const struct default_options arc_option_optimization_table[] =
 static bool
 arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 		   const struct cl_decoded_option *decoded,
-		   location_t loc ATTRIBUTE_UNUSED)
+		   location_t loc)
 {
   size_t code = decoded->opt_index;
   int value = decoded->value;
@@ -75,10 +75,10 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
       static bool mcpu_seen = false;
     case OPT_mcpu_:
       /* N.B., at this point arc_cpu has already been set to its new value by
-	 our caller, so comaring arc_none with PROCESSOR_NONE is pointless.  */
+	 our caller, so comparing arc_cpu with PROCESSOR_NONE is pointless.  */
 
       if (mcpu_seen)
-	warning (0, "multiple -mcpu= options specified.");
+	warning_at (loc, 0, "multiple -mcpu= options specified.");
       mcpu_seen = true;
 
       switch (value)

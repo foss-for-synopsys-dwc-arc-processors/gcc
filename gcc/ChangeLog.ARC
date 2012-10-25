@@ -1,3 +1,45 @@
+2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* common/config/arc/arc-common.c (arc_option_init_struct):
+	Remove incorrect ATTRIBUTE_UNUSED for opts.
+	(arc_handle_option): Use warning_at.
+	* config/arc/arc-protos.h (arc_assemble_name): Don't declare.
+	(small_data_pattern): Remove ATTRIBUTE_UNUSED from declaration.
+	* config/arc/arc.c (arc_assemble_name): Delete.  Changed all callers.
+	(arc_legitimate_pic_addr_p, emit_pic_move): Remove ATTRIBUTE_UNUSED
+	from declaration.
+	(arc_sched_adjust_priority): Remove ATTRIBUTE_UNUSED for insn.
+	(arc_secondary_reload): Remove names from last two parameters.
+	(arc_select_cc_mode): Remove ATTRIBUTE_UNUSED for x and y.
+	(arc_preferred_reload_class): Remove name from first parameter.
+	(arc_conditional_register_usage): Formatting fixes.
+	(arc_valid_machine_decl_attribute): Remove ATTRIBUTE_UNUSED from
+	identifier and args.
+	(arc_setup_incoming_varargs): Remove ATTRIBUTE_UNUSED from type.
+	(arc_compute_function_type): Change attribute name to "interrupt".
+	(arc_output_pic_addr_const): Incorporate printing of unknown UNSPEC
+	code into output_operand_lossage call.
+	(emit_pic_move): Remove name from last parameter.
+	(arc_legitimate_constant_p): Remove name from first parameter.
+	(arc_expand_builtin): Remove ATTRIBUTE_UNUSED from subtraget, mode
+	and ignore.
+	Give an error for out-of-range trap_s numbers.
+	(check_if_valid_sleep_operand): Remove '.' from end of diagnostic.
+	(arc_reorg): Comment formatting fixes.
+	Remove '\n' from end of diagnostic.
+	(arc_rewrite_small_data_1): Remove ATTRIBUTE_UNUSED from data.
+	(small_data_pattern): Remove name from last parameter.
+	(arc_init_simd_builtins): Formatting fixes.
+	(arc_expand_simd_builtin): Likewise.  
+	Remove '.' from end of diagnostics.
+	(arc_register_move_cost): Remove name from first parameter.
+	Formatting fixes.
+	* config/arc/arc.h (ASM_SPEC, LINK_SPEC): Remove obsolete parts.
+	* config/arc/arc.md (trap_s): Remove '.' from end of diagnostic.
+	Add comment to keep this in sync with arc.c.
+	* config.gcc (arc*-*-linux-uclibc*): Add gnu-user.h / glibc-stdint.h
+	to tm_file.
+
 2012-10-24  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/doc/md.texi (lock_length): Fix typo.

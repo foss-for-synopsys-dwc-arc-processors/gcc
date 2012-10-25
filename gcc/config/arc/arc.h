@@ -115,7 +115,7 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
 #define ASM_SPEC  "\
-%{v} %{mbig-endian|EB:-EB} %{EL} \
+%{mbig-endian|EB:-EB} %{EL} \
 %{mcpu=A5|mcpu=a5|mA5:-mA5} \
 %{mcpu=ARC600|mcpu=arc600|mARC600|mA6:-mARC600} \
 %{mcpu=ARC601|mcpu=arc601:-mARC601} \
@@ -134,12 +134,11 @@ along with GCC; see the file COPYING3.  If not see
 #if DEFAULT_LIBC == LIBC_UCLIBC
 /* Note that the default is to link against dynamic libraries, if they are
    available.  Override with -static.  */
-#define LINK_SPEC "%{h*} %{version:-v} \
-		   %{b} %{Wl,*:%*} \
+#define LINK_SPEC "%{h*} \
 		   %{static:-Bstatic} \
 		   %{symbolic:-Bsymbolic} \
 		   %{rdynamic:-export-dynamic}\
-		   %{!dynamic-linker:-dynamic-linker /lib/ld-uClibc.so.0}\
+		   -dynamic-linker /lib/ld-uClibc.so.0 \
 		   -X %{mbig-endian:-EB} \
 		   %{EB} %{EL} \
 		   %{marclinux*} \
@@ -164,7 +163,7 @@ along with GCC; see the file COPYING3.  If not see
     %{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} }}}}}}"
 
 #else
-#define LINK_SPEC "%{v} %{mbig-endian:-EB} %{EB} %{EL}\
+#define LINK_SPEC "%{mbig-endian:-EB} %{EB} %{EL}\
   %{pg|p:-marcelf_prof;mA7|mARC700|mcpu=arc700|mcpu=ARC700: -marcelf}"
 #endif
 
@@ -1397,9 +1396,9 @@ arc_print_operand_address (FILE, ADDR)
 do {							\
   char label[30];					\
   ASM_GENERATE_INTERNAL_LABEL (label, "L", VALUE);	\
-  fprintf (FILE, "\t.word ");			        \
-  arc_assemble_name (FILE, label);			\
-  fprintf(FILE, "\n");		                        \
+  fprintf (FILE, "\t.word ");				\
+  assemble_name (FILE, label);				\
+  fprintf(FILE, "\n");					\
 } while (0)
 
 /* This is how to output an element of a case-vector that is relative.  */
@@ -1414,10 +1413,10 @@ do {							\
     case SImode: fprintf (FILE, "\t.word "); break;	\
     default: gcc_unreachable ();			\
     }							\
-  arc_assemble_name (FILE, label);			\
+  assemble_name (FILE, label);				\
   fprintf (FILE, "-");					\
   ASM_GENERATE_INTERNAL_LABEL (label, "L", REL);	\
-  arc_assemble_name (FILE, label);			\
+  assemble_name (FILE, label);				\
   if (TARGET_COMPACT_CASESI)				\
     fprintf (FILE, " + %d", 4 + arc_get_unalign ());	\
   fprintf(FILE, "\n");                                  \

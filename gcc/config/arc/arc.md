@@ -4565,13 +4565,18 @@
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "L,Cal")]
 		   VUNSPEC_TRAP_S)]
   "TARGET_ARC700"
-  "*
-    if (which_alternative == 0)
-       return \"trap_s %0\";
+{
+  if (which_alternative == 0)
+    {
+      arc_toggle_unalign ();
+      return \"trap_s %0\";
+    }
 
-    fatal_error (\"Operand to trap_s should be an unsigned 6-bit value.\");
-  "
-  [(set_attr "length" "4")
+  /* Keep this message in sync with the one in arc.c:arc_expand_builtin,
+     because *.md files do not get scanned by exgettext.  */
+  fatal_error (\"operand to trap_s should be an unsigned 6-bit value\");
+}
+  [(set_attr "length" "2")
   (set_attr "type" "misc")])
 
 (define_insn "unimp_s"
