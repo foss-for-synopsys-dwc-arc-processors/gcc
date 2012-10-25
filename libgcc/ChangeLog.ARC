@@ -1,3 +1,7 @@
+2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/t-arc: Add comment on fp-bit.c / dp-bit.c use.
+
 2012-10-18  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.host (arc600-*-linux-uclibc, arc601-*-linux-uclibc): Delete.

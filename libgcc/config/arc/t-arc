@@ -30,8 +30,16 @@ LIB1ASMFUNCS = _mulsi3 _umulsidi3 _udivsi3 _divsi3 _umodsi3 _modsi3 \
 
 #LIBGCC2_CFLAGS = -g1 -O2 $(LIBGCC2_INCLUDES) $(GCC_CFLAGS)
 
-# These are really part of libgcc1, but this will cause them to be
-# built correctly, so...
+# For floating-point emulation, we mostly use hand-coded assembly.
+# We use fp-bit.c for debugging purposes, and some parts of it
+# as a fallback for hardware configurations for which the hand-coded
+# assembly support is incomplete, i.e., where there is no NORM and/or no
+# supported multiply instruction.  Using floating point on such a
+# configuration is generally inadvisable, but we got to provide support
+# somehow so that we can run the testsuites.
+# fp-hack.h / dp-hack.h take care of slecting the parts that are needed,
+# and (for debugging) of renaming functions so that they can be
+# used in an asm wrapper.
 
 LIB2FUNCS_EXTRA = fp-bit.c dp-bit.c
 
