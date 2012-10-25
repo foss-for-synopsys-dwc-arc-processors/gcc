@@ -110,7 +110,7 @@ struct secondary_reload_info;
 extern int arc_register_move_cost (enum machine_mode, enum reg_class,
 				   enum reg_class);
 extern rtx disi_highpart (rtx);
-extern int arc_adjust_insn_length (rtx, int);
+extern int arc_adjust_insn_length (rtx, int, bool, int*);
 extern int arc_corereg_hazard (rtx, rtx);
 extern int arc_hazard (rtx, rtx);
 extern int arc_write_ext_corereg (rtx);

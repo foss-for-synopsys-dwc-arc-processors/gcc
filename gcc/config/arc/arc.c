@@ -539,6 +539,8 @@ static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 
 #define TARGET_LEGITIMIZE_ADDRESS arc_legitimize_address
 
+#define TARGET_ADJUST_INSN_LENGTH arc_adjust_insn_length
+
 #include "target-def.h"
 
 #undef TARGET_ASM_ALIGNED_HI_OP
@@ -3786,6 +3788,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
     arc_ccfsm_advance_to (insn);
   statep = &arc_ccfsm_current;
   old_state = *statep;
+  rtx old_insn = machine->ccfsm_current_insn;
   jump_p = (TARGET_ALIGN_CALL
 	    ? (JUMP_P (insn) || CALL_ATTR (insn, CALL))
 	    : (JUMP_P (insn) && get_attr_type (insn) != TYPE_RETURN));
@@ -3795,7 +3798,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
   if (JUMP_P (insn) && GET_CODE (PATTERN (insn)) == PARALLEL)
     {
       enum attr_type type = get_attr_type (insn);
-      int len = get_attr_lock_length (insn);
+      int len = get_attr_length (insn); // lock_length
 
       /* Since both the length and lock_length attribute use insn_lengths,
 	 which has ADJUST_INSN_LENGTH applied, we can't rely on equality
@@ -3881,8 +3884,8 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
 	       && INSN_P (next)
 	       && CCFSM_ISCOMPACT (next, statep)
 	       && arc_verify_short (next, 2, 1))
-	      ? (*statep = old_state, 1)
-	      : (*statep = old_state, 0))))
+	      ? (*statep = old_state, machine->ccfsm_current_insn = old_insn, 1)
+	      : (*statep = old_state, machine->ccfsm_current_insn = old_insn, 0))))
     {
       *rp = "Long unaligned jump avoids non-delay slot penalty";
       if (recog_insn)
@@ -3986,6 +3989,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
     {
       *rp = "call/return and return/return must be 6 bytes apart to avoid mispredict";
       *statep = old_state;
+      machine->ccfsm_current_insn = old_insn;
       if (recog_insn)
 	extract_insn_cached (recog_insn);
       return 0;
@@ -4001,7 +4005,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
 	     a compact cmp / btst, emit the curent insn short.  */
 
 	  enum attr_type type = get_attr_type (scan);
-	  int len = get_attr_lock_length (scan);
+	  int len = get_attr_length (scan); // lock_length
 
 	  /* Since both the length and lock_length attribute use insn_lengths,
 	     which has ADJUST_INSN_LENGTH applied, we can't rely on equality
@@ -4096,6 +4100,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
     }
  found_align:
   *statep = old_state;
+  machine->ccfsm_current_insn = old_insn;
   if (recog_insn)
     extract_insn_cached (recog_insn);
   if (odd != unalign)
@@ -7919,27 +7924,17 @@ arc_hazard (rtx pred, rtx succ)
 
 /* Return length adjustment for INSN.  */
 int
-arc_adjust_insn_length (rtx insn, int len)
+arc_adjust_insn_length (rtx insn, int len, bool, int *iter_threshold)
 {
-  int adj = 0;
-
   if (!INSN_P (insn))
-    return 0;
+    return len;
+  /* We already handle sequences by ignoring the delay sequence flag.  */
   if (GET_CODE (PATTERN (insn)) == SEQUENCE)
-    {
-      int adj0, adj1, len1;
-      rtx pat = PATTERN (insn);
-      rtx i0 = XVECEXP (pat, 0, 0);
-      rtx i1 = XVECEXP (pat, 0, 1);
+    return len;
 
-      len1 = get_attr_lock_length (i1);
-      gcc_assert (!len || len >= 4 || (len == 2 && get_attr_iscompact (i1)));
-      if (!len1)
-	len1 = get_attr_iscompact (i1) != ISCOMPACT_FALSE ? 2 : 4;
-      adj0 = arc_adjust_insn_length (i0, len - len1);
-      adj1 = arc_adjust_insn_length (i1, len1);
-      return adj0 + adj1;
-    }
+  *iter_threshold
+      = (recog_memoized (insn) >= 0 && get_attr_length_lock (insn) ? 0 : 4);
+
   if (recog_memoized (insn) == CODE_FOR_doloop_end_i)
     {
       rtx prev = prev_nonnote_insn (insn);
@@ -7947,7 +7942,7 @@ arc_adjust_insn_length (rtx insn, int len)
       return ((LABEL_P (prev)
 	       || (TARGET_ARC600
 		   && (JUMP_P (prev) || GET_CODE (PATTERN (prev)) == SEQUENCE)))
-	      ? 4 : 0);
+	      ? len + 4 : len);
     }
 
   /* Check for return with but one preceding insn since function
@@ -7965,7 +7960,7 @@ arc_adjust_insn_length (rtx insn, int len)
 	       && GET_CODE (PATTERN (prev)) == SEQUENCE)
 	      ? CALL_ATTR (XVECEXP (PATTERN (prev), 0, 0), NON_SIBCALL)
 	      : CALL_ATTR (prev, NON_SIBCALL)))
-	return 4;
+	return len + 4;
     }
   /* Rtl changes too much before arc_reorg to keep ccfsm state.
      But we are not required to give exact answers then.  */
@@ -7981,7 +7976,7 @@ arc_adjust_insn_length (rtx insn, int len)
 	  break;
 	case 1: case 2:
 	  /* Deleted branch.  */
-	  return -len;
+	  return 0;
 	case 3: case 4: case 5:
 	  /* Conditionalized insn.  */
 	  if ((!JUMP_P (insn)
@@ -7991,7 +7986,7 @@ arc_adjust_insn_length (rtx insn, int len)
 		       || (statep->cc != ARC_CC_EQ && statep->cc != ARC_CC_NE)
 		       || NEXT_INSN (PREV_INSN (insn)) != insn)))
 	      && (len & 2))
-	    adj = 2;
+	    len += 2;
 	  break;
 	default:
 	  gcc_unreachable ();
@@ -8002,14 +7997,14 @@ arc_adjust_insn_length (rtx insn, int len)
       rtx succ = next_real_insn (insn);
 
       if (succ && INSN_P (succ))
-	adj += arc600_corereg_hazard (insn, succ);
+	len += arc600_corereg_hazard (insn, succ);
     }
 
   /* Restore extracted operands - otherwise splitters like the addsi3_mixed one
      can go awry.  */
   extract_constrain_insn_cached (insn);
 
-  return adj;
+  return len;
 }
 /* For ARC600: If a write to a core reg >=32 appears in a delay slot
   (other than of a forward brcc), it creates a hazard when there is a read

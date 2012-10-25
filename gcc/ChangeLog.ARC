@@ -1,5 +1,27 @@
 2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc-protos.h (arc_adjust_insn_length): Update prototype.
+	* config/arc/arc.c (TARGET_ADJUST_INSN_LENGTH): Define.
+	* config/arc/arc.c (arc_verify_short): Use get_attr_length
+	instead of get_attr_lock_length.
+	(arc_adjust_insn_length): Change to match new hook.
+	* config/arc/arc.h (ADJUST_INSN_LENGTH): Update to
+	work as a wallback using the changed arc_adjust_insn_length.
+	* config/arc/arc.md (length_lock): New attribute.
+	(attribute length): Don't use lock_length.
+	(in_delay_slot): Check (eq_attr "iscompact" "maybe") before moving
+	on to length-dependent checks.
+	(branch): Split lock_length atribute into length_lock and length.
+	Disguise the use of the length attribute in the iscompact attribute.
+	(rev_branch_insn, jump_i): Likewise.
+	(uncond_branch, bbit): Disguise the use of the length attribute in the
+	iscompact attribute.
+
+	* config/arc/arc.c (arc_verify_short): Save / restore
+	machine->ccfsm_current_insn together with *statep.
+
+2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* doc/tm.texi.in (@hook TARGET_ADJUST_INSN_LENGTH): Add.
 	* doc/tm.texi: Regenerate.
 	* final.c (get_attr_length_1): Use targetm.adjust_insn_length

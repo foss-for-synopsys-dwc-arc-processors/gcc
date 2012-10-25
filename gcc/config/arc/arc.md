@@ -170,10 +170,8 @@
    simd_valign, simd_valign_with_acc, simd_vcontrol,
    simd_vspecial_3cycle, simd_vspecial_4cycle, simd_dma"
   (cond [(eq_attr "is_sfunc" "yes")
-	 (cond [(eq (symbol_ref "TARGET_LONG_CALLS_SET") (const_int 0))
-		(const_string "call")
-		(ne (symbol_ref "flag_pic") (const_int 0))
-		(const_string "sfunc")]
+	 (cond [(match_test "!TARGET_LONG_CALLS_SET") (const_string "call")
+		(match_test "flag_pic") (const_string "sfunc")]
 	       (const_string "call_no_delay_slot"))]
 	(const_string "binary")))
 
@@ -246,14 +244,12 @@
 	     (const_string "use")
 
 	     (eq_attr "is_sfunc" "yes")
-	     (cond [(ne (symbol_ref "(TARGET_MEDIUM_CALLS
-				      && !TARGET_LONG_CALLS_SET
-				      && flag_pic)")
-			(const_int 0))
+	     (cond [(match_test "(TARGET_MEDIUM_CALLS
+				  && !TARGET_LONG_CALLS_SET
+				  && flag_pic)")
 		    (const_string "canuse_limm_add")
-		    (ne (symbol_ref "(TARGET_MEDIUM_CALLS
-				      && !TARGET_LONG_CALLS_SET)")
-			(const_int 0))
+		    (match_test "(TARGET_MEDIUM_CALLS
+				  && !TARGET_LONG_CALLS_SET)")
 		    (const_string "canuse_limm")]
 		   (const_string "canuse"))
 
@@ -273,19 +269,17 @@
 
 (define_attr "verify_short" "no,yes"
   (if_then_else
-    (ne (symbol_ref "arc_verify_short (insn, insn_current_address & 2, 0)")
-	(const_int 0))
+    (match_test "arc_verify_short (insn, insn_current_address & 2, 0)")
     (const_string "yes") (const_string "no")))
 
 ; Is there an instruction that we are actually putting into the delay slot?
 (define_attr "delay_slot_filled" "no,yes"
-  (cond [(ne (symbol_ref "NEXT_INSN (PREV_INSN (insn)) == insn") (const_int 0))
+  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
 	 (const_string "no")
-	 (ne (symbol_ref "!TARGET_AT_DBR_CONDEXEC
-			  && JUMP_P (insn)
-			  && INSN_ANNULLED_BRANCH_P (insn)
-			  && !INSN_FROM_TARGET_P (NEXT_INSN (insn))")
-	     (const_int 0))
+	 (match_test "!TARGET_AT_DBR_CONDEXEC
+		      && JUMP_P (insn)
+		      && INSN_ANNULLED_BRANCH_P (insn)
+		      && !INSN_FROM_TARGET_P (NEXT_INSN (insn))")
 	 (const_string "no")]
 	(const_string "yes")))
 
@@ -293,18 +287,20 @@
 ; We have to take the length of this insn into account for forward branches
 ; even if we don't put the insn actually into a delay slot.
 (define_attr "delay_slot_present" "no,yes"
-  (cond [(ne (symbol_ref "NEXT_INSN (PREV_INSN (insn)) == insn") (const_int 0))
+  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
 	 (const_string "no")]
 	(const_string "yes")))
 
 ; We can't use get_attr_length (NEXT_INSN (insn)) because this gives the
 ; length of a different insn with the same uid.
 (define_attr "delay_slot_length" ""
-  (cond [(ne (symbol_ref "NEXT_INSN (PREV_INSN (insn)) == insn") (const_int 0))
+  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
 	 (const_int 0)]
 	(symbol_ref "get_attr_length (NEXT_INSN (PREV_INSN (insn)))
 		     - get_attr_length (insn)")))
 
+
+(define_attr "length_lock" "no,yes" (const_string "no"))
 
 ;; The length variations of ARCompact can't be expressed with the traditional
 ;; mechanisms in a way that avoids infinite looping in shorten_branches.
@@ -320,23 +316,21 @@
 ;; and insn lengths: insns with shimm values cannot be conditionally executed.
 (define_attr "length" ""
   (cond
-   [(eq_attr "lock_length" "!0") (const_int 2)
-
-    (eq_attr "iscompact" "true,maybe")
+    [(eq_attr "iscompact" "true,maybe")
     ; The length can vary because of ADJUST_INSN_LENGTH.
     ; make sure that variable_length_p will be true.
-    (cond
-      [(and (ne (symbol_ref "0") (const_int 0)) (eq (match_dup 0) (pc)))
-       (const_int 4)
-       (eq_attr "verify_short" "yes")
-       (cond [(eq_attr "type" "sfunc") (const_int 10)] (const_int 2))
-       (eq_attr "type" "sfunc")
-       (const_int 12)]
+     (cond
+       [(and (match_test "0") (eq (match_dup 0) (pc)))
+	(const_int 4)
+	(eq_attr "verify_short" "yes")
+	(cond [(eq_attr "type" "sfunc") (const_int 10)] (const_int 2))
+	(eq_attr "type" "sfunc")
+	(const_int 12)]
       (const_int 4))
 
     (eq_attr "iscompact" "true_limm,maybe_limm")
     (cond
-      [(and (ne (symbol_ref "0") (const_int 0)) (eq (match_dup 0) (pc)))
+      [(and (match_test "0") (eq (match_dup 0) (pc)))
        (const_int 8)
        (eq_attr "verify_short" "yes")
        (const_int 6)]
@@ -412,13 +406,14 @@
 			  call,sfunc,call_no_delay_slot,
                           brcc, brcc_no_delay_slot,loop_setup,loop_end")
 	 (const_string "false")
-	 (ne (symbol_ref "arc_write_ext_corereg (insn)") (const_int 0))
+	 (match_test "arc_write_ext_corereg (insn)")
 	 (const_string "false")
 	 (gt (symbol_ref "arc_hazard (prev_active_insn (insn),
 				      next_active_insn (insn))")
 	     (symbol_ref "(arc_hazard (prev_active_insn (insn), insn)
 			   + arc_hazard (insn, next_active_insn (insn)))"))
 	 (const_string "false")
+	 (eq_attr "iscompact" "maybe") (const_string "true")
 	 ]
 
 	 (if_then_else (eq_attr "length" "2,4")
@@ -429,17 +424,14 @@
 (define_attr "in_call_delay_slot" "false,true"
   (cond [(eq_attr "in_delay_slot" "false")
 	 (const_string "false")
-	 (ne (symbol_ref "arc_regno_use_in (RETURN_ADDR_REGNUM,
-					    PATTERN (insn))")
-	     (const_int 0))
+	 (match_test "arc_regno_use_in (RETURN_ADDR_REGNUM, PATTERN (insn))")
 	 (const_string "false")]
 	(const_string "true")))
 
 (define_attr "in_sfunc_delay_slot" "false,true"
   (cond [(eq_attr "in_call_delay_slot" "false")
 	 (const_string "false")
-	 (ne (symbol_ref "arc_regno_use_in (12, PATTERN (insn))")
-	     (const_int 0))
+	 (match_test "arc_regno_use_in (12, PATTERN (insn))")
 	 (const_string "false")]
 	(const_string "true")))
 
@@ -454,11 +446,10 @@
 (define_attr "in_ret_delay_slot" "no,yes"
   (cond [(eq_attr "in_delay_slot" "false")
 	 (const_string "no")
-	 (ne (symbol_ref "regno_clobbered_p
-			    (arc_return_address_regs
-			      [arc_compute_function_type (cfun)],
-			     insn, SImode, 1)")
-	     (const_int 0))
+	 (match_test "regno_clobbered_p
+			(arc_return_address_regs
+			  [arc_compute_function_type (cfun)],
+			 insn, SImode, 1)")
 	 (const_string "no")]
 	(const_string "yes")))
 
@@ -475,36 +466,25 @@
 ;; for ARC600; we could also use this for ARC700 if the branch can't be
 ;; unaligned and is at least somewhat likely (add parameter for this).
 
-;; (define_delay (and (eq_attr "type" "call,branch,uncond_branch,jump,brcc")
-;;                    (ne (symbol_ref "TARGET_ARCOMPACT") (const_int 0)))
-;;   [(eq_attr "in_delay_slot" "true")
-;;    (eq_attr "in_delay_slot" "true")
-;;    (nil)])
-(define_delay (and (ne (symbol_ref "TARGET_ARCOMPACT") (const_int 0))
-		   (eq_attr "type" "call"))
+(define_delay (eq_attr "type" "call")
   [(eq_attr "in_call_delay_slot" "true")
    (eq_attr "in_call_delay_slot" "true")
    (nil)])
 
-(define_delay (and (ne (symbol_ref "TARGET_ARCOMPACT
-				    && !TARGET_AT_DBR_CONDEXEC")
-		       (const_int 0))
+(define_delay (and (match_test "!TARGET_AT_DBR_CONDEXEC")
 		   (eq_attr "type" "brcc"))
   [(eq_attr "in_delay_slot" "true")
    (eq_attr "in_delay_slot" "true")
    (nil)])
 
-(define_delay (and (ne (symbol_ref "TARGET_ARCOMPACT && TARGET_AT_DBR_CONDEXEC")
-		       (const_int 0))
+(define_delay (and (match_test "TARGET_AT_DBR_CONDEXEC")
 		   (eq_attr "type" "brcc"))
   [(eq_attr "in_delay_slot" "true")
    (nil)
    (nil)])
 
 (define_delay
-  (and (ne (symbol_ref "TARGET_ARCOMPACT")
-	   (const_int 0))
-       (eq_attr "type" "return"))
+  (eq_attr "type" "return")
   [(eq_attr "in_ret_delay_slot" "yes")
    (eq_attr "type" "!call,branch,uncond_branch,jump,brcc,return,sfunc")
    (eq_attr "cond_ret_delay_insn" "yes")])
@@ -512,9 +492,9 @@
 ;; For ARC600, unexposing the delay sloy incurs a penalty also in the
 ;; non-taken case, so the only meaningful way to have an annull-true
 ;; filled delay slot is to conditionalize the delay slot insn.
-(define_delay (and (ne (symbol_ref "TARGET_AT_DBR_CONDEXEC") (const_int 0))
+(define_delay (and (match_test "TARGET_AT_DBR_CONDEXEC")
 		   (eq_attr "type" "branch,uncond_branch,jump")
-		   (eq (symbol_ref "optimize_size") (const_int 0)))
+		   (match_test "!optimize_size"))
   [(eq_attr "in_delay_slot" "true")
    (eq_attr "cond_delay_insn" "yes")
    (eq_attr "cond_delay_insn" "yes")])
@@ -522,17 +502,16 @@
 ;; For ARC700, anything goes for annulled-true insns, since there is no
 ;; penalty for the unexposed delay slot when the branch is not taken,
 ;; however, we must avoid things that have a delay slot themselvese to
-;; avoid confucing gcc.
-(define_delay (and (ne (symbol_ref "!TARGET_AT_DBR_CONDEXEC") (const_int 0))
+;; avoid confusing gcc.
+(define_delay (and (match_test "!TARGET_AT_DBR_CONDEXEC")
 		   (eq_attr "type" "branch,uncond_branch,jump")
-		   (eq (symbol_ref "optimize_size") (const_int 0)))
+		   (match_test "!optimize_size"))
   [(eq_attr "in_delay_slot" "true")
    (eq_attr "type" "!call,branch,uncond_branch,jump,brcc,return,sfunc")
    (eq_attr "cond_delay_insn" "yes")])
 
 ;; -mlongcall -fpic sfuncs use r12 to load the function address
-(define_delay (and  (ne (symbol_ref "TARGET_ARCOMPACT") (const_int 0))
-		    (eq_attr "type" "sfunc"))
+(define_delay (eq_attr "type" "sfunc")
   [(eq_attr "in_sfunc_delay_slot" "true")
    (eq_attr "in_sfunc_delay_slot" "true")
    (nil)])
@@ -778,11 +757,10 @@
 	  (match_operand:SI 1 "register_operand"  "%Rcq,Rcq, c,  c,  c,  c,  c")
 	  (match_operand:SI 2 "nonmemory_operand"  "Rcq,C0p,cI,C1p,Ccp,CnL,Cal"))
 	(const_int 0)]))]
-  "TARGET_ARCOMPACT
-   && ((register_operand (operands[1], SImode)
-       && nonmemory_operand (operands[2], SImode))
-      || (memory_operand (operands[1], SImode)
-	  && satisfies_constraint_Cux (operands[2])))"
+  "(register_operand (operands[1], SImode)
+    && nonmemory_operand (operands[2], SImode))
+   || (memory_operand (operands[1], SImode)
+       && satisfies_constraint_Cux (operands[2]))"
   "*
     switch (which_alternative)
     {
@@ -1459,7 +1437,7 @@
 (define_insn "*zero_extendqisi2_ac"
   [(set (match_operand:SI 0 "dest_reg_operand" "=Rcq,Rcq#q,Rcw,w,qRcq,!*x,r")
 	(zero_extend:SI (match_operand:QI 1 "nonvol_nonimm_operand" "0,Rcq#q,0,c,T,Usd,m")))]
-  "TARGET_ARCOMPACT"
+  ""
   "*
    switch (which_alternative)
    {
@@ -1557,7 +1535,7 @@
 (define_insn "*extendqisi2_ac"
   [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,w,r")
 	(sign_extend:SI (match_operand:QI 1 "nonvol_nonimm_operand" "Rcqq,c,m")))]
-  "TARGET_ARCOMPACT"
+  ""
   "@
    sexb%? %0,%1%&
    sexb %0,%1
@@ -1613,7 +1591,7 @@
 (define_insn "abssi2"
   [(set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,w,w")
         (abs:SI (match_operand:SI 1 "nonmemory_operand" "Rcq#q,cL,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "abs%? %0,%1%&"
   [(set_attr "type" "two_cycle_core")
    (set_attr "length" "*,4,8")
@@ -1626,7 +1604,7 @@
    [(set (match_operand:SI 0 "dest_reg_operand"         "=Rcw, w,  w")
          (smax:SI (match_operand:SI 1 "register_operand"  "%0, c,  c")
                   (match_operand:SI 2 "nonmemory_operand" "cL,cL,Cal")))]
-  "TARGET_MINMAX"
+  ""
   "max%? %0,%1,%2"
   [(set_attr "type" "two_cycle_core")
    (set_attr "length" "4,4,8")
@@ -1637,7 +1615,7 @@
    [(set (match_operand:SI 0 "dest_reg_operand"         "=Rcw, w,  w")
          (smin:SI (match_operand:SI 1 "register_operand"  "%0, c,  c")
                   (match_operand:SI 2 "nonmemory_operand" "cL,cL,Cal")))]
-  "TARGET_MINMAX"
+  ""
   "min%? %0,%1,%2"
   [(set_attr "type" "two_cycle_core")
    (set_attr "length" "4,4,8")
@@ -1693,7 +1671,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcq#q,Rcq,Rcw,Rcw,Rcq,Rcb,Rcq, Rcw, Rcqq,Rcqq,    W,  W,W,  W,Rcqq,Rcw,  W")
 	(plus:SI (match_operand:SI 1 "register_operand" "%0,      c,  0,  c,  0,  0,Rcb,   0, Rcqq,   0,    c,  c,0,  0,   0,  0,  c")
 		 (match_operand:SI 2 "nonmemory_operand" "cL,     0, cL,  0,CL2,Csp,CM4,cCca,RcqqK,  cO,cLCmL,Cca,I,C2a, Cal,Cal,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "*if (which_alternative == 6)
       return arc_short_long (insn, \"add%? %0,%1,%2\", \"add1 %0,%1,%2/2\");
     return arc_output_addsi (operands,
@@ -1704,7 +1682,7 @@
   "split_addsi (operands);"
   [(set_attr "type" "*,*,*,*,two_cycle_core,two_cycle_core,*,two_cycle_core,*,*,*,two_cycle_core,*,two_cycle_core,*,*,*")
    (set (attr "iscompact")
-	(cond [(eq (symbol_ref "*arc_output_addsi (operands, 0)") (const_int 0))
+	(cond [(match_test "!*arc_output_addsi (operands, 0)")
 	       (const_string "false")
 	       (match_operand 2 "long_immediate_operand" "")
 	       (const_string "maybe_limm")]
@@ -2691,7 +2669,7 @@
 	(ior:SI (ashift:SI (const_int 1)
 			   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c"))
 		(match_operand:SI 2 "nonmemory_operand" "0,c,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "bset%? %0,%2,%1"
   [(set_attr "length" "4,4,8")
    (set_attr "cond" "canuse,nocond,nocond")]
@@ -2703,7 +2681,7 @@
 	(xor:SI (ashift:SI (const_int 1)
 			   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c"))
 		(match_operand:SI 2 "nonmemory_operand" "0,c,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "bxor%? %0,%2,%1"
   [(set_attr "length" "4,4,8")
    (set_attr "cond" "canuse,nocond,nocond")]
@@ -2715,7 +2693,7 @@
 	(and:SI (not:SI (ashift:SI (const_int 1)
 				   (match_operand:SI 1 "nonmemory_operand" "cL,cL,c")))
 		(match_operand:SI 2 "nonmemory_operand" "0,c,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "bclr%? %0,%2,%1"
   [(set_attr "length" "4,4,8")
    (set_attr "cond" "canuse,nocond,nocond")]
@@ -2731,7 +2709,7 @@
 	(ior:SI (match_operand:SI 1 "nonmemory_operand" "0,c,Cal")
 		(ashift:SI (const_int 1)
 			   (match_operand:SI 2 "nonmemory_operand" "cL,cL,c"))) ) ]
-  "TARGET_ARCOMPACT"
+  ""
   "@
      bset%? %0,%1,%2 ;;peep2, constr 1
      bset %0,%1,%2 ;;peep2, constr 2
@@ -2745,7 +2723,7 @@
 	(xor:SI (match_operand:SI 1 "nonmemory_operand" "0,c,Cal")
 		(ashift:SI (const_int 1)
 			(match_operand:SI 2 "nonmemory_operand" "cL,cL,c"))) ) ]
-  "TARGET_ARCOMPACT"
+  ""
   "@
      bxor%? %0,%1,%2
      bxor %0,%1,%2
@@ -2760,7 +2738,7 @@
 	(and:SI (not:SI (ashift:SI (const_int 1)
 				   (match_operand:SI 2 "nonmemory_operand" "cL,rL,r")))
 		(match_operand:SI 1 "nonmemory_operand" "0,c,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "@
      bclr%? %0,%1,%2
      bclr %0,%1,%2
@@ -2777,7 +2755,7 @@
 				    (plus:SI (match_operand:SI 2 "nonmemory_operand" "rL,rL,r")
 					     (const_int 1)))
 			 (const_int -1))))]
-  "TARGET_ARCOMPACT"
+  ""
   "@
      bmsk%? %0,%S1,%2
      bmsk %0,%1,%2
@@ -2793,7 +2771,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand" "")
         (and:SI (match_operand:SI 1 "nonimmediate_operand" "")
                 (match_operand:SI 2 "nonmemory_operand" "")))]
-  "TARGET_ARCOMPACT"
+  ""
   "if (!satisfies_constraint_Cux (operands[2]))
      operands[1] = force_reg (SImode, operands[1]);
    else if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[1], Pmode))
@@ -2803,11 +2781,10 @@
   [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcq,Rcqq,Rcqq,Rcqq,Rcw,Rcw,Rcw,Rcw,Rcw,Rcw,  w,  w,  w,  w,w,Rcw,  w,  W")
 	(and:SI (match_operand:SI 1 "nonimmediate_operand" "%0,Rcq,   0,   0,Rcqq,  0,  c,  0,  0,  0,  0,  c,  c,  c,  c,0,  0,  c,  o")
 		(match_operand:SI 2 "nonmemory_operand" " Rcqq,  0, C1p, Ccp, Cux, cL,  0,C1p,Ccp,CnL,  I, Lc,C1p,Ccp,CnL,I,Cal,Cal,Cux")))]
-  "TARGET_ARCOMPACT
-   && ((register_operand (operands[1], SImode)
-       && nonmemory_operand (operands[2], SImode))
-      || (memory_operand (operands[1], SImode)
-	  && satisfies_constraint_Cux (operands[2])))"
+  "(register_operand (operands[1], SImode)
+    && nonmemory_operand (operands[2], SImode))
+   || (memory_operand (operands[1], SImode)
+       && satisfies_constraint_Cux (operands[2]))"
   "*
 {
   switch (which_alternative)
@@ -2917,7 +2894,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand"        "=Rcqq,Rcq,Rcqq,Rcw,Rcw,Rcw,Rcw,w,  w,w,Rcw,  w")
 	(ior:SI (match_operand:SI 1 "nonmemory_operand" "% 0,Rcq,   0,  0,  c,  0, 0, c,  c,0,  0,  c")
 		(match_operand:SI 2 "nonmemory_operand" "Rcqq, 0, C0p, cL,  0,C0p, I,cL,C0p,I,Cal,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "*
   switch (which_alternative)
     {
@@ -3042,7 +3019,7 @@
 (define_insn_and_split "one_cmpldi2"
   [(set (match_operand:DI 0 "dest_reg_operand" "=q,w")
 	(not:DI (match_operand:DI 1 "register_operand" "q,c")))]
-  "TARGET_ARCOMPACT"
+  ""
   "#"
   "&& reload_completed"
   [(set (match_dup 2) (not:SI (match_dup 3)))
@@ -3274,7 +3251,7 @@
   [(set (reg:CC CC_REG)
         (compare:CC (match_operand:SI 0 "register_operand"  "Rcq#q, c, qRcq, c")
                     (match_operand:SI 1 "nonmemory_operand"  "cO,cI,  Cal, Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "cmp%? %0,%B1%&"
   [(set_attr "type" "compare")
    (set_attr "iscompact" "true,false,true_limm,false")
@@ -3285,7 +3262,7 @@
   [(set (reg:CC_ZN CC_REG)
         (compare:CC_ZN (match_operand:SI 0 "register_operand"  "qRcq,c")
                        (const_int 0)))]
-  "TARGET_ARCOMPACT"
+  ""
   "tst%? %0,%0%&"
   [(set_attr "type" "compare,compare")
    (set_attr "iscompact" "true,false")
@@ -3342,7 +3319,7 @@
   [(set (reg:CC_Z CC_REG)
         (compare:CC_Z (match_operand:SI 0 "register_operand"  "qRcq,c")
                       (match_operand:SI 1 "p2_immediate_operand"  "O,n")))]
-  "TARGET_ARCOMPACT"
+  ""
   "@
 	cmp%? %0,%1%&
 	bxor.f 0,%0,%z1"
@@ -3355,7 +3332,7 @@
   [(set (reg:CC_C CC_REG)
         (compare:CC_C (match_operand:SI 0 "register_operand"  "Rcqq, c,Rcqq,  c")
                       (match_operand:SI 1 "nonmemory_operand" "cO,  cI, Cal,Cal")))]
-  "TARGET_ARCOMPACT"
+  ""
   "cmp%? %0,%S1%&"
   [(set_attr "type" "compare")
    (set_attr "iscompact" "true,false,true_limm,false")
@@ -3595,14 +3572,10 @@
 }"
   [(set_attr "type" "branch")
    (set
-     (attr "lock_length")
+     (attr "length_lock")
      (cond [
-       ; In arc_reorg we just guesstimate; might be more or less.
-       (ne (symbol_ref "arc_branch_size_unknown_p ()") (const_int 0))
-       (const_int 4)
-
        (eq_attr "delay_slot_filled" "yes")
-       (const_int 4)
+       (const_string "yes")
 
        (ne
 	 (if_then_else
@@ -3617,13 +3590,30 @@
 		    (minus (const_int 58)
 			   (symbol_ref "get_attr_delay_slot_length (insn)")))))
 	 (const_int 0))
+       (const_string "yes")]
+      (const_string "no")))
+   (set
+     (attr "length")
+     (cond [
+       ; variable length marker
+       (and (match_test "0") (eq (match_dup 0) (pc))) (const_int 2)
+
+       ; In arc_reorg we just guesstimate; might be more or less.
+       (match_test "arc_branch_size_unknown_p ()")
+       (const_int 4)
+
+       (eq_attr "length_lock" "yes")
        (const_int 4)
 
        (eq_attr "verify_short" "yes")
        (const_int 2)]
       (const_int 4)))
+   ;; We can't use the lock_length attribute to define iscompact, since
+   ;; the value of (pc) becomes undefined after branch shortening.
+   ;; We can't use eq_attr "length" here, either, because that causes
+   ;; an infinite loop in genattrtab.
    (set (attr "iscompact")
-	(cond [(eq_attr "lock_length" "2") (const_string "true")]
+	(cond [(match_test "get_attr_length (insn) == 2") (const_string "true")]
 	      (const_string "false")))])
 
 (define_insn "*rev_branch_insn"
@@ -3651,14 +3641,10 @@
 }"
   [(set_attr "type" "branch")
    (set
-     (attr "lock_length")
+     (attr "length_lock")
      (cond [
-       ; In arc_reorg we just guesstimate; might be more or less.
-       (ne (symbol_ref "arc_branch_size_unknown_p ()") (const_int 0))
-       (const_int 4)
-
        (eq_attr "delay_slot_filled" "yes")
-       (const_int 4)
+       (const_string "yes")
 
        (ne
 	 (if_then_else
@@ -3673,13 +3659,27 @@
 		    (minus (const_int 58)
 			   (symbol_ref "get_attr_delay_slot_length (insn)")))))
 	 (const_int 0))
+       (const_string "yes")]
+      (const_string "no")))
+
+   (set
+     (attr "length")
+     (cond [
+       ; variable length marker
+       (and (match_test "0") (eq (match_dup 0) (pc))) (const_int 2)
+
+       ; In arc_reorg we just guesstimate; might be more or less.
+       (match_test "arc_branch_size_unknown_p ()")
+       (const_int 4)
+
+       (eq_attr "length_lock" "yes")
        (const_int 4)
 
        (eq_attr "verify_short" "yes")
        (const_int 2)]
       (const_int 4)))
    (set (attr "iscompact")
-	(cond [(eq_attr "lock_length" "2") (const_string "true")]
+	(cond [(match_test "get_attr_length (insn) == 2") (const_string "true")]
 	      (const_string "false")))])
 
 ;; Unconditional and other jump instructions.
@@ -3702,31 +3702,38 @@
   "b%!%* %^%l0%&"
   [(set_attr "type" "uncond_branch")
    (set (attr "iscompact")
-	(if_then_else (eq_attr "lock_length" "2")
+	(if_then_else (match_test "get_attr_length (insn) == 2")
 		      (const_string "true") (const_string "false")))
    (set_attr "cond" "canuse")
-   (set (attr "lock_length")
+   (set (attr "length_lock")
 	(cond [
-	  ; In arc_reorg we just guesstimate; might be more or less.
-	  (ne (symbol_ref "arc_branch_size_unknown_p ()") (const_int 0))
-	  (const_int 4)
-
 	  (eq_attr "delay_slot_filled" "yes")
-	  (const_int 4)
+	  (const_string "yes")
 
-	  (ne (symbol_ref "find_reg_note (insn, REG_CROSSING_JUMP, NULL_RTX)")
-	      (const_int 0))
-	  (const_int 4)
+	  (match_test "find_reg_note (insn, REG_CROSSING_JUMP, NULL_RTX)")
+	  (const_string "yes")
 
 	  (ior (lt (minus (match_dup 0) (pc)) (const_int -512))
 	       (gt (minus (match_dup 0) (pc))
 		   (minus (const_int 506)
 			  (symbol_ref "get_attr_delay_slot_length (insn)"))))
+	  (const_string "yes")]
+	 (const_string "no")))
+
+   (set (attr "length")
+	(cond [
+	  ; variable length marker
+	  (and (match_test "0") (eq (match_dup 0) (pc))) (const_int 2)
+
+	  ; In arc_reorg we just guesstimate; might be more or less than 4.
+	  (match_test "arc_branch_size_unknown_p ()")
 	  (const_int 4)
 
-	  (and (ne (symbol_ref "arc_ccfsm_advance_to (insn),
-				arc_ccfsm_cond_exec_p ()")
-		   (const_int 0))
+	  (eq_attr "length_lock" "yes")
+	  (const_int 4)
+
+	  (and (match_test "arc_ccfsm_advance_to (insn),
+			    arc_ccfsm_cond_exec_p ()")
 	       (ior (lt (minus (match_dup 0) (pc)) (const_int -64))
 		    (gt (minus (match_dup 0) (pc))
 			(minus (const_int 58)
@@ -3848,7 +3855,7 @@
 	[(ne (symbol_ref "GET_MODE (PATTERN (next_real_insn (operands[3])))")
 	     (symbol_ref "QImode"))
 	 (const_string "false")
-	 (eq (symbol_ref "ADDR_DIFF_VEC_FLAGS (PATTERN (next_real_insn (operands[3]))).offset_unsigned") (const_int 0))
+	 (match_test "!ADDR_DIFF_VEC_FLAGS (PATTERN (next_real_insn (operands[3]))).offset_unsigned")
 	 (const_string "false")]
 	(const_string "true"))
       (const_string "false")
@@ -3857,7 +3864,7 @@
      [(cond
 	[(eq_attr "iscompact" "false")
 	 (const_int 4)
-	 (and (ne (symbol_ref "0") (const_int 0)) (eq (match_dup 0) (pc)))
+	 (and (match_test "0") (eq (match_dup 0) (pc)))
 	 (const_int 4)
 	 (eq_attr "verify_short" "yes")
 	 (const_int 2)]
@@ -4041,12 +4048,9 @@
      [(const_string "canuse")
       (const_string "canuse")
       (const_string "canuse")
-      (cond [(eq (symbol_ref "TARGET_MEDIUM_CALLS") (const_int 0))
-	     (const_string "canuse")
-	     (eq_attr "delay_slot_filled" "yes")
-	     (const_string "nocond")
-	     (eq (symbol_ref "flag_pic") (const_int 0))
-	     (const_string "canuse_limm")]
+      (cond [(match_test "!TARGET_MEDIUM_CALLS") (const_string "canuse")
+	     (eq_attr "delay_slot_filled" "yes") (const_string "nocond")
+	     (match_test "!flag_pic") (const_string "canuse_limm")]
 	    (const_string "nocond"))
       (const_string "canuse")
       (if_then_else (eq_attr "delay_slot_filled" "yes")
@@ -4122,12 +4126,9 @@
      [(const_string "canuse")
       (const_string "canuse")
       (const_string "canuse")
-      (cond [(eq (symbol_ref "TARGET_MEDIUM_CALLS") (const_int 0))
-	     (const_string "canuse")
-	     (eq_attr "delay_slot_filled" "yes")
-	     (const_string "nocond")
-	     (eq (symbol_ref "flag_pic") (const_int 0))
-	     (const_string "canuse_limm")]
+      (cond [(match_test "!TARGET_MEDIUM_CALLS") (const_string "canuse")
+	     (eq_attr "delay_slot_filled" "yes") (const_string "nocond")
+	     (match_test "!flag_pic") (const_string "canuse_limm")]
 	    (const_string "nocond"))
       (const_string "canuse")
       (const_string "canuse_limm")
@@ -4207,10 +4208,9 @@
   (set (match_operand:SI 3 "dest_reg_operand" "")
        (plus:SI (match_operand:SI 4 "nonmemory_operand" "")
 		(match_operand:SI 5 "nonmemory_operand" "")))]
-  "TARGET_ARCOMPACT
-   && (INTVAL (operands[2]) == 1
-       || INTVAL (operands[2]) == 2
-       || INTVAL (operands[2]) == 3)
+  "(INTVAL (operands[2]) == 1
+    || INTVAL (operands[2]) == 2
+    || INTVAL (operands[2]) == 3)
    && (true_regnum (operands[4]) == true_regnum (operands[0])
        || true_regnum (operands[5]) == true_regnum (operands[0]))
    && (peep2_reg_dead_p (2, operands[0]) || (true_regnum (operands[3]) == true_regnum (operands[0])))"
@@ -4245,10 +4245,9 @@
    (set (match_operand:SI 3 "dest_reg_operand" "")
 	(minus:SI (match_operand:SI 4 "nonmemory_operand" "")
 		  (match_dup 0)))]
-  "TARGET_ARCOMPACT
-   && (INTVAL (operands[2]) == 1
-       || INTVAL (operands[2]) == 2
-       || INTVAL (operands[2]) == 3)
+  "(INTVAL (operands[2]) == 1
+    || INTVAL (operands[2]) == 2
+    || INTVAL (operands[2]) == 3)
    && (peep2_reg_dead_p (2, operands[0])
        || (true_regnum (operands[3]) == true_regnum (operands[0])))"
   [(set (match_dup 3)
@@ -4448,7 +4447,7 @@
 			  (unspec:SI [(div:SI (match_operand:SI 1 "general_operand" "r,Cal,r")
 					   (match_operand:SI 2 "general_operand" "r,r,Cal"))]
 					   UNSPEC_DIVAW))]
-  "TARGET_EA_SET && TARGET_ARCOMPACT"
+  "TARGET_EA_SET"
   "@
    divaw \t%0, %1, %2
    divaw \t%0, %S1, %2
@@ -4728,7 +4727,7 @@
 
 (define_expand "sibcall_epilogue"
   [(pc)]
-  "TARGET_ARCOMPACT"
+  ""
 {
   arc_expand_epilogue (1);
   DONE;
@@ -4765,8 +4764,7 @@
 	(cond [(eq (symbol_ref "arc_compute_function_type (cfun)")
 		   (symbol_ref "ARC_FUNCTION_NORMAL"))
 	       (const_int 4)
-	       (and (ne (symbol_ref "0") (const_int 0))
-		    (ne (minus (match_dup 0) (pc)) (const_int 0)))
+	       (and (match_test "0") (eq (match_dup 0) (pc)))
 	       (const_int 4)
 	       (eq_attr "verify_short" "no")
 	       (const_int 4)]
@@ -4785,10 +4783,9 @@
 		      (label_ref (match_operand 3 "" ""))
 		      (pc)))
    (clobber (match_operand 4 "cc_register" ""))]
-   "TARGET_ARCOMPACT
-    && (reload_completed
-	|| (TARGET_EARLY_CBRANCHSI
-	    && brcc_nolimm_operator (operands[0], VOIDmode)))
+   "(reload_completed
+     || (TARGET_EARLY_CBRANCHSI
+	 && brcc_nolimm_operator (operands[0], VOIDmode)))
     && !find_reg_note (insn, REG_CROSSING_JUMP, NULL_RTX)"
    "*
      switch (get_attr_length (insn))
@@ -4803,12 +4800,9 @@
      }
    "
   [(set_attr "cond" "clob, clob, clob")
-;   (set (attr "iscompact")
-;	(cond [(eq_attr "lock_length" "2,6,10") (const_string "true")]
-;	      (const_string "false")))
    (set (attr "type")
 	(if_then_else
-	  (ne (symbol_ref "valid_brcc_with_delay_p (operands)") (const_int 0))
+	  (match_test "valid_brcc_with_delay_p (operands)")
 	  (const_string "brcc")
 	  (const_string "brcc_no_delay_slot")))
    ; For forward branches, we need to account not only for the distance to
@@ -4873,7 +4867,7 @@
 		(const_int 10)]
 	       (const_int 12))))
    (set (attr "iscompact")
-	(if_then_else (eq_attr "lock_length" "2,6,10")
+	(if_then_else (match_test "get_attr_length (insn) & 2")
 		      (const_string "true") (const_string "false")))])
 
 ; combiner pattern observed for unwind-dw2-fde.c:linear_search_fdes.
@@ -4922,7 +4916,7 @@
 	       (const_int 6)]
 	      (const_int 8)))
    (set (attr "iscompact")
-	(if_then_else (eq_attr "lock_length" "6")
+	(if_then_else (match_test "get_attr_length (insn) == 6")
 		      (const_string "true") (const_string "false")))])
 
 ; ??? When testing a bit from a DImode register, combine creates a
@@ -5132,12 +5126,9 @@
    (set_attr_alternative "length"
 ;     FIXME: length is usually 4, but we need branch shortening
 ;     to get this right.
-;     [(if_then_else (ne (symbol_ref "TARGET_ARC600") (const_int 0))
-;		    (const_int 16) (const_int 4))
-     [(if_then_else (ne (symbol_ref "flag_pic") (const_int 0))
-		    (const_int 24) (const_int 16))
-      (if_then_else (ne (symbol_ref "flag_pic") (const_int 0))
-		    (const_int 28) (const_int 16))
+;     [(if_then_else (match_test "TARGET_ARC600") (const_int 16) (const_int 4))
+     [(if_then_else (match_test "flag_pic") (const_int 24) (const_int 16))
+      (if_then_else (match_test "flag_pic") (const_int 28) (const_int 16))
       (const_int 0)])]
   ;; ??? we should really branch shorten this insn, but then we'd
   ;; need a proper label first.  N.B. the end label can not only go out
@@ -5222,8 +5213,7 @@
 }
   [(set_attr "type" "loop_end")
    (set (attr "length")
-	(if_then_else (ne (symbol_ref "LABEL_P (prev_nonnote_insn (insn))")
-			  (const_int 0))
+	(if_then_else (match_test "LABEL_P (prev_nonnote_insn (insn))")
 		      (const_int 4) (const_int 0)))]
 )
 
