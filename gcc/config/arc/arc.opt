@@ -29,13 +29,6 @@ mlittle-endian
 Target Report RejectNegative InverseMask(BIG_ENDIAN)
 Compile code for little endian mode.  This is the default
 
-mmangle-cpu
-Target Report Mask(MANGLE_CPU)
-Prepend the name of the cpu to all public symbol names
-
-; mmangle-cpu-libgcc
-; Target Undocumented Mask(MANGLE_CPU_LIBGC)
-
 mno-cond-exec
 Target Report RejectNegative Mask(NO_COND_EXEC)
 Disable ARCompact specific pass to generate conditional execution instructions
@@ -226,10 +219,6 @@ Enable the use of pre/post modify with register displacement.
 mold-di-patterns
 Target Var(TARGET_OLD_DI_PATTERNS)
 enable use of old DI patterns that have presumably been obsoleted by subreg lowering.
-
-mdynamic
-Target RejectNegative
-Use dynamic libraries for linking
 
 mmul32x16
 Target Report Mask(MULMAC_32BY16_SET)

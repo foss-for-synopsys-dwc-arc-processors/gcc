@@ -475,6 +475,20 @@ Objective-C and Objective-C++ Dialects}.
 -mfp-mode=@var{mode} -mvect-double -max-vect-align=@var{num} @gol
 -msplit-vecmove-early -m1reg-@var{reg}}
 
+@emph{ARC Options}
+@gccoptlist{-mbig-endian -mlittle-endian -mno-cond-exec -mA5 -mA6 -mARC600 @gol
+-mA7 -mARC700 -mmixed-code -mvolatile-cache -mbarrel-shifter -mnorm -mswap @gol
+-mmul64 -mno-mpy -mEA -msoft-float -mlong-calls -mno-brcc -mno-sdata @gol
+-mno-millicode -mspfp -mspfp_compact -mspfp_fast -margonaut @gol
+-mdpfp -mdpfp_compact -mdpfp_fast -mno-dpfp-lrsr -msimd -mcpu=@var{cpu} @gol
+-msize-level=@var{level} -misize -multcost=@var{cost} -mtune=@var{cpu} @gol
+-mindexed-loads -mauto-modify-reg -mold-di-patterns -mmul32x16 -m2addr @gol
+-munalign-prob-threshold=@var{probability} -mmedium-calls -mannotate-align @gol
+-malign-call -mRcq -mRcw -mearly-cbranchsi -mbbit-peephole @gol
+-mcase-vector-pcrel -mcompact-casesi -mq-class -mexpand-adddi -mcrc @gol
+-mdsp_packa -mdvbf -mmac_d16 -mmac_24 -mtelephony -mxy -mlock -mswape @gol
+-mrtsc -mepilogue-cfi -EB -EL -marclinux -marclinux-prof}
+
 @emph{ARM Options}
 @gccoptlist{-mapcs-frame  -mno-apcs-frame @gol
 -mabi=@var{name} @gol

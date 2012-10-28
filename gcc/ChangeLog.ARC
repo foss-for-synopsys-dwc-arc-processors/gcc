@@ -1,5 +1,12 @@
 2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.opt (mmangle-cpu, mmangle-cpu-libgcc, mdynamic):
+	Delete.
+	* doc/extend.texi (long_call / short_call attribute): Add ARC.
+	* doc/invoke.texi (ARC Options): Add synopsis.
+
+2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc-protos.h (arc_valid_machine_decl_attribute): Don't
 	declare.
 	(arc_epilogue_uses): Declare.
