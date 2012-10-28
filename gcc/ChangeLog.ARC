@@ -9,6 +9,7 @@
 	(arc_valid_machine_decl_attribute): Delete.
 	* config/arc/arc.h (EPILOGUE_USES): Use arc_epilogue_uses.
 	* doc/extend.texi (interrupt attribute): Add ARC information.
+	* testsuite/gcc.target/arc: New directory.
 
 2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
