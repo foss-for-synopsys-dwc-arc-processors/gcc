@@ -1,3 +1,8 @@
+2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* targhooks.c (default_adjust_insn_length): Add ATTRIBUTE_UNUSED
+	to declaration of insn parameter.
+
 2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* target.def (adjust_insn_length): Document relation to
