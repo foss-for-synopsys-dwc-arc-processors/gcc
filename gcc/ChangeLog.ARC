@@ -1,5 +1,10 @@
 2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config.gcc (arc*-*-linux-uclibc*) <tmake_file>: Include
+	previous setting.
+
+2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.h: Remove long-obsolete REAL_ARITHMETIC comment.
 	Update comment about hardware meanings of r61..r63
 	(ARC_EXTENSION_CPU): Delete.

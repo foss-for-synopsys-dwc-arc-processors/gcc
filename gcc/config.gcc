@@ -831,7 +831,7 @@ arc-*-elf*)
 arc*-*-linux-uclibc*)
 	extra_headers="arc-simd.h"
 	tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file}"
-	tmake_file="arc/t-arc-uClibc arc/t-arc"
+	tmake_file="${tmake_file} arc/t-arc-uClibc arc/t-arc"
 	case x"${with_cpu}" in
 	  xarc600|xarc601|xarc700)
 		target_cpu_default="TARGET_CPU_$with_cpu"
