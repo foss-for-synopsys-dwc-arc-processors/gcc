@@ -260,21 +260,11 @@ along with GCC; see the file COPYING3.  If not see
 /* Recast the cpu class to be the cpu attribute.  */
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
 
-/* Check if CPU is an extension and set `arc_mangle_cpu' appropriately.
-   The result should be non-zero if the cpu is recognized,
-   otherwise zero.  This is intended to be redefined in a cover file.
-   This is used by arc_init.  */
-#define ARC_EXTENSION_CPU(cpu) 0
-
 #ifndef MULTILIB_DEFAULTS
 #define MULTILIB_DEFAULTS { "mARC700" }
 #endif
 
 /* Target machine storage layout.  */
-
-/* Define to use software floating point emulator for REAL_ARITHMETIC and
-   decimal <-> binary conversion.  */
-/*#define REAL_ARITHMETIC*/
 
 /* We want zero_extract to mean the same
    no matter what the byte endianness is.  */
@@ -441,10 +431,10 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
    62    - argument pointer
    63    - program counter
 
-   For doc purposes:
-   61    - short immediate data indicator (setting flags)
+   FWIW, this is how the 61-63 encodings are used by the hardware:
+   61    - reserved
    62    - long immediate data indicator
-   63    - short immediate data indicator (not setting flags).
+   63    - PCL (program counter aligned to 32 bit, read-only)
 
    The general purpose registers are further broken down into:
 

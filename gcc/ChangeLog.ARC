@@ -1,5 +1,11 @@
 2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.h: Remove long-obsolete REAL_ARITHMETIC comment.
+	Update comment about hardware meanings of r61..r63
+	(ARC_EXTENSION_CPU): Delete.
+
+2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* targhooks.c (default_adjust_insn_length): Add ATTRIBUTE_UNUSED
 	to declaration of insn parameter.
 
