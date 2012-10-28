@@ -335,12 +335,16 @@ enum arc_builtins {
    arc_print_operand.  */
 
 static int get_arc_condition_code (rtx);
+
+static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
+
 /* Initialized arc_attribute_table to NULL since arc doesnot have any
    machine specific supported attributes.  */
 const struct attribute_spec arc_attribute_table[] =
 {
  /* { name, min_len, max_len, decl_req, type_req, fn_type_req, handler,
       affects_type_identity } */
+  { "interrupt", 1, 1, true, false, false, arc_handle_interrupt_attribute, true },
   /* Function calls made to this symbol must be done indirectly, because
      it may lie outside of the 21/25 bit addressing range of a normal function
      call.  */
@@ -399,9 +403,6 @@ arc_vector_mode_supported_p (enum machine_mode mode)
 
   return false;
 }
-
-/* To be defined for interrupt attribute addition.  */
-/*static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);*/
 
 
 static bool arc_preserve_reload_p (rtx in);
@@ -1265,31 +1266,30 @@ arc_conditional_register_usage (void)
   arc_regno_reg_class[PROGRAM_COUNTER_REGNO] = GENERAL_REGS;
 }
 
-/* ARC specific attribute support.
-
-   The ARC has these attributes:
-   interrupt - for interrupt functions
-*/
-
-/* Return nonzero if IDENTIFIER is a valid decl attribute.  */
-
-int
-arc_valid_machine_decl_attribute (tree type ATTRIBUTE_UNUSED,
-				  tree attributes ATTRIBUTE_UNUSED,
-				  tree identifier,
-				  tree args)
+static tree
+arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
+				bool *no_add_attrs)
 {
-  if (identifier == get_identifier ("interrupt")
-      && list_length (args) == 1
-      && TREE_CODE (TREE_VALUE (args)) == STRING_CST)
-    {
-      tree value = TREE_VALUE (args);
+  gcc_assert (args);
 
-      if (!strcmp (TREE_STRING_POINTER (value), "ilink1")
-	   || !strcmp (TREE_STRING_POINTER (value), "ilink2"))
-	return 1;
+  tree value = TREE_VALUE (args);
+
+  if (TREE_CODE (value) != STRING_CST)
+    {
+      warning (OPT_Wattributes,
+               "argument of %qE attribute is not a string constant",
+               name);
+      *no_add_attrs = true;
     }
-  return 0;
+  else if (strcmp (TREE_STRING_POINTER (value), "ilink1")
+	   && strcmp (TREE_STRING_POINTER (value), "ilink2"))
+    {
+      warning (OPT_Wattributes,
+               "argument of %qE attribute is not \"ilink1\" or \"ilink2\"",
+               name);
+      *no_add_attrs = true;
+    }
+  return NULL_TREE;
 }
 
 /* Return zero if TYPE1 and TYPE are incompatible, one if they are compatible,
@@ -8830,6 +8830,32 @@ arc_dead_or_set_postreload_p (const_rtx insn, const_rtx reg)
 	return 1;
     }
   return 1;
+}
+
+/* Implement EPILOGUE__USES.
+   Return true if REGNO should be added to the deemed uses of the epilogue.
+
+   We use the return address
+   arc_return_address_regs[arc_compute_function_type (cfun)] .
+   But also, we have to make sure all the register restore instructions
+   are known to be live in interrupt functions.  */
+
+bool
+arc_epilogue_uses (int regno)
+{
+  if (reload_completed)
+    {
+      if (ARC_INTERRUPT_P (cfun->machine->fn_type))
+	{
+	  if (!fixed_regs[regno])
+	    return true;
+	  return regno == arc_return_address_regs[cfun->machine->fn_type];
+	}
+      else
+	return regno == RETURN_ADDR_REGNUM;
+    }
+  else
+    return regno == arc_return_address_regs[arc_compute_function_type (cfun)];
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;

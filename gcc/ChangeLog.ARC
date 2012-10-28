@@ -1,5 +1,17 @@
 2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc-protos.h (arc_valid_machine_decl_attribute): Don't
+	declare.
+	(arc_epilogue_uses): Declare.
+	* config/arc/arc.c (arc_handle_interrupt_attribute): New function.
+	(arc_epilogue_uses): Likewise.
+	(arc_attribute_table): Add entry for "interrupt".
+	(arc_valid_machine_decl_attribute): Delete.
+	* config/arc/arc.h (EPILOGUE_USES): Use arc_epilogue_uses.
+	* doc/extend.texi (interrupt attribute): Add ARC information.
+
+2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config.gcc (arc*-*-linux-uclibc*) <tmake_file>: Include
 	previous setting.
 

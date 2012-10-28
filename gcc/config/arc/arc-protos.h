@@ -32,7 +32,6 @@ extern void arc_output_function_epilogue (FILE *, HOST_WIDE_INT, int);
 extern const char *output_shift (rtx *);
 extern int compact_load_memory_operand (rtx op,enum machine_mode  mode);
 extern int compact_sda_memory_operand (rtx op,enum machine_mode  mode);
-extern int arc_valid_machine_decl_attribute (tree type,tree attributes,tree identifier,tree args);
 extern int compact_store_memory_operand (rtx op,enum machine_mode  mode);
 extern int u6_immediate_operand (rtx op,enum machine_mode mode);
 extern int arc_double_register_operand (rtx op,enum machine_mode mode);
@@ -147,5 +146,6 @@ extern int arc_text_label (rtx);
 extern int arc_decl_pretend_args (tree decl);
 extern int arc_dead_or_set_postreload_p (const_rtx insn, const_rtx reg);
 extern bool arc_short_comparison_p (rtx, int);
+extern bool arc_epilogue_uses (int regno);
 /* insn-attrtab.c doesn't include reload.h, which declares regno_clobbered_p. */
 extern int regno_clobbered_p (unsigned int, rtx, enum machine_mode, int);
