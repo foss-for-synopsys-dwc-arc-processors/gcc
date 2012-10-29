@@ -11211,7 +11211,6 @@ This is the default for @option{-Os}.
 
 @item -mcompact-casesi
 @opindex mcompact-casesi
-Target Var(TARGET_COMPACT_CASESI)
 Enable compact casesi pattern.
 This is the default for @option{-Os}.
 
