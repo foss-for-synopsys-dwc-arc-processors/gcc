@@ -1,9 +1,25 @@
+2012-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (divaw): Also enable for TARGET_ARC700.
+	* config/arc/arc.opt (EA_SET): Update description to include
+	adds, subs and sat16.
+	(m2addr): Delete.
+	(mRcw): Spelling fix.
+	(marclinux, marclinux_prof): Capitalize first letter of description.
+	* config/arc/fpx.md (spfp_compact): Check TARGET_SPFP_COMPACT_SET.
+	(spfp_fast): Check TARGET_SPFP_FAST_SET.
+	* doc/invoke.texi (Machine Dependent Options) <ARC OPTIONS>:
+	Make synopsis lines shorter.
+	(menu): Add ARC Options.
+	(node ARC Options): Add.
+
 2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt (mmangle-cpu, mmangle-cpu-libgcc, mdynamic):
 	Delete.
 	* doc/extend.texi (long_call / short_call attribute): Add ARC.
-	* doc/invoke.texi (ARC Options): Add synopsis.
+	* doc/invoke.texi (Machine Dependent Options) <ARC Options>:
+	Add synopsis.
 
 2012-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
