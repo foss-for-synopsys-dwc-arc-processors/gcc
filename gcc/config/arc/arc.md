@@ -4447,7 +4447,7 @@
 			  (unspec:SI [(div:SI (match_operand:SI 1 "general_operand" "r,Cal,r")
 					   (match_operand:SI 2 "general_operand" "r,r,Cal"))]
 					   UNSPEC_DIVAW))]
-  "TARGET_EA_SET"
+  "TARGET_ARC700 || TARGET_EA_SET"
   "@
    divaw \t%0, %1, %2
    divaw \t%0, %S1, %2

@@ -91,7 +91,7 @@ Do not generate mpy instructions for ARC700
 
 mEA
 Target Report Mask(EA_SET)
-Generate Extended arithmetic instructions. Currently only divaw supported
+Generate Extended arithmetic instructions.  Currently only divaw, adds, subs and sat16 are supported
 
 mmin_max
 Target Report Mask(MINMAX_SET)
@@ -224,10 +224,6 @@ mmul32x16
 Target Report Mask(MULMAC_32BY16_SET)
 Generate 32x16 multiply and mac instructions
 
-m2addr
-Target Var(TARGET_2ADDR)
-Make two-address instruction alternatives visible to reload.
-
 ; the initializer is supposed to be: Init(REG_BR_PROB_BASE/2) ,
 ; alas, basic-block.h is not included in options.c .
 munalign-prob-threshold=
@@ -252,7 +248,7 @@ Enable Rcq constraint handling - most short code generation depends on this.
 
 mRcw
 Target Var(TARGET_Rcw)
-Enable Rcw constraint handling - most ccfsm condexec mostly depdends on this.
+Enable Rcw constraint handling - ccfsm condexec mostly depends on this.
 
 mearly-cbranchsi
 Target Var(TARGET_EARLY_CBRANCHSI)
@@ -338,8 +334,8 @@ Pass -EL option through to linker.
 
 marclinux
 target
-pass -marclinux option through to linker.
+Pass -marclinux option through to linker.
 
 marclinux_prof
 target
-pass -marclinux_prof option through to linker.
+Pass -marclinux_prof option through to linker.

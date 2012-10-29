@@ -24,11 +24,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Scheduler descriptions for the fpx instructions
 (define_insn_reservation "spfp_compact" 3
-       (eq_attr "type" "spfp")
+  (and (match_test "TARGET_SPFP_COMPACT_SET")
+       (eq_attr "type" "spfp"))
   "issue+core, nothing*2, write_port")
 
 (define_insn_reservation "spfp_fast" 6
-       (eq_attr "type" "spfp")
+  (and (match_test "TARGET_SPFP_FAST_SET")
+       (eq_attr "type" "spfp"))
   "issue+core, nothing*5, write_port")
 
 (define_insn_reservation "dpfp_compact_mult" 7
