@@ -13,6 +13,8 @@
 	* config/arc/arc.md: Remove obsolete commented out patterns.
 	Rename some *insn_mixed patterns to *insn.
 
+	* config/arc/arc.c (check_if_valid_regno_const): Formatting fix.
+
 2012-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (divaw): Also enable for TARGET_ARC700.

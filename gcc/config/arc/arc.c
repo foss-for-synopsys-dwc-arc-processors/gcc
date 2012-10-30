@@ -5699,7 +5699,7 @@ check_if_valid_regno_const (rtx *operands, int opno)
     case CONST_INT :
       return 1;
     default:
-	error("register number must be a compile-time constant. Try giving higher optimization levels");
+	error ("register number must be a compile-time constant. Try giving higher optimization levels");
 	break;
     }
   return 0;
