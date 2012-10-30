@@ -103,12 +103,6 @@
   (and (match_code "const_int")
        (match_test "SIGNED_INT12 (ival)")))
 
-(define_constraint "J"
-  "@internal
-   A 32-bit signed integer constant"
-  (and (match_code "const_int")
-       (match_test "LARGE_INT (ival)")))
-
 (define_constraint "K"
   "@internal
    A 3-bit unsigned integer constant"
@@ -153,7 +147,7 @@
 
 (define_constraint "P"
   "@internal
-   A 8-bit unsigned integer constant"
+   An 8-bit unsigned integer constant"
   (and (match_code "const_int")
        (match_test "UNSIGNED_INT8 (ival)")))
 

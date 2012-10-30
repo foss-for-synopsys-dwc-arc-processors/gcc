@@ -52,8 +52,8 @@
 
 (define_insn "addsf3"
   [(set (match_operand:SF 0 "register_operand"          "=r,r,r,r,r ")
-	(plus:SF (match_operand:SF 1 "nonmemory_operand" "0,r,GJ,r,0")
-		 (match_operand:SF 2 "nonmemory_operand" "I,rL,r,GJ,LrJ")))]
+	(plus:SF (match_operand:SF 1 "nonmemory_operand" "0,r,GCal,r,0")
+		 (match_operand:SF 2 "nonmemory_operand" "I,rL,r,GCal,LrCal")))]
 ;  "(TARGET_ARC700 || TARGET_ARC600) && TARGET_SPFP_SET";Add flag for float
   "TARGET_SPFP"
   "@
@@ -67,8 +67,8 @@
 
 (define_insn "subsf3"
   [(set (match_operand:SF 0 "register_operand"          "=r,r,r,r,r ")
-	(minus:SF (match_operand:SF 1 "nonmemory_operand" "r,0,GJ,r,0")
-		 (match_operand:SF 2 "nonmemory_operand" "rL,I,r,GJ,LrJ")))]
+	(minus:SF (match_operand:SF 1 "nonmemory_operand" "r,0,GCal,r,0")
+		 (match_operand:SF 2 "nonmemory_operand" "rL,I,r,GCal,LrCal")))]
   ;"(TARGET_ARC700 || TARGET_ARC600) && TARGET_SPFP_SET";Add flag for float
   "TARGET_SPFP"
   "@
@@ -82,8 +82,8 @@
 
 (define_insn "mulsf3"
   [(set (match_operand:SF 0 "register_operand"          "=r,r,r,r,r ")
-	(mult:SF (match_operand:SF 1 "nonmemory_operand" "r,0,GJ,r,0")
-		 (match_operand:SF 2 "nonmemory_operand" "rL,I,r,GJ,LrJ")))]
+	(mult:SF (match_operand:SF 1 "nonmemory_operand" "r,0,GCal,r,0")
+		 (match_operand:SF 2 "nonmemory_operand" "rL,I,r,GCal,LrCal")))]
 ;  "(TARGET_ARC700 || TARGET_ARC600) && TARGET_SPFP_SET"	;Add flag for float
   "TARGET_SPFP"
   "@

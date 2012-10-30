@@ -1,3 +1,15 @@
+2012-10-30  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/constraints.md: Remove "J".
+	* config/arc/arc.md: Replace Ji with i.
+	Replace "J" constraint with "n" or "Cal" as
+	appropriate. 
+	(mulsidi_600, umulsidi_600): Use C32 for asm-bug workaround.
+	(shift_si3_loop): Add second alternative to refine length calculation.
+	* config/arc/fpx.md (addsf3, subsf3, mulsf3): Replace "J" with "Cal".
+	* config/arc/simdext.md (vdiwr_insn, vdowr_insn):
+	Replace "Ji" with "Cal".
+
 2012-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (divaw): Also enable for TARGET_ARC700.

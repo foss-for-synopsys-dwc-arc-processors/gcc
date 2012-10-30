@@ -758,7 +758,7 @@
 ;; (define_insn "vbaddw_insn"
 ;;   [(set (match_operand:V8HI 0 "vector_register_operand"           "=v")
 ;; 	(unspec:V8HI [(match_operand:V8HI 1 "vector_register_operand"  "v")
-;; 			      (match_operand:SI 2 "nonmemory_operand" "rJ")] UNSPEC_ARC_SIMD_VBADDW))]
+;; 			      (match_operand:SI 2 "nonmemory_operand" "rCal")] UNSPEC_ARC_SIMD_VBADDW))]
 ;;   "TARGET_SIMD_SET"
 ;;   "vbaddw %0, %1, %2"
 ;;   [(set_attr "length" "4")
@@ -1146,7 +1146,7 @@
 
 (define_insn "vdiwr_insn"
   [(set (match_operand:SI 0 "arc_simd_dma_register_operand"           "=d,d")
-        (unspec_volatile:SI [(match_operand:SI 1 "nonmemory_operand"  "r,Ji")] UNSPEC_ARC_SIMD_VDIWR))]
+        (unspec_volatile:SI [(match_operand:SI 1 "nonmemory_operand"  "r,Cal")] UNSPEC_ARC_SIMD_VDIWR))]
   "TARGET_SIMD_SET"
   "vdiwr %0, %1"
   [(set_attr "type" "simd_dma")
@@ -1155,7 +1155,7 @@
 
 (define_insn "vdowr_insn"
   [(set (match_operand:SI 0 "arc_simd_dma_register_operand"           "=d,d")
-        (unspec_volatile:SI [(match_operand:SI 1 "nonmemory_operand"  "r,Ji")] UNSPEC_ARC_SIMD_VDOWR))]
+        (unspec_volatile:SI [(match_operand:SI 1 "nonmemory_operand"  "r,Cal")] UNSPEC_ARC_SIMD_VDOWR))]
   "TARGET_SIMD_SET"
   "vdowr %0, %1"
   [(set_attr "type" "simd_dma")

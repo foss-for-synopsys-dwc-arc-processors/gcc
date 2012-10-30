@@ -43,9 +43,9 @@
 ;;
 ;;   comparison_operator   LT, GT, LE, GE, LTU, GTU, LEU, GEU, EQ, NE
 ;;   memory_operand        memory                         [m]
-;;   immediate_operand     immediate constant             [IJKLMNOP]
+;;   immediate_operand     immediate constant             [IKLMNOP]
 ;;   register_operand      register                       [rq]
-;;   general_operand       register, memory, constant     [rqmIJKLMNOP]
+;;   general_operand       register, memory, constant     [rqmIKLMNOP]
 
 ;;  Note that the predicates are only used when selecting a pattern
 ;;  to determine if an operand is valid.
@@ -69,7 +69,6 @@
 ;;
 ;;   H  fp 16-bit constant
 ;;   I signed 12-bit immediate (for ARCompact)
-;;   J  long immediate (signed 32-bit immediate)
 ;;   K  unsigned 3-bit immediate (for ARCompact)
 ;;   L  unsigned 6-bit immediate (for ARCompact)
 ;;   M  unsinged 5-bit immediate (for ARCompact)
@@ -939,7 +938,7 @@
 
 (define_insn_and_split "*movdi_insn"
   [(set (match_operand:DI 0 "move_dest_operand" "=w,w,r,m")
-	(match_operand:DI 1 "move_double_src_operand" "c,HJi,m,c"))]
+	(match_operand:DI 1 "move_double_src_operand" "c,Hi,m,c"))]
   "register_operand (operands[0], DImode)
    || register_operand (operands[1], DImode)"
   "*
@@ -1326,7 +1325,7 @@
   [(set (match_operand:DI 0 "dest_reg_operand" "=&w,w")
 	(if_then_else:DI (match_operator 3 "proper_comparison_operator"
 			[(match_operand 4 "cc_register" "") (const_int 0)])
-		      (match_operand:DI 1 "nonmemory_operand" "c,Ji")
+		      (match_operand:DI 1 "nonmemory_operand" "c,i")
 		      (match_operand:DI 2 "register_operand" "0,0")))]
    ""
    "*
@@ -1626,7 +1625,7 @@
 ;; (define_insn "*addsi3_mixed"
 ;;   [(set (match_operand:SI 0 "compact_register_operand" "=q,q,q,r")
 ;; 	(plus:SI (match_operand:SI 1 "compact_register_operand" "%q,0,0,r")
-;; 		 (match_operand:SI 2 "nonmemory_operand" "qK,rO,Ji,rJi")))]
+;; 		 (match_operand:SI 2 "nonmemory_operand" "qK,rO,i,ri")))]
 ;;   "TARGET_MIXED_CODE"
 ;;   "*
 ;;    {
@@ -1693,7 +1692,7 @@
 ;; (define_insn "*addsi3_mixed"
 ;;   [(set (match_operand:SI 0 "dest_reg_operand" "=q,q,q,q,r,r,r,r,r,r,r,r,r")
 ;; 	(plus:SI (match_operand:SI 1 "register_operand" "%q,0,0,0,0,r,0,r,0,0,r,0,r")
-;; 		 (match_operand:SI 2 "nonmemory_operand" "qK,rO,J,i,r,r,L,L,I,J,J,i,i")))]
+;; 		 (match_operand:SI 2 "nonmemory_operand" "qK,rO,Cal,i,r,r,L,L,I,Cal,Cal,i,i")))]
 ;;   ""
 ;;   "*
 ;;    {
@@ -1803,7 +1802,7 @@
 (define_insn "umul_600"
   [(set (match_operand:SI 2 "acc2_operand" "")
         (mult:SI (match_operand:SI 0 "register_operand"  "c,c,c")
-                 (zero_extract:SI (match_operand:SI 1 "nonmemory_operand"  "c,L,J")
+                 (zero_extract:SI (match_operand:SI 1 "nonmemory_operand"  "c,L,Cal")
                                   (const_int 16)
                                   (const_int 0))))
    (clobber (match_operand:SI 3 "acc1_operand" ""))]
@@ -1818,7 +1817,7 @@
 	(plus:SI
 	  (mult:SI (match_operand:SI 0 "register_operand" "c,c,c")
 		   (ashift:SI
-		     (zero_extract:SI (match_operand:SI 1 "nonmemory_operand" "c,L,J")
+		     (zero_extract:SI (match_operand:SI 1 "nonmemory_operand" "c,L,Cal")
 				      (const_int 16)
 				      (const_int 16))
 		     (const_int 16)))
@@ -1833,7 +1832,7 @@
 (define_insn "mulsi_600"
   [(set (match_operand:SI 2 "mlo_operand" "")
 	(mult:SI (match_operand:SI 0 "register_operand"  "Rcq#q,c,c,%c")
-		 (match_operand:SI 1 "nonmemory_operand" "Rcq#q,cL,I,J")))
+		 (match_operand:SI 1 "nonmemory_operand" "Rcq#q,cL,I,Cal")))
    (clobber (match_operand:SI 3 "mhi_operand" ""))]
   "TARGET_MUL64_SET"
 ; The assembler mis-assembles mul64 / mulu64 with "I" constraint constants,
@@ -1864,8 +1863,8 @@
 		   (match_operand:SI 0 "register_operand"  "Rcq#q,c,c,%c"))
 		 (sign_extend:DI
 ; assembler issue for "I", see mulsi_600
-;		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,I,J"))))]
-		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,L,L"))))]
+;		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,I,Cal"))))]
+		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,L,C32"))))]
   "TARGET_MUL64_SET"
   "mul64%? \t0, %0, %1%&"
   [(set_attr "length" "*,4,4,8")
@@ -1879,8 +1878,8 @@
 		   (match_operand:SI 0 "register_operand"  "Rcq#q,c,c,%c"))
 		 (sign_extend:DI
 ; assembler issue for "I", see mulsi_600
-;		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,I,J"))))]
-		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,L,L"))))]
+;		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,I,Cal"))))]
+		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,L,C32"))))]
   "TARGET_MUL64_SET"
   "mulu64%? \t0, %0, %1%&"
   [(set_attr "length" "*,4,4,8")
@@ -1948,7 +1947,7 @@
 (define_insn "mul64_600"
   [(set (reg:DI 56)
         (mult:DI (sign_extend:DI (match_operand:SI 0 "register_operand"  "c,c,c"))
-                 (zero_extract:DI (match_operand:SI 1 "nonmemory_operand"  "c,L,J")
+                 (zero_extract:DI (match_operand:SI 1 "nonmemory_operand"  "c,L,Cal")
                                   (const_int 16)
                                   (const_int 0))))
   ]
@@ -1965,7 +1964,7 @@
         (plus:DI
 	  (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "c,c,c"))
 		   (ashift:DI
-		     (sign_extract:DI (match_operand:SI 2 "nonmemory_operand" "c,L,J")
+		     (sign_extract:DI (match_operand:SI 2 "nonmemory_operand" "c,L,Cal")
 				      (const_int 16) (const_int 16))
 		     (const_int 16)))
 	  (reg:DI 56)))
@@ -2420,7 +2419,7 @@
 ;; (define_insn "*subsi3_mixed"
 ;;   [(set (match_operand:SI 0 "register_operand" "=q,q,r")
 ;; 	(minus:SI (match_operand:SI 1 "register_operand" "q,0,r")
-;; 		  (match_operand:SI 2 "nonmemory_operand" "K,qM,rJ")))]
+;; 		  (match_operand:SI 2 "nonmemory_operand" "K,qM,rCal")))]
 ;;   "TARGET_MIXED_CODE"
 ;;   "@
 ;;    sub_s %0,%1,%2
@@ -2843,7 +2842,7 @@
 ;; (define_insn "andsi3"
 ;;   [(set (match_operand:SI 0 "register_operand" "=r,r")
 ;; 	(and:SI (match_operand:SI 1 "register_operand" "%r,r")
-;; 		(match_operand:SI 2 "nonmemory_operand" "r,Ji")))]
+;; 		(match_operand:SI 2 "nonmemory_operand" "r,i")))]
 ;;   ""
 ;;   "@
 ;;     and%? %0,%1,%2
@@ -2914,7 +2913,7 @@
 ;; (define_insn "iorsi3"
 ;;   [(set (match_operand:SI 0 "register_operand" "=r,r")
 ;; 	(ior:SI (match_operand:SI 1 "register_operand" "%r,r")
-;; 		(match_operand:SI 2 "nonmemory_operand" "r,Ji")))]
+;; 		(match_operand:SI 2 "nonmemory_operand" "r,i")))]
 ;;   ""
 ;;   "@
 ;;     or%? %0,%1,%2
@@ -3084,7 +3083,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand" "=r")
 	(match_operator:SI 3 "shift4_operator"
 			   [(match_operand:SI 1 "register_operand" "0")
-			    (match_operand:SI 2 "const_int_operand" "J")]))
+			    (match_operand:SI 2 "const_int_operand" "n")]))
    (clobber (match_scratch:SI 4 "=&r"))
    (clobber (reg:CC CC_REG))
   ]
@@ -3094,11 +3093,11 @@
    (set_attr "length" "16")])
 
 (define_insn "shift_si3_loop"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=r")
+  [(set (match_operand:SI 0 "dest_reg_operand" "=r,r")
 	(match_operator:SI 3 "shift_operator"
-			   [(match_operand:SI 1 "register_operand" "0")
-			    (match_operand:SI 2 "nonmemory_operand" "rJ")]))
-   (clobber (match_scratch:SI 4 "=X"))
+			   [(match_operand:SI 1 "register_operand" "0,0")
+			    (match_operand:SI 2 "nonmemory_operand" "rn,Cal")]))
+   (clobber (match_scratch:SI 4 "=X,X"))
    (clobber (reg:SI LP_COUNT))
    (clobber (reg:SI LP_START))
    (clobber (reg:SI LP_END))
@@ -3107,7 +3106,7 @@
   "!TARGET_BARREL_SHIFTER"
   "* return output_shift (operands);"
   [(set_attr "type" "shift")
-   (set_attr "length" "20")])
+   (set_attr "length" "16,20")])
 
 ; asl, asr, lsr patterns:
 ; There is no point in including an 'I' alternative since only the lowest 5
@@ -3130,7 +3129,7 @@
 ;; (define_insn "*ashlsi3_insn"
 ;;   [(set (match_operand:SI 0 "register_operand" "=r,r,r,r")
 ;;         (ashift:SI (match_operand:SI 1 "register_operand" "r,r,r,0")
-;;                    (match_operand:SI 2 "nonmemory_operand" "N,r,Cal,rJ")))]
+;;                    (match_operand:SI 2 "nonmemory_operand" "N,r,Cal,rCal")))]
 ;;   "TARGET_BARREL_SHIFTER"
 ;;   "@
 ;;    asl %0,%1
@@ -3144,7 +3143,7 @@
 ;; (define_insn "*ashrsi3_insn_mixed"
 ;;   [(set (match_operand:SI 0 "register_operand" "=q,q,q,r,r")
 ;;         (ashiftrt:SI (match_operand:SI 1 "register_operand" "q,q,0,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,K,qM,rJ,rJ")))]
+;;                      (match_operand:SI 2 "nonmemory_operand" "N,K,qM,rCal,rCal")))]
 ;;   "TARGET_MIXED_CODE"
 ;;   "@
 ;;    asr_s %0,%1
@@ -3158,7 +3157,7 @@
 ;; (define_insn "*ashrsi3_insn"
 ;;   [(set (match_operand:SI 0 "register_operand" "=r,r,r")
 ;;         (ashiftrt:SI (match_operand:SI 1 "register_operand" "r,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,rJ,rJ")))]
+;;                      (match_operand:SI 2 "nonmemory_operand" "N,rCal,rCal")))]
 ;;   "TARGET_BARREL_SHIFTER"
 ;;   "@
 ;;    asr %0,%1
@@ -3181,7 +3180,7 @@
 ;; (define_insn "*lshrsi3_insn_mixed"
 ;;   [(set (match_operand:SI 0 "register_operand" "=q,q,r")
 ;;         (lshiftrt:SI (match_operand:SI 1 "register_operand" "q,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,qM,rJ")))]
+;;                      (match_operand:SI 2 "nonmemory_operand" "N,qM,rCal")))]
 ;;   "TARGET_MIXED_CODE"
 ;;   "@
 ;;    lsr_s %0,%1
@@ -3193,7 +3192,7 @@
 ;; (define_insn "*lshrsi3_insn"
 ;;   [(set (match_operand:SI 0 "register_operand" "=r,r,r")
 ;;           (lshiftrt:SI (match_operand:SI 1 "register_operand" "r,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,rJ,rJ")))]
+;;                      (match_operand:SI 2 "nonmemory_operand" "N,rCal,rCal")))]
 ;;   "TARGET_BARREL_SHIFTER"
 ;;   "@
 ;;    lsr %0,%1
@@ -4518,12 +4517,12 @@
 
 (define_insn "core_read"
   [(set (match_operand:SI  0 "dest_reg_operand" "=r,r")
-	(unspec_volatile:SI [(match_operand:SI 1 "general_operand" "HJ,!r")]
+	(unspec_volatile:SI [(match_operand:SI 1 "general_operand" "Hn,!r")]
 			    VUNSPEC_CORE_READ))]
   ""
   "*
-    if(check_if_valid_regno_const (operands,1))
-       return \"mov \t%0, r%1\";
+    if (check_if_valid_regno_const (operands, 1))
+      return \"mov \t%0, r%1\";
     return \"mov \t%0, r%1\";
   "
   [(set_attr "length" "4")
@@ -4531,12 +4530,12 @@
 
 (define_insn "core_write"
   [(unspec_volatile [(match_operand:SI 0 "general_operand" "r,r")
-		     (match_operand:SI 1 "general_operand" "HJ,!r")]
+		     (match_operand:SI 1 "general_operand" "Hn,!r")]
 		   VUNSPEC_CORE_WRITE)]
   ""
   "*
-    if(check_if_valid_regno_const (operands,1))
-       return \"mov \tr%1, %0\";
+    if (check_if_valid_regno_const (operands, 1))
+      return \"mov \tr%1, %0\";
     return \"mov \tr%1, %0\";
   "
   [(set_attr "length" "4")
@@ -4544,7 +4543,7 @@
 
 (define_insn "lr"
   [(set (match_operand:SI  0 "dest_reg_operand" "=r,r,r,r")
-	(unspec_volatile:SI [(match_operand:SI 1 "general_operand" "I,HJ,r,D")]
+	(unspec_volatile:SI [(match_operand:SI 1 "general_operand" "I,HCal,r,D")]
 			    VUNSPEC_LR))]
   ""
   "lr\t%0, [%1]"
@@ -4553,7 +4552,7 @@
 
 (define_insn "sr"
   [(unspec_volatile [(match_operand:SI 0 "general_operand" "Cal,r,r,r")
-		     (match_operand:SI 1 "general_operand" "Ir,I,HJ,r")]
+		     (match_operand:SI 1 "general_operand" "Ir,I,HCal,r")]
 		   VUNSPEC_SR)]
   ""
   "sr\t%S0, [%1]"
