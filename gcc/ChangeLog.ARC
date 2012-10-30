@@ -10,6 +10,9 @@
 	* config/arc/simdext.md (vdiwr_insn, vdowr_insn):
 	Replace "Ji" with "Cal".
 
+	* config/arc/arc.md: Remove obsolete commented out patterns.
+	Rename some *insn_mixed patterns to *insn.
+
 2012-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (divaw): Also enable for TARGET_ARC700.

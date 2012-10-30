@@ -1392,26 +1392,6 @@
    (set_attr "length" "8,16")])
 
 
-;; TODO - Support push_s and pop_s insns
-;; PUSH/POP instruction
-;(define_insn "*pushsi"
-;  [(set (mem:SI (pre_dec:SI (reg:SI 28)))
-;        (match_operand:SI 0 "register_operand" "q"))]
-;  "TARGET_MIXED_CODE"
-;  "push_s %0"
-;  [(set_attr "type" "push")
-;   (set_attr "iscompact" "true")
-;   (set_attr "length" "2")])
-;
-;(define_insn "*popsi"
-;  [(set (match_operand:SI 0 "register_operand" "=q")
-;        (mem:SI (post_inc:SI (reg:SI 28))))]
-;  "TARGET_MIXED_CODE"
-;  "pop_s %0"
-;  [(set_attr "type" "pop")
-;   (set_attr "iscompact" "true")
-;   (set_attr "length" "2")])
-
 (define_insn "*zero_extendqihi2_i"
   [(set (match_operand:HI 0 "dest_reg_operand" "=Rcq,Rcq#q,Rcw,w,r")
 	(zero_extend:HI (match_operand:QI 1 "nonvol_nonimm_operand" "0,Rcq#q,0,c,m")))]
@@ -1463,7 +1443,6 @@
   ""
   "if (prepare_extend_operands (operands, ZERO_EXTEND, SImode)) DONE;"
 )
-;   (set_attr "length" "2,4,8")
 
 (define_insn "*zero_extendhisi2_i"
   [(set (match_operand:SI 0 "dest_reg_operand" "=Rcq,q,Rcw,w,!x,Rcqq,r")
@@ -1498,16 +1477,6 @@
   ""
   "if (prepare_extend_operands (operands, ZERO_EXTEND, SImode)) DONE;"
 )
-
-;; (define_insn "zero_extendhisi2"
-;;   [(set (match_operand:SI 0 "dest_reg_operand" "=r,r")
-;; 	(zero_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "r,m")))]
-;;   ""
-;;   "@
-;;    extw %0,%1
-;;    ldw%U1 %0,%1"
-;;   [(set_attr "type" "unary,load")
-;;    (set_attr "cond" "nocond,nocond")])
 
 ;; Sign extension instructions.
 
@@ -1622,35 +1591,6 @@
 )
 
 ;; Arithmetic instructions.
-;; (define_insn "*addsi3_mixed"
-;;   [(set (match_operand:SI 0 "compact_register_operand" "=q,q,q,r")
-;; 	(plus:SI (match_operand:SI 1 "compact_register_operand" "%q,0,0,r")
-;; 		 (match_operand:SI 2 "nonmemory_operand" "qK,rO,i,ri")))]
-;;   "TARGET_MIXED_CODE"
-;;   "*
-;;    {
-;;      switch (which_alternative)
-;;      {
-;;        case 0:
-;;          return \"add_s %0,%1,%2\";
-;;        case 1:
-;;          return \"add_s %0,%1,%2\";
-;;        case 12:
-;;          if (INTVAL (operands[2]) < 0)
-;;             return \"sub%? %0,%1,%n2\";
-;;          else
-;;            return \"add%? %0,%1,%2\";
-;;        case 2:
-;;          return \"add_s %0,%1,%S2\";
-;;        case 3:
-;;          return \"add%? %0,%1,%S2\";
-;;        default:
-;;          abort ();
-;;      }
-;;    }"
-;;   [(set_attr "iscompact" "true,true,true,false")
-;;    (set_attr "length" "*,*,6,8")
-;;    (set_attr "cond" "nocond,nocond,nocond,canuse")])
 
 ; We say an insn can be conditionalized if this doesn't introduce a long
 ; immediate.  We set the type such that we still have good scheduling if the
@@ -1688,66 +1628,6 @@
 	      (const_string "maybe")))
    (set_attr "length" "*,*,4,4,*,*,*,4,*,*,4,4,4,4,*,8,8")
    (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse,nocond,canuse,nocond,nocond,nocond,nocond,canuse_limm,canuse_limm,canuse,canuse,nocond")])
-
-;; (define_insn "*addsi3_mixed"
-;;   [(set (match_operand:SI 0 "dest_reg_operand" "=q,q,q,q,r,r,r,r,r,r,r,r,r")
-;; 	(plus:SI (match_operand:SI 1 "register_operand" "%q,0,0,0,0,r,0,r,0,0,r,0,r")
-;; 		 (match_operand:SI 2 "nonmemory_operand" "qK,rO,Cal,i,r,r,L,L,I,Cal,Cal,i,i")))]
-;;   ""
-;;   "*
-;;    {
-;;      switch (which_alternative)
-;;      {
-;;        case 0:
-;;          return \"add_s %0,%1,%2\";
-;;        case 1:
-;;          return \"add_s %0,%1,%2\";
-;;        case 4:
-;;          return \"add%? %0,%1,%2\";
-;;        case 5:
-;;          return \"add %0,%1,%2\";
-;;        case 6:
-;;          return \"add%? %0,%1,%2\";
-;;        case 7:
-;;          return \"add %0,%1,%2\";
-;;        case 8:
-;;          return \"add %0,%1,%2\";
-;;        case 2:
-;;          {
-;;            int intval = INTVAL (operands[2]);
-;;            if (intval < 0)
-;;             {
-;;               if (-intval< 0x20)
-;;                 return \"sub_s %0,%1,%n2\";
-;;               else
-;;                 return \"sub %0,%1,%n2\";
-;;             }
-;;          else
-;;            return \"add_s %0,%1,%2\";
-;;          }
-;;        case 3:
-;;          return \"add_s %0,%1,%S2\";
-;;        case 9:
-;;          if (INTVAL (operands[2]) < 0)
-;;             return \"sub%? %0,%1,%n2\";
-;;          else
-;;            return \"add%? %0,%1,%2\";
-;;        case 10:
-;;          if (INTVAL (operands[2]) < 0)
-;;             return \"sub %0,%1,%n2\";
-;;          else
-;;            return \"add %0,%1,%2\";
-;;        case 11:
-;;          return \"add%? %0,%1,%S2\";
-;;        case 12:
-;;          return \"add %0,%1,%S2\";
-;;        default:
-;;          abort ();
-;;      }
-;;    }"
-;;   [(set_attr "iscompact" "true,true,false,true,false,false,false,false,false,false,false,false,false")
-;;    (set_attr "length" "2,2,8,6,4,4,4,4,4,8,8,8,8")
-;;    (set_attr "cond" "nocond,nocond,nocond,nocond,canuse,nocond,canuse,nocond,nocond,canuse,nocond,canuse,nocond")])
 
 ;; ARC700/ARC600 multiply
 ;; SI <- SI * SI
@@ -2416,18 +2296,6 @@
 ;	(plus:SI (ltu:SI (reg:CC_C CC_REG) (const_int 0))
 ;		 (match_dup 3)))])
 
-;; (define_insn "*subsi3_mixed"
-;;   [(set (match_operand:SI 0 "register_operand" "=q,q,r")
-;; 	(minus:SI (match_operand:SI 1 "register_operand" "q,0,r")
-;; 		  (match_operand:SI 2 "nonmemory_operand" "K,qM,rCal")))]
-;;   "TARGET_MIXED_CODE"
-;;   "@
-;;    sub_s %0,%1,%2
-;;    sub_s %0,%1,%2
-;;    sub%? %0,%1,%S2"
-;;   [(set_attr "iscompact" "true,true,false")
-;;    (set_attr "length" "2,2,*")])
-
 (define_expand "subsi3"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(minus:SI (match_operand:SI 1 "nonmemory_operand" "")
@@ -2839,17 +2707,6 @@
 		      (const_int 0)))]
   "operands[4] = GEN_INT ( -(~INTVAL (operands[1]) | INTVAL (operands[2])));")
 
-;; (define_insn "andsi3"
-;;   [(set (match_operand:SI 0 "register_operand" "=r,r")
-;; 	(and:SI (match_operand:SI 1 "register_operand" "%r,r")
-;; 		(match_operand:SI 2 "nonmemory_operand" "r,i")))]
-;;   ""
-;;   "@
-;;     and%? %0,%1,%2
-;;     and%? %0,%1,%S2"
-;;   [(set_attr "type" "binary, binary")
-;;    (set_attr "length" "4, 8")])
-
 (define_insn_and_split "anddi3"
   [(set (match_operand:DI 0 "dest_reg_operand" "=&w,w,&w,w")
 	(and:DI (match_operand:DI 1 "register_operand" "%c,0,c,0")
@@ -2861,15 +2718,6 @@
    (set (match_dup 6) (and:SI (match_dup 7) (match_dup 8)))]
   "arc_split_dilogic (operands, AND); DONE;"
   [(set_attr "length" "8,8,16,16")])
-
-;; (define_insn "*bicsi3_insn_mixed"
-;;   [(set (match_operand:SI 0 "compact_register_operand" "=q")
-;; 	(and:SI (match_operand:SI 1 "compact_register_operand" "0")
-;; 		(not:SI (match_operand:SI 2 "compact_register_operand" "q"))))]
-;;   "TARGET_MIXED_CODE"
-;;   "bic_s %0,%1,%2"
-;;   [(set_attr "iscompact" "true")])
-
 
 ;;bic define_insn that allows limm to be the first operand
 (define_insn "*bicsi3_insn"
@@ -2910,17 +2758,6 @@
    (set_attr "length" "*,*,*,4,4,4,4,4,4,4,8,8")
    (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse,canuse_limm,nocond,nocond,canuse_limm,canuse,nocond")])
 
-;; (define_insn "iorsi3"
-;;   [(set (match_operand:SI 0 "register_operand" "=r,r")
-;; 	(ior:SI (match_operand:SI 1 "register_operand" "%r,r")
-;; 		(match_operand:SI 2 "nonmemory_operand" "r,i")))]
-;;   ""
-;;   "@
-;;     or%? %0,%1,%2
-;;     or%? %0,%1,%S2"
-;;   [(set_attr "type" "binary, binary")
-;;    (set_attr "length" "4, 8")])
-
 (define_insn_and_split "iordi3"
   [(set (match_operand:DI 0 "dest_reg_operand" "=&w,w,&w,w")
 	(ior:DI (match_operand:DI 1 "register_operand" "%c,0,c,0")
@@ -2932,15 +2769,6 @@
    (set (match_dup 6) (ior:SI (match_dup 7) (match_dup 8)))]
   "arc_split_dilogic (operands, IOR); DONE;"
   [(set_attr "length" "8,8,16,16")])
-
-;; (define_insn "*xorsi3_mixed"
-;;   [(set (match_operand:SI 0 "compact_register_operand" "=q")
-;; 	(xor:SI (match_operand:SI 1 "compact_register_operand" "0")
-;; 		(match_operand:SI 2 "compact_register_operand" "q")))]
-;;   "TARGET_MIXED_CODE"
-;;   "xor_s %0,%1,%2"
-;;   [(set_attr "iscompact" "true")
-;;    (set_attr "length" "2")])
 
 (define_insn "xorsi3"
   [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcq,Rcw,Rcw,Rcw,Rcw, w,  w,w,  w,  w")
@@ -2985,14 +2813,6 @@
   [(set_attr "type" "unary")
    (set_attr "iscompact" "maybe,true,false,false")
    (set_attr "cond" "canuse,nocond,canuse,nocond")])
-
-;; (define_insn "negsi2"
-;;   [(set (match_operand:SI 0 "register_operand" "=r")
-;; 	(neg:SI (match_operand:SI 1 "register_operand" "r")))]
-;;   ""
-;;   "sub%? %0,0,%1"
-;;   [(set_attr "type" "unary")
-;;    (set_attr "length" "8")])
 
 (define_insn_and_split "negdi2"
   [(set (match_operand:DI 0 "dest_reg_operand" "=&w")
@@ -3114,7 +2934,7 @@
 ; is defined in an external symbol, as we don't have special relocations
 ; to truncate a symbol in a u6 immediate; but that's rather exotic, so only
 ; provide one alternatice for this, without condexec support.
-(define_insn "*ashlsi3_insn_mixed"
+(define_insn "*ashlsi3_insn"
   [(set (match_operand:SI 0 "dest_reg_operand"           "=Rcq,Rcqq,Rcqq,Rcw, w,   w")
         (ashift:SI (match_operand:SI 1 "nonmemory_operand" "!0,Rcqq,   0,  0, c,cCal")
                    (match_operand:SI 2 "nonmemory_operand"  "K,  K,RcqqM, cL,cL,cCal")))]
@@ -3126,46 +2946,7 @@
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false")
    (set_attr "cond" "canuse,nocond,canuse,canuse,nocond,nocond")])
 
-;; (define_insn "*ashlsi3_insn"
-;;   [(set (match_operand:SI 0 "register_operand" "=r,r,r,r")
-;;         (ashift:SI (match_operand:SI 1 "register_operand" "r,r,r,0")
-;;                    (match_operand:SI 2 "nonmemory_operand" "N,r,Cal,rCal")))]
-;;   "TARGET_BARREL_SHIFTER"
-;;   "@
-;;    asl %0,%1
-;;    asl %0, %1, %2
-;;    asl %0, %1, %2
-;;    asl%? %0,%1,%S2"
-;;   [(set_attr "type" "shift,shift,shift,shift")
-;;   (set_attr "length" "4, 4, 8, 8")
-;;    (set_attr "cond" "nocond,nocond,nocond,canuse")])
-
-;; (define_insn "*ashrsi3_insn_mixed"
-;;   [(set (match_operand:SI 0 "register_operand" "=q,q,q,r,r")
-;;         (ashiftrt:SI (match_operand:SI 1 "register_operand" "q,q,0,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,K,qM,rCal,rCal")))]
-;;   "TARGET_MIXED_CODE"
-;;   "@
-;;    asr_s %0,%1
-;;    asr_s %0,%1,%2
-;;    asr_s %0,%1,%2
-;;    asr%? %0,%1,%S2
-;;    asr   %0,%1,%S2"
-;;   [(set_attr "type" "shift,shift,shift,shift,shift")
-;;    (set_attr "iscompact" "true,true,true,false,false")])
-
-;; (define_insn "*ashrsi3_insn"
-;;   [(set (match_operand:SI 0 "register_operand" "=r,r,r")
-;;         (ashiftrt:SI (match_operand:SI 1 "register_operand" "r,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,rCal,rCal")))]
-;;   "TARGET_BARREL_SHIFTER"
-;;   "@
-;;    asr %0,%1
-;;    asr%? %0,%1,%S2
-;;    asr %0,%1,%S2"
-;;   [(set_attr "type" "shift,shift,shift")
-;;    (set_attr "cond" "nocond,canuse,nocond")])
-(define_insn "*ashrsi3_insn_mixed"
+(define_insn "*ashrsi3_insn"
   [(set (match_operand:SI 0 "dest_reg_operand"             "=Rcq,Rcqq,Rcqq,Rcw, w,   w")
         (ashiftrt:SI (match_operand:SI 1 "nonmemory_operand" "!0,Rcqq,   0,  0, c,cCal")
                    (match_operand:SI 2 "nonmemory_operand"    "K,  K,RcqqM, cL,cL,cCal")))]
@@ -3177,30 +2958,7 @@
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false")
    (set_attr "cond" "canuse,nocond,canuse,canuse,nocond,nocond")])
 
-;; (define_insn "*lshrsi3_insn_mixed"
-;;   [(set (match_operand:SI 0 "register_operand" "=q,q,r")
-;;         (lshiftrt:SI (match_operand:SI 1 "register_operand" "q,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,qM,rCal")))]
-;;   "TARGET_MIXED_CODE"
-;;   "@
-;;    lsr_s %0,%1
-;;    lsr_s %0,%1,%2
-;;    lsr%? %0,%1,%S2"
-;;   [(set_attr "type" "shift,shift,shift")
-;;    (set_attr "iscompact" "true,true,false")])
-
-;; (define_insn "*lshrsi3_insn"
-;;   [(set (match_operand:SI 0 "register_operand" "=r,r,r")
-;;           (lshiftrt:SI (match_operand:SI 1 "register_operand" "r,0,r")
-;;                      (match_operand:SI 2 "nonmemory_operand" "N,rCal,rCal")))]
-;;   "TARGET_BARREL_SHIFTER"
-;;   "@
-;;    lsr %0,%1
-;;    lsr%? %0,%1,%S2
-;;    lsr %0,%1,%S2"
-;;   [(set_attr "type" "shift,shift,shift")
-;;    (set_attr "cond" "nocond,canuse,nocond")])
-(define_insn "*lshrsi3_insn_mixed"
+(define_insn "*lshrsi3_insn"
   [(set (match_operand:SI 0 "dest_reg_operand"             "=Rcq,Rcqq,Rcqq,Rcw, w,   w")
         (lshiftrt:SI (match_operand:SI 1 "nonmemory_operand" "!0,Rcqq,   0,  0, c,cCal")
                    (match_operand:SI 2 "nonmemory_operand"    "N,  N,RcqqM, cL,cL,cCal")))]
@@ -3509,27 +3267,6 @@
 ;; These control RTL generation for conditional jump insns
 ;; Match both normal and inverted jump.
 
-;; TODO - supporting 16-bit conditional short branch insns if needed.
-
-; (define_insn "*branch_insn_mixed"
-;   [(set (pc)
-; 	(if_then_else (match_operator 1 "comparison_operator"
-; 				      [(reg CC_REG) (const_int 0)])
-; 		      (label_ref (match_operand 0 "" ""))
-; 		      (pc)))]
-;   "TARGET_MIXED_CODE"
-;   "*
-; {
-;   if (arc_ccfsm_branch_deleted_p ())
-;     {
-;       arc_ccfsm_record_branch_deleted ();
-;       return \"; branch deleted, next insns conditionalized\";
-;     }
-;   else
-;     return \"b%d1_s %^%l0\";
-; }"
-;  [(set_attr "type" "branch")])
-
 ; We need a separate expander for this lest we loose the mode of CC_REG
 ; when match_operator substitutes the literal operand into the comparison.
 (define_expand "branch_insn"
@@ -3683,13 +3420,6 @@
 
 ;; Unconditional and other jump instructions.
 
-;; TODO - supporting 16-bit short branch insns if needed.
-;(define_insn "*jump_mixed"
-;  [(set (pc) (label_ref (match_operand 0 "" "")))]
-;  "TARGET_MIXED_CODE"
-;  "b_s %^%l0"
-;  [(set_attr "type" "uncond_branch")])
-
 (define_expand "jump"
   [(set (pc) (label_ref (match_operand 0 "" "")))]
   ""
@@ -3753,19 +3483,7 @@
    (set_attr "iscompact" "false,false,false,maybe,false")
    (set_attr "cond" "canuse,canuse_limm,canuse,canuse,canuse")])
 
-;; (define_insn "indirect_jump"
-;;   [(set (pc) (match_operand:SI 0 "register_operand" "r"))]
-;;   ""
-;;   "j%* [%0]"
-;;   [(set_attr "type" "jump")])
-
 ;; Implement a switch statement.
-; ??? the following comment shows ignorance of gcc internals
-; - or possibly code that old that it predates the current facilities.
-;; This wouldn't be necessary in the non-pic case if we could distinguish
-;; label refs of the jump table from other label refs.  The problem is that
-;; label refs are output as "%st(.LL42)" but we don't want the %st - we want
-;; the real address since it's the address of the table.
 
 (define_expand "casesi"
   [(set (match_dup 5)
@@ -3985,15 +3703,6 @@
    (set_attr "type" "jump")
    (set_attr "iscompact" "true")
    (set_attr "cond" "nocond")])
-
-;; TODO: Splitting it up as separate patterns (when enabling this pattern) for
-;;       TARGET_MIXED_CODE so that length can be set correctly.
-(define_insn "tablejump"
-  [(set (pc) (match_operand:SI 0 "address_operand" "p"))
-   (use (label_ref (match_operand 1 "" "")))]
-  "0 /* disabled -> using casesi now */"
-  "j%* %a0"
-  [(set_attr "type" "jump")])
 
 (define_expand "call"
   ;; operands[1] is stack_size_rtx
@@ -5404,7 +5113,7 @@
 ;; to use bxor to flip the high bit of an integer register.
 ;; ??? we actually can't use the floating point hardware for neg, because
 ;; this would not work right for -0.  OTOH optabs.c has already code
-;; to synthesyze nagate by flipping the sign bit.
+;; to synthesyze negate by flipping the sign bit.
 
 
 ;; include the arc-FPX instructions
