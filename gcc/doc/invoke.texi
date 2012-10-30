@@ -10866,12 +10866,12 @@ Supported values for @var{cpu} are
 @table @samp
 @item A5
 @opindex mA5
-Compile for Arctangent-A5.  Alias: @samp{-mA5}.
+Compile for Arctangent-A5.  Alias: @option{-mA5}.
 
 @opindex mA6
 @opindex mARC600
 @item ARC600
-Compile for ARC600.  Aliases: @samp{-mA6}, @samp{-mARC600}.
+Compile for ARC600.  Aliases: @option{-mA6}, @option{-mARC600}.
 
 @item ARC601
 Compile for ARC601.
@@ -10879,8 +10879,8 @@ Compile for ARC601.
 @item ARC700
 @opindex mA7
 @opindex mARC700
-Compile for ARC700.  Aliases: @samp{-mA7}, @samp{-mARC700}.
-This is the default.
+Compile for ARC700.  Aliases: @option{-mA7}, @option{-mARC700}.
+This is the default when configured with @samp{--with-cpu=arc700}@.
 @end table
 
 @item -mbig-endian
