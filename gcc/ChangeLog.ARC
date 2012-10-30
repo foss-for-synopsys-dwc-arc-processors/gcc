@@ -17,6 +17,11 @@
 
 	* doc/invoke.texi (ARC options): Put gcc options in @option.
 
+	* doc/install.texi (--with-cpu): Mention ARC.
+	(arc-*-elf32): New paragraph.
+	(arc-linux-uclibc): Likewise.
+	* doc/md.texi (Machine Constraints): Add ARC part.
+
 2012-10-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (divaw): Also enable for TARGET_ARC700.
