@@ -201,6 +201,43 @@
         (const_string "false")))
 
 
+; Is there an instruction that we are actually putting into the delay slot?
+(define_attr "delay_slot_filled" "no,yes"
+  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
+	 (const_string "no")
+	 (match_test "!TARGET_AT_DBR_CONDEXEC
+		      && JUMP_P (insn)
+		      && INSN_ANNULLED_BRANCH_P (insn)
+		      && !INSN_FROM_TARGET_P (NEXT_INSN (insn))")
+	 (const_string "no")]
+	(const_string "yes")))
+
+; Is a delay slot present for purposes of shorten_branches?
+; We have to take the length of this insn into account for forward branches
+; even if we don't put the insn actually into a delay slot.
+(define_attr "delay_slot_present" "no,yes"
+  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
+	 (const_string "no")]
+	(const_string "yes")))
+
+; We can't use get_attr_length (NEXT_INSN (insn)) because this gives the
+; length of a different insn with the same uid.
+(define_attr "delay_slot_length" ""
+  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
+	 (const_int 0)]
+	(symbol_ref "get_attr_length (NEXT_INSN (PREV_INSN (insn)))
+		     - get_attr_length (insn)")))
+
+
+(define_attr "enabled" "no,yes" (const_string "yes"))
+
+(define_attr "predicable" "no,yes" (const_string "no"))
+;; if 'predicable' were not so brain-dead, we would specify:
+;; (cond [(eq_attr "cond" "!canuse") (const_string "no")
+;;        (eq_attr "iscompact" "maybe") (const_string "no")]
+;;       (const_string "yes"))
+;; and then for everything but calls, we could just set the cond attribute.
+
 ;; Condition codes: this one is used by final_prescan_insn to speed up
 ;; conditionalizing instructions.  It saves having to scan the rtl to see if
 ;; it uses or alters the condition codes.
@@ -214,13 +251,27 @@
 ;; NOCOND: This insn can't use and doesn't affect the condition codes.
 
 (define_attr "cond" "use,canuse,canuse_limm,canuse_limm_add,set,set_zn,clob,nocond"
-  (if_then_else (eq_attr "iscompact" "maybe,false")
-      (cond [(eq_attr "type" "unary,move")
+  (cond
+    [(eq_attr "predicable" "yes") (const_string "canuse")
+
+     (eq_attr "type" "call")
+     (cond [(eq_attr "delay_slot_filled" "yes") (const_string "nocond")
+	    (match_test "!flag_pic") (const_string "canuse_limm")]
+	   (const_string "canuse"))
+
+     (eq_attr "iscompact" "maybe,false")
+     (cond [ (eq_attr "type" "call")
+	     (cond [(eq_attr "delay_slot_filled" "yes") (const_string "nocond")
+		    (match_test "!flag_pic") (const_string "canuse_limm")]
+		   (const_string "nocond"))
+
+	     (and (eq_attr "type" "move")
+		  (match_operand 1 "immediate_operand" ""))
 	     (if_then_else
 		(ior (match_operand 1 "u6_immediate_operand" "")
 		     (match_operand 1 "long_immediate_operand" ""))
 		(const_string "canuse")
-		(const_string "nocond"))
+		(const_string "canuse_limm"))
 
 	     (eq_attr "type" "binary")
 	     (cond [(ne (symbol_ref "REGNO (operands[0])")
@@ -254,7 +305,7 @@
 
 	    ]
 
-	    (const_string "nocond"))
+	    (const_string "nocond"))]
 
       (cond [(eq_attr "type" "compare")
 	     (const_string "set")
@@ -266,38 +317,20 @@
 
 	    (const_string "nocond"))))
 
+/* ??? Having all these patterns gives ifcvt more freedom to generate
+   inefficient code.  It seem to operate on the premise that
+   register-register copies and registers are free.  I see better code
+   with -fno-if-convert now than without.  */
+(define_cond_exec
+  [(match_operator 0 "proper_comparison_operator"
+     [(reg CC_REG) (const_int 0)])]
+  "true"
+  "")
+
 (define_attr "verify_short" "no,yes"
   (if_then_else
     (match_test "arc_verify_short (insn, insn_current_address & 2, 0)")
     (const_string "yes") (const_string "no")))
-
-; Is there an instruction that we are actually putting into the delay slot?
-(define_attr "delay_slot_filled" "no,yes"
-  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
-	 (const_string "no")
-	 (match_test "!TARGET_AT_DBR_CONDEXEC
-		      && JUMP_P (insn)
-		      && INSN_ANNULLED_BRANCH_P (insn)
-		      && !INSN_FROM_TARGET_P (NEXT_INSN (insn))")
-	 (const_string "no")]
-	(const_string "yes")))
-
-; Is a delay slot present for purposes of shorten_branches?
-; We have to take the length of this insn into account for forward branches
-; even if we don't put the insn actually into a delay slot.
-(define_attr "delay_slot_present" "no,yes"
-  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
-	 (const_string "no")]
-	(const_string "yes")))
-
-; We can't use get_attr_length (NEXT_INSN (insn)) because this gives the
-; length of a different insn with the same uid.
-(define_attr "delay_slot_length" ""
-  (cond [(match_test "NEXT_INSN (PREV_INSN (insn)) == insn")
-	 (const_int 0)]
-	(symbol_ref "get_attr_length (NEXT_INSN (PREV_INSN (insn)))
-		     - get_attr_length (insn)")))
-
 
 (define_attr "length_lock" "no,yes" (const_string "no"))
 
@@ -590,7 +623,7 @@
    stb%U0%V0 %1,%0"
   [(set_attr "type" "move,move,move,move,move,move,move,load,store,load,load,store,store")
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false,false,true,true,true,false,false,false")
-   (set_attr "cond" "canuse,canuse_limm,canuse,canuse,canuse_limm,canuse,canuse,nocond,nocond,nocond,nocond,nocond,nocond")])
+   (set_attr "predicable" "yes,no,yes,yes,no,yes,yes,no,no,no,no,no,no")])
 
 (define_expand "movhi"
   [(set (match_operand:HI 0 "move_dest_operand" "")
@@ -625,7 +658,7 @@
    stw%U0%V0 %S1,%0"
   [(set_attr "type" "move,move,move,move,move,move,move,move,load,store,load,store,store,store")
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false,maybe_limm,false,true,true,false,false,false,false")
-   (set_attr "cond" "canuse,canuse_limm,canuse,canuse,canuse_limm,canuse,canuse,canuse,nocond,nocond,nocond,nocond,nocond,nocond")])
+   (set_attr "predicable" "yes,no,yes,yes,no,yes,yes,yes,no,no,no,no,no,no")])
 
 (define_expand "movsi"
   [(set (match_operand:SI 0 "move_dest_operand" "")
@@ -682,7 +715,7 @@
    ; Use default length for iscompact to mark length varying.  But set length
    ; of Crr to 4.
    (set_attr "length" "*,*,*,4,4,4,4,8,8,*,8,*,*,*,*,*,*,*,*,8")
-   (set_attr "cond" "canuse,canuse_limm,canuse,canuse,canuse_limm,canuse_limm,canuse,nocond,nocond,canuse,canuse,nocond,nocond,nocond,nocond,nocond,nocond,nocond,nocond,nocond")])
+   (set_attr "predicable" "yes,no,yes,yes,no,no,yes,no,no,yes,yes,no,no,no,no,no,no,no,no,no")])
 
 ;; sometimes generated by the epilogue code.  We don't want to
 ;; recognize these addresses in general, because the limm is costly,
@@ -712,14 +745,15 @@
 (define_insn "*movsi_set_cc_insn"
   [(set (match_operand:CC_ZN 2 "cc_set_register" "")
 	(match_operator 3 "zn_compare_operator"
-	  [(match_operand:SI 1 "nonmemory_operand" "cI,Cal") (const_int 0)]))
-   (set (match_operand:SI 0 "register_operand" "=w,w")
+	  [(match_operand:SI 1 "nonmemory_operand" "cI,cL,Cal") (const_int 0)]))
+   (set (match_operand:SI 0 "register_operand" "=w,w,w")
 	(match_dup 1))]
   ""
   "mov%?.f %0,%S1"
   [(set_attr "type" "compare")
+   (set_attr "predicable" "no,yes,yes")
    (set_attr "cond" "set_zn")
-   (set_attr "length" "4,8")])
+   (set_attr "length" "4,4,8")])
 
 (define_insn "unary_comparison"
   [(set (match_operand:CC_ZN 0 "cc_set_register" "")
@@ -753,8 +787,10 @@
      (match_operand 0 "cc_register" "")
      (match_operator 3 "zn_compare_operator"
        [(and:SI
-	  (match_operand:SI 1 "register_operand"  "%Rcq,Rcq, c,  c,  c,  c,  c")
-	  (match_operand:SI 2 "nonmemory_operand"  "Rcq,C0p,cI,C1p,Ccp,CnL,Cal"))
+	  (match_operand:SI 1 "register_operand"
+	   "%Rcq,Rcq, c, c, c,  c,  c,  c")
+	  (match_operand:SI 2 "nonmemory_operand"
+	   " Rcq,C0p,cI,cL,C1p,Ccp,CnL,Cal"))
 	(const_int 0)]))]
   "(register_operand (operands[1], SImode)
     && nonmemory_operand (operands[2], SImode))
@@ -763,23 +799,24 @@
   "*
     switch (which_alternative)
     {
-    case 0: case 2: case 6:
+    case 0: case 2: case 3: case 7:
       return \"tst%? %1,%2\";
     case 1:
       return \"btst%? %1,%z2\";
-    case 3:
-      return \"bmsk%?.f 0,%1,%Z2%&\";
     case 4:
-      return \"bclr%?.f 0,%1,%M2%&\";
+      return \"bmsk%?.f 0,%1,%Z2%&\";
     case 5:
+      return \"bclr%?.f 0,%1,%M2%&\";
+    case 6:
       return \"bic%?.f 0,%1,%n2-1\";
     default:
       gcc_unreachable ();
     }
   "
-  [(set_attr "iscompact" "maybe,maybe,false,false,false,false,false")
+  [(set_attr "iscompact" "maybe,maybe,false,false,false,false,false,false")
    (set_attr "type" "compare")
-   (set_attr "length" "*,*,4,4,4,4,8")
+   (set_attr "length" "*,*,4,4,4,4,4,8")
+   (set_attr "predicable" "no,yes,no,yes,no,no,no,yes")
    (set_attr "cond" "set_zn")])
 
 (define_insn "*commutative_binary_comparison"
@@ -1025,7 +1062,7 @@
   "register_operand (operands[0], DFmode) || register_operand (operands[1], DFmode)"
   "#"
   [(set_attr "type" "move,move,move,move,load,store")
-   (set_attr "cond" "nocond,nocond,canuse,canuse,nocond,nocond")
+   (set_attr "predicable" "no,no,yes,yes,no,no")
    ;; ??? The ld/st values could be 16 if it's [reg,bignum].
    (set_attr "length" "4,16,8,16,16,16")])
 
@@ -1074,8 +1111,7 @@
   "operands[3] = CONST0_RTX (DFmode);
    operands[4] = simplify_gen_subreg(SImode,operands[0],DFmode,0);
    operands[5] = simplify_gen_subreg(SImode,operands[0],DFmode,4);"
-  [(set_attr "type" "move")
-   (set_attr "cond" "nocond")])
+  [(set_attr "type" "move")])
 
 ;; Load/Store with update instructions.
 ;;
@@ -1404,7 +1440,7 @@
    ldb%U1 %0,%1"
   [(set_attr "type" "unary,unary,unary,unary,load")
    (set_attr "iscompact" "maybe,true,false,false,false")
-   (set_attr "cond" "nocond,nocond,canuse,nocond,nocond")])
+   (set_attr "predicable" "no,no,yes,no,no")])
 
 (define_expand "zero_extendqihi2"
   [(set (match_operand:HI 0 "dest_reg_operand" "")
@@ -1435,7 +1471,7 @@
    }"
   [(set_attr "type" "unary,unary,unary,unary,load,load,load")
    (set_attr "iscompact" "maybe,true,false,false,true,true,false")
-   (set_attr "cond" "nocond,nocond,canuse,nocond,nocond,nocond,nocond")])
+   (set_attr "predicable" "no,no,yes,no,no,no,no")])
 
 (define_expand "zero_extendqisi2"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
@@ -1468,7 +1504,7 @@
     }"
   [(set_attr "type" "unary,unary,unary,unary,load,load,load")
    (set_attr "iscompact" "maybe,true,false,false,true,false,false")
-   (set_attr "cond" "nocond,nocond,canuse,nocond,nocond,nocond,nocond")])
+   (set_attr "predicable" "no,no,yes,no,no,no,no")])
 
 
 (define_expand "zero_extendhisi2"
@@ -1489,8 +1525,7 @@
    sexb %0,%1
    ldb.x%U1 %0,%1"
   [(set_attr "type" "unary,unary,load")
-   (set_attr "iscompact" "true,false,false")
-   (set_attr "cond" "nocond,nocond,nocond")])
+   (set_attr "iscompact" "true,false,false")])
 
 
 (define_expand "extendqihi2"
@@ -1509,8 +1544,7 @@
    sexb %0,%1
    ldb.x%U1 %0,%1"
   [(set_attr "type" "unary,unary,load")
-   (set_attr "iscompact" "true,false,false")
-   (set_attr "cond" "nocond,nocond,nocond")])
+   (set_attr "iscompact" "true,false,false")])
 
 (define_expand "extendqisi2"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
@@ -1528,8 +1562,7 @@
    sexw %0,%1
    ldw.x%U1%V1 %0,%1"
   [(set_attr "type" "unary,unary,load")
-   (set_attr "iscompact" "true,false,false")
-   (set_attr "cond" "nocond,nocond,nocond")])
+   (set_attr "iscompact" "true,false,false")])
 
 (define_expand "extendhisi2"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
@@ -1563,8 +1596,7 @@
   "abs%? %0,%1%&"
   [(set_attr "type" "two_cycle_core")
    (set_attr "length" "*,4,8")
-   (set_attr "iscompact" "true,false,false")
-   (set_attr "cond" "nocond,nocond,nocond")])
+   (set_attr "iscompact" "true,false,false")])
 
 ;; Maximum and minimum insns
 
@@ -1576,7 +1608,7 @@
   "max%? %0,%1,%2"
   [(set_attr "type" "two_cycle_core")
    (set_attr "length" "4,4,8")
-   (set_attr "cond" "canuse,nocond,nocond")]
+   (set_attr "predicable" "yes,no,no")]
 )
 
 (define_insn "sminsi3"
@@ -1587,7 +1619,7 @@
   "min%? %0,%1,%2"
   [(set_attr "type" "two_cycle_core")
    (set_attr "length" "4,4,8")
-   (set_attr "cond" "canuse,nocond,nocond")]
+   (set_attr "predicable" "yes,no,no")]
 )
 
 ;; Arithmetic instructions.
@@ -1616,7 +1648,8 @@
     return arc_output_addsi (operands,
 			     arc_ccfsm_cond_exec_p () ? \"%?\" : \"\");"
   "&& reload_completed && get_attr_length (insn) == 8
-   && satisfies_constraint_I (operands[2])"
+   && satisfies_constraint_I (operands[2])
+   && GET_CODE (PATTERN (insn)) != COND_EXEC"
   [(set (match_dup 0) (match_dup 3)) (set (match_dup 0) (match_dup 4))]
   "split_addsi (operands);"
   [(set_attr "type" "*,*,*,*,two_cycle_core,two_cycle_core,*,two_cycle_core,*,*,*,two_cycle_core,*,two_cycle_core,*,*,*")
@@ -1627,7 +1660,9 @@
 	       (const_string "maybe_limm")]
 	      (const_string "maybe")))
    (set_attr "length" "*,*,4,4,*,*,*,4,*,*,4,4,4,4,*,8,8")
-   (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse,nocond,canuse,nocond,nocond,nocond,nocond,canuse_limm,canuse_limm,canuse,canuse,nocond")])
+   (set_attr "predicable" "no,no,yes,yes,no,no,no,yes,no,no,no,no,no,no,no,yes,no")
+   (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse,nocond,canuse,nocond,nocond,nocond,nocond,canuse_limm,canuse_limm,canuse,canuse,nocond")
+])
 
 ;; ARC700/ARC600 multiply
 ;; SI <- SI * SI
@@ -1690,6 +1725,7 @@
   "mululw%? 0, %0, %1"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "mulmac_600, mulmac_600, mulmac_600")
+   (set_attr "predicable" "no, no, yes")
    (set_attr "cond" "nocond, canuse_limm, canuse")])
 
 (define_insn "mac_600"
@@ -1707,6 +1743,7 @@
   "machlw%? 0, %0, %1"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "mulmac_600, mulmac_600, mulmac_600")
+   (set_attr "predicable" "no, no, yes")
    (set_attr "cond" "nocond, canuse_limm, canuse")])
 
 (define_insn "mulsi_600"
@@ -1733,8 +1770,9 @@
   return "mul64%? \t0, %0, %1%&";
 }
   [(set_attr "length" "*,4,4,8")
-  (set_attr "iscompact" "maybe,false,false,false")
-  (set_attr "type" "multi,multi,multi,multi")
+   (set_attr "iscompact" "maybe,false,false,false")
+   (set_attr "type" "multi,multi,multi,multi")
+   (set_attr "predicable" "yes,yes,no,yes")
    (set_attr "cond" "canuse,canuse,canuse_limm,canuse")])
 
 (define_insn "mulsidi_600"
@@ -1748,8 +1786,9 @@
   "TARGET_MUL64_SET"
   "mul64%? \t0, %0, %1%&"
   [(set_attr "length" "*,4,4,8")
-  (set_attr "iscompact" "maybe,false,false,false")
-  (set_attr "type" "multi,multi,multi,multi")
+   (set_attr "iscompact" "maybe,false,false,false")
+   (set_attr "type" "multi,multi,multi,multi")
+   (set_attr "predicable" "yes,yes,no,yes")
    (set_attr "cond" "canuse,canuse,canuse_limm,canuse")])
 
 (define_insn "umulsidi_600"
@@ -1763,8 +1802,9 @@
   "TARGET_MUL64_SET"
   "mulu64%? \t0, %0, %1%&"
   [(set_attr "length" "*,4,4,8")
-  (set_attr "iscompact" "maybe,false,false,false")
-  (set_attr "type" "umulti")
+   (set_attr "iscompact" "maybe,false,false,false")
+   (set_attr "type" "umulti")
+   (set_attr "predicable" "yes,yes,no,yes")
    (set_attr "cond" "canuse,canuse,canuse_limm,canuse")])
 
 ; ARC700 mpy* instructions: This is a multi-cycle extension, and thus 'w'
@@ -1782,8 +1822,9 @@
 "TARGET_ARC700 && !TARGET_NOMPY_SET"
   "mpyu%? %0,%1,%2"
   [(set_attr "length" "4,4,4,8,8")
-  (set_attr "type" "umulti")
-  (set_attr "cond" "canuse,nocond,canuse_limm,canuse,nocond")])
+   (set_attr "type" "umulti")
+   (set_attr "predicable" "yes,no,no,yes,no")
+   (set_attr "cond" "canuse,nocond,canuse_limm,canuse,nocond")])
 
 (define_expand "mulsidi3"
   [(set (match_operand:DI 0 "nonimmediate_operand" "")
@@ -1835,6 +1876,7 @@
   "mullw%? 0, %0, %1"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "mulmac_600")
+   (set_attr "predicable" "no,no,yes")
    (set_attr "cond" "nocond, canuse_limm, canuse")])
 
 
@@ -1862,6 +1904,7 @@
   "machlw%? %0, %1, %2"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "mulmac_600")
+   (set_attr "predicable" "no,no,yes")
    (set_attr "cond" "nocond, canuse_limm, canuse")])
 
 
@@ -1908,6 +1951,7 @@
   "mpyh%? %0,%1,%2"
   [(set_attr "length" "4,4,8,8")
    (set_attr "type" "multi")
+   (set_attr "predicable" "yes,no,yes,no")
    (set_attr "cond" "canuse,nocond,canuse,nocond")])
 
 ; Note that mpyhu has the same latency as mpy / mpyh,
@@ -1924,6 +1968,7 @@
   "mpyhu%? %0,%1,%2"
   [(set_attr "length" "4,4,8,8")
    (set_attr "type" "multi")
+   (set_attr "predicable" "yes,no,yes,no")
    (set_attr "cond" "canuse,nocond,canuse,nocond")])
 
 ;; (zero_extend:DI (const_int)) leads to internal errors in combine, so we
@@ -1941,6 +1986,7 @@
   "mpyhu%? %0,%1,%2"
   [(set_attr "length" "4,4,4,8,8")
    (set_attr "type" "multi")
+   (set_attr "predicable" "yes,no,no,yes,no")
    (set_attr "cond" "canuse,nocond,canuse_limm,canuse,nocond")])
 
 (define_expand "umulsi3_highpart"
@@ -2022,6 +2068,7 @@
   "mululw%? 0, %0, %1"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "mulmac_600")
+   (set_attr "predicable" "no,no,yes")
    (set_attr "cond" "nocond, canuse_limm, canuse")])
 
 
@@ -2046,9 +2093,10 @@
 	  (const_int 32) (const_int 32)))]
   "TARGET_MULMAC_32BY16_SET"
   "machulw%? %0, %1, %2"
- [(set_attr "length" "4,4,8")
-  (set_attr "type" "mulmac_600")
-  (set_attr "cond" "nocond, canuse_limm, canuse")])
+  [(set_attr "length" "4,4,8")
+   (set_attr "type" "mulmac_600")
+   (set_attr "predicable" "no,no,yes")
+   (set_attr "cond" "nocond, canuse_limm, canuse")])
 
 
 
@@ -2212,7 +2260,7 @@
 ; w/c/c comes first (rather than w/0/C_0) to prevent the middle-end
 ; needlessly prioritizing the matching constraint.
 ; Rcw/0/C_0 comes before w/c/L so that the lower latency conditional
-; execution ; is used where possible.
+; execution is used where possible.
 (define_insn_and_split "adc"
   [(set (match_operand:SI 0 "dest_reg_operand" "=w,Rcw,w,Rcw,w")
 	(plus:SI (plus:SI (ltu:SI (reg:CC_C CC_REG) (const_int 0))
@@ -2335,11 +2383,13 @@
     rsub %0,%2,%1
     sub %0,%1,%2"
   "reload_completed && get_attr_length (insn) == 8
-   && satisfies_constraint_I (operands[1])"
+   && satisfies_constraint_I (operands[1])
+   && GET_CODE (PATTERN (insn)) != COND_EXEC"
   [(set (match_dup 0) (match_dup 3)) (set (match_dup 0) (match_dup 4))]
   "split_subsi (operands);"
   [(set_attr "iscompact" "maybe,false,false,false,false,false,false,false, false")
   (set_attr "length" "*,4,4,4,4,4,8,8,8")
+  (set_attr "predicable" "yes,yes,yes,no,no,no,yes,no,no")
   (set_attr "cond" "canuse,canuse,canuse,nocond,nocond,canuse_limm,canuse,nocond,nocond")])
 
 (define_expand "subdi3"
@@ -2513,6 +2563,7 @@
   "add%z2%? %0,%3,%1%&"
   [(set_attr "type" "shift")
    (set_attr "length" "*,4,4,8,4,8")
+   (set_attr "predicable" "yes,yes,no,no,no,no")
    (set_attr "cond" "canuse,canuse,nocond,nocond,nocond,nocond")
    (set_attr "iscompact" "maybe,false,false,false,false,false")])
 
@@ -2527,6 +2578,7 @@
   "sub%z3%? %0,%1,%2"
   [(set_attr "type" "shift")
    (set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "cond" "canuse,nocond,nocond")
    (set_attr "iscompact" "false")])
 
@@ -2539,6 +2591,7 @@
   ""
   "bset%? %0,%2,%1"
   [(set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "cond" "canuse,nocond,nocond")]
 )
 
@@ -2551,6 +2604,7 @@
   ""
   "bxor%? %0,%2,%1"
   [(set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "cond" "canuse,nocond,nocond")]
 )
 
@@ -2563,6 +2617,7 @@
   ""
   "bclr%? %0,%2,%1"
   [(set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "cond" "canuse,nocond,nocond")]
 )
 
@@ -2581,7 +2636,9 @@
      bset%? %0,%1,%2 ;;peep2, constr 1
      bset %0,%1,%2 ;;peep2, constr 2
      bset %0,%S1,%2 ;;peep2, constr 3"
-  [(set_attr "length" "4,4,8")]
+  [(set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
+   (set_attr "cond" "canuse,nocond,nocond")]
 )
 
 ; see also xorsi3 for use with constant bit number.
@@ -2596,6 +2653,7 @@
      bxor %0,%1,%2
      bxor %0,%S1,%2"
   [(set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "cond" "canuse,nocond,nocond")]
 )
 
@@ -2611,6 +2669,7 @@
      bclr %0,%1,%2
      bclr %0,%S1,%2"
   [(set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "cond" "canuse,nocond,nocond")]
 )
 
@@ -2627,7 +2686,9 @@
      bmsk%? %0,%S1,%2
      bmsk %0,%1,%2
      bmsk %0,%S1,%2"
-  [(set_attr "length" "4,4,8")]
+  [(set_attr "length" "4,4,8")
+   (set_attr "predicable" "yes,no,no")
+   (set_attr "cond" "canuse,nocond,nocond")]
 )
 
 ;;Instructions added for peephole2s end
@@ -2689,6 +2750,7 @@
   [(set_attr "iscompact" "maybe,maybe,maybe,maybe,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false")
    (set_attr "type" "binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,binary,load")
    (set_attr "length" "*,*,*,*,*,4,4,4,4,4,4,4,4,4,4,4,8,8,*")
+   (set_attr "predicable" "no,no,no,no,no,yes,yes,yes,yes,yes,no,no,no,no,no,no,yes,no,no")
    (set_attr "cond" "canuse,canuse,canuse,canuse,nocond,canuse,canuse,canuse,canuse,canuse,canuse_limm,nocond,nocond,nocond,nocond,canuse_limm,canuse,nocond,nocond")])
 
 ; combiner splitter, pattern found in ldtoa.c .
@@ -2735,6 +2797,7 @@
    bic %0,%S2,%1   ;;constraint 6"
   [(set_attr "length" "*,4,4,8,4,8,8")
   (set_attr "iscompact" "maybe, false, false, false, false, false, false")
+  (set_attr "predicable" "no,yes,no,yes,no,no,no")
   (set_attr "cond" "canuse,canuse,canuse_limm,canuse,nocond,nocond,nocond")])
 
 (define_insn "iorsi3"
@@ -2756,6 +2819,7 @@
     }"
   [(set_attr "iscompact" "maybe,maybe,maybe,false,false,false,false,false,false,false,false,false")
    (set_attr "length" "*,*,*,4,4,4,4,4,4,4,8,8")
+   (set_attr "predicable" "no,no,no,yes,yes,yes,no,no,no,no,yes,no")
    (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse,canuse_limm,nocond,nocond,canuse_limm,canuse,nocond")])
 
 (define_insn_and_split "iordi3"
@@ -2791,6 +2855,7 @@
   [(set_attr "iscompact" "maybe,maybe,false,false,false,false,false,false,false,false,false")
    (set_attr "type" "binary")
    (set_attr "length" "*,*,4,4,4,4,4,4,4,8,8")
+   (set_attr "predicable" "no,no,yes,yes,yes,no,no,no,no,yes,no")
    (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse_limm,nocond,nocond,canuse_limm,canuse,nocond")])
 
 (define_insn_and_split "xordi3"
@@ -2812,7 +2877,7 @@
   "neg%? %0,%1%&"
   [(set_attr "type" "unary")
    (set_attr "iscompact" "maybe,true,false,false")
-   (set_attr "cond" "canuse,nocond,canuse,nocond")])
+   (set_attr "predicable" "no,no,yes,no")])
 
 (define_insn_and_split "negdi2"
   [(set (match_operand:DI 0 "dest_reg_operand" "=&w")
@@ -2944,6 +3009,7 @@
   "asl%? %0,%1,%2%&"
   [(set_attr "type" "shift")
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false")
+   (set_attr "predicable" "no,no,no,yes,no,no")
    (set_attr "cond" "canuse,nocond,canuse,canuse,nocond,nocond")])
 
 (define_insn "*ashrsi3_insn"
@@ -2956,6 +3022,7 @@
   "asr%? %0,%1,%2%&"
   [(set_attr "type" "shift")
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false")
+   (set_attr "predicable" "no,no,no,yes,no,no")
    (set_attr "cond" "canuse,nocond,canuse,canuse,nocond,nocond")])
 
 (define_insn "*lshrsi3_insn"
@@ -2969,6 +3036,7 @@
 	    ?  \"lsr%? %0,%1%&\" : \"lsr%? %0,%1,%2%&\");"
   [(set_attr "type" "shift")
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false")
+   (set_attr "predicable" "no,no,no,yes,no,no")
    (set_attr "cond" "canuse,nocond,canuse,canuse,nocond,nocond")])
 
 (define_insn "rotrsi3"
@@ -2978,7 +3046,7 @@
   "TARGET_BARREL_SHIFTER"
   "ror%? %0,%1,%2"
   [(set_attr "type" "shift,shift,shift")
-   (set_attr "cond" "canuse,nocond,nocond")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "length" "4,4,8")])
 
 ;; Compare / branch instructions.
@@ -3006,14 +3074,15 @@
 ;; modifed cc user if second, but not first operand is a compact register.
 (define_insn "cmpsi_cc_insn_mixed"
   [(set (reg:CC CC_REG)
-        (compare:CC (match_operand:SI 0 "register_operand"  "Rcq#q, c, qRcq, c")
-                    (match_operand:SI 1 "nonmemory_operand"  "cO,cI,  Cal, Cal")))]
+        (compare:CC (match_operand:SI 0 "register_operand" "Rcq#q,c,c, qRcq, c")
+                    (match_operand:SI 1 "nonmemory_operand" "cO,cI,cL,  Cal, Cal")))]
   ""
   "cmp%? %0,%B1%&"
   [(set_attr "type" "compare")
-   (set_attr "iscompact" "true,false,true_limm,false")
+   (set_attr "iscompact" "true,false,false,true_limm,false")
+   (set_attr "predicable" "no,no,yes,no,yes")
    (set_attr "cond" "set")
-   (set_attr "length" "*,4,*,8")])
+   (set_attr "length" "*,4,4,*,8")])
 
 (define_insn "*cmpsi_cc_zn_insn"
   [(set (reg:CC_ZN CC_REG)
@@ -3023,6 +3092,7 @@
   "tst%? %0,%0%&"
   [(set_attr "type" "compare,compare")
    (set_attr "iscompact" "true,false")
+   (set_attr "predicable" "no,yes")
    (set_attr "cond" "set_zn")
    (set_attr "length" "*,4")])
 
@@ -3037,6 +3107,7 @@
   ""
   "btst%? %0,%1"
   [(set_attr "iscompact" "true,false")
+   (set_attr "predicable" "no,yes")
    (set_attr "cond" "set")
    (set_attr "type" "compare")
    (set_attr "length" "*,4")])
@@ -3187,7 +3258,7 @@
 	  (match_operand:SI 1 "nonmemory_operand" "C_0,Lc,?Cal")))]
   ""
   "@
-	sub%?.ne %0,%0,%0%&
+	* current_insn_predicate = 0; return \"sub%?.ne %0,%0,%0%&\";
 	mov.ne %0,%1
 	mov.ne %0,%S1"
   [(set_attr "type" "cmove,cmove,cmove")
@@ -3738,7 +3809,8 @@
 ; At instruction output time, if it doesn't match and we end up with
 ; alternative 1 ("q"), that means that we can't use the short form.
 (define_insn "*call_i"
-  [(call (mem:SI (match_operand:SI 0 "call_address_operand" "Rcq,q,c,Cbr,L,I,Cal"))
+  [(call (mem:SI (match_operand:SI 0
+		  "call_address_operand" "Rcq,q,c,Cbp,Cbr,L,I,Cal"))
 	 (match_operand 1 "" ""))
    (clobber (reg:SI 31))]
   ""
@@ -3747,25 +3819,14 @@
    jl%!%* [%0]%&
    jl%!%* [%0]
    bl%!%* %P0
+   bl%!%* %P0
    jl%!%* %S0
    jl%* %S0
    jl%! %S0"
-  [(set_attr "type" "call,call,call,call,call,call,call_no_delay_slot")
-   (set_attr "iscompact" "maybe,false,*,*,*,*,*")
-   (set_attr_alternative "cond"
-     [(const_string "canuse")
-      (const_string "canuse")
-      (const_string "canuse")
-      (cond [(match_test "!TARGET_MEDIUM_CALLS") (const_string "canuse")
-	     (eq_attr "delay_slot_filled" "yes") (const_string "nocond")
-	     (match_test "!flag_pic") (const_string "canuse_limm")]
-	    (const_string "nocond"))
-      (const_string "canuse")
-      (if_then_else (eq_attr "delay_slot_filled" "yes")
-		    (const_string "nocond")
-		    (const_string "canuse_limm"))
-      (const_string "canuse")])
-   (set_attr "length" "*,*,4,4,4,4,8")])
+  [(set_attr "type" "call,call,call,call,call,call,call,call_no_delay_slot")
+   (set_attr "iscompact" "maybe,false,*,*,*,*,*,*")
+   (set_attr "predicable" "no,yes,yes,yes,no,yes,no,yes")
+   (set_attr "length" "*,*,4,4,4,4,4,8")])
 
 (define_insn "call_prof"
   [(call (mem:SI (match_operand:SI 0 "symbolic_operand" "Cbr,Cal"))
@@ -3778,7 +3839,7 @@
    bl%!%* %P0;2
    jl%! %^%S0"
   [(set_attr "type" "call,call_no_delay_slot")
-   (set_attr "cond" "canuse,canuse")
+   (set_attr "predicable" "yes,yes")
    (set_attr "length" "4,8")])
 
 (define_expand "call_value"
@@ -3814,9 +3875,9 @@
 ; At instruction output time, if it doesn't match and we end up with
 ; alternative 1 ("q"), that means that we can't use the short form.
 (define_insn "*call_value_i"
-  [(set (match_operand 0 "dest_reg_operand"  "=Rcq,q,w,  w,w,w,  w")
+  [(set (match_operand 0 "dest_reg_operand"  "=Rcq,q,w,  w,  w,w,w,  w")
 	(call (mem:SI (match_operand:SI 1
-		       "call_address_operand" "Rcq,q,c,Cbr,L,I,Cal"))
+		       "call_address_operand" "Rcq,q,c,Cbp,Cbr,L,I,Cal"))
 	      (match_operand 2 "" "")))
    (clobber (reg:SI 31))]
   ""
@@ -3825,23 +3886,14 @@
    jl%!%* [%1]%&
    jl%!%* [%1]
    bl%!%* %P1;1
+   bl%!%* %P1;1
    jl%!%* %S1
    jl%* %S1
    jl%! %S1"
-  [(set_attr "type" "call,call,call,call,call,call,call_no_delay_slot")
-   (set_attr "iscompact" "maybe,false,*,*,*,*,*")
-   (set_attr_alternative "cond"
-     [(const_string "canuse")
-      (const_string "canuse")
-      (const_string "canuse")
-      (cond [(match_test "!TARGET_MEDIUM_CALLS") (const_string "canuse")
-	     (eq_attr "delay_slot_filled" "yes") (const_string "nocond")
-	     (match_test "!flag_pic") (const_string "canuse_limm")]
-	    (const_string "nocond"))
-      (const_string "canuse")
-      (const_string "canuse_limm")
-      (const_string "canuse")])
-   (set_attr "length" "*,*,4,4,4,4,8")])
+  [(set_attr "type" "call,call,call,call,call,call,call,call_no_delay_slot")
+   (set_attr "iscompact" "maybe,false,*,*,*,*,*,*")
+   (set_attr "predicable" "yes,yes,yes,yes,no,yes,no,yes")
+   (set_attr "length" "*,*,4,4,4,4,4,8")])
 
 
 ;; TODO - supporting 16-bit short "branch and link" insns if required.
@@ -3866,7 +3918,7 @@
    bl%!%* %P1;1
    jl%! %^%S1"
   [(set_attr "type" "call,call_no_delay_slot")
-   (set_attr "cond" "canuse,canuse")
+   (set_attr "predicable" "yes,yes")
    (set_attr "length" "4,8")])
 
 (define_insn "nop"
@@ -4163,7 +4215,6 @@
   [(set_attr "length" "4,8,8")
    (set_attr "type" "divaw,divaw,divaw")])
 
-; FIXME: The %? is of no use here, since cond is not canuse
 (define_insn "flag"
   [(unspec_volatile [(match_operand:SI 0 "nonmemory_operand" "rL,I,Cal")]
 		   VUNSPEC_FLAG)]
@@ -4174,6 +4225,7 @@
     flag%? %S0"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "misc,misc,misc")
+   (set_attr "predicable" "yes,no,yes")
    (set_attr "cond" "clob,clob,clob")])
 
 (define_insn "brk"
@@ -4462,6 +4514,8 @@
   return \"\";
 }
   [(set_attr "type" "return")
+   ; predicable won't help here since the canonical rtl looks different
+   ; for branches.
    (set_attr "cond" "canuse")
    (set (attr "iscompact")
 	(cond [(eq (symbol_ref "arc_compute_function_type (cfun)")
@@ -4469,8 +4523,44 @@
 	       (const_string "maybe")]
 	      (const_string "false")))
    (set (attr "length")
+	(cond [(ne (symbol_ref "arc_compute_function_type (cfun)")
+		   (symbol_ref "ARC_FUNCTION_NORMAL"))
+	       (const_int 4)
+	       (and (match_test "0") (eq (match_dup 0) (pc)))
+	       (const_int 4)
+	       (eq_attr "verify_short" "no")
+	       (const_int 4)]
+	      (const_int 2)))])
+
+(define_insn "p_return_i"
+  [(set (pc)
+	(if_then_else (match_operator 0 "proper_comparison_operator"
+				      [(reg CC_REG) (const_int 0)])
+		      (return) (pc)))]
+  "reload_completed"
+{
+  rtx xop[2];
+  xop[0] = operands[0];
+  xop[1]
+    = gen_rtx_REG (Pmode,
+		   arc_return_address_regs[arc_compute_function_type (cfun)]);
+
+  if (TARGET_PAD_RETURN)
+    arc_pad_return ();
+  output_asm_insn (\"j%d0%!%# [%1]%&\", xop);
+  return \"\";
+}
+  [(set_attr "type" "return")
+   (set (attr "iscompact")
 	(cond [(eq (symbol_ref "arc_compute_function_type (cfun)")
 		   (symbol_ref "ARC_FUNCTION_NORMAL"))
+	       (const_string "maybe")]
+	      (const_string "false")))
+   (set (attr "length")
+	(cond [(ne (symbol_ref "arc_compute_function_type (cfun)")
+		   (symbol_ref "ARC_FUNCTION_NORMAL"))
+	       (const_int 4)
+	       (not (match_operand 0 "equality_comparison_operator" ""))
 	       (const_int 4)
 	       (and (match_test "0") (eq (match_dup 0) (pc)))
 	       (const_int 4)
@@ -5038,7 +5128,7 @@
   [(set_attr "type" "unary")
    (set_attr "iscompact" "maybe,false,false")
    (set_attr "length" "2,4,4")
-   (set_attr "cond" "canuse,canuse,nocond")])
+   (set_attr "predicable" "no,yes,no")])
 
 (define_insn "negsf2"
   [(set (match_operand:SF 0 "dest_reg_operand" "=Rcw,w")
@@ -5046,7 +5136,7 @@
   ""
   "bxor%? %0,%1,31"
   [(set_attr "type" "unary")
-   (set_attr "cond" "canuse,nocond")])
+   (set_attr "predicable" "yes,no")])
 
 ;; ??? Should this use arc_output_libcall and set is_sfunc?
 (define_insn "*millicode_thunk_st"

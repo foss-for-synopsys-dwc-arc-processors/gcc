@@ -289,6 +289,12 @@
 	    (match_test "!arc_is_longcall_p (op)"))
        (match_code "label_ref")))
 
+(define_constraint "Cbp"
+  "predicable branch/call destination"
+  (ior (and (match_code "symbol_ref")
+	    (match_test "!arc_is_longcall_p (op) && !TARGET_MEDIUM_CALLS"))
+       (match_code "label_ref")))
+
 (define_constraint "Cpc"
   "pc-relative constant"
   (match_test "arc_legitimate_pc_offset_p (op)"))

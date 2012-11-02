@@ -1,3 +1,24 @@
+2012-10-02  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (tree-pass.h"): Include.
+	(struct GTY (()) arc_ccfsm): Add cond member.
+	(ARC_CCFSM_COND_EXEC_P): Check current_insn_predicate.
+	(bool arc_preserve_reload_p): Add ATTRIBUTE_UNUSED note.
+	(pass_arc_ifcvt): New variable.
+	(arc_init): Insert extra arc_ifcvt passes.
+	(arc_print_operand): If current_insn_predicate is set,
+	update arc_ccfsm_current.cc.
+	Don't use INSN_ANNULLED_BRANCH_P on a CALL.
+	(arc_ccfsm_advance): Store the orignal condition rtl into state->cc.
+	(arc_reorg): Call arc)ifcvt before shorten_branches.
+	Don't try to twist a conditional return into a compare-and-branch
+	instruction.
+	(arc_get_ccfsm_cond, arc_ifcvt): New functions.
+	* config/arc/arc.md (enabled, predicable): New attributes.
+	Add define_cond_exec and modify all cond-canuse patterns
+	to support the predicable attribute.
+	* config/arc/constraints.md (Cbp): New constraint.
+
 2012-10-30  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/constraints.md: Remove "J".

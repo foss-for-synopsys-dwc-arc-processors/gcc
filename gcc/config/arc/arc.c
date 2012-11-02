@@ -60,6 +60,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tm-constrs.h"
 #include "reload.h" /* For operands_match_p */
 #include "df.h"
+#include "tree-pass.h"
 
 /* Which cpu we're compiling for (A5, ARC600, ARC601, ARC700).  */
 static const char *arc_cpu_string = "";
@@ -109,6 +110,7 @@ struct GTY (()) arc_ccfsm
 {
   int state;
   int cc;
+  rtx cond;
   rtx target_insn;
   int target_label;
 };
@@ -123,7 +125,8 @@ struct GTY (()) arc_ccfsm
   ((STATE)->state += 2)
 
 #define ARC_CCFSM_COND_EXEC_P(STATE) \
-  ((STATE)->state == 3 || (STATE)->state == 4 || (STATE)->state == 5)
+  ((STATE)->state == 3 || (STATE)->state == 4 || (STATE)->state == 5 \
+   || current_insn_predicate)
 
 /* Check if INSN has a 16 bit opcode considering struct arc_ccfsm *STATE.  */
 #define CCFSM_ISCOMPACT(INSN,STATE) \
@@ -405,7 +408,8 @@ arc_vector_mode_supported_p (enum machine_mode mode)
 }
 
 
-static bool arc_preserve_reload_p (rtx in);
+/* TARGET_PRESERVE_RELOAD_P is still awaiting patch re-evaluation / review.  */
+static bool arc_preserve_reload_p (rtx in) ATTRIBUTE_UNUSED;
 static rtx arc_delegitimize_address (rtx);
 static bool arc_can_follow_jump (const_rtx follower, const_rtx followee);
 
@@ -582,6 +586,26 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode,
   return NO_REGS;
 }
 
+static unsigned arc_ifcvt (void);
+struct rtl_opt_pass pass_arc_ifcvt =
+{
+ {
+  RTL_PASS,
+  "arc_ifcvt",				/* name */
+  NULL,					/* gate */
+  arc_ifcvt,				/* execute */
+  NULL,					/* sub */
+  NULL,					/* next */
+  0,					/* static_pass_number */
+  TV_IFCVT2,				/* tv_id */
+  0,					/* properties_required */
+  0,					/* properties_provided */
+  0,					/* properties_destroyed */
+  0,					/* todo_flags_start */
+  TODO_df_finish			/* todo_flags_finish */
+ }
+};
+
 /* Called by OVERRIDE_OPTIONS to initialize various things.  */
 void
 arc_init (void)
@@ -687,6 +711,24 @@ arc_init (void)
   arc_punct_chars['!'] = 1;
   arc_punct_chars['^'] = 1;
   arc_punct_chars['&'] = 1;
+
+  /* There are two target-independent ifcvt passes, and arc_reorg may do
+     one ore more arc_ifcvt calls.  */
+  static struct register_pass_info arc_ifcvt4_info
+    = { &pass_arc_ifcvt.pass, "dbr",
+        1, PASS_POS_INSERT_AFTER
+      };
+
+  static struct register_pass_info arc_ifcvt5_info
+    = { &pass_arc_ifcvt.pass, "shorten",
+        1, PASS_POS_INSERT_BEFORE
+      };
+
+  if (optimize > 1 && !TARGET_NO_COND_EXEC)
+    {
+      register_pass (&arc_ifcvt4_info);
+      register_pass (&arc_ifcvt5_info);
+    }
 }
 
 /* Check ARC options, generate derived target attributes.  */
@@ -2736,6 +2778,9 @@ arc_print_operand (FILE *file,rtx x,int code)
 	 If it shouldn't, we'll check the compact attribute if this insn
 	 has a short variant, which may be used depending on code size and
 	 alignment considerations.  */
+      if (current_insn_predicate)
+	arc_ccfsm_current.cc
+	  = get_arc_condition_code (current_insn_predicate);
       if (ARC_CCFSM_COND_EXEC_P (&arc_ccfsm_current))
 	{
 	  /* Is this insn in a delay slot sequence?  */
@@ -2756,14 +2801,14 @@ arc_print_operand (FILE *file,rtx x,int code)
 	    }
 	  else if (code == '!') /* Jump with delay slot.  */
 	    fputs (arc_condition_codes[arc_ccfsm_current.cc], file);
-	  else /* An Instruction in a delay slot.  */
+	  else /* An Instruction in a delay slot of a jump or call.  */
 	    {
 	      rtx jump = XVECEXP (final_sequence, 0, 0);
 	      rtx insn = XVECEXP (final_sequence, 0, 1);
 
 	      /* If the insn is annulled and is from the target path, we need
 		 to inverse the condition test.  */
-	      if (INSN_ANNULLED_BRANCH_P (jump))
+	      if (JUMP_P (jump) && INSN_ANNULLED_BRANCH_P (jump))
 		{
 		  if (INSN_FROM_TARGET_P (insn))
 		    fprintf (file, "%s%s",
@@ -3554,7 +3599,10 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
 	  /* If REVERSE is true, ARM_CURRENT_CC needs to be inverted from
 	     what it was.  */
 	  if (!reverse)
-	    state->cc = get_arc_condition_code (XEXP (SET_SRC (body), 0));
+	    {
+	      state->cond = XEXP (SET_SRC (body), 0);
+	      state->cc = get_arc_condition_code (XEXP (SET_SRC (body), 0));
+	    }
 
 	  if (reverse || then_not_else)
 	    state->cc = ARC_INVERSE_CONDITION_CODE (state->cc);
@@ -3604,6 +3652,7 @@ arc_ccfsm_record_condition (rtx cond, int reverse, rtx jump,
       if (INSN_ANNULLED_BRANCH_P (jump)
 	  && (TARGET_AT_DBR_CONDEXEC || INSN_FROM_TARGET_P (insn)))
 	{
+	  state->cond = cond;
 	  state->cc = get_arc_condition_code (cond);
 	  if (!reverse)
 	    arc_ccfsm_current.cc
@@ -6214,6 +6263,13 @@ arc_reorg (void)
       init_insn_lengths();
       changed = 0;
 
+      if (optimize > 1 && !TARGET_NO_COND_EXEC)
+	{
+	  arc_ifcvt ();
+	  unsigned int flags = pass_arc_ifcvt.pass.todo_flags_finish;
+	  df_finish_pass ((flags & TODO_df_verify) != 0);
+	}
+
       /* Call shorten_branches to calculate the insn lengths.  */
       shorten_branches (get_insns());
       cfun->machine->ccfsm_current_insn = NULL_RTX;
@@ -6259,8 +6315,9 @@ arc_reorg (void)
  	  /* We need to check that it is a bcc.  */
  	  /* Bcc => set (pc) (if_then_else ) */
  	  pattern = PATTERN (insn);
- 	  if (GET_CODE (pattern) != SET ||
- 	      GET_CODE (SET_SRC(pattern)) != IF_THEN_ELSE)
+ 	  if (GET_CODE (pattern) != SET
+	      || GET_CODE (SET_SRC (pattern)) != IF_THEN_ELSE
+	      || ANY_RETURN_P (XEXP (SET_SRC (pattern), 1)))
  	    continue;
 
  	  /* Now check if the jump is beyond the s9 range.  */
@@ -8006,6 +8063,118 @@ arc_adjust_insn_length (rtx insn, int len, bool, int *iter_threshold)
 
   return len;
 }
+
+/* Return a copy of COND from *STATEP, inverted if that is indicated by the
+   CC field of *STATEP.  */
+
+static rtx
+arc_get_ccfsm_cond (struct arc_ccfsm *statep)
+{
+  rtx cond = statep->cond;
+  int raw_cc = get_arc_condition_code (cond);
+
+  if (statep->cc == raw_cc)
+    return copy_rtx (cond);
+    
+  gcc_assert (ARC_INVERSE_CONDITION_CODE (raw_cc) == statep->cc);
+
+  enum rtx_code code = reverse_condition (GET_CODE (cond));
+  if (code == UNKNOWN)
+    code = reverse_condition_maybe_unordered (GET_CODE (cond));
+
+  return gen_rtx_fmt_ee (code, GET_MODE (cond),
+			 copy_rtx (XEXP (cond, 0)), copy_rtx (XEXP (cond, 1)));
+}
+
+/* Use the ccfsm machinery to do if conversion.  */
+
+static unsigned
+arc_ifcvt (void)
+{
+  struct arc_ccfsm *statep = &cfun->machine->ccfsm_current;
+  basic_block merge_bb = 0;
+
+  memset (statep, 0, sizeof *statep);
+  for (rtx insn = get_insns (); insn; insn = NEXT_INSN (insn))
+    {
+      arc_ccfsm_advance (insn, statep);
+
+      switch (statep->state)
+	{
+	case 0:
+	  if (JUMP_P (insn))
+	    merge_bb = 0;
+	  break;
+	case 1: case 2:
+	  {
+	    /* Deleted branch.  */
+	    gcc_assert (!merge_bb);
+	    merge_bb = BLOCK_FOR_INSN (insn);
+	    basic_block succ_bb
+	      = BLOCK_FOR_INSN (NEXT_INSN (NEXT_INSN (PREV_INSN (insn))));
+	    arc_ccfsm_post_advance (insn, statep);
+	    if (merge_bb && succ_bb)
+	      {
+		set_insn_deleted (insn);
+		merge_blocks (merge_bb, succ_bb);
+	      }
+	    else
+	      {
+		PUT_CODE (insn, NOTE);
+		NOTE_KIND (insn) = NOTE_INSN_DELETED;
+	      }
+	    continue;
+	  }
+	case 3:
+	  if (LABEL_P (insn)
+	      && statep->target_label == CODE_LABEL_NUMBER (insn))
+	    {
+	      basic_block succ_bb = BLOCK_FOR_INSN (insn);
+	      if (merge_bb && succ_bb)
+		merge_blocks (merge_bb, succ_bb);
+	      merge_bb = 0;
+	    }
+	  /* Fall through.  */
+	case 4: case 5:
+	  /* Conditionalized insn.  */
+	  if (NONJUMP_INSN_P (insn) || CALL_P (insn))
+	    {
+	      /* ??? don't conditionalize if all side effects are dead
+		 in the not-execute case.  */
+	      rtx pat
+		= gen_rtx_COND_EXEC (VOIDmode, arc_get_ccfsm_cond (statep),
+				     PATTERN (insn));
+	      validate_change (insn, &PATTERN (insn), pat, 1);
+	    }
+	  else if (simplejump_p (insn))
+	    {
+	      rtx bdest = SET_SRC (PATTERN (insn));
+	      rtx src
+		= gen_rtx_IF_THEN_ELSE (VOIDmode, arc_get_ccfsm_cond (statep),
+					bdest, pc_rtx);
+	      validate_change (insn, &SET_SRC (PATTERN (insn)), src, 1);
+	    }
+	  else if (JUMP_P (insn) && ANY_RETURN_P (PATTERN (insn)))
+	    {
+	      rtx bdest = PATTERN (insn);
+	      rtx src
+		= gen_rtx_IF_THEN_ELSE (VOIDmode, arc_get_ccfsm_cond (statep),
+					bdest, pc_rtx);
+	      rtx pat = gen_rtx_SET (VOIDmode, pc_rtx, src);
+	      validate_change (insn, &PATTERN (insn), pat, 1);
+	    }
+	  else
+	    gcc_assert (!NONDEBUG_INSN_P (insn));
+	  gcc_assert (apply_change_group ());
+	  break;
+	default:
+	  gcc_unreachable ();
+	}
+      arc_ccfsm_post_advance (insn, statep);
+    }
+  return 0;
+}
+
 /* For ARC600: If a write to a core reg >=32 appears in a delay slot
   (other than of a forward brcc), it creates a hazard when there is a read
   of the same register at the branch target.  We can't know what is at the
