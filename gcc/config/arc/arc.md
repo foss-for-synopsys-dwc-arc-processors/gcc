@@ -3825,7 +3825,7 @@
    jl%! %S0"
   [(set_attr "type" "call,call,call,call,call,call,call,call_no_delay_slot")
    (set_attr "iscompact" "maybe,false,*,*,*,*,*,*")
-   (set_attr "predicable" "no,yes,yes,yes,no,yes,no,yes")
+   (set_attr "predicable" "no,no,yes,yes,no,yes,no,yes")
    (set_attr "length" "*,*,4,4,4,4,4,8")])
 
 (define_insn "call_prof"
@@ -3892,7 +3892,7 @@
    jl%! %S1"
   [(set_attr "type" "call,call,call,call,call,call,call,call_no_delay_slot")
    (set_attr "iscompact" "maybe,false,*,*,*,*,*,*")
-   (set_attr "predicable" "yes,yes,yes,yes,no,yes,no,yes")
+   (set_attr "predicable" "no,no,yes,yes,no,yes,no,yes")
    (set_attr "length" "*,*,4,4,4,4,4,8")])
 
 
@@ -4406,35 +4406,41 @@
 )
 
 (define_insn "*sibcall_insn"
- [(call (mem:SI (match_operand:SI 0 "call_address_operand" "Cbr,Rs5,Rsc,Cal"))
+ [(call (mem:SI (match_operand:SI 0 "call_address_operand"
+		 "Cbp,Cbr,Rs5,Rsc,Cal"))
 	(match_operand 1 "" ""))
   (return)
   (use (match_operand 2 "" ""))]
   ""
   "@
    b%!%* %P0
+   b%!%* %P0
    j%!%* [%0]%&
    j%!%* [%0]
    j%! %P0"
-  [(set_attr "type" "call,call,call,call_no_delay_slot")
-   (set_attr "iscompact" "false,maybe,false,false")
+  [(set_attr "type" "call,call,call,call,call_no_delay_slot")
+   (set_attr "predicable" "yes,no,no,yes,yes")
+   (set_attr "iscompact" "false,false,maybe,false,false")
    (set_attr "is_SIBCALL" "yes")]
 )
 
 (define_insn "*sibcall_value_insn"
  [(set (match_operand 0 "dest_reg_operand" "")
-       (call (mem:SI (match_operand:SI 1 "call_address_operand" "Cbr,Rs5,Rsc,Cal"))
+       (call (mem:SI (match_operand:SI 1 "call_address_operand"
+	      "Cbp,Cbr,Rs5,Rsc,Cal"))
 	     (match_operand 2 "" "")))
   (return)
   (use (match_operand 3 "" ""))]
   ""
   "@
    b%!%* %P1
+   b%!%* %P1
    j%!%* [%1]%&
    j%!%* [%1]
    j%! %P1"
-  [(set_attr "type" "call,call,call,call_no_delay_slot")
-   (set_attr "iscompact" "false,maybe,false,false")
+  [(set_attr "type" "call,call,call,call,call_no_delay_slot")
+   (set_attr "predicable" "yes,no,no,yes,yes")
+   (set_attr "iscompact" "false,false,maybe,false,false")
    (set_attr "is_SIBCALL" "yes")]
 )
 
@@ -4450,6 +4456,7 @@
    b%!%* %P0;2
    j%! %^%S0;2"
   [(set_attr "type" "call,call_no_delay_slot")
+   (set_attr "predicable" "yes")
    (set_attr "is_SIBCALL" "yes")]
 )
 
@@ -4466,6 +4473,7 @@
    b%!%* %P1;1
    j%! %^%S1;1"
   [(set_attr "type" "call,call_no_delay_slot")
+   (set_attr "predicable" "yes")
    (set_attr "is_SIBCALL" "yes")]
 )
 

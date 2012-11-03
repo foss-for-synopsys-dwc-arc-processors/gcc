@@ -1,3 +1,16 @@
+2012-10-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_ifcvt): Delete barrier and, if indicated,
+	the label after a conditionalized jump.
+	* config/arc/arc.md (call_i): Set altenative 0 predicable to no.
+	(call_value_i): Likewise.
+	(sibcall_insn): Add Cbp alternative and predicable attribute.
+	(sibcall_value_insn): Likewise.
+	(sibcall_prof, sibcall_value_prof): Add predicable attribute.
+
+	* reorg.c (fill_simple_delay_slots): Avoid calling optimize_skip
+	with a return instruction.
+
 2012-10-02  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (tree-pass.h"): Include.

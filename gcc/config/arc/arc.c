@@ -8129,43 +8129,62 @@ arc_ifcvt (void)
 	  if (LABEL_P (insn)
 	      && statep->target_label == CODE_LABEL_NUMBER (insn))
 	    {
+	      arc_ccfsm_post_advance (insn, statep);
 	      basic_block succ_bb = BLOCK_FOR_INSN (insn);
 	      if (merge_bb && succ_bb)
 		merge_blocks (merge_bb, succ_bb);
+	      else if (--LABEL_NUSES (insn) == 0)
+		{
+		  const char *name = LABEL_NAME (insn);
+		  PUT_CODE (insn, NOTE);
+		  NOTE_KIND (insn) = NOTE_INSN_DELETED_LABEL;
+		  NOTE_DELETED_LABEL_NAME (insn) = name;
+		}
 	      merge_bb = 0;
+	      continue;
 	    }
 	  /* Fall through.  */
 	case 4: case 5:
+	  rtx pat;
+
+	  pat = NULL_RTX;
 	  /* Conditionalized insn.  */
 	  if (NONJUMP_INSN_P (insn) || CALL_P (insn))
 	    {
 	      /* ??? don't conditionalize if all side effects are dead
 		 in the not-execute case.  */
-	      rtx pat
-		= gen_rtx_COND_EXEC (VOIDmode, arc_get_ccfsm_cond (statep),
-				     PATTERN (insn));
+	      pat = gen_rtx_COND_EXEC (VOIDmode, arc_get_ccfsm_cond (statep),
+				       PATTERN (insn));
 	      validate_change (insn, &PATTERN (insn), pat, 1);
 	    }
 	  else if (simplejump_p (insn))
 	    {
 	      rtx bdest = SET_SRC (PATTERN (insn));
-	      rtx src
+	      pat
 		= gen_rtx_IF_THEN_ELSE (VOIDmode, arc_get_ccfsm_cond (statep),
 					bdest, pc_rtx);
-	      validate_change (insn, &SET_SRC (PATTERN (insn)), src, 1);
+	      validate_change (insn, &SET_SRC (PATTERN (insn)), pat, 1);
 	    }
 	  else if (JUMP_P (insn) && ANY_RETURN_P (PATTERN (insn)))
 	    {
 	      rtx bdest = PATTERN (insn);
-	      rtx src
-		= gen_rtx_IF_THEN_ELSE (VOIDmode, arc_get_ccfsm_cond (statep),
-					bdest, pc_rtx);
-	      rtx pat = gen_rtx_SET (VOIDmode, pc_rtx, src);
+	      pat = gen_rtx_IF_THEN_ELSE (VOIDmode, arc_get_ccfsm_cond (statep),
+					  bdest, pc_rtx);
+	      pat = gen_rtx_SET (VOIDmode, pc_rtx, pat);
 	      validate_change (insn, &PATTERN (insn), pat, 1);
 	    }
 	  else
 	    gcc_assert (!NONDEBUG_INSN_P (insn));
 	  gcc_assert (apply_change_group ());
+	  if (pat)
+	    {
+	      rtx next = next_nonnote_insn (insn);
+	      if (GET_CODE (next) == BARRIER)
+		{
+		  delete_insn (next);
+		  next = next_nonnote_insn (insn);
+		}
+	    }
 	  break;
 	default:
 	  gcc_unreachable ();
