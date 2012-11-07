@@ -1,4 +1,4 @@
-2012-10-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+2012-11-03  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_ifcvt): Delete barrier and, if indicated,
 	the label after a conditionalized jump.
@@ -11,9 +11,9 @@
 	* reorg.c (fill_simple_delay_slots): Avoid calling optimize_skip
 	with a return instruction.
 
-2012-10-02  Joern Rennecke  <joern.rennecke@embecosm.com>
+2012-11-02  Joern Rennecke  <joern.rennecke@embecosm.com>
 
-	* config/arc/arc.c (tree-pass.h"): Include.
+	* config/arc/arc.c ("tree-pass.h"): Include.
 	(struct GTY (()) arc_ccfsm): Add cond member.
 	(ARC_CCFSM_COND_EXEC_P): Check current_insn_predicate.
 	(bool arc_preserve_reload_p): Add ATTRIBUTE_UNUSED note.
