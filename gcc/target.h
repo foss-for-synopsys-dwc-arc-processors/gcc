@@ -165,6 +165,28 @@ enum vect_cost_model_location {
   vect_epilogue = 2
 };
 
+typedef struct
+{
+  unsigned align_set;
+  /* Cost as a branch / call target or call return address.  */
+  int target_cost;
+  int fallthrough_cost;
+  int branch_cost;
+  int length;
+  /* 0 for not length sensitive, 1 for largest offset range,
+     2 for next smaller etc.  */
+  unsigned length_sensitive : 8;
+  bool enabled;
+} insn_length_variant_t;
+
+typedef struct insn_length_parameters_s
+{
+  int align_unit_log;
+  int align_base_log;
+  int max_variants;
+  int (*get_variants) (rtx, int, bool, bool, insn_length_variant_t *);
+} insn_length_parameters_t;
+
 /* The target structure.  This holds all the backend hooks.  */
 #define DEFHOOKPOD(NAME, DOC, TYPE, INIT) TYPE NAME;
 #define DEFHOOK(NAME, DOC, TYPE, PARAMS, INIT) TYPE (* NAME) PARAMS;

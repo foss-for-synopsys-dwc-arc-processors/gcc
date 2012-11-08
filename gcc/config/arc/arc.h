@@ -1657,9 +1657,20 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
 	 : reverse_condition ((CODE)))
 
 #define ADJUST_INSN_LENGTH(X, LENGTH) \
-({ int dummy; \
-   (LENGTH) = arc_adjust_insn_length ((X), (LENGTH), false, &dummy); \
-})
+  ((LENGTH) \
+   = (GET_CODE (PATTERN (X)) == SEQUENCE \
+      ? ((LENGTH) \
+	 + arc_adjust_insn_length (XVECEXP (PATTERN (X), 0, 0), \
+				   get_attr_length (XVECEXP (PATTERN (X), \
+						    0, 0)), \
+				   true) \
+	 - get_attr_length (XVECEXP (PATTERN (X), 0, 0)) \
+	 + arc_adjust_insn_length (XVECEXP (PATTERN (X), 0, 1), \
+				   get_attr_length (XVECEXP (PATTERN (X), \
+						    0, 1)), \
+				   true) \
+	 - get_attr_length (XVECEXP (PATTERN (X), 0, 1))) \
+      : arc_adjust_insn_length ((X), (LENGTH), false)))
 
 #define IS_ASM_LOGICAL_LINE_SEPARATOR(C,STR) ((C) == '`')
 

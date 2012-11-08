@@ -1544,12 +1544,10 @@ default_member_type_forces_blk (const_tree, enum machine_mode)
 
 int
 default_adjust_insn_length (rtx insn ATTRIBUTE_UNUSED, int length,
-			    bool in_delay_sequence, int *iter_threshold)
+			    bool in_delay_sequence ATTRIBUTE_UNUSED)
 {
-  if (in_delay_sequence)
-    *iter_threshold = INT_MAX;
 #ifdef ADJUST_INSN_LENGTH
-  else
+  if (!in_delay_sequence)
     ADJUST_INSN_LENGTH (insn, length);
 #endif
   return length;

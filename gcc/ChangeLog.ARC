@@ -1,3 +1,27 @@
+2012-11-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* doc/tm.texi.in (@hook TARGET_ADJUST_INSN_LENGTH): Add.
+	(@hook TARGET_INSN_LENGTH_PARAMETERS): Add.
+	* doc/tm.texi: Regenerate.
+	* final.c (get_attr_length_1): Assert HAVE_ATTR_length.
+	Use targetm.adjust_insn_length instead of ADJUST_INSN_LENGTH.
+	(shorten_branches_context_t): New typedef.
+	(adjust_length): New function.
+	(shorten_branches): Use adjust_length instead of ADJUST_INSN_LENGTH.
+	Try to satidfy alignment by using variable length instructions.
+	* target.def (adjust_insn_length, insn_length_parameters): New hooks.
+	* target.h (insn_length_variant_t, insn_length_parameters_t): New types.
+	* targhooks.c (default_adjust_insn_length): New function.
+	* targhooks.h (default_adjust_insn_length): Declare.
+
+	* config/arc/arc.c (arc_adjust_insn_length): Remove last parameter.
+	* config/arc/arc-protos.h (arc_adjust_insn_length): Adjust prototype.
+	* config/arc/arc.h (ADJUST_INSN_LENGTH): Update.
+
+2012-11-07  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (pass_arc_ifcvt): Set optinfo_flags field.
+
 2012-11-03  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_ifcvt): Delete barrier and, if indicated,
@@ -222,6 +246,11 @@
 	* genattrtab.c (write_length_unit_log): Always write a definition.
 	* recog.c: Use #if instead of #ifndef / #if defined for
 	HAVE_ATTR_enabled and HAVE_ATTR_length.
+
+2012-10-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_address_cost): Update parameter list.
+	(arc_mode_dependent_address_p): Likewise.
 
 2012-10-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 

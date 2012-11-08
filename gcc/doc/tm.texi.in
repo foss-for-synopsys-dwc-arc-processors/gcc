@@ -2698,8 +2698,6 @@ of the individual moves due to expected fortuitous scheduling and/or special
 forwarding logic, you can set @code{sri->extra_cost} to a negative amount.
 @end deftypefn
 
-@hook TARGET_PRESERVE_RELOAD_P
-
 @defmac SECONDARY_RELOAD_CLASS (@var{class}, @var{mode}, @var{x})
 @defmacx SECONDARY_INPUT_RELOAD_CLASS (@var{class}, @var{mode}, @var{x})
 @defmacx SECONDARY_OUTPUT_RELOAD_CLASS (@var{class}, @var{mode}, @var{x})
@@ -11209,3 +11207,5 @@ memory model bits are allowed.
 @hook TARGET_ATOMIC_TEST_AND_SET_TRUEVAL
 
 @hook TARGET_ADJUST_INSN_LENGTH
+
+@hook TARGET_INSN_LENGTH_PARAMETERS

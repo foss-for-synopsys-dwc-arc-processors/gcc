@@ -2864,11 +2864,16 @@ DEFHOOK
  "Return an adjusted length for @var{insn}.  @var{length} is the value that\
  has been calculated using the @code{length} instruction attribute. \
  @var{in_delay_sequence} if @var{insn} forms part of a delay sequence. \
- *@var{iteration_threshold} specifies the number of branch shortening\
- iterations before length decreases are inhibited.  The default\
+ The default\
  implementation uses @code{ADJUST_INSN_LENGTH}, if defined.",
- int, (rtx insn, int length, bool in_delay_sequence, int *iteration_threshold),
+ int, (rtx insn, int length, bool in_delay_sequence),
  default_adjust_insn_length)
+
+DEFHOOK
+(insn_length_parameters,
+ "Fixme: add documentation",
+ void, (insn_length_parameters_t *insn_length_parameters),
+ NULL)
 
 DEFHOOKPOD
 (atomic_test_and_set_trueval,

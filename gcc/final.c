@@ -82,6 +82,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "cfgloop.h"
 #include "params.h"
 #include "tree-pretty-print.h" /* for dump_function_header */
+#include "sbitmap.h"
 
 #ifdef XCOFF_DEBUGGING_INFO
 #include "xcoffout.h"		/* Needed for external data
@@ -377,8 +378,7 @@ get_attr_length_1 (rtx insn, int (*fallback_fn) (rtx))
   int i;
   int length = 0;
 
-  if (!HAVE_ATTR_length)
-    return 0;
+  gcc_assert (HAVE_ATTR_length);
 
   if (insn_lengths_max_uid > INSN_UID (insn))
     return insn_lengths[INSN_UID (insn)];
@@ -424,10 +424,7 @@ get_attr_length_1 (rtx insn, int (*fallback_fn) (rtx))
 	break;
       }
 
-#ifdef ADJUST_INSN_LENGTH
-  ADJUST_INSN_LENGTH (insn, length);
-#endif
-  return length;
+  return targetm.adjust_insn_length (insn, length, false);
 }
 
 /* Obtain the current length of an insn.  If branch shortening has been done,
@@ -828,6 +825,176 @@ struct rtl_opt_pass pass_compute_alignments =
 };
 
 
+/* Context to pass from shorten_branches to adjust_length.  */
+typedef struct {
+  /* For each varying length insn, a length to keep across iterations, to
+     avoid cycles.  */
+  int *uid_lock_length;
+  /* Number of iterations since last lock_length change.  */
+  int niter;
+  /* Values obtained from targetm.insn_length_parameters call.  */
+  insn_length_parameters_t parameters;
+  /* A scratch space to hold all the variants of the insn currently being
+     considered.  */
+  insn_length_variant_t *variants;
+  /* For each variant number, an sbitmap that says if that variant is still
+     being considered for this shuid.  */
+  sbitmap *shuid_variants;
+  /* indexed by shuid, alignment offset required at end of insn.  */
+  signed char *request_align;
+  /* Indexed by uid, indicates if and how an insn length varies - see
+     varying_length variable in shorten_branches.  */
+  char *varying_length;
+  /* uid of last insn that provides a choice of lengths.  */
+  int last_aligning_insn;
+  bool something_changed;
+} shorten_branches_context_t;
+
+/* NEW_LENGTH is the length for INSN that has been computed by evaluating
+   the raw instruction length attribute.  Return an adjusted length by
+   avaluating the adjust_insn_length target hook and the get_variants hook
+   in parameters.
+   If INSN is inside a SEQUENCE, then SEQ is that SEQUENCE.
+   TARGET_P indicates if INSN is the target of a call, branch, or call
+   return.  */
+
+static int
+adjust_length (rtx insn, int new_length, bool seq_p,
+	       shorten_branches_context_t *ctx, bool target_p)
+{
+  int uid = INSN_UID (insn);
+  new_length = targetm.adjust_insn_length (insn, new_length, seq_p);
+    /* If the sequence as a whole is subject to variant selection, don't
+       try it for the constituent instructions too; at best, it'd be a waste
+       of time; at worst, it leads to chaos when trying to align the sequence
+       by tweaking a constituent instruction.
+       Also, in general, if we have previously established that
+       variant selection doesn't apply, stick with that decision.  */
+  bool select_variant = (ctx->varying_length[uid] & 4);
+  int n_variants;
+
+  if (new_length < 0)
+    fatal_insn ("negative insn length", insn);
+  int iter_threshold = 0;
+  if (select_variant
+      && (n_variants
+	  = ctx->parameters.get_variants (insn, new_length, seq_p, target_p,
+					  ctx->variants)) != 0)
+    {
+      unsigned align_base = 1 << ctx->parameters.align_base_log;
+      unsigned align_base_mask = align_base - 1;
+      unsigned align_unit_mask = (1 << ctx->parameters.align_unit_log) - 1;
+      gcc_assert ((insn_current_address & align_unit_mask) == 0);
+      int best_cost = new_length = INT_MAX;
+      bool can_align = false;
+      int best_need_align = 0;
+      int shuid = uid_shuid[uid];
+
+      /* Freeze disabled variants, and find cheapest variant;
+	 with any align if we have last_aligning_insn, otherwise with
+	 actual align.
+	 See if we can provide alignment at no extra cost.  */
+      for (int i = 0; i < n_variants; i++)
+	{
+	  insn_length_variant_t *variant = &ctx->variants[i];
+	  if (!variant->enabled)
+	    bitmap_clear_bit (ctx->shuid_variants[i], shuid);
+	  if (bitmap_bit_p (ctx->shuid_variants[i], shuid))
+	    {
+	      int need_align;
+	      unsigned align_offset
+		= insn_current_address >> ctx->parameters.align_unit_log;
+	      align_offset &= align_base_mask;
+	      if (variant->align_set == align_base_mask)
+		need_align = -1;
+	      if ((1 << align_offset) & variant->align_set)
+		need_align = 0; /* OK.  */
+	      /* Checks if adding one unit provides alignment.
+		 FIXME: this works for the current ARC port,
+		 but we should more generally search for an offset
+		 such that a variable length insn can provide it.  */
+	      else if  ((1 << ((align_offset + 1) & (align_base_mask))
+			 & variant->align_set)
+			&& ctx->last_aligning_insn)
+		need_align = 1;
+	      else
+		continue;
+	      int length = variant->length + need_align;
+	      /* FIXME: Add probabilistic weighting and target cost.  */
+	      int cost = (variant->fallthrough_cost + variant->branch_cost);
+	      if (cost > best_cost)
+		continue;
+	      if (cost < best_cost)
+		{
+		  best_cost = cost;
+		  can_align = false;
+		  continue;
+		}
+	      /* FIXME: to cover the general case, we should really
+		 build a bitmap of the offsets that we can manage for
+		 alignment purposes.  */
+	      if (length != new_length)
+		can_align = true;
+	      if (length < new_length)
+		{
+		  new_length = length;
+		  best_need_align = need_align;
+		}
+	      else if (length == new_length
+		       && need_align < best_need_align)
+		best_need_align = need_align;
+	    }
+	}
+      gcc_assert (best_cost < INT_MAX);
+      if (best_need_align >= 0)
+	ctx->request_align[uid_shuid[ctx->last_aligning_insn]]
+	  = (((INSN_ADDRESSES  (ctx->last_aligning_insn)
+	       + insn_lengths[ctx->last_aligning_insn])
+	      >> ctx->parameters.align_unit_log)
+	     + (best_need_align > 0 ? best_need_align : 0));
+      if (can_align)
+	{
+	  if (ctx->request_align[shuid] >= 0)
+	    {
+	      unsigned offset = insn_current_address + new_length;
+	      offset >>= ctx->parameters.align_unit_log;
+	      offset = ctx->request_align[shuid] - offset;
+	      /* Fixme: might want apply smaller mask if alignment
+		 requirement has matching bitmask.  */
+	      offset &= align_base_mask;
+	      new_length += offset;
+	    }
+	  ctx->last_aligning_insn = uid;
+	  ctx->request_align[shuid] = -1;
+	}
+      /* Since we are freezing out variants that have been disabled once,
+	 cycles should generally not happen, so bump up iter_threshold.  */
+      iter_threshold = 7;
+    }
+  /* Stabilizing by length should generally happen for entire delay slot
+     sequences, so doing it inside should be a last resort.  */
+  if (seq_p)
+    iter_threshold = 9;
+  if (new_length != insn_lengths[uid])
+    {
+      if (new_length < ctx->uid_lock_length[uid])
+	new_length = ctx->uid_lock_length[uid];
+      if (new_length == insn_lengths[uid])
+	; /* done here.  */
+      else if (ctx->niter < iter_threshold
+	       || new_length > insn_lengths[uid])
+	{
+	  if (ctx->niter >= iter_threshold)
+	    ctx->uid_lock_length[uid] = new_length, ctx->niter = 0;
+	  insn_lengths[uid] = new_length;
+	  ctx->something_changed = true;
+	}
+      else
+	new_length = insn_lengths[uid];
+    }
+  return new_length;
+}
+
 /* Make a pass over all insns and compute their actual lengths by shortening
    any branches of variable length if possible.  */
 
@@ -849,7 +1016,10 @@ shorten_branches (rtx first)
   int max_skip;
 #define MAX_CODE_ALIGN 16
   rtx seq;
-  int something_changed = 1;
+  /* Indexed by uid, indicates if and how an insn length varies.
+     Bit 0: varying length instruction
+     Bit 1: aligned label
+     Bit 2: apply instruction variant selection.  */
   char *varying_length;
   rtx body;
   int uid;
@@ -899,7 +1069,14 @@ shorten_branches (rtx first)
 
       INSN_SHUID (insn) = i++;
       if (INSN_P (insn))
-	continue;
+	{
+	  if (GET_CODE (PATTERN (insn)) == SEQUENCE)
+	    {
+	      insn = XVECEXP (PATTERN (insn), 0, 0);
+	      INSN_SHUID (insn) = i++;
+	    }
+	  continue;
+	}
 
       if (LABEL_P (insn))
 	{
@@ -964,14 +1141,39 @@ shorten_branches (rtx first)
   if (!HAVE_ATTR_length)
     return;
 
+  int max_shuid = INSN_SHUID (get_last_insn ()) + 1;
+
+  shorten_branches_context_t ctx;
+  insn_length_parameters_t *parameters = &ctx.parameters;
+  memset (parameters, 0, sizeof *parameters);
+  ctx.variants = 0;
+  if (targetm.insn_length_parameters)
+    {
+      targetm.insn_length_parameters (parameters);
+      ctx.variants = XCNEWVEC (insn_length_variant_t, parameters->max_variants);
+    }
+  unsigned align_base = 1 << parameters->align_base_log;
+  ctx.shuid_variants
+    = sbitmap_vector_alloc (parameters->max_variants, max_shuid);
+  bitmap_vector_ones (ctx.shuid_variants, parameters->max_variants);
+
+  ctx.request_align = 0;
+  if (parameters->align_base_log)
+    {
+      ctx.request_align = XNEWVEC (signed char, max_shuid);
+      gcc_assert ((1 << parameters->align_base_log) - 1 <= SCHAR_MAX);
+      memset (ctx.request_align, -1, max_shuid);
+    }
+
   /* Allocate the rest of the arrays.  */
-  insn_lengths = XNEWVEC (int, max_uid);
+  insn_lengths = XCNEWVEC (int, max_uid);
+  ctx.uid_lock_length = XCNEWVEC (int, max_uid);
   insn_lengths_max_uid = max_uid;
   /* Syntax errors can lead to labels being outside of the main insn stream.
      Initialize insn_addresses, so that we get reproducible results.  */
   INSN_ADDRESSES_ALLOC (max_uid);
 
-  varying_length = XCNEWVEC (char, max_uid);
+  ctx.varying_length = varying_length = XCNEWVEC (char, max_uid);
 
   /* Initialize uid_align.  We scan instructions
      from end to start, and keep in align_tab[n] the last seen insn
@@ -1011,7 +1213,6 @@ shorten_branches (rtx first)
          label fields.  */
 
       int min_shuid = INSN_SHUID (get_insns ()) - 1;
-      int max_shuid = INSN_SHUID (get_last_insn ()) + 1;
       int rel;
 
       for (insn = first; insn != 0; insn = NEXT_INSN (insn))
@@ -1066,14 +1267,16 @@ shorten_branches (rtx first)
 
   /* Compute initial lengths, addresses, and varying flags for each insn.  */
   int (*length_fun) (rtx) = increasing ? insn_min_length : insn_default_length;
+  ctx.niter = increasing ? 0 : -1;
+  ctx.last_aligning_insn = 0;
+  gcc_assert (INSN_UID (get_insns ()) > ctx.last_aligning_insn);
 
+  bool target_p = true;
   for (insn_current_address = 0, insn = first;
        insn != 0;
        insn_current_address += insn_lengths[uid], insn = NEXT_INSN (insn))
     {
       uid = INSN_UID (insn);
-
-      insn_lengths[uid] = 0;
 
       if (LABEL_P (insn))
 	{
@@ -1084,15 +1287,18 @@ shorten_branches (rtx first)
 	      int new_address = (insn_current_address + align - 1) & -align;
 	      insn_lengths[uid] = new_address - insn_current_address;
 	    }
+	  target_p = true;
 	}
 
       INSN_ADDRESSES (uid) = insn_current_address + insn_lengths[uid];
 
       if (NOTE_P (insn) || BARRIER_P (insn)
-	  || LABEL_P (insn) || DEBUG_INSN_P(insn))
+	  || LABEL_P (insn) || DEBUG_INSN_P (insn))
 	continue;
       if (INSN_DELETED_P (insn))
 	continue;
+
+      int length = 0;
 
       body = PATTERN (insn);
       if (GET_CODE (body) == ADDR_VEC || GET_CODE (body) == ADDR_DIFF_VEC)
@@ -1101,13 +1307,15 @@ shorten_branches (rtx first)
 	     section.  */
 	  if (JUMP_TABLES_IN_TEXT_SECTION
 	      || readonly_data_section == text_section)
-	    insn_lengths[uid] = (XVECLEN (body,
-					  GET_CODE (body) == ADDR_DIFF_VEC)
-				 * GET_MODE_SIZE (GET_MODE (body)));
+	    length = (XVECLEN (body, GET_CODE (body) == ADDR_DIFF_VEC)
+		      * GET_MODE_SIZE (GET_MODE (body)));
 	  /* Alignment is handled by ADDR_VEC_ALIGN.  */
 	}
       else if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
-	insn_lengths[uid] = asm_insn_count (body) * insn_default_length (insn);
+	{
+	  length = asm_insn_count (body) * insn_default_length (insn);
+	  target_p = false;
+	}
       else if (GET_CODE (body) == SEQUENCE)
 	{
 	  int i;
@@ -1135,50 +1343,78 @@ shorten_branches (rtx first)
 	      else
 		inner_length = inner_length_fun (inner_insn);
 
-	      insn_lengths[inner_uid] = inner_length;
+	      inner_length = adjust_length (inner_insn, inner_length, true,
+					    &ctx, target_p);
 	      if (const_delay_slots)
 		{
-		  if ((varying_length[inner_uid]
-		       = insn_variable_length_p (inner_insn)) != 0)
-		    varying_length[uid] = 1;
+		  if (parameters->get_variants
+		      && parameters->get_variants (inner_insn, inner_length,
+						   true, target_p && i == 0,
+						   ctx.variants) > 1)
+		    varying_length[inner_uid] = 5;
+		  else
+		    varying_length[inner_uid]
+		      = insn_variable_length_p (inner_insn);
+		  varying_length[uid] |= (varying_length[inner_uid] & 1);
 		  INSN_ADDRESSES (inner_uid) = (insn_current_address
 						+ insn_lengths[uid]);
 		}
 	      else
 		varying_length[inner_uid] = 0;
-	      insn_lengths[uid] += inner_length;
+	      insn_lengths[inner_uid] = inner_length;
+	      length += inner_length;
 	    }
+	  if (parameters->get_variants
+	      && (parameters->get_variants (insn, length, false, target_p,
+					    ctx.variants)
+		  > 1))
+	    {
+	      varying_length[uid] = 5;
+	      for (i = 0; i < XVECLEN (body, 0); i++)
+		{
+		  rtx inner_insn = XVECEXP (body, 0, i);
+		  int inner_uid = INSN_UID (inner_insn);
+		  varying_length[inner_uid] &= ~4;
+		}
+	    }
+	  target_p = false;
 	}
       else if (GET_CODE (body) != USE && GET_CODE (body) != CLOBBER)
 	{
-	  insn_lengths[uid] = length_fun (insn);
-	  varying_length[uid] = insn_variable_length_p (insn);
+	  length = length_fun (insn);
+	  varying_length[uid]
+	    = (insn_variable_length_p (insn)
+	       || (parameters->get_variants
+		   && parameters->get_variants (insn, length, false, target_p,
+						ctx.variants) > 1));
+	  target_p = false;
 	}
-
+	
       /* If needed, do any adjustment.  */
-#ifdef ADJUST_INSN_LENGTH
-      ADJUST_INSN_LENGTH (insn, insn_lengths[uid]);
-      if (insn_lengths[uid] < 0)
-	fatal_insn ("negative insn length", insn);
-#endif
+      insn_lengths[uid] = adjust_length (insn, length, false, &ctx, target_p);
+      target_p
+	= (CALL_P (body)
+	   || (GET_CODE (body) == SEQUENCE && CALL_P (XVECEXP (body, 0, 0))));
     }
 
   /* Now loop over all the insns finding varying length insns.  For each,
      get the current insn length.  If it has changed, reflect the change.
      When nothing changes for a full pass, we are done.  */
 
-  while (something_changed)
+  ctx.something_changed = true;
+  while (ctx.something_changed)
     {
-      something_changed = 0;
+      if (increasing)
+	ctx.niter++;
+
+      ctx.something_changed = false;
+      ctx.last_aligning_insn = 0;
       insn_current_align = MAX_CODE_ALIGN - 1;
       for (insn_current_address = 0, insn = first;
 	   insn != 0;
 	   insn = NEXT_INSN (insn))
 	{
 	  int new_length;
-#ifdef ADJUST_INSN_LENGTH
-	  int tmp_length;
-#endif
 	  int length_align;
 
 	  uid = INSN_UID (insn);
@@ -1197,6 +1433,16 @@ shorten_branches (rtx first)
 	      else
 		insn_lengths[uid] = 0;
 	      INSN_ADDRESSES (uid) = insn_current_address;
+	      if (log > parameters->align_base_log && ctx.last_aligning_insn)
+		{
+		  unsigned offset = insn_lengths[uid];
+		  offset -= INSN_ADDRESSES (ctx.last_aligning_insn);
+		  offset -= insn_lengths[ctx.last_aligning_insn];
+		  offset >>= parameters->align_unit_log;
+		  offset &= align_base - 1;
+		  ctx.request_align[uid_shuid[ctx.last_aligning_insn]] = offset;
+		  ctx.last_aligning_insn = 0;
+		}
 	      continue;
 	    }
 
@@ -1228,6 +1474,8 @@ shorten_branches (rtx first)
 	      flags = ADDR_DIFF_VEC_FLAGS (body);
 
 	      /* Try to find a known alignment for rel_lab.  */
+	      /* FIXME: We seem to have lost the code that sets
+		 varying_length & 2 for labels without max_skip.  */
 	      for (prev = rel_lab;
 		   prev
 		   && ! insn_lengths[INSN_UID (prev)]
@@ -1314,7 +1562,7 @@ shorten_branches (rtx first)
 		    = (XVECLEN (body, 1) * GET_MODE_SIZE (GET_MODE (body)));
 		  insn_current_address += insn_lengths[uid];
 		  if (insn_lengths[uid] != old_length)
-		    something_changed = 1;
+		    ctx.something_changed = true;
 		}
 
 	      continue;
@@ -1340,7 +1588,11 @@ shorten_branches (rtx first)
 		    }
 		}
 	      else
-		insn_current_address += insn_lengths[uid];
+		{
+		  insn_current_address += insn_lengths[uid];
+		  if (BARRIER_P (insn))
+		    ctx.last_aligning_insn = 0;
+		}
 
 	      continue;
 	    }
@@ -1364,17 +1616,11 @@ shorten_branches (rtx first)
 		  if (! varying_length[inner_uid])
 		    inner_length = insn_lengths[inner_uid];
 		  else
-		    inner_length = insn_current_length (inner_insn);
-
-		  if (inner_length != insn_lengths[inner_uid])
 		    {
-		      if (!increasing || inner_length > insn_lengths[inner_uid])
-			{
-			  insn_lengths[inner_uid] = inner_length;
-			  something_changed = 1;
-			}
-		      else
-			inner_length = insn_lengths[inner_uid];
+		      inner_length = insn_current_length (inner_insn);
+
+		      inner_length = adjust_length (inner_insn, inner_length,
+						    true, &ctx, target_p);
 		    }
 		  insn_current_address += inner_length;
 		  new_length += inner_length;
@@ -1386,27 +1632,21 @@ shorten_branches (rtx first)
 	      insn_current_address += new_length;
 	    }
 
-#ifdef ADJUST_INSN_LENGTH
 	  /* If needed, do any adjustment.  */
-	  tmp_length = new_length;
-	  ADJUST_INSN_LENGTH (insn, new_length);
+	  int tmp_length = new_length;
+	  new_length = adjust_length (insn, new_length, false, &ctx, target_p);
 	  insn_current_address += (new_length - tmp_length);
-#endif
-
-	  if (new_length != insn_lengths[uid]
-	      && (!increasing || new_length > insn_lengths[uid]))
-	    {
-	      insn_lengths[uid] = new_length;
-	      something_changed = 1;
-	    }
-	  else
-	    insn_current_address += insn_lengths[uid] - new_length;
 	}
       /* For a non-optimizing compile, do only a single pass.  */
       if (!increasing)
 	break;
     }
 
+  if (ctx.variants)
+    free (ctx.variants);
+  if (ctx.request_align)
+    free (ctx.request_align);
+  sbitmap_vector_free (ctx.shuid_variants);
   free (varying_length);
 }
 

@@ -7981,16 +7981,13 @@ arc_hazard (rtx pred, rtx succ)
 
 /* Return length adjustment for INSN.  */
 int
-arc_adjust_insn_length (rtx insn, int len, bool, int *iter_threshold)
+arc_adjust_insn_length (rtx insn, int len, bool)
 {
   if (!INSN_P (insn))
     return len;
   /* We already handle sequences by ignoring the delay sequence flag.  */
   if (GET_CODE (PATTERN (insn)) == SEQUENCE)
     return len;
-
-  *iter_threshold
-      = (recog_memoized (insn) >= 0 && get_attr_length_lock (insn) ? 0 : 4);
 
   if (recog_memoized (insn) == CODE_FOR_doloop_end_i)
     {
