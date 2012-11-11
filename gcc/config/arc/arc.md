@@ -169,7 +169,7 @@
    simd_valign, simd_valign_with_acc, simd_vcontrol,
    simd_vspecial_3cycle, simd_vspecial_4cycle, simd_dma"
   (cond [(eq_attr "is_sfunc" "yes")
-	 (cond [(match_test "!TARGET_LONG_CALLS_SET") (const_string "call")
+	 (cond [(match_test "!TARGET_LONG_CALLS_SET && (!TARGET_MEDIUM_CALLS || GET_CODE (PATTERN (insn)) != COND_EXEC)") (const_string "call")
 		(match_test "flag_pic") (const_string "sfunc")]
 	       (const_string "call_no_delay_slot"))]
 	(const_string "binary")))
@@ -334,15 +334,6 @@
 
 (define_attr "length_lock" "no,yes" (const_string "no"))
 
-;; The length variations of ARCompact can't be expressed with the traditional
-;; mechanisms in a way that avoids infinite looping in shorten_branches.
-;; Given a set of potentially short insns, we could express the effect of
-;; arc_verify_short returing zero as an alignment of the current or the
-;; following insn, depending on alignment.
-;; However, which branch / jump insns are potentially short in turn depends
-;; on instruction length.
-(define_attr "lock_length" "" (const_int 0))
-
 ;; Length (in # of bytes, long immediate constants counted too).
 ;; ??? There's a nasty interaction between the conditional execution fsm
 ;; and insn lengths: insns with shimm values cannot be conditionally executed.
@@ -367,9 +358,9 @@
        (eq_attr "verify_short" "yes")
        (const_int 6)]
       (const_int 8))
-]
 
-          (cond [(eq_attr "type" "load")
+
+    (eq_attr "type" "load")
                  (if_then_else
                     (match_operand 1 "long_immediate_loadstore_operand" "")
                     (const_int 8) (const_int 4))
@@ -416,7 +407,7 @@
                 ]
 
                 (const_int 4))
-))
+)
 
 ;; The length here is the length of a single asm.  Unfortunately it might be
 ;; 4 or 8 so we must allow for 8.  That's ok though.  How often will users
@@ -4615,35 +4606,6 @@
    ; the target, but also the difference between pcl and pc, the instruction
    ; length, and any delay insn, if present.
    (set
-     (attr "lock_length")
-     (cond ; the outer cond does a test independent of branch shortening.
-       [(match_operand 0 "brcc_nolimm_operator" "")
-	(cond
-	  [(and (match_operand:CC_Z 4 "cc_register")
-		(eq_attr "delay_slot_filled" "no")
-		(ge (minus (match_dup 3) (pc)) (const_int -128))
-		(le (minus (match_dup 3) (pc))
-		    (minus (const_int 122)
-			   (symbol_ref "get_attr_delay_slot_length (insn)")))
-		(eq_attr "verify_short" "yes"))
-	   (const_int 2)
-	   (and (ge (minus (match_dup 3) (pc)) (const_int -256))
-		(le (minus (match_dup 3) (pc))
-		    (minus (const_int 244)
-			   (symbol_ref "get_attr_delay_slot_length (insn)"))))
-	   (const_int 4)
-	   (and (match_operand:SI 1 "compact_register_operand" "")
-	        (eq_attr "verify_short" "yes"))
-	   (const_int 6)]
-	  (const_int 8))]
-	 (cond [(and (ge (minus (match_dup 3) (pc)) (const_int -256))
-		     (le (minus (match_dup 3) (pc)) (const_int 244)))
-		(const_int 8)
-		(and (match_operand:SI 1 "compact_register_operand" "")
-		     (eq_attr "verify_short" "yes"))
-		(const_int 10)]
-	       (const_int 12))))
-   (set
      (attr "length")
      (cond ; the outer cond does a test independent of branch shortening.
        [(match_operand 0 "brcc_nolimm_operator" "")
@@ -4701,16 +4663,6 @@
 }
   [(set_attr "type" "brcc")
    (set_attr "cond" "clob")
-   (set (attr "lock_length")
-	(cond [(and (ge (minus (match_dup 0) (pc)) (const_int -254))
-		    (le (minus (match_dup 0) (pc))
-		    (minus (const_int 248)
-			   (symbol_ref "get_attr_delay_slot_length (insn)"))))
-	       (const_int 4)
-	       (and (eq (symbol_ref "which_alternative") (const_int 0))
-		    (eq_attr "verify_short" "yes"))
-	       (const_int 6)]
-	      (const_int 8)))
    (set (attr "length")
 	(cond [(and (ge (minus (match_dup 0) (pc)) (const_int -254))
 		    (le (minus (match_dup 0) (pc))

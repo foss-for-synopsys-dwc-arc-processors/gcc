@@ -1,3 +1,27 @@
+2012-11-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* final.c (adjust_length): Zero variants array before passing
+	to hook callback function.  Fix details in alignment logic.
+	* genattrtab.c (make_length_attrs): Generate an insn_current_length
+	function that is also valid for prima facie invariant length
+	instructions.
+
+	* config/arc/arc.c (TARGET_INSN_LENGTH_PARAMETERS): Define.
+	(ARC_LS_NONE, ARC_LS_25, ARC_LS_21, ARC_LS_U13): New enum values.
+	(ARC_LS_10, ARC_LS_9, ARC_LS_8, ARC_LS_U7, ARC_LS_7): Likewise.
+	(arc_get_insn_variants, arc_insn_length_parameters): New functions.
+
+	* config/arc/arc.c (arc_verify_short): Verify that bitnumber is
+	constant for 6-byte out-of-range brcc sequence.
+
+	* config/arc/arc.md (attribute type): sfuncs are not type "call"
+	when conditionalized and TARGET_MEDIUM_CALL is active.
+	(attribute lock_length): Remove.
+	(attribute length): Simplify cond structure.
+
+	* config/arc/arc.h (INSN_LENGTH_ALIGNMENT): Define.
+	(arc_label_align): Labels in front of code need minimal alignemnt of 2.
+
 2012-11-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* doc/tm.texi.in (@hook TARGET_ADJUST_INSN_LENGTH): Add.

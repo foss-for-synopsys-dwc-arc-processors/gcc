@@ -876,6 +876,8 @@ adjust_length (rtx insn, int new_length, bool seq_p,
   if (new_length < 0)
     fatal_insn ("negative insn length", insn);
   int iter_threshold = 0;
+  memset (ctx->variants, 0,
+	  sizeof *ctx->variants * ctx->parameters.max_variants);
   if (select_variant
       && (n_variants
 	  = ctx->parameters.get_variants (insn, new_length, seq_p, target_p,
@@ -887,7 +889,7 @@ adjust_length (rtx insn, int new_length, bool seq_p,
       gcc_assert ((insn_current_address & align_unit_mask) == 0);
       int best_cost = new_length = INT_MAX;
       bool can_align = false;
-      int best_need_align = 0;
+      int best_need_align = -1;
       int shuid = uid_shuid[uid];
 
       /* Freeze disabled variants, and find cheapest variant;
@@ -907,7 +909,7 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	      align_offset &= align_base_mask;
 	      if (variant->align_set == align_base_mask)
 		need_align = -1;
-	      if ((1 << align_offset) & variant->align_set)
+	      else if ((1 << align_offset) & variant->align_set)
 		need_align = 0; /* OK.  */
 	      /* Checks if adding one unit provides alignment.
 		 FIXME: this works for the current ARC port,
@@ -919,7 +921,9 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 		need_align = 1;
 	      else
 		continue;
-	      int length = variant->length + need_align;
+	      int length = variant->length;
+	      if (need_align >= 0)
+		length += need_align << ctx->parameters.align_unit_log;
 	      /* FIXME: Add probabilistic weighting and target cost.  */
 	      int cost = (variant->fallthrough_cost + variant->branch_cost);
 	      if (cost > best_cost)
@@ -927,13 +931,15 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	      if (cost < best_cost)
 		{
 		  best_cost = cost;
+		  new_length = length;
 		  can_align = false;
 		  continue;
 		}
 	      /* FIXME: to cover the general case, we should really
 		 build a bitmap of the offsets that we can manage for
 		 alignment purposes.  */
-	      if (length != new_length)
+	      if ((length - new_length)
+		  & (align_base_mask << ctx->parameters.align_unit_log))
 		can_align = true;
 	      if (length < new_length)
 		{
@@ -946,7 +952,7 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	    }
 	}
       gcc_assert (best_cost < INT_MAX);
-      if (best_need_align >= 0)
+      if (best_need_align >= 0 && ctx->last_aligning_insn)
 	ctx->request_align[uid_shuid[ctx->last_aligning_insn]]
 	  = (((INSN_ADDRESSES  (ctx->last_aligning_insn)
 	       + insn_lengths[ctx->last_aligning_insn])
@@ -962,6 +968,7 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	      /* Fixme: might want apply smaller mask if alignment
 		 requirement has matching bitmask.  */
 	      offset &= align_base_mask;
+	      offset <<= ctx->parameters.align_unit_log;
 	      new_length += offset;
 	    }
 	  ctx->last_aligning_insn = uid;

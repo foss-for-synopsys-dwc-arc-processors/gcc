@@ -1551,7 +1551,7 @@ make_length_attrs (void)
       "*insn_current_length"
     };
   static rtx (*const no_address_fn[]) (rtx)
-    = {identity_fn,identity_fn, zero_fn, zero_fn};
+    = {identity_fn,identity_fn, zero_fn, identity_fn};
   static rtx (*const address_fn[]) (rtx)
     = {max_fn, min_fn, one_fn, identity_fn};
   size_t i;

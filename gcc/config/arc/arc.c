@@ -546,6 +546,8 @@ static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 
 #define TARGET_ADJUST_INSN_LENGTH arc_adjust_insn_length
 
+#define TARGET_INSN_LENGTH_PARAMETERS arc_insn_length_parameters
+
 #include "target-def.h"
 
 #undef TARGET_ASM_ALIGNED_HI_OP
@@ -3858,7 +3860,8 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
 	  rtx op = XEXP (SET_SRC (XVECEXP (PATTERN (insn), 0, 0)), 0);
 	  rtx op0 = XEXP (op, 0);
 
-	  if (GET_CODE (op0) == ZERO_EXTRACT)
+	  if (GET_CODE (op0) == ZERO_EXTRACT
+	      && satisfies_constraint_L (XEXP (op0, 2)))
 	    op0 = XEXP (op0, 0);
 	  if (satisfies_constraint_Rcq (op0))
 	    {
@@ -3874,7 +3877,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
 		 decision to processing of the delay insn.  Without this test
 		 here, we'd reason that a short jump with a short delay insn
 		 should be lengthened to avoid a stall if it's aligned - that
-		 is not just suboptimal, but can leads to infinitel loops as
+		 is not just suboptimal, but can leads to infinite loops as
 		 the delay insn is assumed to be long the next time, since we
 		 don't have independent delay slot size information.  */
 	      else if ((get_attr_delay_slot_filled (insn)
@@ -3889,7 +3892,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
 	}
     }
 
-  /* If INSN is at the an unaligned return address of a preceding call,
+  /* If INSN is at the unaligned return address of a preceding call,
      make INSN short.  */
   if (TARGET_ALIGN_CALL
       && unalign
@@ -4065,7 +4068,8 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
 	      rtx op = XEXP (SET_SRC (XVECEXP (PATTERN (scan), 0, 0)), 0);
 	      rtx op0 = XEXP (op, 0);
 
-	      if (GET_CODE (op0) == ZERO_EXTRACT)
+	      if (GET_CODE (op0) == ZERO_EXTRACT
+		  && satisfies_constraint_L (XEXP (op0, 2)))
 		op0 = XEXP (op0, 0);
 	      if (satisfies_constraint_Rcq (op0))
 		break;
@@ -7989,6 +7993,11 @@ arc_adjust_insn_length (rtx insn, int len, bool)
   if (GET_CODE (PATTERN (insn)) == SEQUENCE)
     return len;
 
+  /* It is impossible to jump to the very end of a Zero-Overhead Loop, as
+     the ZOL mechanism only triggers when advancing to the end address,
+     so if there's a label at the end of a ZOL, we need to insert a nop.
+     The ARC600 ZOL also has extra restrictions on jumps at the end of a
+     loop.  */
   if (recog_memoized (insn) == CODE_FOR_doloop_end_i)
     {
       rtx prev = prev_nonnote_insn (insn);
@@ -8016,6 +8025,8 @@ arc_adjust_insn_length (rtx insn, int len, bool)
 	      : CALL_ATTR (prev, NON_SIBCALL)))
 	return len + 4;
     }
+  /* ccfsm actions can delete jumps, while on the other hand it can cause
+     would-be short instructions to be become long.  */
   /* Rtl changes too much before arc_reorg to keep ccfsm state.
      But we are not required to give exact answers then.  */
   if (cfun->machine->arc_reorg_started
@@ -8050,6 +8061,8 @@ arc_adjust_insn_length (rtx insn, int len, bool)
     {
       rtx succ = next_real_insn (insn);
 
+      /* One the ARC600, a write to an extension register must be separated
+	 from a read.  */
       if (succ && INSN_P (succ))
 	len += arc600_corereg_hazard (insn, succ);
     }
@@ -8059,6 +8072,259 @@ arc_adjust_insn_length (rtx insn, int len, bool)
   extract_constrain_insn_cached (insn);
 
   return len;
+}
+
+/* Values for length_sensitive.  */
+enum
+{
+  ARC_LS_NONE,// Jcc
+  ARC_LS_25, // 25 bit offset, B
+  ARC_LS_21, // 21 bit offset, Bcc
+  ARC_LS_U13,// 13 bit unsigned offset, LP
+  ARC_LS_10, // 10 bit offset, B_s, Beq_s, Bne_s
+  ARC_LS_9,  //  9 bit offset, BRcc
+  ARC_LS_8,  //  8 bit offset, BRcc_s
+  ARC_LS_U7, //  7 bit unsigned offset, LPcc
+  ARC_LS_7   //  7 bit offset, Bcc_s
+};
+
+static int
+arc_get_insn_variants (rtx insn, int len, bool, bool target_p,
+		       insn_length_variant_t *ilv)
+{
+  if (!NONDEBUG_INSN_P (insn))
+    return 0;
+  enum attr_type type;
+  if (GET_CODE (PATTERN (insn)) == SEQUENCE)
+    {
+      /* The interaction of a short delay slot insn with a short branch is
+	 too weird for shorten_branches to piece together, so describe the
+	 entire SEQUENCE.  */
+      rtx pat, inner;
+      if (TARGET_UPSIZE_DBR
+	  && get_attr_length (XVECEXP ((pat = PATTERN (insn)), 0, 1)) <= 2
+	  && (((type = get_attr_type (inner = XVECEXP (pat, 0, 0)))
+	       == TYPE_UNCOND_BRANCH)
+	      || type == TYPE_BRANCH))
+	{
+	  int n_variants
+	    = arc_get_insn_variants (inner, get_attr_length (inner), true,
+				     target_p, ilv+1);
+	  gcc_assert (n_variants);
+	  gcc_assert (ilv[1].length_sensitive == ARC_LS_7
+		      || ilv[1].length_sensitive == ARC_LS_10);
+	  gcc_assert (ilv[1].align_set == 3);
+	  ilv[0] = ilv[1];
+	  ilv[0].align_set = 1;
+	  ilv[0].branch_cost += 1;
+	  ilv[1].align_set = 2;
+	  n_variants++;
+	  for (int i = 0; i < n_variants; i++)
+	    ilv[i].length += 2;
+	  return n_variants;
+	}
+      return 0;
+    }
+  insn_length_variant_t *first_ilv = ilv;
+  type = get_attr_type (insn);
+  bool delay_filled
+    = (get_attr_delay_slot_filled (insn) == DELAY_SLOT_FILLED_YES);
+  int branch_align_cost = delay_filled ? 0 : 1;
+  int branch_unalign_cost = delay_filled ? 0 : TARGET_UNALIGN_BRANCH ? 0 : 1;
+  /* If the previous instruction is an sfunc call, this insn is always
+     a target, even though the middle-end is unaware of this.  */
+  bool force_target = false;
+  rtx prev = prev_active_insn (insn);
+  if (prev && arc_next_active_insn (prev, 0) == insn
+      && ((NONJUMP_INSN_P (prev) && GET_CODE (PATTERN (prev)) == SEQUENCE)
+	  ? CALL_ATTR (XVECEXP (PATTERN (prev), 0, 0), NON_SIBCALL)
+	  : (CALL_ATTR (prev, NON_SIBCALL)
+	     && NEXT_INSN (PREV_INSN (prev)) == prev)))
+    force_target = true;
+
+  switch (type)
+    {
+    case TYPE_BRCC:
+      /* Short BRCC only comes in no-delay-slot version, and without limm  */
+      if (!delay_filled)
+	{
+	  ilv->align_set = 3;
+	  ilv->length = 2;
+	  ilv->branch_cost = 1;
+	  ilv->enabled = (len == 2);
+	  ilv->length_sensitive = ARC_LS_8;
+	  ilv++;
+	}
+      /* Fall through.  */
+    case TYPE_BRCC_NO_DELAY_SLOT:
+      /* Standard BRCC: 4 bytes, or 8 bytes with limm.  */
+      ilv->length = ((type == TYPE_BRCC) ? 4 : 8);
+      ilv->align_set = 3;
+      ilv->branch_cost = branch_align_cost;
+      ilv->enabled = (len <= ilv->length);
+      ilv->length_sensitive = ARC_LS_9;
+      if ((target_p || force_target)
+	  || (!delay_filled && TARGET_UNALIGN_BRANCH))
+	{
+	  ilv[1] = *ilv;
+	  ilv->align_set = 1;
+	  ilv++;
+	  ilv->align_set = 2;
+	  ilv->target_cost = 1;
+	  ilv->branch_cost = branch_unalign_cost;
+	}
+      ilv++;
+
+      rtx op, op0;
+      op = XEXP (SET_SRC (XVECEXP (PATTERN (insn), 0, 0)), 0);
+      op0 = XEXP (op, 0);
+
+      if (GET_CODE (op0) == ZERO_EXTRACT
+	  && satisfies_constraint_L (XEXP (op0, 2)))
+	op0 = XEXP (op0, 0);
+      if (satisfies_constraint_Rcq (op0))
+	{
+	  ilv->length = ((type == TYPE_BRCC) ? 6 : 10);
+	  ilv->align_set = 3;
+	  ilv->branch_cost = 1 + branch_align_cost;
+	  ilv->fallthrough_cost = 1;
+	  ilv->enabled = true;
+	  ilv->length_sensitive = ARC_LS_21;
+	  if (!delay_filled && TARGET_UNALIGN_BRANCH)
+	    {
+	      ilv[1] = *ilv;
+	      ilv->align_set = 1;
+	      ilv++;
+	      ilv->align_set = 2;
+	      ilv->branch_cost = 1 + branch_unalign_cost;
+	    }
+	  ilv++;
+	}
+      ilv->length = ((type == TYPE_BRCC) ? 8 : 12);
+      ilv->align_set = 3;
+      ilv->branch_cost = 1 + branch_align_cost;
+      ilv->fallthrough_cost = 1;
+      ilv->enabled = true;
+      ilv->length_sensitive = ARC_LS_21;
+      if ((target_p || force_target)
+	  || (!delay_filled && TARGET_UNALIGN_BRANCH))
+	{
+	  ilv[1] = *ilv;
+	  ilv->align_set = 1;
+	  ilv++;
+	  ilv->align_set = 2;
+	  ilv->target_cost = 1;
+	  ilv->branch_cost = 1 + branch_unalign_cost;
+	}
+      ilv++;
+      break;
+
+    case TYPE_SFUNC:
+      ilv->length = 12;
+      goto do_call;
+    case TYPE_CALL_NO_DELAY_SLOT:
+      ilv->length = 8;
+      goto do_call;
+    case TYPE_CALL:
+      ilv->length = 4;
+      ilv->length_sensitive
+	= GET_CODE (PATTERN (insn)) == COND_EXEC ? ARC_LS_21 : ARC_LS_25;
+    do_call:
+      ilv->align_set = 3;
+      ilv->fallthrough_cost = branch_align_cost;
+      ilv->enabled = true;
+      if ((target_p || force_target)
+	  || (!delay_filled && TARGET_UNALIGN_BRANCH))
+	{
+	  ilv[1] = *ilv;
+	  ilv->align_set = 1;
+	  ilv++;
+	  ilv->align_set = 2;
+	  ilv->target_cost = 1;
+	  ilv->fallthrough_cost = branch_unalign_cost;
+	}
+      ilv++;
+      break;
+    case TYPE_UNCOND_BRANCH:
+      /* Strictly speaking, this should be ARC_LS_10 for equality comparisons,
+	 but that makes no difference at the moment.  */
+      ilv->length_sensitive = ARC_LS_7;
+      ilv[1].length_sensitive = ARC_LS_25;
+      goto do_branch;
+    case TYPE_BRANCH:
+      ilv->length_sensitive = ARC_LS_10;
+      ilv[1].length_sensitive = ARC_LS_21;
+    do_branch:
+      ilv->align_set = 3;
+      ilv->length = 2;
+      ilv->branch_cost = branch_align_cost;
+      ilv->enabled = (len == ilv->length);
+      ilv++;
+      ilv->length = 4;
+      ilv->align_set = 3;
+      ilv->branch_cost = branch_align_cost;
+      ilv->enabled = true;
+      if ((target_p || force_target)
+	  || (!delay_filled && TARGET_UNALIGN_BRANCH))
+	{
+	  ilv[1] = *ilv;
+	  ilv->align_set = 1;
+	  ilv++;
+	  ilv->align_set = 2;
+	  ilv->target_cost = 1;
+	  ilv->branch_cost = branch_unalign_cost;
+	  ilv->target_cost = 1;
+	}
+      ilv++;
+      break;
+    case TYPE_JUMP:
+      return 0;
+    default:
+      /* For every short insn, there is generally also a long insn.
+	 trap_s is an exception.  */
+      if ((len & 2) == 0 || recog_memoized (insn) == CODE_FOR_trap_s)
+	return 0;
+      ilv->align_set = 3;
+      ilv->length = len;
+      ilv->enabled = 1;
+      ilv++;
+      ilv->align_set = 3;
+      ilv->length = len + 2;
+      ilv->enabled = 1;
+      if (target_p || force_target)
+	{
+	  ilv[1] = *ilv;
+	  ilv->align_set = 1;
+	  ilv++;
+	  ilv->align_set = 2;
+	  ilv->target_cost = 1;
+	}
+      ilv++;
+    }
+  /* If the previous instruction is an sfunc call, this insn is always
+     a target, even though the middle-end is unaware of this.
+     Therefore, if we have a call predecessor, transfer the target cost
+     to the fallthrough and branch costs.  */
+  if (force_target)
+    {
+      for (insn_length_variant_t *p = first_ilv; p < ilv; p++)
+	{
+	  p->fallthrough_cost += p->target_cost;
+	  p->branch_cost += p->target_cost;
+	  p->target_cost = 0;
+	}
+    }
+
+  return ilv - first_ilv;
+}
+
+static void
+arc_insn_length_parameters (insn_length_parameters_t *ilp)
+{
+  ilp->align_unit_log = 1;
+  ilp->align_base_log = 1;
+  ilp->max_variants = 7;
+  ilp->get_variants = arc_get_insn_variants;
 }
 
 /* Return a copy of COND from *STATEP, inverted if that is indicated by the
@@ -8860,6 +9126,14 @@ arc_label_align (rtx label)
 	  && GET_CODE (PATTERN (prev)) == PARALLEL
 	  && recog_memoized (prev) == CODE_FOR_doloop_begin_i)
 	return loop_align;
+    }
+  /* Code has a minimum p2 alignment of 1, which we must restore after an
+     ADDR_DIFF_VEC.  */
+  if (align_labels_log < 1)
+    {
+      rtx next = next_nonnote_nondebug_insn (label);
+      if (recog_memoized (next) >= 0)
+	return 1;
     }
   return align_labels_log;
 }
