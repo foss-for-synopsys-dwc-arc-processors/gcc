@@ -1,5 +1,10 @@
 2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* arc.md (entire file): Whitespace fixes.
+	(attribute length): Remove obsolete bbit nop padding compensation.
+
+2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.md (attribute verify_short): Remove.
 	(attribute lock_length): Fold / Remove attribute.
 	(attribute length): Remove variable-length hint clauses.
