@@ -11371,5 +11371,9 @@ Return an adjusted length for @var{insn}.  @var{length} is the value that has be
 @end deftypefn
 
 @deftypefn {Target Hook} void TARGET_INSN_LENGTH_PARAMETERS (insn_length_parameters_t *@var{insn_length_parameters})
-Fixme: add documentation
+Fill in values used for branch shortening.  The type  @code{insn_length_parameters_t} is defined in @file{target-def.h}.  The main feature is the @code{get_variants} function. @smallexample
+int (*get_variants) (rtx insn, int length, bool sequence_p, bool target_p,
+		     insn_length_variant_t *variants)
+@end smallexample
+ For instructions where the ordinary monotonic branch shortening is insufficeint to describe the alternatives, e.g. because there is alignemnt involved, get_variants can provide two or more variants for the instruction.  The return value is the number of variants filled in, which must never exceed the number filled in by @code{insn_length_parameters} in the @var{max_variants} field.  The set of variants for any given instruction filled in should not vary during branch shortening, but rather unavailable variants should be flagged with a @samp{false} @var{enabled} field.  This allows @code{shorten_branches} to keep track of varaints that have been ever disabled in a previous iteration and keep them disabled, so as to avoid infinite looping inside @code{shorten_branches}.  The @var{length} parameter provides the length calculated previously from attributes.  @var{sequence_p} indicates if the instruction presented is inside a @code{SEQUENCE}.  Note, if you make @code{get_variants} provide variants for an entire @code{SEQUENCE}, the @code{SEQUENCE} will henceforth be handled as a single entity for branch shortening.  @var{target_p} indicates if the instruction is considered the target of  a branch, function call, or function return.
 @end deftypefn

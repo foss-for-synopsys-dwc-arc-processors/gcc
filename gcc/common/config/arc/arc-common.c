@@ -105,8 +105,16 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 #define TARGET_OPTION_OPTIMIZATION_TABLE arc_option_optimization_table
 #define TARGET_HANDLE_OPTION arc_handle_option
 
+#if UCLIBC_DEFAULT
+#define DEFAULT_NO_SDATA MASK_NO_SDATA_SET
+#else
+#define DEFAULT_NO_SDATA 0
+#endif
+
 /* We default to ARC700, which has the barrel shifter enabled.  */
-#define TARGET_DEFAULT_TARGET_FLAGS MASK_BARREL_SHIFTER
+#define TARGET_DEFAULT_TARGET_FLAGS \
+  (MASK_BARREL_SHIFTER|MASK_VOLATILE_CACHE_SET|DEFAULT_NO_SDATA)
+
 
 #include "common/common-target-def.h"
 

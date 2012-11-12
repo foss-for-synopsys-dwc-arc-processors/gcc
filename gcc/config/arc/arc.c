@@ -483,15 +483,6 @@ static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 #undef TARGET_FUNCTION_VALUE
 #define TARGET_FUNCTION_VALUE arc_function_value
 
-#if UCLIBC_DEFAULT
-#define DEFAULT_NO_SDATA MASK_NO_SDATA_SET
-#else
-#define DEFAULT_NO_SDATA 0
-#endif
-
-#undef TARGET_DEFAULT_TARGET_FLAGS
-#define TARGET_DEFAULT_TARGET_FLAGS  (MASK_VOLATILE_CACHE_SET|DEFAULT_NO_SDATA)
-
 #undef  TARGET_SCHED_ADJUST_PRIORITY
 #define TARGET_SCHED_ADJUST_PRIORITY arc_sched_adjust_priority
 
@@ -3046,8 +3037,7 @@ arc_print_operand (FILE *file,rtx x,int code)
       break;
     case '&':
       if (TARGET_ANNOTATE_ALIGN && cfun->machine->size_reason)
-	fprintf (file, "; %s. unalign: %d", cfun->machine->size_reason,
-		 cfun->machine->unalign);
+	fprintf (file, "; unalign: %d", cfun->machine->unalign);
       return;
     default :
       /* Unknown flag.  */
@@ -3283,6 +3273,8 @@ unspec_prof_htab_eq (const void *x, const void *y)
    arc_ccfsm_advance (called by arc_final_prescan_insn), and controls the
    actions of PRINT_OPERAND.  The patterns in the .md file for the branch
    insns also have a hand in this.  */
+/* ??? This doesn't seem to do the right thing with non-anulled or
+   annull-false delay slot insns.  */
 
 /* The state of the fsm controlling condition codes are:
    0: normal, do nothing special
@@ -3659,7 +3651,12 @@ arc_ccfsm_record_condition (rtx cond, int reverse, rtx jump,
 	  if (!reverse)
 	    arc_ccfsm_current.cc
 	      = ARC_INVERSE_CONDITION_CODE (state->cc);
-	  arc_ccfsm_current.state = 5;
+	  rtx pat = PATTERN (insn);
+	  if (GET_CODE (pat) == COND_EXEC)
+	    gcc_assert (arc_ccfsm_current.cc
+			== get_arc_condition_code (XEXP (pat, 0)));
+	  else
+	    arc_ccfsm_current.state = 5;
 	}
     }
 }
@@ -3710,38 +3707,6 @@ arc_ccfsm_cond_exec_p (void)
 {
   return (cfun->machine->prescan_initialized
 	  && ARC_CCFSM_COND_EXEC_P (&arc_ccfsm_current));
-}
-
-void
-arc_ccfsm_advance_to (rtx insn)
-{
-  struct machine_function *machine = cfun->machine;
-  rtx scan = machine->ccfsm_current_insn;
-  int restarted = 0;
-  struct arc_ccfsm *statep = &arc_ccfsm_current;
-
-  /* Rtl changes too much before arc_reorg to keep ccfsm state.
-     But we are not required to calculate exact lengths then.  */
-  if (!machine->arc_reorg_started)
-    return;
-  while (scan != insn)
-    {
-      if (scan)
-	{
-	  arc_ccfsm_post_advance (scan, statep);
-	  scan = next_insn (scan);
-	}
-      else
-	{
-	  gcc_assert (!restarted);
-	  scan = get_insns ();
-	  memset (statep, 0, sizeof *statep);
-	  restarted = 1;
-	}
-      if (scan)
-	arc_ccfsm_advance (scan, statep);
-    }
-  machine->ccfsm_current_insn = scan;
 }
 
 /* Like next_active_insn, but return NULL if we find an ADDR_(DIFF_)VEC,
@@ -3801,20 +3766,12 @@ arc_next_active_insn (rtx insn, struct arc_ccfsm *statep)
      is/are dead in the non-executed case.  */
 /* Return non-zero if INSN should be output as a short insn.  UNALIGN is
    zero if the current insn is aligned to a 4-byte-boundary, two otherwise.
-   If CHECK_ATTR is greater than 0, check the iscompact attribute first.
-   If CHECK_ATTR is 0, skip the call to arc_ccfsm_advance_to.  */
+   If CHECK_ATTR is greater than 0, check the iscompact attribute first.  */
 int
-arc_verify_short (rtx insn, int unalign, int check_attr)
+arc_verify_short (rtx insn, int, int check_attr)
 {
-  rtx scan, next, later, prev;
-  struct arc_ccfsm *statep, old_state, save_state;
-  int odd = 3; /* 0/2: (mis)alignment specified; 3: keep short.  */
   enum attr_iscompact iscompact;
   struct machine_function *machine;
-  const char **rp = &cfun->machine->size_reason;
-  int jump_p;
-  rtx this_sequence = NULL_RTX;
-  rtx recog_insn = recog_data.insn;
 
   if (check_attr > 0)
     {
@@ -3827,338 +3784,7 @@ arc_verify_short (rtx insn, int unalign, int check_attr)
   if (machine->force_short_suffix >= 0)
     return machine->force_short_suffix;
 
-  /* Now we know that the insn may be output with a "_s" suffix.  But even
-     when optimizing for size, we still want to look ahead, because if we
-     find a mandatory alignment, we might find that keeping the insn long
-     doesn't increase size, but gains speed.  */
-
-  /* The iscompact attribute depends on arc_ccfsm_current, thus, in order to
-     read the attributes relevant to our forward scan, we must modify
-     arc_ccfsm_current while scanning.  */
-  if (check_attr == 0)
-    arc_ccfsm_advance_to (insn);
-  statep = &arc_ccfsm_current;
-  old_state = *statep;
-  rtx old_insn = machine->ccfsm_current_insn;
-  jump_p = (TARGET_ALIGN_CALL
-	    ? (JUMP_P (insn) || CALL_ATTR (insn, CALL))
-	    : (JUMP_P (insn) && get_attr_type (insn) != TYPE_RETURN));
-
-  /* Check if this is an out-of-range brcc / bbit which is expanded with
-     a short cmp / btst.  */
-  if (JUMP_P (insn) && GET_CODE (PATTERN (insn)) == PARALLEL)
-    {
-      enum attr_type type = get_attr_type (insn);
-      int len = get_attr_length (insn); // lock_length
-
-      /* Since both the length and lock_length attribute use insn_lengths,
-	 which has ADJUST_INSN_LENGTH applied, we can't rely on equality
-	 with 6 / 10 here.  */
-      if ((type == TYPE_BRCC && len > 4)
-	  || (type == TYPE_BRCC_NO_DELAY_SLOT && len > 8))
-	{
-	  rtx op = XEXP (SET_SRC (XVECEXP (PATTERN (insn), 0, 0)), 0);
-	  rtx op0 = XEXP (op, 0);
-
-	  if (GET_CODE (op0) == ZERO_EXTRACT
-	      && satisfies_constraint_L (XEXP (op0, 2)))
-	    op0 = XEXP (op0, 0);
-	  if (satisfies_constraint_Rcq (op0))
-	    {
-	      /* Check if the branch should be unaligned.  */
-	      if (arc_unalign_branch_p (insn))
-		{
-		  odd = 2;
-		  *rp = "Long unaligned jump avoids non-delay slot penalty";
-		  goto found_align;
-		}
-	      /* If we have a short delay slot insn, make this insn 'short'
-		 (actually, short compare & long jump) and defer alignment
-		 decision to processing of the delay insn.  Without this test
-		 here, we'd reason that a short jump with a short delay insn
-		 should be lengthened to avoid a stall if it's aligned - that
-		 is not just suboptimal, but can leads to infinite loops as
-		 the delay insn is assumed to be long the next time, since we
-		 don't have independent delay slot size information.  */
-	      else if ((get_attr_delay_slot_filled (insn)
-			== DELAY_SLOT_FILLED_YES)
-		       && (get_attr_iscompact (NEXT_INSN (insn))
-			   != ISCOMPACT_FALSE))
-		{
-		  *rp = "Small is beautiful";
-		  goto found_align;
-		}
-	    }
-	}
-    }
-
-  /* If INSN is at the unaligned return address of a preceding call,
-     make INSN short.  */
-  if (TARGET_ALIGN_CALL
-      && unalign
-      && (prev = prev_active_insn (insn)) != NULL_RTX
-      && arc_next_active_insn (prev, 0) == insn
-      && ((NONJUMP_INSN_P (prev) && GET_CODE (PATTERN (prev)) == SEQUENCE)
-	  ? CALL_ATTR (XVECEXP (PATTERN (prev), 0, 0), NON_SIBCALL)
-	  : (CALL_ATTR (prev, NON_SIBCALL)
-	     && NEXT_INSN (PREV_INSN (prev)) == prev)))
-    {
-      *rp = "Call return to unaligned long insn would stall";
-      goto found_align;
-    }
-
-  prev = PREV_INSN (insn);
-  next = NEXT_INSN (insn);
-  gcc_assert (prev);
-  /* Basic block reordering calculates insn lengths while it has the insns
-     at the end of a basic block detached from the remainder of the insn
-     chain.  */
-  gcc_assert (next || !cfun->machine->arc_reorg_started);
-  if (NEXT_INSN (prev) != insn)
-    this_sequence = PATTERN (NEXT_INSN (prev));
-  else if (next && PREV_INSN (next) != insn)
-    this_sequence = PATTERN (PREV_INSN (next));
-  if (this_sequence)
-    {
-      gcc_assert (GET_CODE (this_sequence) == SEQUENCE);
-      gcc_assert (XVECLEN (this_sequence, 0) == 2);
-      gcc_assert (insn == XVECEXP (this_sequence, 0, 0)
-		  || insn == XVECEXP (this_sequence, 0, 1));
-    }
-
-  /* If this is a jump without a delay slot, keep it long if we have
-     unalignment.  Don't do this for non sibling calls returning to a long
-     insn, because what we'd gain when calling, we'd loose when returning.  */
-  if (jump_p && unalign
-      && arc_unalign_branch_p (insn)
-      && (!CALL_ATTR (insn, NON_SIBCALL)
-	  || (((next = arc_next_active_insn (insn, statep))
-	       && INSN_P (next)
-	       && CCFSM_ISCOMPACT (next, statep)
-	       && arc_verify_short (next, 2, 1))
-	      ? (*statep = old_state, machine->ccfsm_current_insn = old_insn, 1)
-	      : (*statep = old_state, machine->ccfsm_current_insn = old_insn, 0))))
-    {
-      *rp = "Long unaligned jump avoids non-delay slot penalty";
-      if (recog_insn)
-	extract_insn_cached (recog_insn);
-      return 0;
-    }
-
-  /* ARC700 stalls if an aligned short branch has a short delay insn.  */
-  if (TARGET_UPSIZE_DBR && this_sequence && !unalign && jump_p
-      && !INSN_DELETED_P (next = XVECEXP (this_sequence, 0, 1))
-      && CCFSM_DBR_ISCOMPACT (next, insn, statep))
-    {
-      *rp = "Aligned short jumps with short delay insn stall when taken";
-      if (recog_insn)
-	extract_insn_cached (recog_insn);
-      return 0;
-    }
-
-  /* If this is a call with a long delay insn, or the delay slot insn to
-     a call, we want to choose INSN's length so that the return address
-     will be aligned, unless the following insn is short.  */
-  if (TARGET_ALIGN_CALL && this_sequence
-      && CALL_ATTR (XVECEXP (this_sequence, 0, 0), NON_SIBCALL)
-      && ((next = XVECEXP (this_sequence, 0, 1)) == insn
-	  || !CCFSM_ISCOMPACT (next, statep)))
-    {
-      /* If we curently have unalignment, getting alignment by using a
-	 short insn now is the smart choice, and we don't want to prejudice
-	 the short/long decision for the following insn.  */
-      *rp = "Function return stalls if the return address is unaligned";
-      if (unalign)
-	goto found_align;
-      scan = XVECEXP (this_sequence, 0, 1);
-      arc_ccfsm_advance (scan, statep);
-      scan = arc_next_active_insn (scan, statep);
-      if (!scan)
-	goto found_align;
-      if (LABEL_P (scan))
-	{
-	  odd = 0;
-	  goto found_align;
-	}
-      if (!CCFSM_ISCOMPACT (scan, statep) || !arc_verify_short (scan, 2, 1))
-	odd = 0;
-      else
-	*rp = "Small is beautiful";
-      goto found_align;
-    }
-  /* Likewise, if this is a call without a delay slot, except we want to
-     unalign this call.  */
-  if (jump_p && !this_sequence && CALL_ATTR (insn, NON_SIBCALL))
-    {
-      *rp = "Function return stalls if the return address is unaligned";
-      if (!TARGET_UNALIGN_BRANCH && unalign)
-	goto found_align;
-      scan = arc_next_active_insn (insn, statep);
-      if (!scan)
-	{
-	  /* Apparently a non-return call.  */
-	  *rp = (unalign
-		 ? "Long unaligned jump avoids non-delay slot penalty"
-		 : "Small is beautiful");
-	  odd = 2;
-	  goto found_align;
-	}
-      if (LABEL_P (scan))
-	{
-	  *rp = "Avoid nop insertion before label";
-	  odd = 0;
-	  goto found_align;
-	}
-      if (!CCFSM_ISCOMPACT (scan, statep) || !arc_verify_short (scan, 2, 1))
-	odd = 0;
-      else
-	{
-	  odd = 2;
-	  *rp = (unalign
-		 ? "Long unaligned jump avoids non-delay slot penalty"
-		 : "Small is beautiful");
-	}
-      goto found_align;
-    }
-
-  scan = arc_next_active_insn (insn, statep);
-
-  /* If this and the previous insn are the only ones between function start
-     or an outgoing function call, and a return insn, avoid having them
-     both be short.
-     N.B. we check that the next insn is a return, and this implies that
-     INSN can't be a CALL / SFUNC or in the delay slot of one, because
-     there has to be a restore of blink before the return.  */
-  if (TARGET_PAD_RETURN
-      && scan && JUMP_P (scan) && get_attr_type (scan) == TYPE_RETURN
-      && (prev = prev_active_insn (insn))
-      && arc_next_active_insn (prev, 0) == insn
-      && (INSN_ADDRESSES (INSN_UID (insn)) - INSN_ADDRESSES (INSN_UID (prev))
-	  == 2)
-      && ((prev = prev_active_insn (prev)) == NULL_RTX
-	  || CALL_ATTR (GET_CODE (PATTERN (prev)) == SEQUENCE
-			? XVECEXP (PATTERN (prev), 0, 0) : prev, CALL)))
-    {
-      *rp = "call/return and return/return must be 6 bytes apart to avoid mispredict";
-      *statep = old_state;
-      machine->ccfsm_current_insn = old_insn;
-      if (recog_insn)
-	extract_insn_cached (recog_insn);
-      return 0;
-    }
-
-  *rp = "Small is beautiful";
-  if (scan) for (;;)
-    {
-      if (JUMP_P (scan) && GET_CODE (PATTERN (scan)) == PARALLEL
-	  && arc_unalign_branch_p (scan))
-	{
-	  /* If this is an out-of-range brcc / bbit which is expanded with
-	     a compact cmp / btst, emit the curent insn short.  */
-
-	  enum attr_type type = get_attr_type (scan);
-	  int len = get_attr_length (scan); // lock_length
-
-	  /* Since both the length and lock_length attribute use insn_lengths,
-	     which has ADJUST_INSN_LENGTH applied, we can't rely on equality
-	     with 6 / 10 here.  */
-	  if ((type == TYPE_BRCC && len > 4)
-	      || (type == TYPE_BRCC_NO_DELAY_SLOT && len > 8))
-	    {
-	      rtx op = XEXP (SET_SRC (XVECEXP (PATTERN (scan), 0, 0)), 0);
-	      rtx op0 = XEXP (op, 0);
-
-	      if (GET_CODE (op0) == ZERO_EXTRACT
-		  && satisfies_constraint_L (XEXP (op0, 2)))
-		op0 = XEXP (op0, 0);
-	      if (satisfies_constraint_Rcq (op0))
-		break;
-	    }
-	}
-
-      if ((JUMP_P (scan) || CALL_P (scan))
-	  && arc_unalign_branch_p (scan)
-	  && (TARGET_ALIGN_CALL
-	      ? (JUMP_P (scan) || CALL_ATTR (scan, SIBCALL))
-	      : (JUMP_P (scan) && get_attr_type (scan) != TYPE_RETURN))
-	  && !ARC_CCFSM_BRANCH_DELETED_P (statep))
-	{
-	  /* Assume for now that the branch is sufficiently likely to
-	     warrant unaligning.  */
-	  *rp = "Long unaligned jump avoids non-delay slot penalty";
-	  odd = 2;
-	  break;
-	}
-      /* A call without a delay slot insn with a short insn following
-	 should be unaligned.  */
-      if (TARGET_UNALIGN_BRANCH && TARGET_ALIGN_CALL
-	  && CALL_ATTR (scan, CALL)
-	  && NEXT_INSN (PREV_INSN (scan)) == scan /* No delay insn.  */
-	  && (((save_state = *statep,
-		next = arc_next_active_insn (scan, statep)) == NULL_RTX
-	       || (!LABEL_P (next) && CCFSM_ISCOMPACT (next, statep)))
-	      ? 1 : (*statep = save_state, 0)))
-	{
-	  *rp = "Long unaligned jump avoids non-delay slot penalty";
-	  odd = 2;
-	  break;
-	}
-      /* A long call with a long delay slot insn should be aligned,
-	 unless a short insn follows.  */
-      if (TARGET_ALIGN_CALL
-	  && CALL_ATTR (scan, CALL)
-	  && NEXT_INSN (PREV_INSN (scan)) != scan
-	  && !CCFSM_ISCOMPACT (scan, statep)
-	  && !CCFSM_ISCOMPACT ((next = NEXT_INSN (scan)) , statep)
-	  && (((save_state = *statep,
-		later = arc_next_active_insn (next, statep))
-	       && (LABEL_P (later)
-		   || !CCFSM_ISCOMPACT (later, statep)
-		   || !arc_verify_short (later, 2, 1)))
-	      ? 1 : (*statep = save_state, 0)))
-	{
-	  *rp = "Function return stalls if the return address is unaligned";
-	  odd = 0;
-	  break;
-	}
-      if (LABEL_P (scan) && label_to_alignment (scan) > 1)
-	{
-	  *rp = "Avoid nop insertion before label";
-	  odd = 0;
-	  break;
-	}
-      if (INSN_P (scan)
-	  && GET_CODE (PATTERN (scan)) != USE
-	  && GET_CODE (PATTERN (scan)) != CLOBBER
-	  && CCFSM_ISCOMPACT (scan, statep))
-	{
-	  /* Go ahead making INSN short, we decide about SCAN later.  */
-	  break;
-	}
-      if (GET_CODE (scan) == BARRIER)
-	break;
-      arc_ccfsm_post_advance (scan, statep);
-      scan = NEXT_INSN (scan);
-      if (!scan)
-	break;
-      if (GET_CODE (scan) == INSN && GET_CODE (PATTERN (scan)) == SEQUENCE)
-	scan = XVECEXP (PATTERN (scan), 0, 0);
-      if (JUMP_P (scan)
-	  && (GET_CODE (PATTERN (scan)) == ADDR_VEC
-	      || GET_CODE (PATTERN (scan)) == ADDR_DIFF_VEC))
-	{
-	  break;
-	}
-      arc_ccfsm_advance (scan, statep);
-    }
- found_align:
-  *statep = old_state;
-  machine->ccfsm_current_insn = old_insn;
-  if (recog_insn)
-    extract_insn_cached (recog_insn);
-  if (odd != unalign)
-    return 1;
-  return 0;
+  return (get_attr_length (insn) & 2) != 0;
 }
 
 static void
@@ -8025,38 +7651,6 @@ arc_adjust_insn_length (rtx insn, int len, bool)
 	      : CALL_ATTR (prev, NON_SIBCALL)))
 	return len + 4;
     }
-  /* ccfsm actions can delete jumps, while on the other hand it can cause
-     would-be short instructions to be become long.  */
-  /* Rtl changes too much before arc_reorg to keep ccfsm state.
-     But we are not required to give exact answers then.  */
-  if (cfun->machine->arc_reorg_started
-      && (JUMP_P (insn) || (len & 2)))
-    {
-      struct arc_ccfsm *statep = &cfun->machine->ccfsm_current;
-
-      arc_ccfsm_advance_to (insn);
-      switch (statep->state)
-	{
-	case 0:
-	  break;
-	case 1: case 2:
-	  /* Deleted branch.  */
-	  return 0;
-	case 3: case 4: case 5:
-	  /* Conditionalized insn.  */
-	  if ((!JUMP_P (insn)
-	       || (get_attr_type (insn) != TYPE_BRANCH
-		   && get_attr_type (insn) != TYPE_UNCOND_BRANCH
-		   && (get_attr_type (insn) != TYPE_RETURN
-		       || (statep->cc != ARC_CC_EQ && statep->cc != ARC_CC_NE)
-		       || NEXT_INSN (PREV_INSN (insn)) != insn)))
-	      && (len & 2))
-	    len += 2;
-	  break;
-	default:
-	  gcc_unreachable ();
-	}
-    }
   if (TARGET_ARC600)
     {
       rtx succ = next_real_insn (insn);
@@ -8095,6 +7689,10 @@ arc_get_insn_variants (rtx insn, int len, bool, bool target_p,
   if (!NONDEBUG_INSN_P (insn))
     return 0;
   enum attr_type type;
+  /* shorten_branches doesn't take optimize_size into account yet for the
+     get_variants mechanism, so turn this off for now.  */
+  if (optimize_size)
+    return 0;
   if (GET_CODE (PATTERN (insn)) == SEQUENCE)
     {
       /* The interaction of a short delay slot insn with a short branch is
@@ -8105,11 +7703,14 @@ arc_get_insn_variants (rtx insn, int len, bool, bool target_p,
 	  && get_attr_length (XVECEXP ((pat = PATTERN (insn)), 0, 1)) <= 2
 	  && (((type = get_attr_type (inner = XVECEXP (pat, 0, 0)))
 	       == TYPE_UNCOND_BRANCH)
-	      || type == TYPE_BRANCH))
+	      || type == TYPE_BRANCH)
+	  && get_attr_delay_slot_filled (inner) == DELAY_SLOT_FILLED_YES)
 	{
 	  int n_variants
 	    = arc_get_insn_variants (inner, get_attr_length (inner), true,
 				     target_p, ilv+1);
+	  /* The short variant gets split into a higher-cost aligned
+	     and a lower cost unaligned variant.  */
 	  gcc_assert (n_variants);
 	  gcc_assert (ilv[1].length_sensitive == ARC_LS_7
 		      || ilv[1].length_sensitive == ARC_LS_10);
@@ -8121,6 +7722,14 @@ arc_get_insn_variants (rtx insn, int len, bool, bool target_p,
 	  n_variants++;
 	  for (int i = 0; i < n_variants; i++)
 	    ilv[i].length += 2;
+	  /* In case an instruction with aligned size is wanted, and
+	     the short variants are unavailable / too expensive, add
+	     versions of long branch + long delay slot.  */
+	  for (int i = 2, end = n_variants; i < end; i++, n_variants++)
+	    {
+	      ilv[n_variants] = ilv[i];
+	      ilv[n_variants].length += 2;
+	    }
 	  return n_variants;
 	}
       return 0;
@@ -8273,7 +7882,6 @@ arc_get_insn_variants (rtx insn, int len, bool, bool target_p,
 	  ilv->align_set = 2;
 	  ilv->target_cost = 1;
 	  ilv->branch_cost = branch_unalign_cost;
-	  ilv->target_cost = 1;
 	}
       ilv++;
       break;
@@ -8341,8 +7949,9 @@ arc_get_ccfsm_cond (struct arc_ccfsm *statep)
     
   gcc_assert (ARC_INVERSE_CONDITION_CODE (raw_cc) == statep->cc);
 
+  enum machine_mode ccm = GET_MODE (XEXP (cond, 0));
   enum rtx_code code = reverse_condition (GET_CODE (cond));
-  if (code == UNKNOWN)
+  if (code == UNKNOWN || ccm == CC_FP_GTmode || ccm == CC_FP_GEmode)
     code = reverse_condition_maybe_unordered (GET_CODE (cond));
 
   return gen_rtx_fmt_ee (code, GET_MODE (cond),
@@ -8358,7 +7967,7 @@ arc_ifcvt (void)
   basic_block merge_bb = 0;
 
   memset (statep, 0, sizeof *statep);
-  for (rtx insn = get_insns (); insn; insn = NEXT_INSN (insn))
+  for (rtx insn = get_insns (); insn; insn = next_insn (insn))
     {
       arc_ccfsm_advance (insn, statep);
 
@@ -8376,7 +7985,30 @@ arc_ifcvt (void)
 	    basic_block succ_bb
 	      = BLOCK_FOR_INSN (NEXT_INSN (NEXT_INSN (PREV_INSN (insn))));
 	    arc_ccfsm_post_advance (insn, statep);
-	    if (merge_bb && succ_bb)
+	    rtx seq = NEXT_INSN (PREV_INSN (insn));
+	    if (seq != insn)
+	      {
+		rtx slot = XVECEXP (PATTERN (seq), 0, 1);
+		rtx pat = PATTERN (slot);
+		if (INSN_ANNULLED_BRANCH_P (insn))
+		  {
+		    rtx cond;
+		    if (INSN_FROM_TARGET_P (slot))
+		      {
+			statep->cc = ARC_INVERSE_CONDITION_CODE (statep->cc);
+			cond = arc_get_ccfsm_cond (statep),
+			statep->cc = ARC_INVERSE_CONDITION_CODE (statep->cc);
+		      }
+		    else
+		      cond = arc_get_ccfsm_cond (statep),
+		    pat = gen_rtx_COND_EXEC (VOIDmode, cond, pat);
+		  }
+		if (!validate_change (seq, &PATTERN (seq), pat, 0))
+		  gcc_unreachable ();
+		if (merge_bb && succ_bb)
+		  merge_blocks (merge_bb, succ_bb);
+	      }
+	    else if (merge_bb && succ_bb)
 	      {
 		set_insn_deleted (insn);
 		merge_blocks (merge_bb, succ_bb);
@@ -8438,7 +8070,8 @@ arc_ifcvt (void)
 	    }
 	  else
 	    gcc_assert (!NONDEBUG_INSN_P (insn));
-	  gcc_assert (apply_change_group ());
+	  if (!apply_change_group ())
+	    gcc_unreachable ();
 	  if (pat)
 	    {
 	      rtx next = next_nonnote_insn (insn);

@@ -327,38 +327,19 @@
   "true"
   "")
 
-(define_attr "verify_short" "no,yes"
-  (if_then_else
-    (match_test "arc_verify_short (insn, insn_current_address & 2, 0)")
-    (const_string "yes") (const_string "no")))
-
-(define_attr "length_lock" "no,yes" (const_string "no"))
-
 ;; Length (in # of bytes, long immediate constants counted too).
 ;; ??? There's a nasty interaction between the conditional execution fsm
 ;; and insn lengths: insns with shimm values cannot be conditionally executed.
 (define_attr "length" ""
   (cond
     [(eq_attr "iscompact" "true,maybe")
-    ; The length can vary because of ADJUST_INSN_LENGTH.
-    ; make sure that variable_length_p will be true.
      (cond
-       [(and (match_test "0") (eq (match_dup 0) (pc)))
-	(const_int 4)
-	(eq_attr "verify_short" "yes")
-	(cond [(eq_attr "type" "sfunc") (const_int 10)] (const_int 2))
-	(eq_attr "type" "sfunc")
-	(const_int 12)]
-      (const_int 4))
+       [(eq_attr "type" "sfunc") (const_int 10)
+	(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 4)]
+      (const_int 2))
 
     (eq_attr "iscompact" "true_limm,maybe_limm")
-    (cond
-      [(and (match_test "0") (eq (match_dup 0) (pc)))
-       (const_int 8)
-       (eq_attr "verify_short" "yes")
-       (const_int 6)]
-      (const_int 8))
-
+    (const_int 6)
 
     (eq_attr "type" "load")
                  (if_then_else
@@ -703,7 +684,7 @@
    st%U0%V0 %S1,%0      ;19"
   [(set_attr "type" "move,move,move,move,move,two_cycle_core,move,binary,binary,move,move,load,store,store,load,load,load,store,store,store")
    (set_attr "iscompact" "maybe,maybe,maybe,false,false,false,false,false,false,maybe_limm,false,true,true,true,true,true,false,false,false,false")
-   ; Use default length for iscompact to mark length varying.  But set length
+   ; Use default length for iscompact to allow for COND_EXEC.  But set length
    ; of Crr to 4.
    (set_attr "length" "*,*,*,4,4,4,4,8,8,*,8,*,*,*,*,*,*,*,*,8")
    (set_attr "predicable" "yes,no,yes,yes,no,no,yes,no,no,yes,yes,no,no,no,no,no,no,no,no,no")])
@@ -733,7 +714,7 @@
   "st%U0 %1,%0\;st%U0.di %1,%0"
   [(set_attr "type" "store")])
 
-(define_insn "*movsi_set_cc_insn"
+(define_insn_and_split "*movsi_set_cc_insn"
   [(set (match_operand:CC_ZN 2 "cc_set_register" "")
 	(match_operator 3 "zn_compare_operator"
 	  [(match_operand:SI 1 "nonmemory_operand" "cI,cL,Cal") (const_int 0)]))
@@ -741,6 +722,10 @@
 	(match_dup 1))]
   ""
   "mov%?.f %0,%S1"
+  ; splitting to 'tst' allows short insns and combination into brcc.
+  "reload_completed && operands_match_p (operands[0], operands[1])"
+  [(set (match_dup 2) (match_dup 3))]
+  ""
   [(set_attr "type" "compare")
    (set_attr "predicable" "no,yes,yes")
    (set_attr "cond" "set_zn")
@@ -3254,7 +3239,7 @@
 	mov.ne %0,%S1"
   [(set_attr "type" "cmove,cmove,cmove")
    (set_attr "iscompact" "true,false,false")
-   (set_attr "length" "*,4,8")])
+   (set_attr "length" "2,4,8")])
 
 (define_insn "*movsi_cond_exec"
   [(cond_exec
@@ -3370,10 +3355,10 @@
 }"
   [(set_attr "type" "branch")
    (set
-     (attr "length_lock")
+     (attr "length")
      (cond [
        (eq_attr "delay_slot_filled" "yes")
-       (const_string "yes")
+       (const_int 4)
 
        (ne
 	 (if_then_else
@@ -3388,28 +3373,9 @@
 		    (minus (const_int 58)
 			   (symbol_ref "get_attr_delay_slot_length (insn)")))))
 	 (const_int 0))
-       (const_string "yes")]
-      (const_string "no")))
-   (set
-     (attr "length")
-     (cond [
-       ; variable length marker
-       (and (match_test "0") (eq (match_dup 0) (pc))) (const_int 2)
+       (const_int 4)]
+      (const_int 2)))
 
-       ; In arc_reorg we just guesstimate; might be more or less.
-       (match_test "arc_branch_size_unknown_p ()")
-       (const_int 4)
-
-       (eq_attr "length_lock" "yes")
-       (const_int 4)
-
-       (eq_attr "verify_short" "yes")
-       (const_int 2)]
-      (const_int 4)))
-   ;; We can't use the lock_length attribute to define iscompact, since
-   ;; the value of (pc) becomes undefined after branch shortening.
-   ;; We can't use eq_attr "length" here, either, because that causes
-   ;; an infinite loop in genattrtab.
    (set (attr "iscompact")
 	(cond [(match_test "get_attr_length (insn) == 2") (const_string "true")]
 	      (const_string "false")))])
@@ -3439,10 +3405,10 @@
 }"
   [(set_attr "type" "branch")
    (set
-     (attr "length_lock")
+     (attr "length")
      (cond [
        (eq_attr "delay_slot_filled" "yes")
-       (const_string "yes")
+       (const_int 4)
 
        (ne
 	 (if_then_else
@@ -3457,25 +3423,9 @@
 		    (minus (const_int 58)
 			   (symbol_ref "get_attr_delay_slot_length (insn)")))))
 	 (const_int 0))
-       (const_string "yes")]
-      (const_string "no")))
+       (const_int 4)]
+      (const_int 2)))
 
-   (set
-     (attr "length")
-     (cond [
-       ; variable length marker
-       (and (match_test "0") (eq (match_dup 0) (pc))) (const_int 2)
-
-       ; In arc_reorg we just guesstimate; might be more or less.
-       (match_test "arc_branch_size_unknown_p ()")
-       (const_int 4)
-
-       (eq_attr "length_lock" "yes")
-       (const_int 4)
-
-       (eq_attr "verify_short" "yes")
-       (const_int 2)]
-      (const_int 4)))
    (set (attr "iscompact")
 	(cond [(match_test "get_attr_length (insn) == 2") (const_string "true")]
 	      (const_string "false")))])
@@ -3496,46 +3446,24 @@
 	(if_then_else (match_test "get_attr_length (insn) == 2")
 		      (const_string "true") (const_string "false")))
    (set_attr "cond" "canuse")
-   (set (attr "length_lock")
+   (set (attr "length")
 	(cond [
+	  ; In arc_reorg we just guesstimate; might be more or less than 4.
+	  (match_test "arc_branch_size_unknown_p ()")
+	  (const_int 4)
+
 	  (eq_attr "delay_slot_filled" "yes")
-	  (const_string "yes")
+	  (const_int 4)
 
 	  (match_test "find_reg_note (insn, REG_CROSSING_JUMP, NULL_RTX)")
-	  (const_string "yes")
+	  (const_int 4)
 
 	  (ior (lt (minus (match_dup 0) (pc)) (const_int -512))
 	       (gt (minus (match_dup 0) (pc))
 		   (minus (const_int 506)
 			  (symbol_ref "get_attr_delay_slot_length (insn)"))))
-	  (const_string "yes")]
-	 (const_string "no")))
-
-   (set (attr "length")
-	(cond [
-	  ; variable length marker
-	  (and (match_test "0") (eq (match_dup 0) (pc))) (const_int 2)
-
-	  ; In arc_reorg we just guesstimate; might be more or less than 4.
-	  (match_test "arc_branch_size_unknown_p ()")
-	  (const_int 4)
-
-	  (eq_attr "length_lock" "yes")
-	  (const_int 4)
-
-	  (and (match_test "arc_ccfsm_advance_to (insn),
-			    arc_ccfsm_cond_exec_p ()")
-	       (ior (lt (minus (match_dup 0) (pc)) (const_int -64))
-		    (gt (minus (match_dup 0) (pc))
-			(minus (const_int 58)
-			       (symbol_ref
-				"get_attr_delay_slot_length (insn)")))))
-	  (const_int 4)
-
-	  (eq_attr "verify_short" "yes")
-	  (const_int 2)]
-
-	 (const_int 4)))])
+	  (const_int 4)]
+	 (const_int 2)))])
 
 (define_insn "indirect_jump"
   [(set (pc) (match_operand:SI 0 "nonmemory_operand" "L,I,Cal,Rcqq,r"))]
@@ -3641,13 +3569,8 @@
       (const_string "false")])
    (set_attr_alternative "length"
      [(cond
-	[(eq_attr "iscompact" "false")
-	 (const_int 4)
-	 (and (match_test "0") (eq (match_dup 0) (pc)))
-	 (const_int 4)
-	 (eq_attr "verify_short" "yes")
-	 (const_int 2)]
-	(const_int 4))
+	[(eq_attr "iscompact" "false") (const_int 4)]
+	(const_int 2))
       (const_int 4)
       (const_int 8)])])
 
@@ -4524,10 +4447,6 @@
    (set (attr "length")
 	(cond [(ne (symbol_ref "arc_compute_function_type (cfun)")
 		   (symbol_ref "ARC_FUNCTION_NORMAL"))
-	       (const_int 4)
-	       (and (match_test "0") (eq (match_dup 0) (pc)))
-	       (const_int 4)
-	       (eq_attr "verify_short" "no")
 	       (const_int 4)]
 	      (const_int 2)))])
 
@@ -4560,10 +4479,6 @@
 		   (symbol_ref "ARC_FUNCTION_NORMAL"))
 	       (const_int 4)
 	       (not (match_operand 0 "equality_comparison_operator" ""))
-	       (const_int 4)
-	       (and (match_test "0") (eq (match_dup 0) (pc)))
-	       (const_int 4)
-	       (eq_attr "verify_short" "no")
 	       (const_int 4)]
 	      (const_int 2)))])
 
@@ -4615,23 +4530,20 @@
 		(ge (minus (match_dup 3) (pc)) (const_int -128))
 		(le (minus (match_dup 3) (pc))
 		    (minus (const_int 122)
-			   (symbol_ref "get_attr_delay_slot_length (insn)")))
-		(eq_attr "verify_short" "yes"))
+			   (symbol_ref "get_attr_delay_slot_length (insn)"))))
 	   (const_int 2)
 	   (and (ge (minus (match_dup 3) (pc)) (const_int -256))
 		(le (minus (match_dup 3) (pc))
 		    (minus (const_int 244)
 			   (symbol_ref "get_attr_delay_slot_length (insn)"))))
 	   (const_int 4)
-	   (and (match_operand:SI 1 "compact_register_operand" "")
-	        (eq_attr "verify_short" "yes"))
+	   (match_operand:SI 1 "compact_register_operand" "")
 	   (const_int 6)]
 	  (const_int 8))]
 	 (cond [(and (ge (minus (match_dup 3) (pc)) (const_int -256))
 		     (le (minus (match_dup 3) (pc)) (const_int 244)))
 		(const_int 8)
-		(and (match_operand:SI 1 "compact_register_operand" "")
-		     (eq_attr "verify_short" "yes"))
+		(match_operand:SI 1 "compact_register_operand" "")
 		(const_int 10)]
 	       (const_int 12))))
    (set (attr "iscompact")
@@ -4669,8 +4581,7 @@
 		    (minus (const_int 248)
 			   (symbol_ref "get_attr_delay_slot_length (insn)"))))
 	       (const_int 4)
-	       (and (eq (symbol_ref "which_alternative") (const_int 0))
-		    (eq_attr "verify_short" "yes"))
+	       (eq (symbol_ref "which_alternative") (const_int 0))
 	       (const_int 6)]
 	      (const_int 8)))
    (set (attr "iscompact")

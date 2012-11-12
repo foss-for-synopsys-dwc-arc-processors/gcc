@@ -1,3 +1,46 @@
+2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (attribute verify_short): Remove.
+	(attribute lock_length): Fold / Remove attribute.
+	(attribute length): Remove variable-length hint clauses.
+	(movsi_ne): Set length of alternatiev 0 to exactly 2.
+	* config/arc/arc.c (arc_print_operand): Remove printing of
+	alignment annotation formerly supplied by verify_short.
+	(arc_ccfsm_advance_to): Delete.
+	(arc_verify_short): Rely on length information from shorten_branches.
+	(arc_adjust_insn_length): Remove ccfsm code.
+	(arc_get_insn_variants): Return 0 for optimize_size.
+	<SEQUENCE>: Check that this is a genuine sequence.
+	<TYPE_BRANCH / TYPE_UNCOND_BRANCH>: Add long branch & long delay slot
+	variants.
+	* config/arc/arc-protos.h (arc_shorten_align, arc_ccfsm_advance_to):
+	Remove prototype.
+	(arc_ifcvt): Use next_insn.  When handling a deleted branch in a
+	delay sequence, handle the delay slot insn specially.
+	(arc_ccfsm_record_condition): Skip condition that matches existing
+	COND_EXEC.
+	(arc_get_ccfsm_cond): Properly reverse codes of CC_FP_GTmode /
+	C_FP_GEmode.
+
+	* final.c (adjust_length): More alignent algorithm refinements.
+	(shorten_branches): Also enable get_variants mecahnism for
+	non-sequence insns that are already known to be of varying length.
+	Fix target_p setting/use in main loop.
+	Fix setting of insn_current_address when processing a SEQUENCE
+	with adjust_length.
+	* target.def (insn_length_parameters): Add some documentation.
+	* doc/tm.texi: Regenerate.
+
+	* config/arc/arc.md (movsi_set_cc_insn): Now a define_insn_and_split.
+
+	* config/arc/arc.c (DEFAULT_NO_SDATA, TARGET_DEFAULT_TARGET_FLAGS):
+	Move / integrate from here ...
+	* common/config/arc/arc-common.c: To here.
+
+	* config/arc/predicates.md (compact_load_memory_operand):
+	Check if OP is volatile.
+	(compact_store_memory_operand): Likewise.
+
 2012-11-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (adjust_length): Zero variants array before passing

@@ -190,7 +190,7 @@
     return 0;
 
   /* .di instructions have no 16-bit form.  */
-  if (!TARGET_VOLATILE_CACHE_SET)
+  if (MEM_VOLATILE_P (op) && !TARGET_VOLATILE_CACHE_SET)
      return 0;
 
   if (mode == VOIDmode)
@@ -278,7 +278,7 @@
     mode = GET_MODE (op);
 
   /* .di instructions have no 16-bit form.  */
-  if (!TARGET_VOLATILE_CACHE_SET)
+  if (MEM_VOLATILE_P (op) && !TARGET_VOLATILE_CACHE_SET)
      return 0;
 
   size = GET_MODE_SIZE (mode);

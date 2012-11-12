@@ -885,11 +885,13 @@ adjust_length (rtx insn, int new_length, bool seq_p,
     {
       unsigned align_base = 1 << ctx->parameters.align_base_log;
       unsigned align_base_mask = align_base - 1;
+      unsigned align_base_set = (1U << align_base) - 1;
       unsigned align_unit_mask = (1 << ctx->parameters.align_unit_log) - 1;
       gcc_assert ((insn_current_address & align_unit_mask) == 0);
       int best_cost = new_length = INT_MAX;
       bool can_align = false;
       int best_need_align = -1;
+      bool best_right_align = false;
       int shuid = uid_shuid[uid];
 
       /* Freeze disabled variants, and find cheapest variant;
@@ -906,58 +908,100 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	      int need_align;
 	      unsigned align_offset
 		= insn_current_address >> ctx->parameters.align_unit_log;
+	      bool right_align = false;
 	      align_offset &= align_base_mask;
-	      if (variant->align_set == align_base_mask)
-		need_align = -1;
+	      if (variant->align_set == align_base_set)
+		{
+		  need_align = -1;
+		  right_align = ctx->last_aligning_insn != 0;
+		}
 	      else if ((1 << align_offset) & variant->align_set)
 		need_align = 0; /* OK.  */
-	      /* Checks if adding one unit provides alignment.
+	      /* Check if adding one unit provides alignment.
 		 FIXME: this works for the current ARC port,
 		 but we should more generally search for an offset
 		 such that a variable length insn can provide it.  */
-	      else if  ((1 << ((align_offset + 1) & (align_base_mask))
+	      else if  ((1 << ((align_offset + 1) & align_base_mask)
 			 & variant->align_set)
 			&& ctx->last_aligning_insn)
 		need_align = 1;
 	      else
 		continue;
 	      int length = variant->length;
+	      /* Add extra length needed for alignment to insn length.
+		 This should go away in the next iteration, when the
+		 desired alignment is provided.  If that doesn't happen,
+		 we have a bug, possibly giving the target a length that
+		 doesn't correspond to an available variant.  */
 	      if (need_align >= 0)
 		length += need_align << ctx->parameters.align_unit_log;
 	      /* FIXME: Add probabilistic weighting and target cost.  */
 	      int cost = (variant->fallthrough_cost + variant->branch_cost);
+	      if (ctx->request_align[shuid] >= 0 && need_align >= 0)
+		{
+		  unsigned offset = insn_current_address + length;
+		  offset >>= ctx->parameters.align_unit_log;
+		  offset = ctx->request_align[shuid] - offset;
+		  /* Fixme: might want to apply smaller mask if alignment
+		     requirement has matching bitmask.  */
+		  offset &= align_base_mask;
+		  if (offset == 0)
+		    right_align = true;
+		}
+	      /* ??? if we had remembered the cost of not getting the desired
+		 alignment, we could weigh cost in this insn against cost
+		 for alignment in following insn.  */
 	      if (cost > best_cost)
 		continue;
 	      if (cost < best_cost)
 		{
 		  best_cost = cost;
 		  new_length = length;
+		  best_need_align = need_align;
+		  best_right_align = right_align;
 		  can_align = false;
 		  continue;
 		}
 	      /* FIXME: to cover the general case, we should really
 		 build a bitmap of the offsets that we can manage for
 		 alignment purposes.  */
-	      if ((length - new_length)
-		  & (align_base_mask << ctx->parameters.align_unit_log))
+	      if (((length - new_length)
+		   & (align_base_mask << ctx->parameters.align_unit_log))
+		  && new_length <= ctx->uid_lock_length[uid]
+		  && length <= ctx->uid_lock_length[uid])
 		can_align = true;
-	      if (length < new_length)
+	      if (length < new_length && (right_align || !best_right_align))
 		{
 		  new_length = length;
 		  best_need_align = need_align;
+		  best_right_align = right_align;
 		}
-	      else if (length == new_length
-		       && need_align < best_need_align)
-		best_need_align = need_align;
+	      else if ((length == new_length
+			&& need_align < best_need_align
+			&& (right_align || !best_right_align))
+		       || (right_align && !best_right_align))
+		{
+		  new_length = length;
+		  best_need_align = need_align;
+		  best_right_align = right_align;
+		}
 	    }
 	}
       gcc_assert (best_cost < INT_MAX);
       if (best_need_align >= 0 && ctx->last_aligning_insn)
-	ctx->request_align[uid_shuid[ctx->last_aligning_insn]]
-	  = (((INSN_ADDRESSES  (ctx->last_aligning_insn)
-	       + insn_lengths[ctx->last_aligning_insn])
-	      >> ctx->parameters.align_unit_log)
-	     + (best_need_align > 0 ? best_need_align : 0));
+	{
+	  if (best_need_align != 0)
+	    gcc_assert (ctx->something_changed);
+
+	  int aluid = ctx->last_aligning_insn;
+	  unsigned offset = INSN_ADDRESSES (aluid) + insn_lengths[aluid];
+	  offset >>= ctx->parameters.align_unit_log;
+	  offset += best_need_align;
+	  ctx->request_align[uid_shuid[aluid]] = (offset & align_base_mask);
+	  ctx->last_aligning_insn = 0;
+	}
+      else
+	gcc_assert (best_need_align <= 0);
       if (can_align)
 	{
 	  if (ctx->request_align[shuid] >= 0)
@@ -965,13 +1009,17 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	      unsigned offset = insn_current_address + new_length;
 	      offset >>= ctx->parameters.align_unit_log;
 	      offset = ctx->request_align[shuid] - offset;
-	      /* Fixme: might want apply smaller mask if alignment
+	      /* Fixme: might want to apply smaller mask if alignment
 		 requirement has matching bitmask.  */
 	      offset &= align_base_mask;
 	      offset <<= ctx->parameters.align_unit_log;
 	      new_length += offset;
 	    }
 	  ctx->last_aligning_insn = uid;
+	}
+      else if (ctx->request_align[shuid] >= 0)
+	{
+	  ctx->something_changed = true;
 	  ctx->request_align[shuid] = -1;
 	}
       /* Since we are freezing out variants that have been disabled once,
@@ -1389,11 +1437,13 @@ shorten_branches (rtx first)
       else if (GET_CODE (body) != USE && GET_CODE (body) != CLOBBER)
 	{
 	  length = length_fun (insn);
-	  varying_length[uid]
-	    = (insn_variable_length_p (insn)
-	       || (parameters->get_variants
-		   && parameters->get_variants (insn, length, false, target_p,
-						ctx.variants) > 1));
+	  if (parameters->get_variants
+	      && (parameters->get_variants (insn, length, false, target_p,
+					    ctx.variants)
+		  > 1))
+	    varying_length[uid] = 5;
+	  else
+	    varying_length[uid] = insn_variable_length_p (insn);
 	  target_p = false;
 	}
 	
@@ -1417,6 +1467,7 @@ shorten_branches (rtx first)
       ctx.something_changed = false;
       ctx.last_aligning_insn = 0;
       insn_current_align = MAX_CODE_ALIGN - 1;
+      target_p = true;
       for (insn_current_address = 0, insn = first;
 	   insn != 0;
 	   insn = NEXT_INSN (insn))
@@ -1450,6 +1501,7 @@ shorten_branches (rtx first)
 		  ctx.request_align[uid_shuid[ctx.last_aligning_insn]] = offset;
 		  ctx.last_aligning_insn = 0;
 		}
+	      target_p = true;
 	      continue;
 	    }
 
@@ -1593,12 +1645,14 @@ shorten_branches (rtx first)
 
 		      insn_current_address += insn_lengths[inner_uid];
 		    }
+		  target_p = CALL_P (XVECEXP (body, 0, 0));
 		}
 	      else
 		{
 		  insn_current_address += insn_lengths[uid];
 		  if (BARRIER_P (insn))
 		    ctx.last_aligning_insn = 0;
+		  target_p = CALL_P (body);
 		}
 
 	      continue;
@@ -1626,23 +1680,26 @@ shorten_branches (rtx first)
 		    {
 		      inner_length = insn_current_length (inner_insn);
 
-		      inner_length = adjust_length (inner_insn, inner_length,
-						    true, &ctx, target_p);
+		      inner_length
+			= adjust_length (inner_insn, inner_length, true, &ctx,
+					 target_p && i == 0);
 		    }
 		  insn_current_address += inner_length;
 		  new_length += inner_length;
 		}
+	      /* Set INSN_CURRENT_ADDRESS back to the start of INSN, so that
+		 we have the right context when we process INSN as a whole
+		 in adjust_length later.  */
+	      insn_current_address -= new_length;
 	    }
 	  else
-	    {
-	      new_length = insn_current_length (insn);
-	      insn_current_address += new_length;
-	    }
+	    new_length = insn_current_length (insn);
 
 	  /* If needed, do any adjustment.  */
-	  int tmp_length = new_length;
 	  new_length = adjust_length (insn, new_length, false, &ctx, target_p);
-	  insn_current_address += (new_length - tmp_length);
+	  target_p = (CALL_P (body) || (GET_CODE (body) == SEQUENCE
+					&& CALL_P (XVECEXP (body, 0, 0))));
+	  insn_current_address += new_length;
 	}
       /* For a non-optimizing compile, do only a single pass.  */
       if (!increasing)

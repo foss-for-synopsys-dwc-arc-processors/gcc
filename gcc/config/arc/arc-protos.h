@@ -132,8 +132,6 @@ extern void split_addsi (rtx *);
 extern void split_subsi (rtx *);
 extern void arc_pad_return (void);
 extern rtx arc_split_move (rtx *);
-extern char *arc_shorten_align (void);
-extern void arc_ccfsm_advance_to (rtx);
 extern int arc_verify_short (rtx insn, int unalign, int);
 extern const char *arc_short_long (rtx insn, const char *, const char *);
 extern rtx arc_regno_use_in (unsigned int, rtx);
