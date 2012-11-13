@@ -2,6 +2,21 @@
 
 	* final.c (shorten_branches): Fix uninitialized use of BODY.
 
+	* config/arc/arc.c (arc_print_operand): Honour predicates of
+	delay slot insns that got their predicate independently of the
+	delay slot bearing insn.
+	(arc_ccfsm_advance): Don't conditionalize non-annulled delay slot
+	insns in the delay slot of the starting branch.
+	(arc_ccfsm_record_condition): Consistently use state pointer.
+	Fix assert to take INSN_FROM_TARGET_P into account.
+	(arc_get_ccfsm_cond): Add reverse parameter.  Changed all callers.
+	(arc_ifcvt): When replacing a SEQUENCE with a copy of its slot
+	insn, also make the slot insn a note.
+	Don't conditionalize a non-anulled delay slot insn of a condbranch.
+	Take INSN_FROM_TARGET_P into account when conditionalizing a delay
+	slot insn that remains in a sequence.
+	* config/arc/arc.md (p_return_i): Set attribute "cond" to "use".
+
 2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (adjust_length): When freezing out a varaint, bump

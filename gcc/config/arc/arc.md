@@ -4466,6 +4466,7 @@
   return \"\";
 }
   [(set_attr "type" "return")
+   (set_attr "cond" "use")
    (set (attr "iscompact")
 	(cond [(eq (symbol_ref "arc_compute_function_type (cfun)")
 		   (symbol_ref "ARC_FUNCTION_NORMAL"))

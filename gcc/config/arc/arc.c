@@ -2777,9 +2777,13 @@ arc_print_operand (FILE *file,rtx x,int code)
       if (ARC_CCFSM_COND_EXEC_P (&arc_ccfsm_current))
 	{
 	  /* Is this insn in a delay slot sequence?  */
-	  if (!final_sequence || XVECLEN (final_sequence, 0) < 2)
+	  if (!final_sequence || XVECLEN (final_sequence, 0) < 2
+	      || current_insn_predicate
+	      || CALL_P (XVECEXP (final_sequence, 0, 0))
+	      || simplejump_p (XVECEXP (final_sequence, 0, 0)))
 	    {
-	      /* This insn isn't in a delay slot sequence.  */
+	      /* This insn isn't in a delay slot sequence, or conditionalized
+		 independently of its position in a delay slot.  */
 	      fprintf (file, "%s%s",
 		       code == '?' ? "." : "",
 		       arc_condition_codes[arc_ccfsm_current.cc]);
@@ -3273,8 +3277,8 @@ unspec_prof_htab_eq (const void *x, const void *y)
    arc_ccfsm_advance (called by arc_final_prescan_insn), and controls the
    actions of PRINT_OPERAND.  The patterns in the .md file for the branch
    insns also have a hand in this.  */
-/* ??? This doesn't seem to do the right thing with non-anulled or
-   annull-false delay slot insns.  */
+/* The way we leave dealing with non-anulled or annull-false delay slot
+   insns to the consumer is awkward.  */
 
 /* The state of the fsm controlling condition codes are:
    0: normal, do nothing special
@@ -3447,6 +3451,15 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
       else
 	gcc_unreachable ();
 
+      /* If this is a non-annulled branch with a delay slot, there is
+	 no need to conditionalize the delay slot.  */
+      if (NEXT_INSN (PREV_INSN (insn)) != insn
+	  && state->state == 0 && !INSN_ANNULLED_BRANCH_P (insn))
+	{
+	  this_insn = NEXT_INSN (this_insn);
+	  gcc_assert (NEXT_INSN (NEXT_INSN (PREV_INSN (start_insn)))
+		      == NEXT_INSN (this_insn));
+	}
       /* See how many insns this branch skips, and what kind of insns.  If all
 	 insns are okay, and the label or unconditional branch to the same
 	 label is not too far away, succeed.  */
@@ -3653,10 +3666,11 @@ arc_ccfsm_record_condition (rtx cond, int reverse, rtx jump,
 	      = ARC_INVERSE_CONDITION_CODE (state->cc);
 	  rtx pat = PATTERN (insn);
 	  if (GET_CODE (pat) == COND_EXEC)
-	    gcc_assert (arc_ccfsm_current.cc
+	    gcc_assert ((INSN_FROM_TARGET_P (insn)
+			 ? ARC_INVERSE_CONDITION_CODE (state->cc) : state->cc)
 			== get_arc_condition_code (XEXP (pat, 0)));
 	  else
-	    arc_ccfsm_current.state = 5;
+	    state->state = 5;
 	}
     }
 }
@@ -7939,10 +7953,12 @@ arc_insn_length_parameters (insn_length_parameters_t *ilp)
    CC field of *STATEP.  */
 
 static rtx
-arc_get_ccfsm_cond (struct arc_ccfsm *statep)
+arc_get_ccfsm_cond (struct arc_ccfsm *statep, bool reverse)
 {
   rtx cond = statep->cond;
   int raw_cc = get_arc_condition_code (cond);
+  if (reverse)
+    raw_cc = ARC_INVERSE_CONDITION_CODE (raw_cc);
 
   if (statep->cc == raw_cc)
     return copy_rtx (cond);
@@ -7992,19 +8008,14 @@ arc_ifcvt (void)
 		rtx pat = PATTERN (slot);
 		if (INSN_ANNULLED_BRANCH_P (insn))
 		  {
-		    rtx cond;
-		    if (INSN_FROM_TARGET_P (slot))
-		      {
-			statep->cc = ARC_INVERSE_CONDITION_CODE (statep->cc);
-			cond = arc_get_ccfsm_cond (statep),
-			statep->cc = ARC_INVERSE_CONDITION_CODE (statep->cc);
-		      }
-		    else
-		      cond = arc_get_ccfsm_cond (statep),
+		    rtx cond
+		      = arc_get_ccfsm_cond (statep, INSN_FROM_TARGET_P (slot));
 		    pat = gen_rtx_COND_EXEC (VOIDmode, cond, pat);
 		  }
 		if (!validate_change (seq, &PATTERN (seq), pat, 0))
 		  gcc_unreachable ();
+		PUT_CODE (slot, NOTE);
+		NOTE_KIND (slot) = NOTE_INSN_DELETED;
 		if (merge_bb && succ_bb)
 		  merge_blocks (merge_bb, succ_bb);
 	      }
@@ -8040,39 +8051,50 @@ arc_ifcvt (void)
 	    }
 	  /* Fall through.  */
 	case 4: case 5:
-	  rtx pat;
+	  if (!NONDEBUG_INSN_P (insn))
+	    break;
 
-	  pat = NULL_RTX;
 	  /* Conditionalized insn.  */
+
+	  rtx prev, pprev, *patp, pat, cond;
+
+	  /* If this is a delay slot insn in a non-annulled branch,
+	     don't conditionalize it.  N.B., this should be fine for
+	     conditional return too.  However, don't do this for
+	     unconditional branches, as these would be encountered when
+	     processing an 'else' part.  */
+	  prev = PREV_INSN (insn);
+	  pprev = PREV_INSN (prev);
+	  if (pprev && NEXT_INSN (pprev) == NEXT_INSN (insn)
+	      && JUMP_P (prev) && get_attr_cond (prev) == COND_USE
+	      && !INSN_ANNULLED_BRANCH_P (insn))
+	    break;
+
+	  patp = &PATTERN (insn);
+	  pat = *patp;
+	  cond = arc_get_ccfsm_cond (statep, INSN_FROM_TARGET_P (insn));
 	  if (NONJUMP_INSN_P (insn) || CALL_P (insn))
 	    {
 	      /* ??? don't conditionalize if all side effects are dead
 		 in the not-execute case.  */
-	      pat = gen_rtx_COND_EXEC (VOIDmode, arc_get_ccfsm_cond (statep),
-				       PATTERN (insn));
-	      validate_change (insn, &PATTERN (insn), pat, 1);
+	      pat = gen_rtx_COND_EXEC (VOIDmode, cond, pat);
 	    }
 	  else if (simplejump_p (insn))
 	    {
-	      rtx bdest = SET_SRC (PATTERN (insn));
-	      pat
-		= gen_rtx_IF_THEN_ELSE (VOIDmode, arc_get_ccfsm_cond (statep),
-					bdest, pc_rtx);
-	      validate_change (insn, &SET_SRC (PATTERN (insn)), pat, 1);
+	      patp = &SET_SRC (pat);
+	      pat = gen_rtx_IF_THEN_ELSE (VOIDmode, cond, *patp, pc_rtx);
 	    }
 	  else if (JUMP_P (insn) && ANY_RETURN_P (PATTERN (insn)))
 	    {
-	      rtx bdest = PATTERN (insn);
-	      pat = gen_rtx_IF_THEN_ELSE (VOIDmode, arc_get_ccfsm_cond (statep),
-					  bdest, pc_rtx);
+	      pat = gen_rtx_IF_THEN_ELSE (VOIDmode, cond, pat, pc_rtx);
 	      pat = gen_rtx_SET (VOIDmode, pc_rtx, pat);
-	      validate_change (insn, &PATTERN (insn), pat, 1);
 	    }
 	  else
-	    gcc_assert (!NONDEBUG_INSN_P (insn));
+	    gcc_unreachable ();
+	  validate_change (insn, patp, pat, 1);
 	  if (!apply_change_group ())
 	    gcc_unreachable ();
-	  if (pat)
+	  if (1)
 	    {
 	      rtx next = next_nonnote_insn (insn);
 	      if (GET_CODE (next) == BARRIER)
