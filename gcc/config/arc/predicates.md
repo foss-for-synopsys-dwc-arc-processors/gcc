@@ -208,7 +208,7 @@
     {
     case REG:
       return (REGNO (addr) >= FIRST_PSEUDO_REGISTER
-                || COMPACT_GP_REG_P (REGNO (addr))
+	      || COMPACT_GP_REG_P (REGNO (addr))
 	      || (SP_REG_P (REGNO (addr)) && (size != 2)));
 	/* Reverting for the moment since ldw_s does not have sp as a valid
 	   parameter.  */
