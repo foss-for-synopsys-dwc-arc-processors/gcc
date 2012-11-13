@@ -10,6 +10,9 @@
 	sfunc.
 	(p_return_i): Fix length for jeq.d / jne.d.
 
+	* config/arc/arc.c (arc_label_align): Check INSN_P before calling
+	recog_memoized.
+
 2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (attribute verify_short): Remove.

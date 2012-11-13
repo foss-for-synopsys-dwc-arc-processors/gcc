@@ -8765,7 +8765,7 @@ arc_label_align (rtx label)
   if (align_labels_log < 1)
     {
       rtx next = next_nonnote_nondebug_insn (label);
-      if (recog_memoized (next) >= 0)
+      if (INSN_P (next) && recog_memoized (next) >= 0)
 	return 1;
     }
   return align_labels_log;
