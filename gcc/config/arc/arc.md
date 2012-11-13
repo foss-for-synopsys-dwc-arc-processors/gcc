@@ -334,7 +334,10 @@
   (cond
     [(eq_attr "iscompact" "true,maybe")
      (cond
-       [(eq_attr "type" "sfunc") (const_int 10)
+       [(eq_attr "type" "sfunc")
+	(cond [(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC")
+	       (const_int 12)]
+	      (const_int 10))
 	(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 4)]
       (const_int 2))
 
@@ -4473,6 +4476,8 @@
 		   (symbol_ref "ARC_FUNCTION_NORMAL"))
 	       (const_int 4)
 	       (not (match_operand 0 "equality_comparison_operator" ""))
+	       (const_int 4)
+	       (eq_attr "delay_slot_filled" "yes")
 	       (const_int 4)]
 	      (const_int 2)))])
 
