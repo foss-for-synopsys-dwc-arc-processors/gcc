@@ -1664,7 +1664,7 @@ shorten_branches (rtx first)
 		  insn_current_address += insn_lengths[uid];
 		  if (BARRIER_P (insn))
 		    ctx.last_aligning_insn = 0;
-		  target_p = CALL_P (body);
+		  target_p = CALL_P (insn);
 		}
 
 	      continue;
@@ -1709,8 +1709,10 @@ shorten_branches (rtx first)
 
 	  /* If needed, do any adjustment.  */
 	  new_length = adjust_length (insn, new_length, false, &ctx, target_p);
-	  target_p = (CALL_P (body) || (GET_CODE (body) == SEQUENCE
-					&& CALL_P (XVECEXP (body, 0, 0))));
+	  target_p = (CALL_P (insn)
+		      || (NONJUMP_INSN_P (insn)
+			  && GET_CODE (body = PATTERN (insn)) == SEQUENCE
+			  && CALL_P (XVECEXP (body, 0, 0))));
 	  insn_current_address += new_length;
 	}
       /* For a non-optimizing compile, do only a single pass.  */

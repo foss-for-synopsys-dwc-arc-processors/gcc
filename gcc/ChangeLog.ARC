@@ -1,7 +1,8 @@
-2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
-	* arc.md (entire file): Whitespace fixes.
-	(attribute length): Remove obsolete bbit nop padding compensation.
+	* final.c (shorten_branches): Fix uninitialized use of BODY.
+
+2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (adjust_length): When freezing out a varaint, bump
 	something_changed & niter.
@@ -12,6 +13,11 @@
 
 	* config/arc/arc.c (arc_label_align): Check INSN_P before calling
 	recog_memoized.
+
+2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* arc.md (entire file): Whitespace fixes.
+	(attribute length): Remove obsolete bbit nop padding compensation.
 
 2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
