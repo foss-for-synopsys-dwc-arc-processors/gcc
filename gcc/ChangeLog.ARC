@@ -3,6 +3,9 @@
 	* arc.md (entire file): Whitespace fixes.
 	(attribute length): Remove obsolete bbit nop padding compensation.
 
+	* final.c (adjust_length): When freezing out a varaint, bump
+	something_changed & niter.
+
 2012-11-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (attribute verify_short): Remove.

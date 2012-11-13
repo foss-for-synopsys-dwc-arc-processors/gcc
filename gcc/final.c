@@ -901,10 +901,22 @@ adjust_length (rtx insn, int new_length, bool seq_p,
       for (int i = 0; i < n_variants; i++)
 	{
 	  insn_length_variant_t *variant = &ctx->variants[i];
-	  if (!variant->enabled)
-	    bitmap_clear_bit (ctx->shuid_variants[i], shuid);
 	  if (bitmap_bit_p (ctx->shuid_variants[i], shuid))
 	    {
+	      if (!variant->enabled)
+		{
+		  /* We could have the variant provide an iter_threshold
+		     field here, to use instead of 0 ... if there is any
+		     point in having variants that get frozen out only
+		     after a few tries.  */
+		  if (ctx->niter >= 0)
+		    {
+		      bitmap_clear_bit (ctx->shuid_variants[i], shuid);
+		      ctx->something_changed = true;
+		      ctx->niter = 0;
+		    }
+		  continue;
+		}
 	      int need_align;
 	      unsigned align_offset
 		= insn_current_address >> ctx->parameters.align_unit_log;
