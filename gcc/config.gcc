@@ -800,7 +800,7 @@ case ${target} in
     *) echo 'Unknown thread configuration for VxWorks'; exit 1 ;;
   esac
   ;;
-*-*-elf)
+*-*-elf|arc-*-elf*)
   # Assume that newlib is being used and so __cxa_atexit is provided.
   default_use_cxa_atexit=yes
   use_gcc_stdint=wrap

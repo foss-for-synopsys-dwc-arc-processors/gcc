@@ -1,3 +1,7 @@
+2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.
+
 2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (shorten_branches): Fix uninitialized use of BODY.
