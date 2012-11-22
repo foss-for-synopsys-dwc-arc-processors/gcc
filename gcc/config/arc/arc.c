@@ -8097,14 +8097,13 @@ arc_ifcvt (void)
 	  validate_change (insn, patp, pat, 1);
 	  if (!apply_change_group ())
 	    gcc_unreachable ();
-	  if (1)
+	  if (JUMP_P (insn))
 	    {
 	      rtx next = next_nonnote_insn (insn);
 	      if (GET_CODE (next) == BARRIER)
-		{
-		  delete_insn (next);
-		  next = next_nonnote_insn (insn);
-		}
+		delete_insn (next);
+	      if (statep->state == 3)
+		continue;
 	    }
 	  break;
 	default:
@@ -8810,6 +8809,10 @@ arc_text_label (rtx label)
   if (next)
     return (GET_CODE (next) != JUMP_INSN
 	    || GET_CODE (PATTERN (next)) != ADDR_VEC);
+  else
+    /* ??? sometimes text labels get inserted very late, see
+       gcc.dg/torture/stackalign/comp-goto-1.c */
+    return 1;
   return 0;
 }
 
