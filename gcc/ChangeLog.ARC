@@ -14,6 +14,9 @@
 	* config/arc/arc.c (arc_text_label): If label has not been inserted,
 	assume it'll become a text label.
 
+	* config/arc/arc.c (arc_delegitimize_address_0): New function.
+	(arc_delegitimize_address): Use it.
+
 2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (shorten_branches): Fix uninitialized use of BODY.

@@ -8201,13 +8201,48 @@ arc_legitimize_address (rtx orig_x, rtx oldx, enum machine_mode mode)
 }
 
 static rtx
+arc_delegitimize_address_0 (rtx x)
+{
+  rtx u, gp;
+
+  if (GET_CODE (x) == CONST && GET_CODE (u = XEXP (x, 0)) == UNSPEC)
+    {
+      if (XINT (u, 1) == ARC_UNSPEC_GOT)
+	return XVECEXP (u, 0, 0);
+    }
+  else if (GET_CODE (x) == PLUS && GET_CODE (XEXP (x, 0)) == PLUS
+	   && ((REG_P (gp = XEXP (XEXP (x, 0), 1))
+		&& REGNO (gp) == PIC_OFFSET_TABLE_REGNUM)
+	       || (GET_CODE (gp) == CONST
+		   && GET_CODE (u = XEXP (gp, 0)) == UNSPEC
+		   && XINT (u, 1) == ARC_UNSPEC_GOT
+		   && GET_CODE (XVECEXP (u, 0, 0)) == SYMBOL_REF
+		   && !strcmp (XSTR (XVECEXP (u, 0, 0), 0), "_DYNAMIC")))
+	   && GET_CODE (XEXP (x, 1)) == CONST
+	   && GET_CODE (u = XEXP (XEXP (x, 1), 0)) == UNSPEC
+	   && XINT (u, 1) == ARC_UNSPEC_GOTOFF)
+    return gen_rtx_PLUS (GET_MODE (x), XEXP (XEXP (x, 0), 0),
+			 XVECEXP (u, 0, 0));
+  else if (GET_CODE (x) == PLUS
+	   && (u = arc_delegitimize_address_0 (XEXP (x, 1))))
+    return gen_rtx_PLUS (GET_MODE (x), XEXP (x, 0), u);
+  return NULL_RTX;
+}
+
+static rtx
 arc_delegitimize_address (rtx x)
 {
-  if (GET_CODE (x) == MEM && GET_CODE (XEXP (x, 0)) == CONST
-      && GET_CODE (XEXP (XEXP (x, 0), 0)) == UNSPEC
-      && XINT (XEXP (XEXP (x, 0), 0), 1) == ARC_UNSPEC_GOT)
-    return XVECEXP (XEXP (XEXP (x, 0), 0), 0, 0);
-  return x;
+  rtx orig_x = x = delegitimize_mem_from_attrs (x);
+  if (GET_CODE (x) == MEM)
+    x = XEXP (x, 0);
+  x = arc_delegitimize_address_0 (x);
+  if (x)
+    {
+      if (MEM_P (orig_x))
+	x = replace_equiv_address_nv (orig_x, x);
+      return x;
+    }
+  return orig_x;
 }
 
 rtx
