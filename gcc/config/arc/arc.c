@@ -2123,6 +2123,9 @@ arc_expand_prologue (void)
 	   ? arc_compute_frame_size (size)
 	   : cfun->machine->frame_info.total_size);
 
+  if (flag_stack_usage_info)
+    current_function_static_stack_size = size;
+
   /* Keep track of frame size to be allocated.  */
   frame_size_to_allocate = size;
 

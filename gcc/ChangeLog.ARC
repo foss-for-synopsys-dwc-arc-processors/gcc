@@ -2,6 +2,10 @@
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.
 
+	* config/arc/arc.c (arc_expand_prologue): For -fstack-usage, set
+	current_function_static_stack_size.
+	* testsuite/gcc.gcc.dg/stack-usage-1.c [__arc__] (SIZE): Define.
+
 2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (shorten_branches): Fix uninitialized use of BODY.
