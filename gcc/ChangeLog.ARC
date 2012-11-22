@@ -20,6 +20,10 @@
 	* config/arc/arc.c (arc_delegitimize_address_0): Add clause for
 	gp+gotoff.
 
+	* config/arc/arc.c (insn_length_variant_t, insn_length_parameters_t):
+	Provisional typedefs.
+	(arc_insn_length_parameters): Add ATTRIBUTE_UNUSED prototype.
+
 2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (shorten_branches): Fix uninitialized use of BODY.

@@ -7699,6 +7699,35 @@ enum
   ARC_LS_7   //  7 bit offset, Bcc_s
 };
 
+/* While the infrastructure patch is waiting for review, duplicate the
+   struct definitions, to allow this file to compile.  */
+#if 1
+typedef struct
+{
+  unsigned align_set;
+  /* Cost as a branch / call target or call return address.  */
+  int target_cost;
+  int fallthrough_cost;
+  int branch_cost;
+  int length;
+  /* 0 for not length sensitive, 1 for largest offset range,
+ *      2 for next smaller etc.  */
+  unsigned length_sensitive : 8;
+  bool enabled;
+} insn_length_variant_t;
+
+typedef struct insn_length_parameters_s
+{
+  int align_unit_log;
+  int align_base_log;
+  int max_variants;
+  int (*get_variants) (rtx, int, bool, bool, insn_length_variant_t *);
+} insn_length_parameters_t;
+
+static void
+arc_insn_length_parameters (insn_length_parameters_t *ilp) ATTRIBUTE_UNUSED;
+#endif
+
 static int
 arc_get_insn_variants (rtx insn, int len, bool, bool target_p,
 		       insn_length_variant_t *ilv)
