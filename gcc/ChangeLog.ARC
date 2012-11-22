@@ -11,8 +11,8 @@
 	* config/arc/arc.c (arc_ifcvt): Don't call arc_ccfsm_post_advance
 	in state 3 after conditionalizing a jump.
 
-	* config/arc/arc.c (arc_text_label): If label has no sucessor, assume
-	it'll become a text label.
+	* config/arc/arc.c (arc_text_label): If label has not been inserted,
+	assume it'll become a text label.
 
 2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 

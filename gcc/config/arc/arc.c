@@ -8809,7 +8809,7 @@ arc_text_label (rtx label)
   if (next)
     return (GET_CODE (next) != JUMP_INSN
 	    || GET_CODE (PATTERN (next)) != ADDR_VEC);
-  else
+  else if (!PREV_INSN (label))
     /* ??? sometimes text labels get inserted very late, see
        gcc.dg/torture/stackalign/comp-goto-1.c */
     return 1;
