@@ -17,6 +17,9 @@
 	* config/arc/arc.c (arc_delegitimize_address_0): New function.
 	(arc_delegitimize_address): Use it.
 
+	* config/arc/arc.c (arc_delegitimize_address_0): Add clause for
+	gp+gotoff.
+
 2012-11-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (shorten_branches): Fix uninitialized use of BODY.

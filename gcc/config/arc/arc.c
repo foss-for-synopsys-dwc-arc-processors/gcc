@@ -8210,6 +8210,18 @@ arc_delegitimize_address_0 (rtx x)
       if (XINT (u, 1) == ARC_UNSPEC_GOT)
 	return XVECEXP (u, 0, 0);
     }
+  else if (GET_CODE (x) == PLUS
+	   && ((REG_P (gp = XEXP (x, 0))
+		&& REGNO (gp) == PIC_OFFSET_TABLE_REGNUM)
+	       || (GET_CODE (gp) == CONST
+		   && GET_CODE (u = XEXP (gp, 0)) == UNSPEC
+		   && XINT (u, 1) == ARC_UNSPEC_GOT
+		   && GET_CODE (XVECEXP (u, 0, 0)) == SYMBOL_REF
+		   && !strcmp (XSTR (XVECEXP (u, 0, 0), 0), "_DYNAMIC")))
+	   && GET_CODE (XEXP (x, 1)) == CONST
+	   && GET_CODE (u = XEXP (XEXP (x, 1), 0)) == UNSPEC
+	   && XINT (u, 1) == ARC_UNSPEC_GOTOFF)
+    return XVECEXP (u, 0, 0);
   else if (GET_CODE (x) == PLUS && GET_CODE (XEXP (x, 0)) == PLUS
 	   && ((REG_P (gp = XEXP (XEXP (x, 0), 1))
 		&& REGNO (gp) == PIC_OFFSET_TABLE_REGNUM)
