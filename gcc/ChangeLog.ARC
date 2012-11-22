@@ -4,7 +4,7 @@
 
 	* config/arc/arc.c (arc_expand_prologue): For -fstack-usage, set
 	current_function_static_stack_size.
-	* testsuite/gcc.gcc.dg/stack-usage-1.c [__arc__] (SIZE): Define.
+	* testsuite/gcc.dg/stack-usage-1.c [__arc__] (SIZE): Define.
 
 	* testsuite/gcc.dg/torture/pr37868.c: Also skip for arc*-*-*.
 
