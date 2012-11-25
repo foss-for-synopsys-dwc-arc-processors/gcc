@@ -44,6 +44,11 @@
 	* config/arc/predicates.md (const_sint32_operand): Delete.
 	(const_uint32_operand): Likewise.
 
+	* config/arc/arc.c: Add empty lines between function comments
+	and function.
+	(arc_save_restore): Remove offset parameter.  Changed all callers.
+	Expanded comment.
+
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.

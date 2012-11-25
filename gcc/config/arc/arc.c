@@ -391,6 +391,7 @@ static void output_short_suffix (FILE *file);
 static bool arc_frame_pointer_required (void);
 
 /* Implements target hook vector_mode_supported_p.  */
+
 static bool
 arc_vector_mode_supported_p (enum machine_mode mode)
 {
@@ -547,8 +548,8 @@ static void arc_finalize_pic (void);
 
 /* Try to keep the (mov:DF _, reg) as early as possible so
    that the d<add/sub/mul>h-lr insns appear together and can
-   use the peephole2 pattern
-*/
+   use the peephole2 pattern.  */
+
 static int
 arc_sched_adjust_priority (rtx insn, int priority)
 {
@@ -599,6 +600,7 @@ struct rtl_opt_pass pass_arc_ifcvt =
 };
 
 /* Called by OVERRIDE_OPTIONS to initialize various things.  */
+
 void
 arc_init (void)
 {
@@ -724,6 +726,7 @@ arc_init (void)
 }
 
 /* Check ARC options, generate derived target attributes.  */
+
 static void
 arc_override_options (void)
 {
@@ -874,6 +877,7 @@ get_arc_condition_code (rtx comparison)
 }
 
 /* Return true if COMPARISON has a short form that can accomodate OFFSET.  */
+
 bool
 arc_short_comparison_p (rtx comparison, int offset)
 {
@@ -1529,6 +1533,7 @@ arc_double_limm_p (rtx value)
 
    CUM has not been updated for the last named argument which has type TYPE
    and mode MODE, and we rely on this fact.  */
+
 static void
 arc_setup_incoming_varargs (cumulative_args_t args_so_far,
 			    enum machine_mode mode, tree type,
@@ -1631,6 +1636,7 @@ arc_address_cost (rtx addr, enum machine_mode, addr_space_t, bool speed)
 }
 
 /* Emit instruction X with the frame related bit set.  */
+
 static rtx
 frame_insn (rtx x)
 {
@@ -1640,6 +1646,7 @@ frame_insn (rtx x)
 }
 
 /* Emit a frame insn to move SRC to DST.  */
+
 static rtx
 frame_move (rtx dst, rtx src)
 {
@@ -1648,6 +1655,7 @@ frame_move (rtx dst, rtx src)
 
 /* Like frame_move, but add a REG_INC note for REG if ADDR contains an
    auto increment address, or is zero.  */
+
 static rtx
 frame_move_inc (rtx dst, rtx src, rtx reg, rtx addr)
 {
@@ -1661,6 +1669,7 @@ frame_move_inc (rtx dst, rtx src, rtx reg, rtx addr)
 }
 
 /* Emit a frame insn which adjusts a frame address register REG by OFFSET.  */
+
 static rtx
 frame_add (rtx reg, HOST_WIDE_INT offset)
 {
@@ -1671,6 +1680,7 @@ frame_add (rtx reg, HOST_WIDE_INT offset)
 }
 
 /* Emit a frame insn which adjusts stack pointer by OFFSET.  */
+
 static rtx
 frame_stack_add (HOST_WIDE_INT offset)
 {
@@ -1871,6 +1881,7 @@ arc_compute_function_type (struct function *fun)
    GMASK is a bitmask of registers to save.  This function sets
    FRAME->millicod_start_reg .. FRAME->millicode_end_reg to the range
    of registers to be saved / restored with a millicode call.  */
+
 static int
 arc_compute_millicode_save_restore_regs (unsigned int gmask,
 					 struct arc_frame_info *frame)
@@ -1997,11 +2008,18 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
 }
 
 /* Common code to save/restore registers.  */
-/* epilogue_p 0: prologue 1:epilogue 2:epilogue, sibling thunk  */
+/* BASE_REG is the base register to use for addressing and to adjust.
+   GMASK is a bitmask of general purpose registers to save/restore.
+   epilogue_p 0: prologue 1:epilogue 2:epilogue, sibling thunk
+   If *FIRST_OFFSET is non-zero, add it first to BASE_REG - preferably
+   using a pre-modify for the first memory access.  *FIRST_OFFSET is then
+   zeroed.  */
+
 static void
-arc_save_restore (rtx base_reg, unsigned int offset,
+arc_save_restore (rtx base_reg,
 		  unsigned int gmask, int epilogue_p, int *first_offset)
 {
+  unsigned int offset = 0;
   int regno;
   struct arc_frame_info *frame = &cfun->machine->frame_info;
   rtx sibthunk_insn = NULL_RTX;
@@ -2108,6 +2126,7 @@ int arc_return_address_regs[4]
   = {0, RETURN_ADDR_REGNUM, ILINK1_REGNUM, ILINK2_REGNUM};
 
 /* Set up the stack and frame pointer (if desired) for the function.  */
+
 void
 arc_expand_prologue (void)
 {
@@ -2163,7 +2182,7 @@ arc_expand_prologue (void)
     {
       first_offset = -cfun->machine->frame_info.reg_size;
       /* N.B. FRAME_POINTER_MASK and RETURN_ADDR_MASK are cleared in gmask.  */
-      arc_save_restore (stack_pointer_rtx, 0, gmask, 0, &first_offset);
+      arc_save_restore (stack_pointer_rtx, gmask, 0, &first_offset);
       frame_size_to_allocate -= cfun->machine->frame_info.reg_size;
     }
 
@@ -2272,7 +2291,7 @@ arc_expand_epilogue (int sibcall_p)
 
 	      gcc_assert (!(cfun->machine->frame_info.gmask
 			    & (FRAME_POINTER_MASK | RETURN_ADDR_MASK)));
-	      arc_save_restore (stack_pointer_rtx, 0,
+	      arc_save_restore (stack_pointer_rtx,
 				cfun->machine->frame_info.gmask,
 				1 + sibthunk_p, &first_offset);
 	      if (sibthunk_p)
@@ -2339,7 +2358,7 @@ arc_expand_epilogue (int sibcall_p)
       if (!millicode_p)
 	{
            if (cfun->machine->frame_info.reg_size)
-	     arc_save_restore (stack_pointer_rtx, 0,
+	     arc_save_restore (stack_pointer_rtx,
 	       /* The zeroing of these two bits is unnecessary, but leave this in for clarity.  */
 			       cfun->machine->frame_info.gmask
 			       & ~(FRAME_POINTER_MASK | RETURN_ADDR_MASK), 1, &first_offset);
@@ -2412,6 +2431,7 @@ arc_finalize_pic (void)
 /* !TARGET_BARREL_SHIFTER support.  */
 /* Emit a shift insn to set OP0 to OP1 shifted by OP2; CODE specifies what
    kind of shift.  */
+
 void
 emit_shift (enum rtx_code code, rtx op0, rtx op1, rtx op2)
 {
@@ -2564,6 +2584,7 @@ output_shift (rtx *operands)
 /* Nested function support.  */
 
 /* Directly store VALUE into memory object BLOCK at OFFSET.  */
+
 static void
 emit_store_direct (rtx block, int offset, int value)
 {
@@ -2605,7 +2626,6 @@ entry:
   or
    - allocate trampolines fram a special pool of pre-allocated trampolines.  */
 
-
 static void
 arc_initialize_trampoline (rtx tramp, tree fndecl, rtx cxt)
 {
@@ -2621,6 +2641,7 @@ arc_initialize_trampoline (rtx tramp, tree fndecl, rtx cxt)
 
 /* Allow the profiler to easily distinguish trampolines from normal
   functions.  */
+
 static rtx
 arc_trampoline_adjust_address (rtx addr)
 {
@@ -3288,8 +3309,9 @@ unspec_prof_htab_eq (const void *x, const void *y)
    This is done here because knowledge of the ccfsm state is required,
    we may not be outputting the branch.  */
 
-/* arc_final_prescan_insn calls arc_ccfsm_advance to adjust arc_ccfsm_current.
+/* arc_final_prescan_insn calls arc_ccfsm_advance to adjust arc_ccfsm_current,
    before letting final output INSN.  */
+
 static void
 arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
 {
@@ -3649,6 +3671,7 @@ arc_ccfsm_record_condition (rtx cond, int reverse, rtx jump,
 }
 
 /* Update *STATE as we would when we emit INSN.  */
+
 static void
 arc_ccfsm_post_advance (rtx insn, struct arc_ccfsm *state)
 {
@@ -3701,6 +3724,7 @@ arc_ccfsm_cond_exec_p (void)
 
 /* Like next_active_insn, but return NULL if we find an ADDR_(DIFF_)VEC,
    and look inside SEQUENCEs.  */
+
 static rtx
 arc_next_active_insn (rtx insn, struct arc_ccfsm *statep)
 {
@@ -3757,6 +3781,7 @@ arc_next_active_insn (rtx insn, struct arc_ccfsm *statep)
 /* Return non-zero if INSN should be output as a short insn.  UNALIGN is
    zero if the current insn is aligned to a 4-byte-boundary, two otherwise.
    If CHECK_ATTR is greater than 0, check the iscompact attribute first.  */
+
 int
 arc_verify_short (rtx insn, int, int check_attr)
 {
@@ -3838,6 +3863,7 @@ arc_final_prescan_insn (rtx insn, rtx *opvec ATTRIBUTE_UNUSED,
    All eliminations are permissible. If we need a frame
    pointer, we must eliminate ARG_POINTER_REGNUM into
    FRAME_POINTER_REGNUM and not into STACK_POINTER_REGNUM.  */
+
 static bool
 arc_can_eliminate (const int from ATTRIBUTE_UNUSED, const int to)
 {
@@ -3884,6 +3910,7 @@ arc_frame_pointer_required (void)
 
 
 /* Return the destination address of a branch.  */
+
 int
 branch_dest (rtx branch)
 {
@@ -4661,7 +4688,6 @@ arc_arg_partial_bytes (cumulative_args_t cum_v, enum machine_mode mode,
 /* On the ARC the first MAX_ARC_PARM_REGS args are normally in registers
    and the rest are pushed.  */
 
-
 static rtx
 arc_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
 		  const_tree type ATTRIBUTE_UNUSED, bool named ATTRIBUTE_UNUSED)
@@ -4708,6 +4734,7 @@ arc_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
    reg. In function_arg, since *cum > last arg reg we would return 0
    and thus the arg will end up on the stack. For straddling args of
    course function_arg_partial_nregs will come into play.  */
+
 static void
 arc_function_arg_advance (cumulative_args_t cum_v, enum machine_mode mode,
 			  const_tree type, bool named ATTRIBUTE_UNUSED)
@@ -4729,6 +4756,7 @@ arc_function_arg_advance (cumulative_args_t cum_v, enum machine_mode mode,
    VALTYPE is the data type of the value (as a tree).
    If the precise function being called is known, FN_DECL_OR_TYPE is its
    FUNCTION_DECL; otherwise, FN_DECL_OR_TYPE is its type.  */
+
 static rtx
 arc_function_value (const_tree valtype,
 		    const_tree fn_decl_or_type ATTRIBUTE_UNUSED,
@@ -4744,6 +4772,7 @@ arc_function_value (const_tree valtype,
 }
 
 /* Returns the return address that is used by builtin_return_address.  */
+
 rtx
 arc_return_addr_rtx (int count, ATTRIBUTE_UNUSED rtx frame)
 {
@@ -4856,6 +4885,7 @@ arc_legitimate_address_p (enum machine_mode mode, rtx x, bool strict)
 
 /* Return true iff ADDR (a legitimate address expression)
    has an effect that depends on the machine mode it is used for.  */
+
 static bool
 arc_mode_dependent_address_p (const_rtx addr, addr_space_t)
 {
@@ -4873,6 +4903,7 @@ arc_mode_dependent_address_p (const_rtx addr, addr_space_t)
 }
 
 /* Determine if it's legal to put X into the constant pool.  */
+
 static bool
 arc_cannot_force_const_mem (enum machine_mode mode, rtx x)
 {
@@ -5310,8 +5341,8 @@ check_if_valid_regno_const (rtx *operands, int opno)
 }
 
 /* Check that after all the constant folding, whether the operand to
-   __builtin_arc_sleep is an unsigned int of 6 bits.  If not, flag an error
-*/
+   __builtin_arc_sleep is an unsigned int of 6 bits.  If not, flag an error.  */
+
 bool
 check_if_valid_sleep_operand (rtx *operands, int opno)
 {
@@ -5329,6 +5360,7 @@ check_if_valid_sleep_operand (rtx *operands, int opno)
 }
 
 /* Return true if it is ok to make a tail-call to DECL.  */
+
 static bool
 arc_function_ok_for_sibcall (tree decl ATTRIBUTE_UNUSED,
 			     tree exp ATTRIBUTE_UNUSED)
@@ -5343,6 +5375,7 @@ arc_function_ok_for_sibcall (tree decl ATTRIBUTE_UNUSED,
 
 /* Output code to add DELTA to the first argument, and then jump
    to FUNCTION.  Used for C++ multiple inheritance.  */
+
 static void
 arc_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
 		     HOST_WIDE_INT delta,
@@ -5558,6 +5591,7 @@ arc_invalid_within_doloop (const_rtx insn)
 static int arc_reorg_in_progress = 0;
 
 /* ARC's machince specific reorg function.  */
+
 static void
 arc_reorg (void)
 {
@@ -6264,6 +6298,7 @@ compact_sda_memory_operand (rtx op,enum machine_mode  mode)
 }
 
 /* Implement ASM_OUTPUT_ALIGNED_DECL_LOCAL.  */
+
 void
 arc_asm_output_aligned_decl_local (FILE * stream, tree decl, const char * name,
 				   unsigned HOST_WIDE_INT size,
@@ -7139,6 +7174,7 @@ arc_register_move_cost (enum machine_mode,
    COND.  If COND is zero, don't output anything, just return an
    empty string for instructions with 32 bit opcode, and a non-empty one
    for insns with a 16 bit opcode.  */
+
 const char*
 arc_output_addsi (rtx *operands, const char *cond)
 {
@@ -7471,6 +7507,7 @@ disi_highpart (rtx in)
 /* Called by arc600_corereg_hazard via for_each_rtx.
    If a hazard is found, return a conservative estimate of the required
    length adjustment to accomodate a nop.  */
+
 static int
 arc600_corereg_hazard_1 (rtx *xp, void *data)
 {
@@ -7499,11 +7536,12 @@ arc600_corereg_hazard_1 (rtx *xp, void *data)
   return 0;
 }
 
-/* return length adjustment for INSN.
+/* Return length adjustment for INSN.
    For ARC600:
    A write to a core reg greater or equal to 32 must not be immediately
    followed by a use.  Anticipate the length requirement to insert a nop
    between PRED and SUCC to prevent a hazard.  */
+
 static int
 arc600_corereg_hazard (rtx pred, rtx succ)
 {
@@ -7537,6 +7575,7 @@ arc600_corereg_hazard (rtx pred, rtx succ)
    A write to a core reg greater or equal to 32 must not be immediately
    followed by a use.  Anticipate the length requirement to insert a nop
    between PRED and SUCC to prevent a hazard.  */
+
 int
 arc_hazard (rtx pred, rtx succ)
 {
@@ -7551,6 +7590,7 @@ arc_hazard (rtx pred, rtx succ)
 }
 
 /* Return length adjustment for INSN.  */
+
 int
 arc_adjust_insn_length (rtx insn, int len, bool)
 {
@@ -8076,6 +8116,7 @@ arc_ifcvt (void)
   way, and branch and/or fall through targets be redirected.  Hence we don't
   want such writes in a delay slot.  */
 /* Called by arc_write_ext_corereg via for_each_rtx.  */
+
 static int
 write_ext_corereg_1 (rtx *xp, void *data ATTRIBUTE_UNUSED)
 {
@@ -8097,6 +8138,7 @@ write_ext_corereg_1 (rtx *xp, void *data ATTRIBUTE_UNUSED)
 }
 
 /* Return nonzreo iff INSN writes to an extension core register.  */
+
 int
 arc_write_ext_corereg (rtx insn)
 {
@@ -8105,6 +8147,7 @@ arc_write_ext_corereg (rtx insn)
 
 /* This is like the hook, but returns NULL when it can't / won't generate
    a legitimate address.  */
+
 static rtx
 arc_legitimize_address_0 (rtx x, rtx oldx ATTRIBUTE_UNUSED,
 			  enum machine_mode mode)
@@ -8250,7 +8293,7 @@ gen_mhi (void)
   return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 58: 59);
 }
 
-/* FIXME: a parameter should be added, and code added to final.c, to
+/* FIXME: a parameter should be added, and code added to final.c,
    to reproduce this functionality in shorten_branches.  */
 #if 0
 /* Return nonzero iff BRANCH should be unaligned if possible by upsizing
@@ -8292,6 +8335,7 @@ arc_branch_size_unknown_p (void)
    a mispredict.  A return could happen immediately after the function
    start, but after a call we know that there will be at least a blink
    restore.  */
+
 void
 arc_pad_return (void)
 {
@@ -8352,6 +8396,7 @@ arc_pad_return (void)
 }
 
 /* The usual; we set up our machine_function data.  */
+
 static struct machine_function *
 arc_init_machine_status (void)
 {
@@ -8365,6 +8410,7 @@ arc_init_machine_status (void)
 
 /* Implements INIT_EXPANDERS.  We just set up to call the above
    function.  */
+
 void
 arc_init_expanders (void)
 {
@@ -8378,6 +8424,7 @@ arc_init_expanders (void)
    and two for load multiples where no final clobber of blink is required.
    We also skip the first load / store element since this is supposed to
    be checked in the instruction pattern.  */
+
 int
 arc_check_millicode (rtx op, int offset, int load_p)
 {
@@ -8445,6 +8492,7 @@ arc_toggle_unalign (void)
    constant in operand 2, but which would require a LIMM because of
    operand mismatch.
    operands 3 and 4 are new SET_SRCs for operands 0.  */
+
 void
 split_addsi (rtx *operands)
 {
@@ -8469,6 +8517,7 @@ split_addsi (rtx *operands)
    constant in operand 1, but which would require a LIMM because of
    operand mismatch.
    operands 3 and 4 are new SET_SRCs for operands 0.  */
+
 void
 split_subsi (rtx *operands)
 {
@@ -8502,6 +8551,7 @@ split_subsi (rtx *operands)
 /* Handle DOUBLE_REGS uses.
    Operand 0: destination register
    Operand 1: source register  */
+
 static rtx
 arc_process_double_reg_moves (rtx *operands)
 {
@@ -8578,6 +8628,7 @@ arc_process_double_reg_moves (rtx *operands)
 
 /* operands 0..1 are the operands of a 64 bit move instruction.
    split it into two moves with operands 2/3 and 4/5.  */
+
 rtx
 arc_split_move (rtx *operands)
 {
@@ -8669,6 +8720,7 @@ arc_short_long (rtx insn, const char *s_tmpl, const char *l_tmpl)
 
 /* Searches X for any reference to REGNO, returning the rtx of the
    reference found if any.  Otherwise, returns NULL_RTX.  */
+
 rtx
 arc_regno_use_in (unsigned int regno, rtx x)
 {
@@ -8698,6 +8750,7 @@ arc_regno_use_in (unsigned int regno, rtx x)
 
 /* Return the integer value of the "type" attribute for INSN, or -1 if
    INSN can't have attributes.  */
+
 int
 arc_attr_type (rtx insn)
 {
@@ -8770,6 +8823,7 @@ arc_scheduling_not_expected (void)
    alignment visible for branch shortening  (we actually align the loop
    insn before it, but that is equivalent since the loop insn is 4 byte
    long.)  */
+
 int
 arc_label_align (rtx label)
 {
@@ -8833,6 +8887,7 @@ arc_decl_pretend_args (tree decl)
   when compiling with -O2 -freorder-blocks-and-partition -fprofile-use
   -D_PROFILE_USE; delay branch scheduling then follows a REG_CROSSING_JUMP
   to redirect two breqs.  */
+
 static bool
 arc_can_follow_jump (const_rtx follower, const_rtx followee)
 {
