@@ -216,10 +216,6 @@ mauto-modify-reg
 Target Var(TARGET_AUTO_MODIFY_REG)
 Enable the use of pre/post modify with register displacement.
 
-mold-di-patterns
-Target Var(TARGET_OLD_DI_PATTERNS)
-enable use of old DI patterns that have presumably been obsoleted by subreg lowering.
-
 mmul32x16
 Target Report Mask(MULMAC_32BY16_SET)
 Generate 32x16 multiply and mac instructions

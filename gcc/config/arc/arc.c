@@ -8704,41 +8704,6 @@ arc_split_move (rtx *operands)
   return val;
 }
 
-void
-arc_split_dilogic (rtx *operands, enum rtx_code code)
-{
-  int word, i;
-
-  for (word = 0; word < 2; word++)
-    for (i = 0; i < 3; i++)
-      operands[3+word*3+i] = operand_subword (operands[i], word, 0, DImode);
-  if (reg_overlap_mentioned_p (operands[3], operands[7])
-     || reg_overlap_mentioned_p (operands[3], operands[8]))
-    {
-      rtx tmp;
-
-      for (i = 0; i < 3; i++)
-	{
-	  tmp = operands[3+i];
-	  operands[3+i] = operands[6+i];
-	  operands[6+i] = tmp;
-	}
-      gcc_assert (!reg_overlap_mentioned_p (operands[3], operands[7]));
-      gcc_assert (!reg_overlap_mentioned_p (operands[3], operands[8]));
-    }
-  for (word = 0, i = 0; word < 2; word++)
-    {
-      rtx src = simplify_gen_binary (code, SImode, operands[3+word*3+1],
-				     operands[3+word*3+2]);
-      rtx dst = operands[3+word*3];
-
-      if (!rtx_equal_p (src, dst) || !optimize)
-	emit_insn (gen_rtx_SET (VOIDmode, dst, src));
-    }
-  if (!get_insns ())
-    emit_note (NOTE_INSN_DELETED);
-}
-
 const char *
 arc_short_long (rtx insn, const char *s_tmpl, const char *l_tmpl)
 {

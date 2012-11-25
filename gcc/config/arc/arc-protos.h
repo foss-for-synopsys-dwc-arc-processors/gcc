@@ -67,7 +67,6 @@ extern int prepare_extend_operands (rtx *operands, enum rtx_code code,
 extern const char *arc_output_addsi (rtx *operands, const char *);
 extern int arc_expand_movmem (rtx *operands);
 extern int prepare_move_operands (rtx *operands, enum machine_mode mode);
-extern void arc_split_dilogic (rtx *, enum rtx_code);
 extern void emit_shift (enum rtx_code, rtx, rtx, rtx);
 #endif /* RTX_CODE */
 

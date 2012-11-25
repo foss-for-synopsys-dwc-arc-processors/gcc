@@ -18,6 +18,11 @@
 	(zero_extendqisi2_ac, zero_extendhisi2_i): Change to '@' syntax.
 	* config/arc/predicates.md: Remove comment mentioning CONSTANT_P_RTX.
 
+	* config/arc/arc-protos.h (arc_split_dilogic): Don't declare.
+	* config/arc/arc.c (arc_split_dilogic): Delete.
+	* config/arc/arc.md (anddi3, iordi3, xordi3, negdi2): Delete.
+	* config/arc/arc.opt (mold-di-patterns): Remove.
+
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.

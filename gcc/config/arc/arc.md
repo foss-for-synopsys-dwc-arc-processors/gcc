@@ -2695,18 +2695,6 @@
 		      (const_int 0)))]
   "operands[4] = GEN_INT ( -(~INTVAL (operands[1]) | INTVAL (operands[2])));")
 
-(define_insn_and_split "anddi3"
-  [(set (match_operand:DI 0 "dest_reg_operand" "=&w,w,&w,w")
-	(and:DI (match_operand:DI 1 "register_operand" "%c,0,c,0")
-		(match_operand:DI 2 "nonmemory_operand" "c,c,H,H")))]
-  "TARGET_OLD_DI_PATTERNS"
-  "#"
-  "reload_completed"
-  [(set (match_dup 3) (and:SI (match_dup 4) (match_dup 5)))
-   (set (match_dup 6) (and:SI (match_dup 7) (match_dup 8)))]
-  "arc_split_dilogic (operands, AND); DONE;"
-  [(set_attr "length" "8,8,16,16")])
-
 ;;bic define_insn that allows limm to be the first operand
 (define_insn "*bicsi3_insn"
    [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,Rcw,Rcw,Rcw,w,w,w")
@@ -2748,18 +2736,6 @@
    (set_attr "predicable" "no,no,no,yes,yes,yes,no,no,no,no,yes,no")
    (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse,canuse_limm,nocond,nocond,canuse_limm,canuse,nocond")])
 
-(define_insn_and_split "iordi3"
-  [(set (match_operand:DI 0 "dest_reg_operand" "=&w,w,&w,w")
-	(ior:DI (match_operand:DI 1 "register_operand" "%c,0,c,0")
-		(match_operand:DI 2 "nonmemory_operand" "c,c,H,H")))]
-  "TARGET_OLD_DI_PATTERNS"
-  "#"
-  "reload_completed"
-  [(set (match_dup 3) (ior:SI (match_dup 4) (match_dup 5)))
-   (set (match_dup 6) (ior:SI (match_dup 7) (match_dup 8)))]
-  "arc_split_dilogic (operands, IOR); DONE;"
-  [(set_attr "length" "8,8,16,16")])
-
 (define_insn "xorsi3"
   [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcq,Rcw,Rcw,Rcw,Rcw, w,  w,w,  w,  w")
 	(xor:SI (match_operand:SI 1 "register_operand"  "%0,   Rcq,  0,  c,  0,  0, c,  c,0,  0,  c")
@@ -2784,18 +2760,6 @@
    (set_attr "predicable" "no,no,yes,yes,yes,no,no,no,no,yes,no")
    (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse_limm,nocond,nocond,canuse_limm,canuse,nocond")])
 
-(define_insn_and_split "xordi3"
-  [(set (match_operand:DI 0 "dest_reg_operand" "=&w,w,&w,w")
-	(xor:DI (match_operand:DI 1 "register_operand" "%c,0,c,0")
-		(match_operand:DI 2 "nonmemory_operand" "c,c,H,H")))]
-  "TARGET_OLD_DI_PATTERNS"
-  "#"
-  "reload_completed"
-  [(set (match_dup 3) (xor:SI (match_dup 4) (match_dup 5)))
-   (set (match_dup 6) (xor:SI (match_dup 7) (match_dup 8)))]
-  "arc_split_dilogic (operands, XOR); DONE;"
-  [(set_attr "length" "8,8,16,16")])
-
 (define_insn "negsi2"
   [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,Rcqq,Rcw,w")
 	(neg:SI (match_operand:SI 1 "register_operand" "0,Rcqq,0,c")))]
@@ -2804,19 +2768,6 @@
   [(set_attr "type" "unary")
    (set_attr "iscompact" "maybe,true,false,false")
    (set_attr "predicable" "no,no,yes,no")])
-
-(define_insn_and_split "negdi2"
-  [(set (match_operand:DI 0 "dest_reg_operand" "=&w")
-	(neg:DI (match_operand:DI 1 "register_operand" "c")))
-   (clobber (reg:CC CC_REG))]
-  "TARGET_OLD_DI_PATTERNS"
-  "#"
-  ""
-  [(set (match_dup 0) (minus:DI (const_int 0) (match_dup 1)))]
-  ""
-  [(set_attr "type" "unary")
-   (set_attr "cond" "clob")
-   (set_attr "length" "16")])
 
 (define_insn "one_cmplsi2"
   [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,w")
