@@ -8,6 +8,16 @@
 	something_changed is set, just set it.
 	(shorten_branches): Don't allocate ctx.uid_lock_length.
 
+	* config/arc/arc-protos.h (arc_dead_or_set_postreload_p): Don't declare.
+	* config/arc/arc.c (arc_reorg): Remove comment alluding to LOG_LINKS.
+	(arc_dead_or_set_postreload_1): Delete.
+	(arc_dead_or_set_postreload_p): Delete.
+	* config/arc/arc.md: Delete mistifying / obsolete comments.
+	Change a top-level comment from C syntax to md syntax.
+	Be a bit more precise about REG_N_SETS conundrum.
+	(zero_extendqisi2_ac, zero_extendhisi2_i): Change to '@' syntax.
+	* config/arc/predicates.md: Remove comment mentioning CONSTANT_P_RTX.
+
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.
