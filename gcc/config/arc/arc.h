@@ -890,12 +890,6 @@ arc_return_addr_rtx(COUNT,FRAME)
 
 #define EPILOGUE_USES(REGNO) arc_epilogue_uses ((REGNO))
 
-/* Epilogue delay slots.  */
-#define DELAY_SLOTS_FOR_EPILOGUE arc_delay_slots_for_epilogue ()
-
-#define ELIGIBLE_FOR_EPILOGUE_DELAY(TRIAL, SLOTS_FILLED) \
-arc_eligible_for_epilogue_delay (TRIAL, SLOTS_FILLED)
-
 /* Definitions for register eliminations.
 
    This is an array of structures.  Each structure initializes one pair
@@ -1353,7 +1347,7 @@ extern char rname56[], rname57[], rname58[], rname59[];
 
 /* Entry to the insn conditionalizer.  */
 #define FINAL_PRESCAN_INSN(INSN, OPVEC, NOPERANDS) \
-arc_final_prescan_insn (INSN, OPVEC, NOPERANDS)
+  arc_final_prescan_insn (INSN, OPVEC, NOPERANDS)
 
 /* A C expression which evaluates to true if CODE is a valid
    punctuation character for use in the `PRINT_OPERAND' macro.  */
@@ -1450,7 +1444,7 @@ do { \
     Define this macro when you need to see the variable's decl in order to
     chose what to output.  */
 #define ASM_OUTPUT_ALIGNED_DECL_LOCAL(STREAM, DECL, NAME, SIZE, ALIGNMENT) \
-arc_asm_output_aligned_decl_local (STREAM, DECL, NAME, SIZE, ALIGNMENT, 0)
+  arc_asm_output_aligned_decl_local (STREAM, DECL, NAME, SIZE, ALIGNMENT, 0)
 
 /* To translate the return value of arc_function_type into a register number
    to jump through for function return.  */

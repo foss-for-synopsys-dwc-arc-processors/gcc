@@ -499,35 +499,6 @@
        (match_test "(GET_CODE (op) != MEM || !MEM_VOLATILE_P (op)) && nonimmediate_operand (op, mode)"))
 )
 
-;; Accept integer operands in the range -0x80000000..0x7fffffff.  We have
-;; to check the range carefully since this predicate is used in DImode
-;; contexts.
-(define_predicate "const_sint32_operand"
-  (match_code "const_int")
-{
-  /* All allowed constants will fit a CONST_INT.  */
-  return (GET_CODE (op) == CONST_INT
-	  && (INTVAL (op) >= (-0x7fffffff - 1) && INTVAL (op) <= 0x7fffffff));
-}
-)
-
-;; Accept integer operands in the range 0..0xffffffff.  We have to check the
-;; range carefully since this predicate is used in DImode contexts.  Also, we
-;; need some extra crud to make it work when hosted on 64-bit machines.
-(define_predicate "const_uint32_operand"
-  (match_code "const_int, const_double")
-{
-#if HOST_BITS_PER_WIDE_INT > 32
-  /* All allowed constants will fit a CONST_INT.  */
-  return (GET_CODE (op) == CONST_INT
-	  && (INTVAL (op) >= 0 && INTVAL (op) <= 0xffffffffL));
-#else
-  return ((GET_CODE (op) == CONST_INT && INTVAL (op) >= 0)
-	  || (GET_CODE (op) == CONST_DOUBLE && CONST_DOUBLE_HIGH (op) == 0));
-#endif
-}
-)
-
 ;; Return 1 if OP is a comparison operator valid for the mode of CC.
 ;; This allows the use of MATCH_OPERATOR to recognize all the branch insns.
 

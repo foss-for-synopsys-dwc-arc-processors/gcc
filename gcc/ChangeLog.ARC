@@ -23,6 +23,27 @@
 	* config/arc/arc.md (anddi3, iordi3, xordi3, negdi2): Delete.
 	* config/arc/arc.opt (mold-di-patterns): Remove.
 
+	* config/arc/arc-protos.h: Remove prototypes for functions
+	generated from predicates.md.
+	Change return type of functions with boolean result to bool.
+	(arc_va_arg, arc_unalign_branch_p): Don't prototype.
+	(arc_finalize_pic, arc_delay_slots_for_epilogue): Likewise.
+	(arc_eligible_for_epilogue_delay): Likewise.
+	* config/arc/arc.c: Change return type of functions with boolean
+	result to bool.
+	Add / amend comments.
+	(symbolic_reference_mentioned_p): Don't provide extra prototype.
+	(arc_raw_symbolic_reference_mentioned_p): Likewise.
+	(arc_legitimate_pic_addr_p): Likewise.
+	(arc_finalize_pic): Now static void.
+	(arc_delay_slots_for_epilogue): Delete.
+	(arc_eligible_for_epilogue_delay, arc_va_arg): Likewise.
+	(arc_unalign_branch_p): Comment out.
+	* config/arc/arc.h (DELAY_SLOTS_FOR_EPILOGUE): Delete.
+	(ELIGIBLE_FOR_EPILOGUE_DELAY): Likewise.
+	* config/arc/predicates.md (const_sint32_operand): Delete.
+	(const_uint32_operand): Likewise.
+
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.

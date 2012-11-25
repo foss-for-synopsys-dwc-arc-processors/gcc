@@ -371,9 +371,6 @@ static rtx arc_expand_builtin (tree, rtx, rtx, enum machine_mode, int);
 static int branch_dest (rtx);
 
 static void  arc_output_pic_addr_const (FILE *,  rtx, int);
-int symbolic_reference_mentioned_p (rtx);
-int arc_raw_symbolic_reference_mentioned_p (rtx);
-int arc_legitimate_pic_addr_p (rtx);
 void emit_pic_move (rtx *, enum machine_mode);
 bool arc_legitimate_pic_operand_p (rtx);
 static bool arc_function_ok_for_sibcall (tree, tree);
@@ -417,6 +414,8 @@ static rtx frame_insn (rtx);
 static void arc_function_arg_advance (cumulative_args_t, enum machine_mode,
 				      const_tree, bool);
 static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
+
+static void arc_finalize_pic (void);
 
 /* initialize the GCC target structure.  */
 #undef  TARGET_COMP_TYPE_ATTRIBUTES
@@ -1040,6 +1039,8 @@ arc_preferred_reload_class (rtx, enum reg_class cl)
   return cl;
 }
 
+/* Initialize the arc_mode_class array.  */
+
 static void
 arc_init_reg_tables (void)
 {
@@ -1301,6 +1302,9 @@ arc_conditional_register_usage (void)
   arc_regno_reg_class[PROGRAM_COUNTER_REGNO] = GENERAL_REGS;
 }
 
+/* Handle an "interrupt" attribute; arguments as in
+   struct attribute_spec.handler.  */
+
 static tree
 arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
 				bool *no_add_attrs)
@@ -1490,18 +1494,18 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
   return gen_rtx_fmt_ee (code, omode, cc_reg, const0_rtx);
 }
 
-/* Return 1 if VALUE, a const_double, will fit in a limm (4 byte number).
+/* Return true if VALUE, a const_double, will fit in a limm (4 byte number).
    We assume the value can be either signed or unsigned.  */
 
-int
+bool
 arc_double_limm_p (rtx value)
 {
   HOST_WIDE_INT low, high;
 
   gcc_assert (GET_CODE (value) == CONST_DOUBLE);
 
-  if(TARGET_DPFP)
-    return 1;
+  if (TARGET_DPFP)
+    return true;
 
   low = CONST_DOUBLE_LOW (value);
   high = CONST_DOUBLE_HIGH (value);
@@ -2370,55 +2374,6 @@ arc_expand_epilogue (int sibcall_p)
     }
 }
 
-/* Set up the stack and frame pointer (if desired) for the function.  */
-
-/* Define the number of delay slots needed for the function epilogue.
-
-   Interrupt handlers can't have any epilogue delay slots (it's always needed
-   for something else, I think).  For normal functions, we have to worry about
-   using call-saved regs as they'll be restored before the delay slot insn.
-   Functions with non-empty frames already have enough choices for the epilogue
-   delay slot so for now we only consider functions with empty frames.  */
-
-int
-arc_delay_slots_for_epilogue (void)
-{
-  if (arc_compute_function_type (cfun) != ARC_FUNCTION_NORMAL)
-    return 0;
-  if (!cfun->machine->frame_info.initialized)
-    (void) arc_compute_frame_size (get_frame_size ());
-  if (cfun->machine->frame_info.total_size == 0)
-    return 1;
-  return 0;
-}
-
-/* Return true if TRIAL is a valid insn for the epilogue delay slot.
-   Any single length instruction which doesn't reference the stack or frame
-   pointer or any call-saved register is OK.  SLOT will always be 0.  */
-
-int
-arc_eligible_for_epilogue_delay (rtx trial,int slot)
-{
-  int trial_length = get_attr_length (trial);
-
-  gcc_assert (slot == 0);
-
-  if ( ( (trial_length == 4) || (trial_length == 2) )
-      /* If registers where saved, presumably there's more than enough
-	 possibilities for the delay slot.  The alternative is something
-	 more complicated (of course, if we expanded the epilogue as rtl
-	 this problem would go away).  */
-      /* ??? Note that this will always be true since only functions with
-	 empty frames have epilogue delay slots.  See
-	 arc_delay_slots_for_epilogue.  */
-      && cfun->machine->frame_info.gmask == 0
-      && ! reg_mentioned_p (stack_pointer_rtx, PATTERN (trial))
-      && ! reg_mentioned_p (frame_pointer_rtx, PATTERN (trial)))
-    return 1;
-  return 0;
-}
-
-
 /* PIC */
 
 /* Emit special PIC prologues and epilogues.  */
@@ -2434,14 +2389,14 @@ arc_eligible_for_epilogue_delay (rtx trial,int slot)
                 ( const (unspec (symref _DYNAMIC) 3)))
    ----------------------------------------------------------  */
 
-rtx
+static void
 arc_finalize_pic (void)
 {
   rtx pat;
   rtx baseptr_rtx = gen_rtx_REG (Pmode, PIC_OFFSET_TABLE_REGNUM);
 
   if (crtl->uses_pic_offset_table == 0)
-    return NULL_RTX;
+    return;
 
   gcc_assert (flag_pic != 0);
 
@@ -2451,7 +2406,7 @@ arc_finalize_pic (void)
 
   pat = gen_rtx_SET (VOIDmode, baseptr_rtx, pat);
 
-  return emit_insn (pat);
+  emit_insn (pat);
 }
 
 /* !TARGET_BARREL_SHIFTER support.  */
@@ -2468,7 +2423,7 @@ emit_shift (enum rtx_code code, rtx op0, rtx op1, rtx op2)
 }
 
 /* Output the assembler code for doing a shift.
-   We go to a bit of trouble to generate efficient code as the ARC only has
+   We go to a bit of trouble to generate efficient code as the ARC601 only has
    single bit shifts.  This is taken from the h8300 port.  We only have one
    mode of shifting and can't access individual bytes like the h8300 can, so
    this is greatly simplified (at the expense of not generating hyper-
@@ -3194,7 +3149,15 @@ arc_print_operand_address (FILE *file , rtx addr)
     }
 }
 
-/* Called via note_stores.  */
+/* Called via walk_stores.  DATA points to a hash table we can use to
+   establish a unique SYMBOL_REF for each counter, which corresponds to
+   a caller-callee pair.
+   X is a store which we want to examine for an UNSPEC_PROF, which
+   would be an address loaded into a register, or directly used in a MEM.
+   If we found an UNSPEC_PROF, if we encounter a new counter the first time,
+   write out ia description and a data allocation for a 32 bit counter.
+   Also, fill in the appropriate symbol_ref into each UNSPEC_PROF instance.  */
+
 static void
 write_profile_sections (rtx dest ATTRIBUTE_UNUSED, rtx x, void *data)
 {
@@ -3247,6 +3210,9 @@ write_profile_sections (rtx dest ATTRIBUTE_UNUSED, rtx x, void *data)
     *srcp = XVECEXP (*slot, 0, 2);
 }
 
+/* Hash function for UNSPEC_PROF htab.  Use both the caller's name and
+   the callee's name (if known).  */
+
 static hashval_t
 unspec_prof_hash (const void *x)
 {
@@ -3256,6 +3222,10 @@ unspec_prof_hash (const void *x)
   return (htab_hash_string (XSTR (XVECEXP (u, 0, 0), 0))
 	  ^ (s1->code == SYMBOL_REF ? htab_hash_string (XSTR (s1, 0)) : 0));
 }
+
+/* Equality function for UNSPEC_PROF htab.  Two pieces of UNSPEC_PROF rtl
+   shall refer to the same counter if both caller name and callee rtl
+   are identical.  */
 
 static int
 unspec_prof_htab_eq (const void *x, const void *y)
@@ -3702,9 +3672,10 @@ arc_ccfsm_post_advance (rtx insn, struct arc_ccfsm *state)
     arc_ccfsm_current.state = 0;
 }
 
-/* See if the current insn, which is a conditional branch, is to be
+/* Return true if the current insn, which is a conditional branch, is to be
    deleted.  */
-int
+
+bool
 arc_ccfsm_branch_deleted_p (void)
 {
   return ARC_CCFSM_BRANCH_DELETED_P (&arc_ccfsm_current);
@@ -3719,7 +3690,9 @@ arc_ccfsm_record_branch_deleted (void)
   ARC_CCFSM_RECORD_BRANCH_DELETED (&arc_ccfsm_current);
 }
 
-int
+/* During insn output, indicate if the current insn is predicated.  */
+
+bool
 arc_ccfsm_cond_exec_p (void)
 {
   return (cfun->machine->prescan_initialized
@@ -3804,6 +3777,10 @@ arc_verify_short (rtx insn, int, int check_attr)
   return (get_attr_length (insn) & 2) != 0;
 }
 
+/* When outputting an instruction (alternative) that can potentially be short,
+   output the short suffix if the insn is in fact short, and update
+   cfun->machine->unalign accordingly.  */
+
 static void
 output_short_suffix (FILE *file)
 {
@@ -3817,6 +3794,8 @@ output_short_suffix (FILE *file)
   /* Restore recog_operand.  */
   extract_insn_cached (insn);
 }
+
+/* Implement FINAL_PRESCAN_INSN.  */
 
 void
 arc_final_prescan_insn (rtx insn, rtx *opvec ATTRIBUTE_UNUSED,
@@ -4196,99 +4175,19 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
     }
 }
 
-rtx
-arc_va_arg (tree valist, tree type)
-{
-  rtx addr_rtx;
-  tree addr, incr;
-  tree type_ptr = build_pointer_type (type);
+/* Return true if ADDR is an address that needs to be expressed as an
+   explicit sum of pcl + offset.  */
 
-#if 0
-  /* All aggregates are passed by reference.  All scalar types larger
-     than 8 bytes are passed by reference.  */
-  /* FIXME: delete this */
-  if (0 && (AGGREGATE_TYPE_P (type) || int_size_in_bytes (type) > 8))
-#else
-  if (type != 0
-      && (TREE_CODE (TYPE_SIZE (type)) != INTEGER_CST
-	  || TREE_ADDRESSABLE (type)))
-#endif
-    {
-      tree type_ptr_ptr = build_pointer_type (type_ptr);
-
-      addr = build1 (INDIRECT_REF, type_ptr,
-		     build1 (NOP_EXPR, type_ptr_ptr, valist));
-
-      incr = build2 (PLUS_EXPR, TREE_TYPE (valist),
-		     valist, build_int_cst (NULL_TREE, UNITS_PER_WORD));
-    }
-  else
-    {
-      HOST_WIDE_INT align, rounded_size;
-
-      /* Compute the rounded size of the type.  */
-      align = PARM_BOUNDARY / BITS_PER_UNIT;
-      rounded_size
-	= (((TREE_INT_CST_LOW (TYPE_SIZE (type)) / BITS_PER_UNIT + align - 1)
-	    / align)
-	   * align);
-
-      /* Align 8 byte operands.  */
-      addr = valist;
-      gcc_assert (TYPE_ALIGN (type) <= BITS_PER_WORD);
-      if (TYPE_ALIGN (type) > BITS_PER_WORD)
-	{
-abort ();
-	  /* AP = (TYPE *)(((int)AP + 7) & -8)  */
-
-	  addr = build1 (NOP_EXPR, integer_type_node, valist);
-	  addr = fold (build2 (PLUS_EXPR, integer_type_node, addr,
-                               build_int_cst (NULL_TREE, 7)));
-	  addr = fold (build2 (BIT_AND_EXPR, integer_type_node, addr,
-                               build_int_cst (NULL_TREE, -8)));
-	  addr = fold (build1 (NOP_EXPR, TREE_TYPE (valist), addr));
-	}
-
-      /* The increment is always rounded_size past the aligned pointer.  */
-      incr = fold (build2 (PLUS_EXPR, TREE_TYPE (addr), addr,
-			   build_int_cst (NULL_TREE, rounded_size)));
-
-      /* Adjust the pointer in big-endian mode.  */
-      if (BYTES_BIG_ENDIAN)
-	{
-	  HOST_WIDE_INT adj;
-	  adj = TREE_INT_CST_LOW (TYPE_SIZE (type)) / BITS_PER_UNIT;
-	  if (rounded_size > align)
-	    adj = rounded_size;
-
-	  addr = fold (build2 (PLUS_EXPR, TREE_TYPE (addr), addr,
-			       build_int_cst (NULL_TREE, rounded_size - adj)));
-	}
-    }
-
-  /* Evaluate the data address.  */
-  addr_rtx = expand_expr (addr, NULL_RTX, Pmode, EXPAND_NORMAL);
-  addr_rtx = copy_to_reg (addr_rtx);
-
-  /* Compute new value for AP.  */
-  incr = build2 (MODIFY_EXPR, TREE_TYPE (valist), valist, incr);
-  TREE_SIDE_EFFECTS (incr) = 1;
-  expand_expr (incr, const0_rtx, VOIDmode, EXPAND_NORMAL);
-
-  return addr_rtx;
-}
-
-/* An address that needs to be expressed as an explicit sum of pcl + offset.  */
-int
+bool
 arc_legitimate_pc_offset_p (rtx addr)
 {
   if (GET_CODE (addr) != CONST)
-    return 0;
+    return false;
   addr = XEXP (addr, 0);
   if (GET_CODE (addr) == PLUS)
     {
       if (GET_CODE (XEXP (addr, 1)) != CONST_INT)
-	return 0;
+	return false;
       addr = XEXP (addr, 0);
     }
   return (GET_CODE (addr) == UNSPEC
@@ -4297,17 +4196,17 @@ arc_legitimate_pc_offset_p (rtx addr)
 	  && GET_CODE (XVECEXP (addr, 0, 0)) == SYMBOL_REF);
 }
 
-/* Check whether ADDR is a valid pic address or not.
+/* Return true if ADDR is a valid pic address.
    A valid pic address on arc should look like
    const (unspec (SYMBOL_REF/LABEL) (ARC_UNSPEC_GOTOFF/ARC_UNSPEC_GOT))  */
 
-int
+bool
 arc_legitimate_pic_addr_p (rtx addr)
 {
   if (GET_CODE (addr) == LABEL_REF)
-    return 1;
+    return true;
   if (GET_CODE (addr) != CONST)
-    return 0;
+    return false;
 
   addr = XEXP (addr, 0);
 
@@ -4315,38 +4214,38 @@ arc_legitimate_pic_addr_p (rtx addr)
   if (GET_CODE (addr) == PLUS)
     {
       if (GET_CODE (XEXP (addr, 1)) != CONST_INT)
-	return 0;
+	return false;
       addr = XEXP (addr, 0);
     }
 
   if (GET_CODE (addr) != UNSPEC
       || XVECLEN (addr, 0) != 1)
-    return 0;
+    return false;
 
   /* Must be @GOT or @GOTOFF.  */
   if (XINT (addr, 1) != ARC_UNSPEC_GOT
       && XINT (addr, 1) != ARC_UNSPEC_GOTOFF)
-    return 0;
+    return false;
 
   if (GET_CODE (XVECEXP (addr, 0, 0)) != SYMBOL_REF
       && GET_CODE (XVECEXP (addr, 0, 0)) != LABEL_REF)
-    return 0;
+    return false;
 
-  return 1;
+  return true;
 }
 
 
 
-/* Returns 1 if OP contains a symbol reference.  */
+/* Return true if OP contains a symbol reference.  */
 
-int
+static bool
 symbolic_reference_mentioned_p (rtx op)
 {
   register const char *fmt;
   register int i;
 
   if (GET_CODE (op) == SYMBOL_REF || GET_CODE (op) == LABEL_REF)
-    return 1;
+    return true;
 
   fmt = GET_RTX_FORMAT (GET_CODE (op));
   for (i = GET_RTX_LENGTH (GET_CODE (op)) - 1; i >= 0; i--)
@@ -4357,27 +4256,30 @@ symbolic_reference_mentioned_p (rtx op)
 
 	  for (j = XVECLEN (op, i) - 1; j >= 0; j--)
 	    if (symbolic_reference_mentioned_p (XVECEXP (op, i, j)))
-	      return 1;
+	      return true;
 	}
 
       else if (fmt[i] == 'e' && symbolic_reference_mentioned_p (XEXP (op, i)))
-	return 1;
+	return true;
     }
 
-  return 0;
+  return false;
 }
 
-int
+/* Return true if OP contains a SYMBOL_REF that is not wrapped in an unspec.
+   This is used in the addsi3 / subsi3 expanders when generating PIC code.  */
+
+bool
 arc_raw_symbolic_reference_mentioned_p (rtx op)
 {
   register const char *fmt;
   register int i;
 
   if (GET_CODE(op) == UNSPEC)
-    return 0;
+    return false;
 
   if (GET_CODE (op) == SYMBOL_REF)
-	  return 1;
+    return true;
 
   fmt = GET_RTX_FORMAT (GET_CODE (op));
   for (i = GET_RTX_LENGTH (GET_CODE (op)) - 1; i >= 0; i--)
@@ -4391,7 +4293,8 @@ arc_raw_symbolic_reference_mentioned_p (rtx op)
 	      return 1;
 	}
 
-      else if (fmt[i] == 'e' && arc_raw_symbolic_reference_mentioned_p (XEXP (op, i)))
+      else if (fmt[i] == 'e'
+	       && arc_raw_symbolic_reference_mentioned_p (XEXP (op, i)))
 	return 1;
     }
 
@@ -4515,6 +4418,8 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 
  return pat;
 }
+
+/* Output address constant X to FILE, taking PIC into account.  */
 
 void
 arc_output_pic_addr_const (FILE * file, rtx x, int code)
@@ -4843,7 +4748,7 @@ rtx
 arc_return_addr_rtx (int count, ATTRIBUTE_UNUSED rtx frame)
 {
   if (count != 0)
-      return const0_rtx;
+    return const0_rtx;
 
   return get_hard_reg_initial_val (Pmode , RETURN_ADDR_REGNUM);
 }
@@ -4851,7 +4756,8 @@ arc_return_addr_rtx (int count, ATTRIBUTE_UNUSED rtx frame)
 /* Nonzero if the constant value X is a legitimate general operand
    when generating PIC code.  It is given that flag_pic is on and
    that X satisfies CONSTANT_P or is a CONST_DOUBLE.  */
-/* TODO: This should not be a separate function.  */
+/* TODO: This should check binds_local_p.  */
+
 bool
 arc_legitimate_pic_operand_p (rtx x)
 {
@@ -4860,7 +4766,8 @@ arc_legitimate_pic_operand_p (rtx x)
 
 /* Determine if a given RTX is a valid constant.  We already know this
    satisfies CONSTANT_P.
-   We can handle any 32- or 64-bit constant.  */
+   TODO: For SYMBOL_REF, this should check binds_local_p.  */
+
 bool
 arc_legitimate_constant_p (enum machine_mode, rtx x)
 {
@@ -4894,7 +4801,7 @@ arc_legitimate_constant_p (enum machine_mode, rtx x)
 	  }
 
       /* We must have drilled down to a symbol.  */
-      if ( arc_raw_symbolic_reference_mentioned_p (x))
+      if (arc_raw_symbolic_reference_mentioned_p (x))
 	return false;
 
       /* Return true.  */
@@ -5381,10 +5288,11 @@ arc_expand_builtin (tree exp,
   return NULL_RTX;
 }
 
-/* Returns if the operands[ opno ] is a valid compile-time constant to be used
-   as register number in the code for builtins. Else it flags an error.  */
+/* Returns true if the operands[opno] is a valid compile-time constant to be
+   used as register number in the code for builtins.  Else it flags an error
+   and returns false.  */
 
-int
+bool
 check_if_valid_regno_const (rtx *operands, int opno)
 {
 
@@ -5393,18 +5301,18 @@ check_if_valid_regno_const (rtx *operands, int opno)
     case SYMBOL_REF :
     case CONST :
     case CONST_INT :
-      return 1;
+      return true;
     default:
 	error ("register number must be a compile-time constant. Try giving higher optimization levels");
 	break;
     }
-  return 0;
+  return false;
 }
 
 /* Check that after all the constant folding, whether the operand to
-   __builtin_arc_sleep is an unsigned int of 6 bits. If not, flag an error
+   __builtin_arc_sleep is an unsigned int of 6 bits.  If not, flag an error
 */
-int
+bool
 check_if_valid_sleep_operand (rtx *operands, int opno)
 {
   switch (GET_CODE (operands[opno]))
@@ -5412,15 +5320,15 @@ check_if_valid_sleep_operand (rtx *operands, int opno)
     case CONST :
     case CONST_INT :
 	if( UNSIGNED_INT6 (INTVAL (operands[opno])))
-	    return 1;
+	    return true;
     default:
 	fatal_error("operand for sleep instruction must be an unsigned 6 bit compile-time constant");
 	break;
     }
-  return 0;
+  return false;
 }
 
-/* Return nonzero if it is ok to make a tail-call to DECL.  */
+/* Return true if it is ok to make a tail-call to DECL.  */
 static bool
 arc_function_ok_for_sibcall (tree decl ATTRIBUTE_UNUSED,
 			     tree exp ATTRIBUTE_UNUSED)
@@ -5495,8 +5403,8 @@ arc_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
   fputc ('\n', file);
 }
 
-/* Return nonzero if a 32 bit "long_call" should be generated for
-   this call.  We generate a long_call if the function:
+/* Return true if a 32 bit "long_call" should be generated for
+   this calling SYM_REF.  We generate a long_call if the function:
 
         a.  has an __attribute__((long call))
      or b.  the -mlong-calls command line switch has been specified
@@ -5506,20 +5414,22 @@ arc_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
 
    This function will be called by C fragments contained in the machine
    description file.  */
-int
+
+bool
 arc_is_longcall_p (rtx sym_ref)
 {
   if (GET_CODE (sym_ref) != SYMBOL_REF)
-    return 0;
+    return false;
 
   return (SYMBOL_REF_LONG_CALL_P (sym_ref)
 	  || (TARGET_LONG_CALLS_SET && !SYMBOL_REF_SHORT_CALL_P (sym_ref)));
 
 }
 
-/* Emit profiling code for calling CALLEE.  Return nonzero if a special
+/* Emit profiling code for calling CALLEE.  Return true if a special
    call pattern needs to be generated.  */
-int
+
+bool
 arc_profile_call (rtx callee)
 {
   rtx from = XEXP (DECL_RTL (current_function_decl), 0);
@@ -5537,7 +5447,7 @@ arc_profile_call (rtx callee)
 	 no proper hardware support, that would be too expensive.  */
       emit_move_insn (counter,
 		      force_reg (SImode, plus_constant (SImode, counter, 1)));
-      return 0;
+      return false;
     }
   else
     {
@@ -5549,7 +5459,7 @@ arc_profile_call (rtx callee)
 					 UNSPEC_PROF));
       emit_move_insn (gen_rtx_REG (Pmode, 8), count_list_ptr);
       emit_move_insn (gen_rtx_REG (Pmode, 9), callee);
-      return 1;
+      return true;
     }
 }
 
@@ -5570,7 +5480,9 @@ arc_return_in_memory (const_tree type, const_tree fntype ATTRIBUTE_UNUSED)
 
 /* This was in rtlanal.c, and can go in there when we decide we want
    to submit the change for inclusion in the GCC tree.  */
-/* Call FUN on each register or MEM that is stored into or clobbered by X.
+/* Like note_stores, but allow the callback to have side effects on the rtl
+   (like the note_stores of yore):
+   Call FUN on each register or MEM that is stored into or clobbered by X.
    (X would be the pattern of an insn).  DATA is an arbitrary pointer,
    ignored by note_stores, but passed to FUN.
    FUN may alter parts of the RTL.
@@ -6136,11 +6048,12 @@ arc_reorg (void)
       does not have a delay slot
 
   Assumed precondition: Second operand is either a register or a u6 value.  */
-int
+
+bool
 valid_brcc_with_delay_p (rtx *operands)
 {
   if (optimize_size && GET_MODE (operands[4]) == CC_Zmode)
-    return 0;
+    return false;
   return brcc_nolimm_operator (operands[0], VOIDmode);
 }
 
@@ -6311,7 +6224,7 @@ small_data_pattern_1 (rtx *loc, void *data ATTRIBUTE_UNUSED)
 /* Return true if OP refers to small data symbols directly, not through
    a PLUS.  */
 
-int
+bool
 small_data_pattern (rtx op, enum machine_mode)
 {
   return (GET_CODE (op) != SEQUENCE
@@ -6325,7 +6238,7 @@ small_data_pattern (rtx op, enum machine_mode)
   */
 /* volatile cache option still to be handled.  */
 
-int
+bool
 compact_sda_memory_operand (rtx op,enum machine_mode  mode)
 {
   rtx addr;
@@ -6333,7 +6246,7 @@ compact_sda_memory_operand (rtx op,enum machine_mode  mode)
 
   /* Eliminate non-memory operations.  */
   if (GET_CODE (op) != MEM)
-    return 0;
+    return false;
 
   if (mode == VOIDmode)
     mode = GET_MODE (op);
@@ -6342,7 +6255,7 @@ compact_sda_memory_operand (rtx op,enum machine_mode  mode)
 
   /* dword operations really put out 2 instructions, so eliminate them.  */
   if (size > UNITS_PER_WORD)
-    return 0;
+    return false;
 
   /* Decode the address now.  */
   addr = XEXP (op, 0);
@@ -6350,6 +6263,7 @@ compact_sda_memory_operand (rtx op,enum machine_mode  mode)
   return LEGITIMATE_SMALL_DATA_ADDRESS_P  (addr);
 }
 
+/* Implement ASM_OUTPUT_ALIGNED_DECL_LOCAL.  */
 void
 arc_asm_output_aligned_decl_local (FILE * stream, tree decl, const char * name,
 				   unsigned HOST_WIDE_INT size,
@@ -6720,6 +6634,9 @@ arc_init_simd_builtins (void)
 
   gcc_assert(i == ARRAY_SIZE (arc_simd_builtin_desc_list));
 }
+
+/* Helper function of arc_expand_builtin; has the same parameters,
+   except that EXP is now known to be a call to a simd builtin.  */
 
 static rtx
 arc_expand_simd_builtin (tree exp,
@@ -7312,8 +7229,13 @@ arc_output_addsi (rtx *operands, const char *cond)
 		 cond));
 }
 
+/* Helper function of arc_expand_movmem.  ADDR points to a chunk of memory.
+   Emit code and return an potentially modified address such that offsets
+   up to SIZE are can be added to yield a legitimate address.
+   if REUSE is set, ADDR is a register that may be modified.  */
+
 static rtx
-force_offsettable (rtx addr, HOST_WIDE_INT size, int reuse)
+force_offsettable (rtx addr, HOST_WIDE_INT size, bool reuse)
 {
   rtx base = addr;
   rtx offs = const0_rtx;
@@ -7339,8 +7261,9 @@ force_offsettable (rtx addr, HOST_WIDE_INT size, int reuse)
 
 /* Like move_by_pieces, but take account of load latency,
    and actual offset ranges.
-   Return nonzero on success.  */
-int
+   Return true on success.  */
+
+bool
 arc_expand_movmem (rtx *operands)
 {
   rtx dst = operands[0];
@@ -7355,7 +7278,7 @@ arc_expand_movmem (rtx *operands)
   int i;
 
   if (!CONST_INT_P (operands[2]))
-    return 0;
+    return false;
   size = INTVAL (operands[2]);
   /* move_by_pieces_ninsns is static, so we can't use it.  */
   if (align >= 4)
@@ -7365,7 +7288,7 @@ arc_expand_movmem (rtx *operands)
   else
     n_pieces = size;
   if (n_pieces >= (unsigned int) (optimize_size ? 3 : 15))
-    return 0;
+    return false;
   if (piece > 4)
     piece = 4;
   dst_addr = force_offsettable (XEXP (operands[0], 0), size, 0);
@@ -7399,12 +7322,13 @@ arc_expand_movmem (rtx *operands)
     emit_insn (store[i]);
   if (store[i^1])
     emit_insn (store[i^1]);
-  return 1;
+  return true;
 }
 
-/* Prepare operands for move in MODE.  Return nonzero iff the move has
+/* Prepare operands for move in MODE.  Return true iff the move has
    been emitted.  */
-int
+
+bool
 prepare_move_operands (rtx *operands, enum machine_mode mode)
 {
   /* We used to do this only for MODE_INT Modes, but addresses to floating
@@ -7441,7 +7365,7 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
 	     output reg equal to the initial symbol_ref after this code is
 	     executed.  */
 	  emit_move_insn (operands[0], operands[0]);
-	  return 1;
+	  return true;
 	}
     }
 
@@ -7485,12 +7409,13 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
 	}
     }
 
-  return 0;
+  return false;
 }
 
 /* Prepare OPERANDS for an extension using CODE to OMODE.
-   Return nonzero iff the move has been emitted.  */
-int
+   Return true iff the move has been emitted.  */
+
+bool
 prepare_extend_operands (rtx *operands, enum rtx_code code,
 			 enum machine_mode omode)
 {
@@ -7507,13 +7432,14 @@ prepare_extend_operands (rtx *operands, enum rtx_code code,
 	 output reg equal to the initial extension after this code is
 	 executed.  */
       emit_move_insn (operands[0], operands[0]);
-      return 1;
+      return true;
     }
-  return 0;
+  return false;
 }
 
 /* Output a library call to a function called FNAME that has been arranged
-   to be local to be any dso.  */
+   to be local to any dso.  */
+
 const char *
 arc_output_libcall (const char *fname)
 {
@@ -7533,6 +7459,8 @@ arc_output_libcall (const char *fname)
     sprintf (buf, "bl%%!%%* @%s", fname);
   return buf;
 }
+
+/* Return the SImode highpart of the DImode value IN.  */
 
 rtx
 disi_highpart (rtx in)
@@ -8282,11 +8210,19 @@ arc_delegitimize_address (rtx x)
   return orig_x;
 }
 
+/* Return a REG rtx for acc1.  N.B. the gcc-internal representation may
+   differ from the hardware register number in order to allow the generic
+   code to correctly split the concatenation of acc1 and acc2.  */
+
 rtx
 gen_acc1 (void)
 {
   return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 56: 57);
 }
+
+/* Return a REG rtx for acc2.  N.B. the gcc-internal representation may
+   differ from the hardware register number in order to allow the generic
+   code to correctly split the concatenation of acc1 and acc2.  */
 
 rtx
 gen_acc2 (void)
@@ -8294,11 +8230,19 @@ gen_acc2 (void)
   return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 57: 56);
 }
 
+/* Return a REG rtx for mlo.  N.B. the gcc-internal representation may
+   differ from the hardware register number in order to allow the generic
+   code to correctly split the concatenation of mhi and mlo.  */
+
 rtx
 gen_mlo (void)
 {
   return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 59: 58);
 }
+
+/* Return a REG rtx for mhi.  N.B. the gcc-internal representation may
+   differ from the hardware register number in order to allow the generic
+   code to correctly split the concatenation of mhi and mlo.  */
 
 rtx
 gen_mhi (void)
@@ -8306,6 +8250,9 @@ gen_mhi (void)
   return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 58: 59);
 }
 
+/* FIXME: a parameter should be added, and code added to final.c, to
+   to reproduce this functionality in shorten_branches.  */
+#if 0
 /* Return nonzero iff BRANCH should be unaligned if possible by upsizing
    a previous instruction.  */
 int
@@ -8324,6 +8271,7 @@ arc_unalign_branch_p (rtx branch)
 	  || (arc_unalign_prob_threshold && !br_prob_note_reliable_p (note))
 	  || INTVAL (XEXP (note, 0)) < arc_unalign_prob_threshold);
 }
+#endif
 
 /* When estimating sizes during arc_reorg, when optimizing for speed, there
    are three reasons why we need to consider branches to be length 6:
@@ -8333,7 +8281,8 @@ arc_unalign_branch_p (rtx branch)
      using conditional execution, preventing short insn formation where used.
    - for ARC700: likely or somewhat likely taken branches are made long and
      unaligned if possible to avoid branch penalty.  */
-int
+
+bool
 arc_branch_size_unknown_p (void)
 {
   return !optimize_size && arc_reorg_in_progress;
@@ -8470,6 +8419,8 @@ arc_check_millicode (rtx op, int offset, int load_p)
     }
   return 1;
 }
+
+/* Accessor functions for cfun->machine->unalign.  */
 
 int
 arc_get_unalign (void)
@@ -8704,6 +8655,9 @@ arc_split_move (rtx *operands)
   return val;
 }
 
+/* Select between the instruction output templates s_tmpl (for short INSNs)
+   and l_tmpl (for long INSNs).  */
+ 
 const char *
 arc_short_long (rtx insn, const char *s_tmpl, const char *l_tmpl)
 {
@@ -8742,6 +8696,8 @@ arc_regno_use_in (unsigned int regno, rtx x)
   return NULL_RTX;
 }
 
+/* Return the integer value of the "type" attribute for INSN, or -1 if
+   INSN can't have attributes.  */
 int
 arc_attr_type (rtx insn)
 {
@@ -8756,7 +8712,9 @@ arc_attr_type (rtx insn)
   return get_attr_type (insn);
 }
 
-int
+/* Return true if insn sets the condition codes.  */
+
+bool
 arc_sets_cc_p (rtx insn)
 {
   if (NONJUMP_INSN_P (insn) && GET_CODE (PATTERN (insn)) == SEQUENCE)
@@ -8764,15 +8722,16 @@ arc_sets_cc_p (rtx insn)
   return arc_attr_type (insn) == TYPE_COMPARE;
 }
 
-/* Return nonzero if INSN is an instruction with a delay slot we may want
+/* Return true if INSN is an instruction with a delay slot we may want
    to fill.  */
-int
+
+bool
 arc_need_delay (rtx insn)
 {
   rtx next;
 
   if (!flag_delayed_branch)
-    return 0;
+    return false;
   /* The return at the end of a function needs a delay slot.  */
   if (NONJUMP_INSN_P (insn) && GET_CODE (PATTERN (insn)) == USE
       && (!(next = next_active_insn (insn))
@@ -8782,7 +8741,7 @@ arc_need_delay (rtx insn)
 	  || (prev_active_insn (insn)
 	      && prev_active_insn (prev_active_insn (insn))
 	      && prev_active_insn (prev_active_insn (prev_active_insn (insn))))))
-    return 1;
+    return true;
   if (NONJUMP_INSN_P (insn)
       ? (GET_CODE (PATTERN (insn)) == USE
 	 || GET_CODE (PATTERN (insn)) == CLOBBER
@@ -8791,18 +8750,22 @@ arc_need_delay (rtx insn)
       ? (GET_CODE (PATTERN (insn)) == ADDR_VEC
 	 || GET_CODE (PATTERN (insn)) == ADDR_DIFF_VEC)
       : !CALL_P (insn))
-    return 0;
-  return num_delay_slots (insn);
+    return false;
+  return num_delay_slots (insn) != 0;
 }
 
-int
+/* Return true if the scheduling pass(es) has/have already run,
+   i.e. where possible, we should try to mitigate high latencies
+   by different instruction selection.  */
+
+bool
 arc_scheduling_not_expected (void)
 {
   return cfun->machine->arc_reorg_started;
 }
 
 /* Oddly enough, sometimes we get a zero overhead loop that branch
-   shortening doesn't think is a loop - ovserved with compile/pr24883.c
+   shortening doesn't think is a loop - observed with compile/pr24883.c
    -O3 -fomit-frame-pointer -funroll-loops.  Make sure to include the
    alignment visible for branch shortening  (we actually align the loop
    insn before it, but that is equivalent since the loop insn is 4 byte
@@ -8832,7 +8795,9 @@ arc_label_align (rtx label)
   return align_labels_log;
 }
 
-int
+/* Return true if LABEL is in executable code.  */
+
+bool
 arc_text_label (rtx label)
 {
   rtx next;
@@ -8849,9 +8814,11 @@ arc_text_label (rtx label)
   else if (!PREV_INSN (label))
     /* ??? sometimes text labels get inserted very late, see
        gcc.dg/torture/stackalign/comp-goto-1.c */
-    return 1;
-  return 0;
+    return true;
+  return false;
 }
+
+/* Return the size of the pretend args for DECL.  */
 
 int
 arc_decl_pretend_args (tree decl)
