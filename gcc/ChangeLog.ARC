@@ -1,3 +1,7 @@
+2012-11-25  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c: #if 0 duplicated definistions.
+
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.
