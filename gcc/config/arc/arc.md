@@ -2053,7 +2053,7 @@
 	(plus:SI (match_operand:SI 1 "register_operand" "")
 		 (match_operand:SI 2 "nonmemory_operand" "")))]
   ""
-  "if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[2]) )
+  "if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[2], false))
      {
        operands[2]=force_reg(SImode, operands[2]);
      }
@@ -2284,7 +2284,7 @@
       operands[1] = force_reg (SImode, operands[1]);
       c = 2;
     }
-  if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[c]) )
+  if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[c], false))
     operands[c] = force_reg (SImode, operands[c]);
   else if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[c], Pmode))
       operands[c] = force_reg (SImode, arc_rewrite_small_data (operands[c]));

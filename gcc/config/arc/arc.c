@@ -4292,10 +4292,12 @@ symbolic_reference_mentioned_p (rtx op)
 }
 
 /* Return true if OP contains a SYMBOL_REF that is not wrapped in an unspec.
-   This is used in the addsi3 / subsi3 expanders when generating PIC code.  */
+   If SKIP_LOCAL is true, skip symbols that bind locally.
+   This is used further down in this file, and, without SKIP_LOCAL,
+   in the addsi3 / subsi3 expanders when generating PIC code.  */
 
 bool
-arc_raw_symbolic_reference_mentioned_p (rtx op)
+arc_raw_symbolic_reference_mentioned_p (rtx op, bool skip_local)
 {
   register const char *fmt;
   register int i;
@@ -4304,7 +4306,10 @@ arc_raw_symbolic_reference_mentioned_p (rtx op)
     return false;
 
   if (GET_CODE (op) == SYMBOL_REF)
-    return true;
+    {
+      tree decl = SYMBOL_REF_DECL (op);
+      return !skip_local || !decl || !default_binds_local_p (decl);
+    }
 
   fmt = GET_RTX_FORMAT (GET_CODE (op));
   for (i = GET_RTX_LENGTH (GET_CODE (op)) - 1; i >= 0; i--)
@@ -4314,16 +4319,18 @@ arc_raw_symbolic_reference_mentioned_p (rtx op)
 	  register int j;
 
 	  for (j = XVECLEN (op, i) - 1; j >= 0; j--)
-	    if (arc_raw_symbolic_reference_mentioned_p (XVECEXP (op, i, j)))
-	      return 1;
+	    if (arc_raw_symbolic_reference_mentioned_p (XVECEXP (op, i, j),
+							skip_local))
+	      return true;
 	}
 
       else if (fmt[i] == 'e'
-	       && arc_raw_symbolic_reference_mentioned_p (XEXP (op, i)))
-	return 1;
+	       && arc_raw_symbolic_reference_mentioned_p (XEXP (op, i),
+							  skip_local))
+	return true;
     }
 
-  return 0;
+  return false;
 }
 
 /* Legitimize a pic address reference in ORIG.
@@ -4778,17 +4785,15 @@ arc_return_addr_rtx (int count, ATTRIBUTE_UNUSED rtx frame)
 /* Nonzero if the constant value X is a legitimate general operand
    when generating PIC code.  It is given that flag_pic is on and
    that X satisfies CONSTANT_P or is a CONST_DOUBLE.  */
-/* TODO: This should check binds_local_p.  */
 
 bool
 arc_legitimate_pic_operand_p (rtx x)
 {
-  return !arc_raw_symbolic_reference_mentioned_p (x);
+  return !arc_raw_symbolic_reference_mentioned_p (x, true);
 }
 
 /* Determine if a given RTX is a valid constant.  We already know this
-   satisfies CONSTANT_P.
-   TODO: For SYMBOL_REF, this should check binds_local_p.  */
+   satisfies CONSTANT_P.  */
 
 bool
 arc_legitimate_constant_p (enum machine_mode, rtx x)
@@ -4823,7 +4828,7 @@ arc_legitimate_constant_p (enum machine_mode, rtx x)
 	  }
 
       /* We must have drilled down to a symbol.  */
-      if (arc_raw_symbolic_reference_mentioned_p (x))
+      if (arc_raw_symbolic_reference_mentioned_p (x, true))
 	return false;
 
       /* Return true.  */
