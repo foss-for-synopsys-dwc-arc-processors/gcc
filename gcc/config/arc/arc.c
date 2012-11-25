@@ -2686,7 +2686,7 @@ static int output_scaled = 0;
     'o': original symbol - no @ prepending.  */
 
 void
-arc_print_operand (FILE *file,rtx x,int code)
+arc_print_operand (FILE *file, rtx x, int code)
 {
   switch (code)
     {
@@ -3874,7 +3874,7 @@ arc_can_eliminate (const int from ATTRIBUTE_UNUSED, const int to)
    the other its replacement, at the start of a routine.  */
 
 int
-arc_initial_elimination_offset (int from,int to)
+arc_initial_elimination_offset (int from, int to)
 {
   if (! cfun->machine->frame_info.initialized)
      arc_compute_frame_size (get_frame_size ());
@@ -5038,7 +5038,7 @@ arc_expand_builtin (tree exp,
       if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
 
-      emit_insn (gen_norm (target,op0));
+      emit_insn (gen_norm (target, op0));
       return target;
 
     case ARC_BUILTIN_NORMW:
@@ -5114,7 +5114,7 @@ arc_expand_builtin (tree exp,
 	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
 
-	emit_insn (gen_swap (target,op0));
+	emit_insn (gen_swap (target, op0));
 	return target;
 
     case ARC_BUILTIN_DIVAW:
@@ -5135,7 +5135,7 @@ arc_expand_builtin (tree exp,
 	if (! (*insn_data[icode].operand[1].predicate) (op1, mode1))
 	    op1 = copy_to_mode_reg (mode1, op1);
 
-	emit_insn (gen_divaw (target,op0,op1));
+	emit_insn (gen_divaw (target, op0, op1));
 	return target;
 
     case ARC_BUILTIN_BRK:
@@ -6273,7 +6273,7 @@ small_data_pattern (rtx op, enum machine_mode)
 /* volatile cache option still to be handled.  */
 
 bool
-compact_sda_memory_operand (rtx op,enum machine_mode  mode)
+compact_sda_memory_operand (rtx op, enum machine_mode mode)
 {
   rtx addr;
   int size;
@@ -6393,7 +6393,7 @@ struct builtin_description
 static const struct builtin_description arc_simd_builtin_desc_list[] =
 {
   /* VVV builtins go first.  */
-#define SIMD_BUILTIN(type,code, string, builtin) \
+#define SIMD_BUILTIN(type, code, string, builtin) \
   { type,CODE_FOR_##code, "__builtin_arc_" string, \
     ARC_SIMD_BUILTIN_##builtin },
 
