@@ -54,6 +54,18 @@
 	* config/arc/arc-protos.h (arc_raw_symbolic_reference_mentioned_p):
 	Update prototype.
 
+	* config/arc/arc.c (TARGET_LRA_P, TARGET_REGISTER_PRIORITY): Define.
+	(TARGET_DIFFERENT_ADDR_DISPLACEMENT_P, TARGET_SPILL_CLASS): Likewise.
+	[!TARGET_NO_LRA] (TARGET_NO_LRA): Define.
+	(arc_lra_p, arc_register_priority, arc_spill_class): New functions.
+	* config/arc/arc.h (ISSUE_MARCH_WARNING): Don't define.
+	(ISSUE_MARCH_ERROR): Likewise.
+	(ARC_LRA_PRIORITY_NONE): New enum constant.
+	(ARC_LRA_PRIORITY_NONCOMPACT, ARC_LRA_PRIORITY_COMPACT): Likewise.
+	* config/arc/arc.opt (mlra): New option.
+	(mlra-priorityr-none, mlra-priority-compact): Likewise.
+	(mlra-priority-noncompact): Likewise.
+
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.

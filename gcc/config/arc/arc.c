@@ -539,6 +539,12 @@ static void arc_finalize_pic (void);
 
 #define TARGET_INSN_LENGTH_PARAMETERS arc_insn_length_parameters
 
+#define TARGET_LRA_P arc_lra_p
+#define TARGET_REGISTER_PRIORITY arc_register_priority
+/* Stores with scaled offsets have different displacement ranges.  */
+#define TARGET_DIFFERENT_ADDR_DISPLACEMENT_P hook_bool_void_true
+#define TARGET_SPILL_CLASS arc_spill_class
+
 #include "target-def.h"
 
 #undef TARGET_ASM_ALIGNED_HI_OP
@@ -8936,6 +8942,44 @@ arc_epilogue_uses (int regno)
     }
   else
     return regno == arc_return_address_regs[arc_compute_function_type (cfun)];
+}
+
+#ifndef TARGET_NO_LRA
+#define TARGET_NO_LRA !TARGET_LRA
+#endif
+
+static bool
+arc_lra_p (void)
+{
+  return !TARGET_NO_LRA;
+}
+
+/* ??? Should we define TARGET_REGISTER_PRIORITY?  We might perfer to use
+   Rcq registers, because some insn are shorter with them.  OTOH we already
+   have separate alternatives for this purpose, and other insns don't
+   mind, so maybe we should rather prefer the other registers?
+   We need more data, and we can only get that if we allow people to
+   try all options.  */
+static int
+arc_register_priority (int r)
+{
+  switch (arc_lra_priority_tag)
+    {
+    case ARC_LRA_PRIORITY_NONE:
+      return 0;
+    case ARC_LRA_PRIORITY_NONCOMPACT:
+      return ((((r & 7) ^ 4) - 4) & 15) != r;
+    case ARC_LRA_PRIORITY_COMPACT:
+      return ((((r & 7) ^ 4) - 4) & 15) == r;
+    default:
+      gcc_unreachable ();
+    }
+}
+
+static reg_class_t
+arc_spill_class (reg_class_t orig_class, enum machine_mode)
+{
+  return GENERAL_REGS;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;

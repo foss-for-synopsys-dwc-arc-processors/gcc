@@ -1681,8 +1681,9 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
 #define ARG_POINTER_CFA_OFFSET(FNDECL) \
   (FIRST_PARM_OFFSET (FNDECL) + arc_decl_pretend_args ((FNDECL)))
 
-/* Issue warning or error if -m<arch> is specified.  */
-#define ISSUE_MARCH_WARNING 0
-#define ISSUE_MARCH_ERROR 0
+enum
+{
+  ARC_LRA_PRIORITY_NONE, ARC_LRA_PRIORITY_NONCOMPACT, ARC_LRA_PRIORITY_COMPACT
+};
 
 #endif /* GCC_ARC_H */

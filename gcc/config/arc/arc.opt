@@ -335,3 +335,23 @@ Pass -marclinux option through to linker.
 marclinux_prof
 target
 Pass -marclinux_prof option through to linker.
+
+;; lra is still unproven for ARC, so allow to fall back to reload with -mno-lra.
+;Target InverseMask(NO_LRA)
+mlra
+; lra still won't allow to configure libgcc; see PR rtl-optimization/55464.
+; so don't enable by default.
+Target Mask(LRA)
+Enable lra
+
+mlra-priority-none
+Target RejectNegative Var(arc_lra_priority_tag, ARC_LRA_PRIORITY_NONE)
+Don't indicate any priority with TARGET_REGISTER_PRIORITY
+
+mlra-priority-compact
+Target RejectNegative Var(arc_lra_prioritytag, ARC_LRA_PRIORITY_COMPACT)
+Indicate priority for r0..r3 / r12..r15 with TARGET_REGISTER_PRIORITY
+
+mlra-priority-noncompact
+Target RejectNegative Var(arc_lra_prioritytag, ARC_LRA_PRIORITY_NONCOMPACT)
+Reduce priority for r0..r3 / r12..r15 with TARGET_REGISTER_PRIORITY
