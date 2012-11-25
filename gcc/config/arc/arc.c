@@ -5901,10 +5901,6 @@ arc_reorg (void)
   if (TARGET_NO_BRCC_SET)
     return;
 
-/*    /\* Compute LOG_LINKS.  *\/ */
-/*    for (bb = 0; bb < current_nr_blocks; bb++) */
-/*      compute_block_backward_dependences (bb); */
-
   do
     {
       init_insn_lengths();
@@ -8922,110 +8918,6 @@ arc_can_follow_jump (const_rtx follower, const_rtx followee)
 	return true;
       }
   return true;
-}
-
-/* Called via note_stores.  */
-static void
-arc_dead_or_set_postreload_1 (rtx dest, const_rtx x ATTRIBUTE_UNUSED,
-			      void *data)
-{
-  rtx reg = *(rtx *)data;
-
-  if (REG_P (dest) && reg
-      && REGNO (reg) >= REGNO (dest)
-      && (REGNO (reg) + HARD_REGNO_NREGS (REGNO (reg), GET_MODE (reg))
-	  <= REGNO (dest) + HARD_REGNO_NREGS (REGNO (dest), GET_MODE (dest))))
-    *(rtx *)data = NULL_RTX;
-}
-
-/* Return nonzero if REG is set in or not used after INSN.
-   After reload, REG_DEAD notes may precede the actual death in of a register
-   in the same basic block.  Additional labels may be added by reorg, so
-   we only know we can trust a REG_DEAD note when we find a jump.  */
-int
-arc_dead_or_set_postreload_p (const_rtx insn, const_rtx reg)
-{
-  enum rtx_code code;
-  rtx dead;
-
-  /* If the reg is set by this instruction, then it is safe for our case.  */
-  note_stores (PATTERN (insn), arc_dead_or_set_postreload_1,  &reg);
-  if (!reg)
-    return 1;
-
-  dead = find_regno_note (insn, REG_DEAD, REGNO (reg));
-  if (dead
-      && (HARD_REGNO_NREGS (REGNO (reg), GET_MODE (reg))
-	  > HARD_REGNO_NREGS (REGNO (XEXP (dead, 0)),
-			      GET_MODE (XEXP (dead, 0)))))
-    dead = NULL_RTX;
-  while ((insn = NEXT_INSN (insn)))
-    {
-      if (!INSN_P (insn))
-	continue;
-
-      code = GET_CODE (insn);
-
-      /* If this is a sequence, we must handle them all at once.
-	 We could have for instance a call that sets the target register,
-	 and an insn in a delay slot that uses the register.  In this case,
-	 we must return 0.  */
-      if (code == INSN && GET_CODE (PATTERN (insn)) == SEQUENCE)
-	{
-	  int i;
-	  int retval = 0;
-	  int annull = 0;
-
-	  for (i = 0; i < XVECLEN (PATTERN (insn), 0); i++)
-	    {
-	      rtx this_insn = XVECEXP (PATTERN (insn), 0, i);
-
-	      if (reg_referenced_p (reg, PATTERN (this_insn)))
-		return 0;
-	      if (!annull)
-		{
-		  const_rtx tmp = reg;
-
-		  note_stores (PATTERN (this_insn),
-			       arc_dead_or_set_postreload_1, &tmp);
-		  if (!tmp)
-		    retval = 1;
-		}
-	      if (GET_CODE (this_insn) == CALL_INSN)
-		{
-		  if (find_reg_fusage (this_insn, USE, reg))
-		    return 0;
-		  code = CALL_INSN;
-		}
-	      else if (GET_CODE (this_insn) == JUMP_INSN)
-		{
-		  if (INSN_ANNULLED_BRANCH_P (this_insn))
-		    annull = 1;
-		  code = JUMP_INSN;
-		}
-	    }
-	  if (retval == 1)
-	    return 1;
-	}
-      else
-	{
-	  if (reg_referenced_p (reg, PATTERN (insn)))
-	    return 0;
-	  if (GET_CODE (insn) == CALL_INSN
-	      && find_reg_fusage (insn, USE, reg))
-	    return 0;
-	  note_stores ( PATTERN (insn), arc_dead_or_set_postreload_1, &reg);
-	  if (!reg)
-	    return 1;
-	}
-
-      if (code == JUMP_INSN)
-	return dead != NULL_RTX;
-
-      if (code == CALL_INSN && call_used_regs[REGNO (reg)])
-	return 1;
-    }
-  return 1;
 }
 
 /* Implement EPILOGUE__USES.

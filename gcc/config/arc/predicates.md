@@ -348,8 +348,6 @@
     case SYMBOL_REF :
     case LABEL_REF :
     case CONST :
-/*ashwin : The use of this macro is discontinued       */
-/*     case CONSTANT_P_RTX: */
       return (!flag_pic || arc_legitimate_pic_operand_p(op));
     case CONST_INT :
       return (LARGE_INT (INTVAL (op)));
