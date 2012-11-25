@@ -827,10 +827,7 @@ struct rtl_opt_pass pass_compute_alignments =
 
 /* Context to pass from shorten_branches to adjust_length.  */
 typedef struct {
-  /* For each varying length insn, a length to keep across iterations, to
-     avoid cycles.  */
-  int *uid_lock_length;
-  /* Number of iterations since last lock_length change.  */
+  /* Number of iterations since last variants change.  */
   int niter;
   /* Values obtained from targetm.insn_length_parameters call.  */
   insn_length_parameters_t parameters;
@@ -875,7 +872,6 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 
   if (new_length < 0)
     fatal_insn ("negative insn length", insn);
-  int iter_threshold = 0;
   memset (ctx->variants, 0,
 	  sizeof *ctx->variants * ctx->parameters.max_variants);
   if (select_variant
@@ -977,10 +973,8 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	      /* FIXME: to cover the general case, we should really
 		 build a bitmap of the offsets that we can manage for
 		 alignment purposes.  */
-	      if (((length - new_length)
+	      if ((length - new_length)
 		   & (align_base_mask << ctx->parameters.align_unit_log))
-		  && new_length <= ctx->uid_lock_length[uid]
-		  && length <= ctx->uid_lock_length[uid])
 		can_align = true;
 	      if (length < new_length && (right_align || !best_right_align))
 		{
@@ -1003,7 +997,7 @@ adjust_length (rtx insn, int new_length, bool seq_p,
       if (best_need_align >= 0 && ctx->last_aligning_insn)
 	{
 	  if (best_need_align != 0)
-	    gcc_assert (ctx->something_changed);
+	    ctx->something_changed = true;
 
 	  int aluid = ctx->last_aligning_insn;
 	  unsigned offset = INSN_ADDRESSES (aluid) + insn_lengths[aluid];
@@ -1034,30 +1028,11 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 	  ctx->something_changed = true;
 	  ctx->request_align[shuid] = -1;
 	}
-      /* Since we are freezing out variants that have been disabled once,
-	 cycles should generally not happen, so bump up iter_threshold.  */
-      iter_threshold = 7;
     }
-  /* Stabilizing by length should generally happen for entire delay slot
-     sequences, so doing it inside should be a last resort.  */
-  if (seq_p)
-    iter_threshold = 9;
   if (new_length != insn_lengths[uid])
     {
-      if (new_length < ctx->uid_lock_length[uid])
-	new_length = ctx->uid_lock_length[uid];
-      if (new_length == insn_lengths[uid])
-	; /* done here.  */
-      else if (ctx->niter < iter_threshold
-	       || new_length > insn_lengths[uid])
-	{
-	  if (ctx->niter >= iter_threshold)
-	    ctx->uid_lock_length[uid] = new_length, ctx->niter = 0;
-	  insn_lengths[uid] = new_length;
-	  ctx->something_changed = true;
-	}
-      else
-	new_length = insn_lengths[uid];
+      insn_lengths[uid] = new_length;
+      ctx->something_changed = true;
     }
   return new_length;
 }
@@ -1234,7 +1209,6 @@ shorten_branches (rtx first)
 
   /* Allocate the rest of the arrays.  */
   insn_lengths = XCNEWVEC (int, max_uid);
-  ctx.uid_lock_length = XCNEWVEC (int, max_uid);
   insn_lengths_max_uid = max_uid;
   /* Syntax errors can lead to labels being outside of the main insn stream.
      Initialize insn_addresses, so that we get reproducible results.  */

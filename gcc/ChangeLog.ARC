@@ -1,6 +1,12 @@
 2012-11-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
-	* config/arc/arc.c: #if 0 duplicated definistions.
+	* config/arc/arc.c: #if 0 duplicated definitions.
+
+	* final.c (shorten_branches_context_t): Remove lock_length member.
+	(adjust_length): Remove iter_threshold variable and lock_length
+	logic.  When requiring size increase for alignment, don't assert
+	something_changed is set, just set it.
+	(shorten_branches): Don't allocate ctx.uid_lock_length.
 
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
