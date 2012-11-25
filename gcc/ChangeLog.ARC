@@ -49,6 +49,10 @@
 	(arc_save_restore): Remove offset parameter.  Changed all callers.
 	Expanded comment.
 
+	* config/arc/arc.c (arc_output_pic_addr_const): Remove last
+	parameter.  Changed all callers.
+	(arc_print_operand): Remove 'P' handling.
+
 2012-11-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.gcc (arc-*-elf*): Use same default settings as for *-*-elf.
