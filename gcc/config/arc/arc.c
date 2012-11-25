@@ -370,7 +370,7 @@ static rtx arc_expand_builtin (tree, rtx, rtx, enum machine_mode, int);
 
 static int branch_dest (rtx);
 
-static void  arc_output_pic_addr_const (FILE *,  rtx);
+static void  arc_output_pic_addr_const (FILE *,  rtx, int);
 void emit_pic_move (rtx *, enum machine_mode);
 bool arc_legitimate_pic_operand_p (rtx);
 static bool arc_function_ok_for_sibcall (tree, tree);
@@ -2679,6 +2679,7 @@ static int output_scaled = 0;
     'A': ASCII decimal representation of floating point value
     'U': Load/store update or scaling indicator
     'V': cache bypass indicator for volatile
+    'P'
     'F'
     '^'
     'O': Operator
@@ -2955,6 +2956,7 @@ arc_print_operand (FILE *file, rtx x, int code)
 	output_operand_lossage ("invalid operand to %%V code");
       return;
       /* plt code.  */
+    case 'P':
     case 0 :
       /* Do nothing special.  */
       break;
@@ -3059,7 +3061,7 @@ arc_print_operand (FILE *file, rtx x, int code)
 	    break;
 	  default:
 	    if (flag_pic && CONSTANT_ADDRESS_P (addr))
-	      arc_output_pic_addr_const (file, addr);
+	      arc_output_pic_addr_const (file, addr, code);
 	    else
 	      output_address (addr);
 	    break;
@@ -3082,7 +3084,7 @@ arc_print_operand (FILE *file, rtx x, int code)
       /* Fall through.  Let output_addr_const deal with it.  */
     default :
       if (flag_pic)
-      	arc_output_pic_addr_const (file, x);
+      	arc_output_pic_addr_const (file, x, code);
       else
 	{
 	  /* FIXME: Dirty way to handle @var@sda+const. Shd be handled
@@ -3161,7 +3163,7 @@ arc_print_operand_address (FILE *file , rtx addr)
       break;
     default :
       if (flag_pic)
-	arc_output_pic_addr_const (file, addr);
+	arc_output_pic_addr_const (file, addr, 0);
       else
 	output_addr_const (file, addr);
       break;
@@ -4454,7 +4456,7 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 /* Output address constant X to FILE, taking PIC into account.  */
 
 void
-arc_output_pic_addr_const (FILE * file, rtx x)
+arc_output_pic_addr_const (FILE * file, rtx x, int code)
 {
   char buf[256];
 
@@ -4471,6 +4473,11 @@ arc_output_pic_addr_const (FILE * file, rtx x)
     case SYMBOL_REF:
       output_addr_const (file, x);
 
+      /* Local functions do not get references through the PLT.  */
+      if (code == 'P' && ! SYMBOL_REF_LOCAL_P (x))
+	fputs ("@plt", file);
+      break;
+
     case LABEL_REF:
       ASM_GENERATE_INTERNAL_LABEL (buf, "L", CODE_LABEL_NUMBER (XEXP (x, 0)));
       assemble_name (file, buf);
@@ -4486,7 +4493,7 @@ arc_output_pic_addr_const (FILE * file, rtx x)
       break;
 
     case CONST:
-      arc_output_pic_addr_const (file, XEXP (x, 0));
+      arc_output_pic_addr_const (file, XEXP (x, 0), code);
       break;
 
     case CONST_DOUBLE:
@@ -4512,16 +4519,16 @@ arc_output_pic_addr_const (FILE * file, rtx x)
       /* Some assemblers need integer constants to appear last (eg masm).  */
       if (GET_CODE (XEXP (x, 0)) == CONST_INT)
 	{
-	  arc_output_pic_addr_const (file, XEXP (x, 1));
+	  arc_output_pic_addr_const (file, XEXP (x, 1), code);
 	  fprintf (file, "+");
-	  arc_output_pic_addr_const (file, XEXP (x, 0));
+	  arc_output_pic_addr_const (file, XEXP (x, 0), code);
 	}
       else if (GET_CODE (XEXP (x, 1)) == CONST_INT)
 	{
-	  arc_output_pic_addr_const (file, XEXP (x, 0));
+	  arc_output_pic_addr_const (file, XEXP (x, 0), code);
 	  if (INTVAL (XEXP (x, 1)) >= 0)
 	    fprintf (file, "+");
-	  arc_output_pic_addr_const (file, XEXP (x, 1));
+	  arc_output_pic_addr_const (file, XEXP (x, 1), code);
 	}
       else
 	gcc_unreachable();
@@ -4534,22 +4541,22 @@ arc_output_pic_addr_const (FILE * file, rtx x)
       if (GET_CODE (x) != MINUS)
 	goto restart;
 
-      arc_output_pic_addr_const (file, XEXP (x, 0));
+      arc_output_pic_addr_const (file, XEXP (x, 0), code);
       fprintf (file, "-");
       if (GET_CODE (XEXP (x, 1)) == CONST_INT
 	  && INTVAL (XEXP (x, 1)) < 0)
 	{
 	  fprintf (file, "(");
-	  arc_output_pic_addr_const (file, XEXP (x, 1));
+	  arc_output_pic_addr_const (file, XEXP (x, 1), code);
 	  fprintf (file, ")");
 	}
       else
-	arc_output_pic_addr_const (file, XEXP (x, 1));
+	arc_output_pic_addr_const (file, XEXP (x, 1), code);
       break;
 
     case ZERO_EXTEND:
     case SIGN_EXTEND:
-      arc_output_pic_addr_const (file, XEXP (x, 0));
+      arc_output_pic_addr_const (file, XEXP (x, 0), code);
       break;
 
 
@@ -4557,7 +4564,7 @@ arc_output_pic_addr_const (FILE * file, rtx x)
       gcc_assert (XVECLEN (x, 0) == 1);
       if (XINT (x, 1) == ARC_UNSPEC_GOT)
 	fputs ("pcl,", file);
-      arc_output_pic_addr_const (file, XVECEXP (x, 0, 0));
+      arc_output_pic_addr_const (file, XVECEXP (x, 0, 0), code);
       switch (XINT (x, 1))
  	{
  	case ARC_UNSPEC_GOT:

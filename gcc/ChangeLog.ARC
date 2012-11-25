@@ -49,10 +49,6 @@
 	(arc_save_restore): Remove offset parameter.  Changed all callers.
 	Expanded comment.
 
-	* config/arc/arc.c (arc_output_pic_addr_const): Remove last
-	parameter.  Changed all callers.
-	(arc_print_operand): Remove 'P' handling.
-
 	* config/arc/arc.c (arc_raw_symbolic_reference_mentioned_p):
 	Add parameter skip_local.  Changed all callers.
 	* config/arc/arc-protos.h (arc_raw_symbolic_reference_mentioned_p):
