@@ -143,7 +143,6 @@ along with GCC; see the file COPYING3.  If not see
 		   %{EB} %{EL} \
 		   %{marclinux*} \
 		   %{!marclinux*: %{pg|p|profile:-marclinux_prof;: -marclinux}} \
-		   %{!z:-z max-page-size=0x1000 -z common-page-size=0x1000} \
 		   %{shared:-shared}"
 /* Like the standard LINK_COMMAND_SPEC, but add %G when building
    a shared library with -nostdlib, so that the hidden functions of libgcc

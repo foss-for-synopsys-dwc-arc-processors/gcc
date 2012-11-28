@@ -1,3 +1,7 @@
+2012-11-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (LINK_SPEC): Remove -z options.
+
 2012-11-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c: #if 0 duplicated definitions.
