@@ -120,6 +120,8 @@
 (define_predicate "long_immediate_loadstore_operand"
   (match_code "mem")
 {
+  int size = GET_MODE_SIZE (GET_MODE (op));
+
   op = XEXP (op, 0);
   switch (GET_CODE (op))
     {
@@ -151,7 +153,10 @@
 	      x = XEXP (x, 0);
 	  }
 	if (CONST_INT_P (x))
-	  return !SMALL_INT (INTVAL (x));
+	  return (!SMALL_INT (INTVAL (x))
+		  && (size <= 1 || size > 4
+		      || (INTVAL (x) & (size - 1)) != 0
+		      || !SMALL_INT (INTVAL (x) / size)));
 	else if (GET_CODE (x) == SYMBOL_REF)
 	  return TARGET_NO_SDATA_SET || !SYMBOL_REF_SMALL_P (x);
 	return 0;
