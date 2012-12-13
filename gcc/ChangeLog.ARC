@@ -1,3 +1,8 @@
+2012-12-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/predicates.md <long_immediate_loadstore_operand>:
+	Correct estimate of size with scaled index.
+
 2012-12-05  Vineet Gupta    <vgupta@synopsys.com>
 
 	* config/arc/arc.h (LINK_SPEC): max-page-size and common-page-size
