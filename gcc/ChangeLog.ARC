@@ -1,3 +1,8 @@
+2012-12-13  Vineet Gupta    <vgupta@synopsys.com>
+
+	* config/arc/arc.h (LINK_SPEC): max-page-size and common-page-size
+	set to 8k (default for ARC MMU)
+
 2012-12-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/predicates.md (long_immediate_loadstore_operand):
