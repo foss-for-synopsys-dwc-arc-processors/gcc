@@ -1,7 +1,7 @@
 /* Convert RTL to assembler code and output it, for GNU compiler.
    Copyright (C) 1987, 1988, 1989, 1992, 1993, 1994, 1995, 1996, 1997,
    1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-   2010, 2011
+   2010, 2011, 2012
    Free Software Foundation, Inc.
 
 This file is part of GCC.
@@ -424,8 +424,10 @@ get_attr_length_1 (rtx insn, int (*fallback_fn) (rtx))
 	break;
       }
 
-  int dummy = -1;
-  return targetm.adjust_insn_length (insn, length, false, &dummy);
+#ifdef ADJUST_INSN_LENGTH
+  ADJUST_INSN_LENGTH (insn, length);
+#endif
+  return length;
 }
 
 /* Obtain the current length of an insn.  If branch shortening has been done,
@@ -809,6 +811,7 @@ struct rtl_opt_pass pass_compute_alignments =
  {
   RTL_PASS,
   "alignments",                         /* name */
+  OPTGROUP_NONE,                        /* optinfo_flags */
   NULL,                                 /* gate */
   compute_alignments,                   /* execute */
   NULL,                                 /* sub */
@@ -825,39 +828,6 @@ struct rtl_opt_pass pass_compute_alignments =
 };
 
 
-static int
-adjust_length (rtx insn, int new_length, int uid, int *insn_lengths,
-	       int *uid_lock_length, bool seq_p, int *niter,
-	       bool *something_changed)
-
-{
-  int iter_threshold = 0;
-  new_length
-    = targetm.adjust_insn_length (insn, new_length, seq_p, &iter_threshold);
-  if (new_length < 0)
-    fatal_insn ("negative insn length", insn);
-  if (iter_threshold < 0)
-    fatal_insn ("negative shorten_branches iteration threshold", insn);
-  if (new_length != insn_lengths[uid])
-    {
-      if (new_length < uid_lock_length[uid])
-	new_length = uid_lock_length[uid];
-      if (new_length == insn_lengths[uid])
-	; /* done here.  */
-      else if (*niter < iter_threshold
-	       || new_length > insn_lengths[uid])
-	{
-	  if (*niter >= iter_threshold)
-	    uid_lock_length[uid] = new_length, *niter = 0;
-	  insn_lengths[uid] = new_length;
-	  *something_changed = true;
-	}
-      else
-	new_length = insn_lengths[uid];
-    }
-  return new_length;
-}
-
 /* Make a pass over all insns and compute their actual lengths by shortening
    any branches of variable length if possible.  */
 
@@ -879,7 +849,7 @@ shorten_branches (rtx first)
   int max_skip;
 #define MAX_CODE_ALIGN 16
   rtx seq;
-  bool something_changed = true;
+  int something_changed = 1;
   char *varying_length;
   rtx body;
   int uid;
@@ -995,8 +965,7 @@ shorten_branches (rtx first)
     return;
 
   /* Allocate the rest of the arrays.  */
-  insn_lengths = XCNEWVEC (int, max_uid);
-  int *uid_lock_length = XCNEWVEC (int, max_uid);
+  insn_lengths = XNEWVEC (int, max_uid);
   insn_lengths_max_uid = max_uid;
   /* Syntax errors can lead to labels being outside of the main insn stream.
      Initialize insn_addresses, so that we get reproducible results.  */
@@ -1097,13 +1066,14 @@ shorten_branches (rtx first)
 
   /* Compute initial lengths, addresses, and varying flags for each insn.  */
   int (*length_fun) (rtx) = increasing ? insn_min_length : insn_default_length;
-  int niter = increasing ? 0 : -1;
 
   for (insn_current_address = 0, insn = first;
        insn != 0;
        insn_current_address += insn_lengths[uid], insn = NEXT_INSN (insn))
     {
       uid = INSN_UID (insn);
+
+      insn_lengths[uid] = 0;
 
       if (LABEL_P (insn))
 	{
@@ -1124,8 +1094,6 @@ shorten_branches (rtx first)
       if (INSN_DELETED_P (insn))
 	continue;
 
-      int length = 0;
-
       body = PATTERN (insn);
       if (GET_CODE (body) == ADDR_VEC || GET_CODE (body) == ADDR_DIFF_VEC)
 	{
@@ -1133,12 +1101,13 @@ shorten_branches (rtx first)
 	     section.  */
 	  if (JUMP_TABLES_IN_TEXT_SECTION
 	      || readonly_data_section == text_section)
-	    length = (XVECLEN (body, GET_CODE (body) == ADDR_DIFF_VEC)
-		      * GET_MODE_SIZE (GET_MODE (body)));
+	    insn_lengths[uid] = (XVECLEN (body,
+					  GET_CODE (body) == ADDR_DIFF_VEC)
+				 * GET_MODE_SIZE (GET_MODE (body)));
 	  /* Alignment is handled by ADDR_VEC_ALIGN.  */
 	}
       else if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
-	length = asm_insn_count (body) * insn_default_length (insn);
+	insn_lengths[uid] = asm_insn_count (body) * insn_default_length (insn);
       else if (GET_CODE (body) == SEQUENCE)
 	{
 	  int i;
@@ -1166,10 +1135,7 @@ shorten_branches (rtx first)
 	      else
 		inner_length = inner_length_fun (inner_insn);
 
-	      insn_lengths[inner_uid] = inner_length
-		= adjust_length (insn, inner_length, inner_uid, insn_lengths,
-				 uid_lock_length, true, &niter,
-				 &something_changed);
+	      insn_lengths[inner_uid] = inner_length;
 	      if (const_delay_slots)
 		{
 		  if ((varying_length[inner_uid]
@@ -1180,19 +1146,21 @@ shorten_branches (rtx first)
 		}
 	      else
 		varying_length[inner_uid] = 0;
-	      length += inner_length;
+	      insn_lengths[uid] += inner_length;
 	    }
 	}
       else if (GET_CODE (body) != USE && GET_CODE (body) != CLOBBER)
 	{
-	  length = length_fun (insn);
+	  insn_lengths[uid] = length_fun (insn);
 	  varying_length[uid] = insn_variable_length_p (insn);
 	}
-	
+
       /* If needed, do any adjustment.  */
-      insn_lengths[uid]
-	= adjust_length (insn, length, uid, insn_lengths, uid_lock_length,
-			 false, &niter, &something_changed);
+#ifdef ADJUST_INSN_LENGTH
+      ADJUST_INSN_LENGTH (insn, insn_lengths[uid]);
+      if (insn_lengths[uid] < 0)
+	fatal_insn ("negative insn length", insn);
+#endif
     }
 
   /* Now loop over all the insns finding varying length insns.  For each,
@@ -1201,16 +1169,16 @@ shorten_branches (rtx first)
 
   while (something_changed)
     {
-      if (increasing)
-	niter++;
-
-      something_changed = false;
+      something_changed = 0;
       insn_current_align = MAX_CODE_ALIGN - 1;
       for (insn_current_address = 0, insn = first;
 	   insn != 0;
 	   insn = NEXT_INSN (insn))
 	{
 	  int new_length;
+#ifdef ADJUST_INSN_LENGTH
+	  int tmp_length;
+#endif
 	  int length_align;
 
 	  uid = INSN_UID (insn);
@@ -1396,13 +1364,17 @@ shorten_branches (rtx first)
 		  if (! varying_length[inner_uid])
 		    inner_length = insn_lengths[inner_uid];
 		  else
-		    {
-		      inner_length = insn_current_length (inner_insn);
+		    inner_length = insn_current_length (inner_insn);
 
-		      inner_length
-			= adjust_length (insn, inner_length, inner_uid,
-					 insn_lengths, uid_lock_length, true,
-					 &niter, &something_changed);
+		  if (inner_length != insn_lengths[inner_uid])
+		    {
+		      if (!increasing || inner_length > insn_lengths[inner_uid])
+			{
+			  insn_lengths[inner_uid] = inner_length;
+			  something_changed = 1;
+			}
+		      else
+			inner_length = insn_lengths[inner_uid];
 		    }
 		  insn_current_address += inner_length;
 		  new_length += inner_length;
@@ -1414,13 +1386,21 @@ shorten_branches (rtx first)
 	      insn_current_address += new_length;
 	    }
 
+#ifdef ADJUST_INSN_LENGTH
 	  /* If needed, do any adjustment.  */
-	  int tmp_length = new_length;
-	  new_length
-	    = adjust_length (insn, new_length, uid, insn_lengths,
-			     uid_lock_length, false, &niter,
-			     &something_changed);
+	  tmp_length = new_length;
+	  ADJUST_INSN_LENGTH (insn, new_length);
 	  insn_current_address += (new_length - tmp_length);
+#endif
+
+	  if (new_length != insn_lengths[uid]
+	      && (!increasing || new_length > insn_lengths[uid]))
+	    {
+	      insn_lengths[uid] = new_length;
+	      something_changed = 1;
+	    }
+	  else
+	    insn_current_address += insn_lengths[uid] - new_length;
 	}
       /* For a non-optimizing compile, do only a single pass.  */
       if (!increasing)
@@ -1636,7 +1616,12 @@ reemit_insn_block_notes (void)
 					     insn_scope (XVECEXP (body, 0, i)));
 	}
       if (! this_block)
-	this_block = DECL_INITIAL (cfun->decl);
+	{
+	  if (INSN_LOCATION (insn) == UNKNOWN_LOCATION)
+	    continue;
+	  else
+	    this_block = DECL_INITIAL (cfun->decl);
+	}
 
       if (this_block != cur_block)
 	{
@@ -2565,7 +2550,7 @@ final_scan_insn (rtx insn, FILE *file, int optimize_p ATTRIBUTE_UNUSED,
 	      {
 		rtx src1, src2;
 		if (GET_CODE (SET_SRC (set)) == SUBREG)
-		  SET_SRC (set) = alter_subreg (&SET_SRC (set));
+		  SET_SRC (set) = alter_subreg (&SET_SRC (set), true);
 
 		src1 = SET_SRC (set);
 		src2 = NULL_RTX;
@@ -2573,10 +2558,10 @@ final_scan_insn (rtx insn, FILE *file, int optimize_p ATTRIBUTE_UNUSED,
 		  {
 		    if (GET_CODE (XEXP (SET_SRC (set), 0)) == SUBREG)
 		      XEXP (SET_SRC (set), 0)
-			= alter_subreg (&XEXP (SET_SRC (set), 0));
+			= alter_subreg (&XEXP (SET_SRC (set), 0), true);
 		    if (GET_CODE (XEXP (SET_SRC (set), 1)) == SUBREG)
 		      XEXP (SET_SRC (set), 1)
-			= alter_subreg (&XEXP (SET_SRC (set), 1));
+			= alter_subreg (&XEXP (SET_SRC (set), 1), true);
 		    if (XEXP (SET_SRC (set), 1)
 			== CONST0_RTX (GET_MODE (XEXP (SET_SRC (set), 0))))
 		      src2 = XEXP (SET_SRC (set), 0);
@@ -2704,36 +2689,19 @@ final_scan_insn (rtx insn, FILE *file, int optimize_p ATTRIBUTE_UNUSED,
 		else_rtx = const0_rtx;
 	      }
 
-	    switch (GET_CODE (cond_rtx))
+	    if (COMPARISON_P (cond_rtx)
+		&& XEXP (cond_rtx, 0) == cc0_rtx)
 	      {
-	      case GTU:
-	      case GT:
-	      case LTU:
-	      case LT:
-	      case GEU:
-	      case GE:
-	      case LEU:
-	      case LE:
-	      case EQ:
-	      case NE:
-		{
-		  int result;
-		  if (XEXP (cond_rtx, 0) != cc0_rtx)
-		    break;
-		  result = alter_cond (cond_rtx);
-		  if (result == 1)
-		    validate_change (insn, &SET_SRC (set), then_rtx, 0);
-		  else if (result == -1)
-		    validate_change (insn, &SET_SRC (set), else_rtx, 0);
-		  else if (result == 2)
-		    INSN_CODE (insn) = -1;
-		  if (SET_DEST (set) == SET_SRC (set))
-		    delete_insn (insn);
-		}
-		break;
-
-	      default:
-		break;
+		int result;
+		result = alter_cond (cond_rtx);
+		if (result == 1)
+		  validate_change (insn, &SET_SRC (set), then_rtx, 0);
+		else if (result == -1)
+		  validate_change (insn, &SET_SRC (set), else_rtx, 0);
+		else if (result == 2)
+		  INSN_CODE (insn) = -1;
+		if (SET_DEST (set) == SET_SRC (set))
+		  delete_insn (insn);
 	      }
 	  }
 
@@ -2858,13 +2826,10 @@ final_scan_insn (rtx insn, FILE *file, int optimize_p ATTRIBUTE_UNUSED,
 	    if (new_rtx == insn && PATTERN (new_rtx) == body)
 	      fatal_insn ("could not split insn", insn);
 
-	    if (HAVE_ATTR_length)
-	      {
-		/* This instruction should have been split in shorten_branches,
-		   to ensure that we would have valid length info for the
-		   splitees.  */
-		gcc_unreachable ();
-	      }
+	    /* If we have a length attribute, this instruction should have
+	       been split in shorten_branches, to ensure that we would have
+	       valid length info for the splitees.  */
+	    gcc_assert (!HAVE_ATTR_length);
 
 	    return new_rtx;
 	  }
@@ -2980,7 +2945,7 @@ cleanup_subreg_operands (rtx insn)
 	 expression directly.  */
       if (GET_CODE (*recog_data.operand_loc[i]) == SUBREG)
 	{
-	  recog_data.operand[i] = alter_subreg (recog_data.operand_loc[i]);
+	  recog_data.operand[i] = alter_subreg (recog_data.operand_loc[i], true);
 	  changed = true;
 	}
       else if (GET_CODE (recog_data.operand[i]) == PLUS
@@ -2993,7 +2958,7 @@ cleanup_subreg_operands (rtx insn)
     {
       if (GET_CODE (*recog_data.dup_loc[i]) == SUBREG)
 	{
-	  *recog_data.dup_loc[i] = alter_subreg (recog_data.dup_loc[i]);
+	  *recog_data.dup_loc[i] = alter_subreg (recog_data.dup_loc[i], true);
 	  changed = true;
 	}
       else if (GET_CODE (*recog_data.dup_loc[i]) == PLUS
@@ -3005,11 +2970,11 @@ cleanup_subreg_operands (rtx insn)
     df_insn_rescan (insn);
 }
 
-/* If X is a SUBREG, replace it with a REG or a MEM,
-   based on the thing it is a subreg of.  */
+/* If X is a SUBREG, try to replace it with a REG or a MEM, based on
+   the thing it is a subreg of.  Do it anyway if FINAL_P.  */
 
 rtx
-alter_subreg (rtx *xp)
+alter_subreg (rtx *xp, bool final_p)
 {
   rtx x = *xp;
   rtx y = SUBREG_REG (x);
@@ -3033,16 +2998,19 @@ alter_subreg (rtx *xp)
             offset += difference % UNITS_PER_WORD;
         }
 
-      *xp = adjust_address (y, GET_MODE (x), offset);
+      if (final_p)
+	*xp = adjust_address (y, GET_MODE (x), offset);
+      else
+	*xp = adjust_address_nv (y, GET_MODE (x), offset);
     }
   else
     {
       rtx new_rtx = simplify_subreg (GET_MODE (x), y, GET_MODE (y),
-				 SUBREG_BYTE (x));
+				     SUBREG_BYTE (x));
 
       if (new_rtx != 0)
 	*xp = new_rtx;
-      else if (REG_P (y))
+      else if (final_p && REG_P (y))
 	{
 	  /* Simplify_subreg can't handle some REG cases, but we have to.  */
 	  unsigned int regno;
@@ -3082,7 +3050,7 @@ walk_alter_subreg (rtx *xp, bool *changed)
 
     case SUBREG:
       *changed = true;
-      return alter_subreg (xp);
+      return alter_subreg (xp, true);
 
     default:
       break;
@@ -3689,7 +3657,7 @@ void
 output_operand (rtx x, int code ATTRIBUTE_UNUSED)
 {
   if (x && GET_CODE (x) == SUBREG)
-    x = alter_subreg (&x);
+    x = alter_subreg (&x, true);
 
   /* X must not be a pseudo reg.  */
   gcc_assert (!x || !REG_P (x) || REGNO (x) < FIRST_PSEUDO_REGISTER);
@@ -4377,6 +4345,7 @@ struct rtl_opt_pass pass_final =
  {
   RTL_PASS,
   "final",                              /* name */
+  OPTGROUP_NONE,                        /* optinfo_flags */
   NULL,                                 /* gate */
   rest_of_handle_final,                 /* execute */
   NULL,                                 /* sub */
@@ -4405,6 +4374,7 @@ struct rtl_opt_pass pass_shorten_branches =
  {
   RTL_PASS,
   "shorten",                            /* name */
+  OPTGROUP_NONE,                        /* optinfo_flags */
   NULL,                                 /* gate */
   rest_of_handle_shorten_branches,      /* execute */
   NULL,                                 /* sub */
@@ -4551,6 +4521,7 @@ struct rtl_opt_pass pass_clean_state =
  {
   RTL_PASS,
   "*clean_state",                       /* name */
+  OPTGROUP_NONE,                        /* optinfo_flags */
   NULL,                                 /* gate */
   rest_of_clean_state,                  /* execute */
   NULL,                                 /* sub */

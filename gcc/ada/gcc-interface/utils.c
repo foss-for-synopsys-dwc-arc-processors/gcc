@@ -1731,19 +1731,23 @@ rest_of_record_type_compilation (tree record_type)
 	      tree offset = TREE_OPERAND (curpos, 0);
 	      align = tree_low_cst (TREE_OPERAND (curpos, 1), 1);
 
-	      /* An offset which is a bitwise AND with a negative power of 2
-		 means an alignment corresponding to this power of 2.  Note
-		 that, as sizetype is sign-extended but nonetheless unsigned,
-		 we don't directly use tree_int_cst_sgn.  */
+	      /* An offset which is a bitwise AND with a mask increases the
+		 alignment according to the number of trailing zeros.  */
 	      offset = remove_conversions (offset, true);
 	      if (TREE_CODE (offset) == BIT_AND_EXPR
-		  && host_integerp (TREE_OPERAND (offset, 1), 0)
-		  && TREE_INT_CST_HIGH (TREE_OPERAND (offset, 1)) < 0)
+		  && TREE_CODE (TREE_OPERAND (offset, 1)) == INTEGER_CST)
 		{
-		  unsigned int pow
-		    = - tree_low_cst (TREE_OPERAND (offset, 1), 0);
-		  if (exact_log2 (pow) > 0)
-		    align *= pow;
+		  unsigned HOST_WIDE_INT mask
+		    = TREE_INT_CST_LOW (TREE_OPERAND (offset, 1));
+		  unsigned int i;
+
+		  for (i = 0; i < HOST_BITS_PER_WIDE_INT; i++)
+		    {
+		      if (mask & 1)
+			break;
+		      mask >>= 1;
+		      align *= 2;
+		    }
 		}
 
 	      pos = compute_related_constant (curpos,
@@ -5582,7 +5586,7 @@ gnat_write_global_declarations (void)
 		      void_type_node);
       TREE_STATIC (dummy_global) = 1;
       TREE_ASM_WRITTEN (dummy_global) = 1;
-      node = varpool_node (dummy_global);
+      node = varpool_node_for_decl (dummy_global);
       node->symbol.force_output = 1;
 
       while (!VEC_empty (tree, types_used_by_cur_var_decl))

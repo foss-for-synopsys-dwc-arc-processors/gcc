@@ -366,6 +366,7 @@ find_basis_for_candidate (slsr_cand_t c)
       slsr_cand_t one_basis = chain->cand;
 
       if (one_basis->kind != c->kind
+	  || one_basis->cand_stmt == c->cand_stmt
 	  || !operand_equal_p (one_basis->stride, c->stride, 0)
 	  || !types_compatible_p (one_basis->cand_type, c->cand_type)
 	  || !dominated_by_p (CDI_DOMINATORS,
@@ -2681,6 +2682,7 @@ struct gimple_opt_pass pass_strength_reduction =
  {
   GIMPLE_PASS,
   "slsr",				/* name */
+  OPTGROUP_NONE,                        /* optinfo_flags */
   gate_strength_reduction,		/* gate */
   execute_strength_reduction,		/* execute */
   NULL,					/* sub */

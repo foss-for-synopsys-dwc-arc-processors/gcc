@@ -4123,6 +4123,7 @@ struct rtl_opt_pass pass_delay_slots =
  {
   RTL_PASS,
   "dbr",                                /* name */
+  OPTGROUP_NONE,                        /* optinfo_flags */
   gate_handle_delay_slots,              /* gate */
   rest_of_handle_delay_slots,           /* execute */
   NULL,                                 /* sub */
@@ -4157,6 +4158,7 @@ struct rtl_opt_pass pass_machine_reorg =
  {
   RTL_PASS,
   "mach",                               /* name */
+  OPTGROUP_NONE,                        /* optinfo_flags */
   gate_handle_machine_reorg,            /* gate */
   rest_of_handle_machine_reorg,         /* execute */
   NULL,                                 /* sub */

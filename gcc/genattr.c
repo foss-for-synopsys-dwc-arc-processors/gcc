@@ -159,6 +159,12 @@ main (int argc, char **argv)
 
   puts ("#include \"insn-attr-common.h\"\n");
 
+  /* For compatibility, define the attribute `alternative', which is just
+     a reference to the variable `which_alternative'.  */
+
+  puts ("#define HAVE_ATTR_alternative");
+  puts ("#define get_attr_alternative(insn) which_alternative");
+
   /* Read the machine description.  */
 
   while (1)
@@ -345,14 +351,18 @@ main (int argc, char **argv)
 	      "#endif\n", *p, *p);
     }
   /* We make an exception here to provide stub definitions for
-     insn_*_length* functions.  */
+     insn_*_length* / get_attr_enabled functions.  */
   puts ("#if !HAVE_ATTR_length\n"
-	"extern int hook_int_rtx_0 (rtx);\n"
-	"#define insn_default_length hook_int_rtx_0\n"
-	"#define insn_min_length hook_int_rtx_0\n"
-	"#define insn_variable_length_p hook_int_rtx_0\n"
-	"#define insn_current_length hook_int_rtx_0\n"
+	"extern int hook_int_rtx_unreachable (rtx);\n"
+	"#define insn_default_length hook_int_rtx_unreachable\n"
+	"#define insn_min_length hook_int_rtx_unreachable\n"
+	"#define insn_variable_length_p hook_int_rtx_unreachable\n"
+	"#define insn_current_length hook_int_rtx_unreachable\n"
 	"#include \"insn-addr.h\"\n"
+	"#endif\n"
+	"#if !HAVE_ATTR_enabled\n"
+	"extern int hook_int_rtx_1 (rtx);\n"
+	"#define get_attr_enabled hook_int_rtx_1\n"
 	"#endif\n");
 
   /* Output flag masks for use by reorg.
