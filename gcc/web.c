@@ -1,6 +1,6 @@
 /* Web construction code for GNU compiler.
    Contributed by Jan Hubicka.
-   Copyright (C) 2001, 2002, 2004, 2006, 2007, 2008, 2010
+   Copyright (C) 2001, 2002, 2004, 2006, 2007, 2008, 2010, 2012
    Free Software Foundation, Inc.
 
 This file is part of GCC.
@@ -120,7 +120,7 @@ union_match_dups (rtx insn, struct web_entry *def_entry,
 	      break;
 	}
       /* ??? *DUPREF can still be zero, because when an operand matches
-	 a memory, DF_REF_LOC (use_entry[n]) points to the register part
+	 a memory, DF_REF_LOC (use_link[n]) points to the register part
 	 of the address, whereas recog_data.dup_loc[m] points to the
 	 entire memory ref, thus we fail to find the duplicate entry,
          even though it is there.
@@ -336,6 +336,7 @@ web_main (void)
   rtx insn;
 
   df_set_flags (DF_NO_HARD_REGS + DF_EQ_NOTES);
+  df_set_flags (DF_RD_PRUNE_DEAD_DEFS);
   df_chain_add_problem (DF_UD_CHAIN);
   df_analyze ();
   df_set_flags (DF_DEFER_INSN_RESCAN);

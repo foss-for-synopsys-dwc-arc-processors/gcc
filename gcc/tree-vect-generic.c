@@ -252,9 +252,8 @@ expand_vector_piecewise (gimple_stmt_iterator *gsi, elem_op_func f,
        i += delta, index = int_const_binop (PLUS_EXPR, index, part_width))
     {
       tree result = f (gsi, inner_type, a, b, index, part_width, code);
-      constructor_elt *ce = VEC_quick_push (constructor_elt, v, NULL);
-      ce->index = NULL_TREE;
-      ce->value = result;
+      constructor_elt ce = {NULL_TREE, result};
+      VEC_quick_push (constructor_elt, v, ce);
     }
 
   return build_constructor (type, v);
@@ -668,8 +667,8 @@ expand_vector_divmod (gimple_stmt_iterator *gsi, tree type, tree op0,
 					 << shifts[i]) - 1);
 	      cst = build_vector (type, vec);
 	      addend = make_ssa_name (type, NULL);
-	      stmt = gimple_build_assign_with_ops3 (VEC_COND_EXPR, addend,
-						    cond, cst, zero);
+	      stmt = gimple_build_assign_with_ops (VEC_COND_EXPR, addend,
+						   cond, cst, zero);
 	      gsi_insert_before (gsi, stmt, GSI_SAME_STMT);
 	    }
 	}
@@ -1051,14 +1050,13 @@ vector_element (gimple_stmt_iterator *gsi, tree vect, tree idx, tree *ptmpvec)
 
       if (TREE_CODE (vect) == VECTOR_CST)
 	return VECTOR_CST_ELT (vect, index);
-      else if (TREE_CODE (vect) == CONSTRUCTOR)
+      else if (TREE_CODE (vect) == CONSTRUCTOR
+	       && (CONSTRUCTOR_NELTS (vect) == 0
+		   || TREE_CODE (TREE_TYPE (CONSTRUCTOR_ELT (vect, 0)->value))
+		      != VECTOR_TYPE))
         {
-          unsigned i;
-          tree elt_i, elt_v;
-
-	  FOR_EACH_CONSTRUCTOR_ELT (CONSTRUCTOR_ELTS (vect), i, elt_i, elt_v)
-            if (operand_equal_p (elt_i, idx, 0))
-              return elt_v;
+	  if (index < CONSTRUCTOR_NELTS (vect))
+	    return CONSTRUCTOR_ELT (vect, index)->value;
           return build_zero_cst (vect_elt_type);
         }
       else
@@ -1216,7 +1214,7 @@ lower_vec_perm (gimple_stmt_iterator *gsi)
 	    t = v0_val;
         }
 
-      CONSTRUCTOR_APPEND_ELT (v, si, t);
+      CONSTRUCTOR_APPEND_ELT (v, NULL_TREE, t);
     }
 
   constr = build_constructor (vect_type, v);

@@ -42,6 +42,15 @@ typedef struct GTY(()) condition
     unsigned by_ref : 1;
   } condition;
 
+/* Inline hints are reasons why inline heuristics should preffer inlining given function.
+   They are represtented as bitmap of the following values.  */
+enum inline_hints_vals {
+  INLINE_HINT_indirect_call = 1,
+  INLINE_HINT_loop_iterations = 2,
+  INLINE_HINT_loop_stride = 4
+};
+typedef int inline_hints;
+
 DEF_VEC_O (condition);
 DEF_VEC_ALLOC_O (condition, gc);
 
@@ -111,6 +120,13 @@ struct GTY(()) inline_summary
      merged during inlining.  */
   conditions conds;
   VEC(size_time_entry,gc) *entry;
+
+  /* Predicate on when some loop in the function becomes to have known
+     bounds.   */
+  struct predicate * GTY((skip)) loop_iterations;
+  /* Predicate on when some loop in the function becomes to have known
+     stride.   */
+  struct predicate * GTY((skip)) loop_stride;
 };
 
 
@@ -158,6 +174,7 @@ extern VEC(inline_edge_summary_t,heap) *inline_edge_summary_vec;
 typedef struct edge_growth_cache_entry
 {
   int time, size;
+  inline_hints hints;
 } edge_growth_cache_entry;
 DEF_VEC_O(edge_growth_cache_entry);
 DEF_VEC_ALLOC_O(edge_growth_cache_entry,heap);
@@ -168,7 +185,8 @@ extern VEC(edge_growth_cache_entry,heap) *edge_growth_cache;
 /* In ipa-inline-analysis.c  */
 void debug_inline_summary (struct cgraph_node *);
 void dump_inline_summaries (FILE *f);
-void dump_inline_summary (FILE * f, struct cgraph_node *node);
+void dump_inline_summary (FILE *f, struct cgraph_node *node);
+void dump_inline_hints (FILE *f, inline_hints);
 void inline_generate_summary (void);
 void inline_read_summary (void);
 void inline_write_summary (void);
@@ -183,8 +201,9 @@ void estimate_ipcp_clone_size_and_time (struct cgraph_node *,
 int do_estimate_growth (struct cgraph_node *);
 void inline_merge_summary (struct cgraph_edge *edge);
 void inline_update_overall_summary (struct cgraph_node *node);
-int do_estimate_edge_growth (struct cgraph_edge *edge);
+int do_estimate_edge_size (struct cgraph_edge *edge);
 int do_estimate_edge_time (struct cgraph_edge *edge);
+inline_hints do_estimate_edge_hints (struct cgraph_edge *edge);
 void initialize_growth_caches (void);
 void free_growth_caches (void);
 void compute_inline_parameters (struct cgraph_node *, bool);
@@ -200,13 +219,13 @@ extern int nfunctions_inlined;
 static inline struct inline_summary *
 inline_summary (struct cgraph_node *node)
 {
-  return VEC_index (inline_summary_t, inline_summary_vec, node->uid);
+  return &VEC_index (inline_summary_t, inline_summary_vec, node->uid);
 }
 
 static inline struct inline_edge_summary *
 inline_edge_summary (struct cgraph_edge *edge)
 {
-  return VEC_index (inline_edge_summary_t,
+  return &VEC_index (inline_edge_summary_t,
 		    inline_edge_summary_vec, edge->uid);
 }
 
@@ -226,20 +245,31 @@ estimate_growth (struct cgraph_node *node)
 }
 
 
-/* Return estimated callee growth after inlining EDGE.  */
+/* Return estimated size of the inline sequence of EDGE.  */
 
 static inline int
-estimate_edge_growth (struct cgraph_edge *edge)
+estimate_edge_size (struct cgraph_edge *edge)
 {
   int ret;
   if ((int)VEC_length (edge_growth_cache_entry, edge_growth_cache) <= edge->uid
       || !(ret = VEC_index (edge_growth_cache_entry,
 			    edge_growth_cache,
-			    edge->uid)->size))
-    return do_estimate_edge_growth (edge);
+			    edge->uid).size))
+    return do_estimate_edge_size (edge);
   return ret - (ret > 0);
 }
 
+/* Return estimated callee growth after inlining EDGE.  */
+
+static inline int
+estimate_edge_growth (struct cgraph_edge *edge)
+{
+#ifdef ENABLE_CHECKING
+  gcc_checking_assert (inline_edge_summary (edge)->call_stmt_size);
+#endif
+  return (estimate_edge_size (edge)
+	  - inline_edge_summary (edge)->call_stmt_size);
+}
 
 /* Return estimated callee runtime increase after inlning
    EDGE.  */
@@ -251,9 +281,25 @@ estimate_edge_time (struct cgraph_edge *edge)
   if ((int)VEC_length (edge_growth_cache_entry, edge_growth_cache) <= edge->uid
       || !(ret = VEC_index (edge_growth_cache_entry,
 			    edge_growth_cache,
-			    edge->uid)->time))
+			    edge->uid).time))
     return do_estimate_edge_time (edge);
   return ret - (ret > 0);
+}
+
+
+/* Return estimated callee runtime increase after inlning
+   EDGE.  */
+
+static inline inline_hints
+estimate_edge_hints (struct cgraph_edge *edge)
+{
+  inline_hints ret;
+  if ((int)VEC_length (edge_growth_cache_entry, edge_growth_cache) <= edge->uid
+      || !(ret = VEC_index (edge_growth_cache_entry,
+			    edge_growth_cache,
+			    edge->uid).hints))
+    return do_estimate_edge_hints (edge);
+  return ret - 1;
 }
 
 
@@ -273,7 +319,7 @@ reset_edge_growth_cache (struct cgraph_edge *edge)
 {
   if ((int)VEC_length (edge_growth_cache_entry, edge_growth_cache) > edge->uid)
     {
-      struct edge_growth_cache_entry zero = {0, 0};
-      VEC_replace (edge_growth_cache_entry, edge_growth_cache, edge->uid, &zero);
+      struct edge_growth_cache_entry zero = {0, 0, 0};
+      VEC_replace (edge_growth_cache_entry, edge_growth_cache, edge->uid, zero);
     }
 }

@@ -526,7 +526,10 @@ duplicate_eh_regions_1 (struct duplicate_eh_regions_data *data,
       break;
 
     case ERT_MUST_NOT_THROW:
-      new_r->u.must_not_throw = old_r->u.must_not_throw;
+      new_r->u.must_not_throw.failure_loc =
+	LOCATION_LOCUS (old_r->u.must_not_throw.failure_loc);
+      new_r->u.must_not_throw.failure_decl =
+	old_r->u.must_not_throw.failure_decl;
       break;
     }
 
@@ -1150,7 +1153,7 @@ sjlj_emit_function_enter (rtx dispatch_label)
   if (dispatch_label)
     {
 #ifdef DONT_USE_BUILTIN_SETJMP
-      rtx x, last;
+      rtx x;
       x = emit_library_call_value (setjmp_libfunc, NULL_RTX, LCT_RETURNS_TWICE,
 				   TYPE_MODE (integer_type_node), 1,
 				   plus_constant (Pmode, XEXP (fc, 0),
@@ -1158,13 +1161,7 @@ sjlj_emit_function_enter (rtx dispatch_label)
 
       emit_cmp_and_jump_insns (x, const0_rtx, NE, 0,
 			       TYPE_MODE (integer_type_node), 0,
-			       dispatch_label);
-      last = get_last_insn ();
-      if (JUMP_P (last) && any_condjump_p (last))
-	{
-	  gcc_assert (!find_reg_note (last, REG_BR_PROB, 0));
-	  add_reg_note (last, REG_BR_PROB, GEN_INT (REG_BR_PROB_BASE / 100));
-	}
+			       dispatch_label, REG_BR_PROB_BASE / 100);
 #else
       expand_builtin_setjmp_setup (plus_constant (Pmode, XEXP (fc, 0),
 						  sjlj_fc_jbuf_ofs),
@@ -1243,7 +1240,7 @@ sjlj_emit_dispatch_table (rtx dispatch_label, int num_dispatch)
   eh_region r;
   edge e;
   int i, disp_index;
-  gimple switch_stmt;
+  VEC(tree, heap) *dispatch_labels = NULL;
 
   fc = crtl->eh.sjlj_fc;
 
@@ -1289,17 +1286,8 @@ sjlj_emit_dispatch_table (rtx dispatch_label, int num_dispatch)
 
   /* If there's exactly one call site in the function, don't bother
      generating a switch statement.  */
-  switch_stmt = NULL;
   if (num_dispatch > 1)
-    {
-      tree disp;
-
-      mem = adjust_address (fc, TYPE_MODE (integer_type_node),
-			    sjlj_fc_call_site_ofs);
-      disp = make_tree (integer_type_node, mem);
-
-      switch_stmt = gimple_build_switch_nlabels (num_dispatch, disp, NULL);
-    }
+    dispatch_labels = VEC_alloc (tree, heap, num_dispatch);
 
   for (i = 1; VEC_iterate (eh_landing_pad, cfun->eh->lp_array, i, lp); ++i)
     if (lp && lp->post_landing_pad)
@@ -1317,8 +1305,7 @@ sjlj_emit_dispatch_table (rtx dispatch_label, int num_dispatch)
 	    t_label = create_artificial_label (UNKNOWN_LOCATION);
 	    t = build_int_cst (integer_type_node, disp_index);
 	    case_elt = build_case_label (t, NULL, t_label);
-	    gimple_switch_set_label (switch_stmt, disp_index, case_elt);
-
+	    VEC_quick_push (tree, dispatch_labels, case_elt);
 	    label = label_rtx (t_label);
 	  }
 	else
@@ -1371,8 +1358,9 @@ sjlj_emit_dispatch_table (rtx dispatch_label, int num_dispatch)
 
   if (num_dispatch > 1)
     {
-      expand_case (switch_stmt);
-      expand_builtin_trap ();
+      rtx disp = adjust_address (fc, TYPE_MODE (integer_type_node),
+				 sjlj_fc_call_site_ofs);
+      expand_sjlj_dispatch_table (disp, dispatch_labels);
     }
 
   seq = get_insns ();
@@ -2395,10 +2383,10 @@ add_call_site (rtx landing_pad, int action, int section)
   record->action = action;
 
   VEC_safe_push (call_site_record, gc,
-		 crtl->eh.call_site_record[section], record);
+		 crtl->eh.call_site_record_v[section], record);
 
   return call_site_base + VEC_length (call_site_record,
-				      crtl->eh.call_site_record[section]) - 1;
+				      crtl->eh.call_site_record_v[section]) - 1;
 }
 
 /* Turn REG_EH_REGION notes back into NOTE_INSN_EH_REGION notes.
@@ -2546,10 +2534,10 @@ convert_to_eh_region_ranges (void)
 	else if (last_action != -3)
 	  last_landing_pad = pc_rtx;
 	call_site_base += VEC_length (call_site_record,
-				      crtl->eh.call_site_record[cur_sec]);
+				      crtl->eh.call_site_record_v[cur_sec]);
 	cur_sec++;
-	gcc_assert (crtl->eh.call_site_record[cur_sec] == NULL);
-	crtl->eh.call_site_record[cur_sec]
+	gcc_assert (crtl->eh.call_site_record_v[cur_sec] == NULL);
+	crtl->eh.call_site_record_v[cur_sec]
 	  = VEC_alloc (call_site_record, gc, 10);
       }
 
@@ -2633,14 +2621,14 @@ push_sleb128 (VEC (uchar, gc) **data_area, int value)
 static int
 dw2_size_of_call_site_table (int section)
 {
-  int n = VEC_length (call_site_record, crtl->eh.call_site_record[section]);
+  int n = VEC_length (call_site_record, crtl->eh.call_site_record_v[section]);
   int size = n * (4 + 4 + 4);
   int i;
 
   for (i = 0; i < n; ++i)
     {
       struct call_site_record_d *cs =
-	VEC_index (call_site_record, crtl->eh.call_site_record[section], i);
+	VEC_index (call_site_record, crtl->eh.call_site_record_v[section], i);
       size += size_of_uleb128 (cs->action);
     }
 
@@ -2650,14 +2638,14 @@ dw2_size_of_call_site_table (int section)
 static int
 sjlj_size_of_call_site_table (void)
 {
-  int n = VEC_length (call_site_record, crtl->eh.call_site_record[0]);
+  int n = VEC_length (call_site_record, crtl->eh.call_site_record_v[0]);
   int size = 0;
   int i;
 
   for (i = 0; i < n; ++i)
     {
       struct call_site_record_d *cs =
-	VEC_index (call_site_record, crtl->eh.call_site_record[0], i);
+	VEC_index (call_site_record, crtl->eh.call_site_record_v[0], i);
       size += size_of_uleb128 (INTVAL (cs->landing_pad));
       size += size_of_uleb128 (cs->action);
     }
@@ -2669,7 +2657,7 @@ sjlj_size_of_call_site_table (void)
 static void
 dw2_output_call_site_table (int cs_format, int section)
 {
-  int n = VEC_length (call_site_record, crtl->eh.call_site_record[section]);
+  int n = VEC_length (call_site_record, crtl->eh.call_site_record_v[section]);
   int i;
   const char *begin;
 
@@ -2683,7 +2671,7 @@ dw2_output_call_site_table (int cs_format, int section)
   for (i = 0; i < n; ++i)
     {
       struct call_site_record_d *cs =
-	VEC_index (call_site_record, crtl->eh.call_site_record[section], i);
+	VEC_index (call_site_record, crtl->eh.call_site_record_v[section], i);
       char reg_start_lab[32];
       char reg_end_lab[32];
       char landing_pad_lab[32];
@@ -2731,13 +2719,13 @@ dw2_output_call_site_table (int cs_format, int section)
 static void
 sjlj_output_call_site_table (void)
 {
-  int n = VEC_length (call_site_record, crtl->eh.call_site_record[0]);
+  int n = VEC_length (call_site_record, crtl->eh.call_site_record_v[0]);
   int i;
 
   for (i = 0; i < n; ++i)
     {
       struct call_site_record_d *cs =
-	VEC_index (call_site_record, crtl->eh.call_site_record[0], i);
+	VEC_index (call_site_record, crtl->eh.call_site_record_v[0], i);
 
       dw2_asm_output_data_uleb128 (INTVAL (cs->landing_pad),
 				   "region %d landing pad", i);
@@ -3051,7 +3039,7 @@ output_function_exception_table (const char *fnname)
   targetm.asm_out.emit_except_table_label (asm_out_file);
 
   output_one_function_exception_table (0);
-  if (crtl->eh.call_site_record[1] != NULL)
+  if (crtl->eh.call_site_record_v[1] != NULL)
     output_one_function_exception_table (1);
 
   switch_to_section (current_function_section ());

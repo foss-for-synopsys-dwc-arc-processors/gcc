@@ -789,7 +789,7 @@ setup_pressure_classes (void)
 	     hard registers and movement between them is costly
 	     (e.g. SPARC FPCC registers).  We still should consider it
 	     as a candidate for a pressure class.  */
-	  && alloc_reg_class_subclasses[cl][0] != LIM_REG_CLASSES)
+	  && alloc_reg_class_subclasses[cl][0] < cl)
 	{
 	  /* Check that the moves between any hard registers of the
 	     current class are not more expensive for a legal mode
@@ -1451,16 +1451,21 @@ setup_reg_class_nregs (void)
 
 
 
-/* Set up IRA_PROHIBITED_CLASS_MODE_REGS.  */
+/* Set up IRA_PROHIBITED_CLASS_MODE_REGS and IRA_CLASS_SINGLETON.
+   This function is called once IRA_CLASS_HARD_REGS has been initialized.  */
 static void
 setup_prohibited_class_mode_regs (void)
 {
-  int j, k, hard_regno, cl;
+  int j, k, hard_regno, cl, last_hard_regno, count;
 
   for (cl = (int) N_REG_CLASSES - 1; cl >= 0; cl--)
     {
+      COPY_HARD_REG_SET (temp_hard_regset, reg_class_contents[cl]);
+      AND_COMPL_HARD_REG_SET (temp_hard_regset, no_unit_alloc_regs);
       for (j = 0; j < NUM_MACHINE_MODES; j++)
 	{
+	  count = 0;
+	  last_hard_regno = -1;
 	  CLEAR_HARD_REG_SET (ira_prohibited_class_mode_regs[cl][j]);
 	  for (k = ira_class_hard_regs_num[cl] - 1; k >= 0; k--)
 	    {
@@ -1468,7 +1473,14 @@ setup_prohibited_class_mode_regs (void)
 	      if (! HARD_REGNO_MODE_OK (hard_regno, (enum machine_mode) j))
 		SET_HARD_REG_BIT (ira_prohibited_class_mode_regs[cl][j],
 				  hard_regno);
+	      else if (in_hard_reg_set_p (temp_hard_regset,
+					  (enum machine_mode) j, hard_regno))
+		{
+		  last_hard_regno = hard_regno;
+		  count++;
+		}
 	    }
+	  ira_class_singleton[cl][j] = (count == 1 ? last_hard_regno : -1);
 	}
     }
 }
@@ -1483,29 +1495,36 @@ clarify_prohibited_class_mode_regs (void)
 
   for (cl = (int) N_REG_CLASSES - 1; cl >= 0; cl--)
     for (j = 0; j < NUM_MACHINE_MODES; j++)
-      for (k = ira_class_hard_regs_num[cl] - 1; k >= 0; k--)
-	{
-	  hard_regno = ira_class_hard_regs[cl][k];
-	  if (TEST_HARD_REG_BIT (ira_prohibited_class_mode_regs[cl][j], hard_regno))
-	    continue;
-	  nregs = hard_regno_nregs[hard_regno][j];
-          if (hard_regno + nregs > FIRST_PSEUDO_REGISTER)
-            {
-              SET_HARD_REG_BIT (ira_prohibited_class_mode_regs[cl][j],
-                                hard_regno);
-               continue;
-            }
-	  pclass = ira_pressure_class_translate[REGNO_REG_CLASS (hard_regno)];
-	  for (nregs-- ;nregs >= 0; nregs--)
-	    if (((enum reg_class) pclass
-		 != ira_pressure_class_translate[REGNO_REG_CLASS
-						 (hard_regno + nregs)]))
+      {
+	CLEAR_HARD_REG_SET (ira_useful_class_mode_regs[cl][j]);
+	for (k = ira_class_hard_regs_num[cl] - 1; k >= 0; k--)
+	  {
+	    hard_regno = ira_class_hard_regs[cl][k];
+	    if (TEST_HARD_REG_BIT (ira_prohibited_class_mode_regs[cl][j], hard_regno))
+	      continue;
+	    nregs = hard_regno_nregs[hard_regno][j];
+	    if (hard_regno + nregs > FIRST_PSEUDO_REGISTER)
 	      {
 		SET_HARD_REG_BIT (ira_prohibited_class_mode_regs[cl][j],
 				  hard_regno);
-		break;
+		 continue;
 	      }
-	}
+	    pclass = ira_pressure_class_translate[REGNO_REG_CLASS (hard_regno)];
+	    for (nregs-- ;nregs >= 0; nregs--)
+	      if (((enum reg_class) pclass
+		   != ira_pressure_class_translate[REGNO_REG_CLASS
+						   (hard_regno + nregs)]))
+		{
+		  SET_HARD_REG_BIT (ira_prohibited_class_mode_regs[cl][j],
+				    hard_regno);
+		  break;
+		}
+	    if (!TEST_HARD_REG_BIT (ira_prohibited_class_mode_regs[cl][j],
+				    hard_regno))
+	      add_to_hard_reg_set (&ira_useful_class_mode_regs[cl][j],
+				   (enum machine_mode) j, hard_regno);
+	  }
+      }
 }
 
 /* Allocate and initialize IRA_REGISTER_MOVE_COST, IRA_MAY_MOVE_IN_COST
@@ -2318,16 +2337,23 @@ void
 mark_elimination (int from, int to)
 {
   basic_block bb;
+  bitmap r;
 
   FOR_EACH_BB (bb)
     {
-      /* We don't use LIVE info in IRA.  */
-      bitmap r = DF_LR_IN (bb);
-
-      if (REGNO_REG_SET_P (r, from))
+      r = DF_LR_IN (bb);
+      if (bitmap_bit_p (r, from))
 	{
-	  CLEAR_REGNO_REG_SET (r, from);
-	  SET_REGNO_REG_SET (r, to);
+	  bitmap_clear_bit (r, from);
+	  bitmap_set_bit (r, to);
+	}
+      if (! df_live)
+        continue;
+      r = DF_LIVE_IN (bb);
+      if (bitmap_bit_p (r, from))
+	{
+	  bitmap_clear_bit (r, from);
+	  bitmap_set_bit (r, to);
 	}
     }
 }
@@ -2445,10 +2471,7 @@ equiv_init_varies_p (rtx x)
       return !MEM_READONLY_P (x) || equiv_init_varies_p (XEXP (x, 0));
 
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
       return 0;
@@ -2560,13 +2583,10 @@ contains_replace_regs (rtx x)
 
   switch (code)
     {
-    case CONST_INT:
     case CONST:
     case LABEL_REF:
     case SYMBOL_REF:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case PC:
     case CC0:
     case HIGH:
@@ -2608,13 +2628,10 @@ memref_referenced_p (rtx memref, rtx x)
 
   switch (code)
     {
-    case CONST_INT:
     case CONST:
     case LABEL_REF:
     case SYMBOL_REF:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case PC:
     case CC0:
     case HIGH:
@@ -2777,7 +2794,7 @@ update_equiv_regs (void)
      a register can be set below its use.  */
   FOR_EACH_BB (bb)
     {
-      loop_depth = bb->loop_depth;
+      loop_depth = bb_loop_depth (bb);
 
       for (insn = BB_HEAD (bb);
 	   insn != NEXT_INSN (BB_END (bb));
@@ -3053,7 +3070,7 @@ update_equiv_regs (void)
      basic block.  */
   FOR_EACH_BB_REVERSE (bb)
     {
-      loop_depth = bb->loop_depth;
+      loop_depth = bb_loop_depth (bb);
       for (insn = BB_END (bb);
 	   insn != PREV_INSN (BB_HEAD (bb));
 	   insn = PREV_INSN (insn))
@@ -3184,10 +3201,12 @@ update_equiv_regs (void)
     {
       FOR_EACH_BB (bb)
 	{
-	  bitmap_and_compl_into (DF_LIVE_IN (bb), cleared_regs);
-	  bitmap_and_compl_into (DF_LIVE_OUT (bb), cleared_regs);
 	  bitmap_and_compl_into (DF_LR_IN (bb), cleared_regs);
 	  bitmap_and_compl_into (DF_LR_OUT (bb), cleared_regs);
+	  if (! df_live)
+	    continue;
+	  bitmap_and_compl_into (DF_LIVE_IN (bb), cleared_regs);
+	  bitmap_and_compl_into (DF_LIVE_OUT (bb), cleared_regs);
 	}
 
       /* Last pass - adjust debug insns referencing cleared regs.  */
@@ -3309,14 +3328,14 @@ build_insn_chain (void)
       CLEAR_REG_SET (live_relevant_regs);
       bitmap_clear (live_subregs_used);
 
-      EXECUTE_IF_SET_IN_BITMAP (DF_LR_OUT (bb), 0, i, bi)
+      EXECUTE_IF_SET_IN_BITMAP (df_get_live_out (bb), 0, i, bi)
 	{
 	  if (i >= FIRST_PSEUDO_REGISTER)
 	    break;
 	  bitmap_set_bit (live_relevant_regs, i);
 	}
 
-      EXECUTE_IF_SET_IN_BITMAP (DF_LR_OUT (bb),
+      EXECUTE_IF_SET_IN_BITMAP (df_get_live_out (bb),
 				FIRST_PSEUDO_REGISTER, i, bi)
 	{
 	  if (pseudo_for_reload_consideration_p (i))
@@ -3566,10 +3585,7 @@ rtx_moveable_p (rtx *loc, enum op_type type)
   switch (code)
     {
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
       return true;
@@ -4150,12 +4166,6 @@ ira (FILE *f)
   setup_prohibited_mode_move_regs ();
 
   df_note_add_problem ();
-
-  if (optimize == 1)
-    {
-      df_live_add_problem ();
-      df_live_set_all_dirty ();
-    }
 #ifdef ENABLE_CHECKING
   df->changeable_flags |= DF_VERIFY_SCHEDULED;
 #endif
@@ -4176,7 +4186,7 @@ ira (FILE *f)
   crtl->is_leaf = leaf_function_p ();
 
   if (resize_reg_info () && flag_ira_loop_pressure)
-    ira_set_pseudo_classes (ira_dump_file);
+    ira_set_pseudo_classes (true, ira_dump_file);
 
   rebuild_p = update_equiv_regs ();
 
@@ -4206,6 +4216,9 @@ ira (FILE *f)
 
   allocated_reg_info_size = max_reg_num ();
 
+  if (delete_trivially_dead_insns (get_insns (), max_reg_num ()))
+    df_analyze ();
+
   /* It is not worth to do such improvement when we use a simple
      allocation because of -O0 usage or because the function is too
      big.  */
@@ -4223,8 +4236,8 @@ ira (FILE *f)
   if (flag_ira_region == IRA_REGION_ALL || flag_ira_region == IRA_REGION_MIXED)
     {
       flow_loops_find (&ira_loops);
-      record_loop_exits ();
       current_loops = &ira_loops;
+      record_loop_exits ();
     }
 
   if (internal_flag_ira_verbose > 0 && ira_dump_file != NULL)
@@ -4267,9 +4280,14 @@ ira (FILE *f)
 	     info.  */
 	  df_analyze ();
 
+	  /* ??? Rebuild the loop tree, but why?  Does the loop tree
+	     change if new insns were generated?  Can that be handled
+	     by updating the loop tree incrementally?  */
+	  release_recorded_exits ();
+	  flow_loops_free (&ira_loops);
 	  flow_loops_find (&ira_loops);
-	  record_loop_exits ();
 	  current_loops = &ira_loops;
+	  record_loop_exits ();
 
 	  setup_allocno_assignment_flags ();
 	  ira_initiate_assign ();
@@ -4287,9 +4305,6 @@ ira (FILE *f)
   if (ira_conflicts_p)
     check_allocation ();
 #endif
-
-  if (delete_trivially_dead_insns (get_insns (), max_reg_num ()))
-    df_analyze ();
 
   if (max_regno != max_regno_before_ira)
     {
@@ -4356,6 +4371,7 @@ do_reload (void)
 
   if (current_loops != NULL)
     {
+      release_recorded_exits ();
       flow_loops_free (&ira_loops);
       free_dominance_info (CDI_DOMINATORS);
     }
@@ -4384,8 +4400,6 @@ do_reload (void)
      df_rescan_all_insns is not going to help here because it does not
      touch the artificial uses and defs.  */
   df_finish_pass (true);
-  if (optimize > 1)
-    df_live_add_problem ();
   df_scan_alloc (NULL);
   df_scan_blocks ();
 

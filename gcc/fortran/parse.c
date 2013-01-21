@@ -1168,7 +1168,10 @@ check_statement_label (gfc_statement st)
     case ST_END_ASSOCIATE:
     case_executable:
     case_exec_markers:
-      type = ST_LABEL_TARGET;
+      if (st == ST_ENDDO || st == ST_CONTINUE)
+	type = ST_LABEL_DO_TARGET;
+      else
+	type = ST_LABEL_TARGET;
       break;
 
     case ST_FORMAT:
@@ -2192,7 +2195,8 @@ endType:
       if (c->attr.allocatable
 	  || (c->ts.type == BT_CLASS && c->attr.class_ok
 	      && CLASS_DATA (c)->attr.allocatable)
-	  || (c->ts.type == BT_DERIVED && c->ts.u.derived->attr.alloc_comp))
+	  || (c->ts.type == BT_DERIVED && !c->attr.pointer
+	      && c->ts.u.derived->attr.alloc_comp))
 	{
 	  allocatable = true;
 	  sym->attr.alloc_comp = 1;
@@ -2360,7 +2364,6 @@ parse_interface (void)
   gfc_interface_info save;
   gfc_state_data s1, s2;
   gfc_statement st;
-  locus proc_locus;
 
   accept_statement (ST_INTERFACE);
 
@@ -2449,7 +2452,9 @@ loop:
   accept_statement (st);
   prog_unit = gfc_new_block;
   prog_unit->formal_ns = gfc_current_ns;
-  proc_locus = gfc_current_locus;
+  if (prog_unit == prog_unit->formal_ns->proc_name
+      && prog_unit->ns != prog_unit->formal_ns)
+    prog_unit->refs++;
 
 decl:
   /* Read data declaration statements.  */
@@ -2490,7 +2495,8 @@ decl:
 	&& strcmp (current_interface.ns->proc_name->name,
 		   prog_unit->name) == 0)
     gfc_error ("INTERFACE procedure '%s' at %L has the same name as the "
-	       "enclosing procedure", prog_unit->name, &proc_locus);
+	       "enclosing procedure", prog_unit->name,
+	       &current_interface.ns->proc_name->declared_at);
 
   goto loop;
 
@@ -3825,8 +3831,12 @@ parse_executable (gfc_statement st)
 	case ST_NONE:
 	  unexpected_eof ();
 
-	case ST_FORMAT:
 	case ST_DATA:
+	  gfc_notify_std (GFC_STD_F95_OBS, "DATA statement at %C after the "
+			  "first executable statement");
+	  /* Fall through.  */
+
+	case ST_FORMAT:
 	case ST_ENTRY:
 	case_executable:
 	  accept_statement (st);
@@ -4068,6 +4078,7 @@ parse_contained (int module)
 	case ST_END_PROGRAM:
 	case ST_END_SUBROUTINE:
 	  accept_statement (st);
+	  gfc_current_ns->code = s1.head;
 	  break;
 
 	default:

@@ -2988,6 +2988,7 @@ gnat_to_gnu_entity (Entity_Id gnat_entity, tree gnu_expr, int definition)
 	if (Present (Parent_Subtype (gnat_entity)))
 	  {
 	    Entity_Id gnat_parent = Parent_Subtype (gnat_entity);
+	    tree gnu_dummy_parent_type = make_node (RECORD_TYPE);
 	    tree gnu_parent;
 
 	    /* A major complexity here is that the parent subtype will
@@ -2999,11 +3000,11 @@ gnat_to_gnu_entity (Entity_Id gnat_entity, tree gnu_expr, int definition)
 	       each of those discriminants to a COMPONENT_REF of the above
 	       dummy parent referencing the corresponding discriminant of the
 	       base type of the parent subtype.  */
-	    gnu_get_parent = build3 (COMPONENT_REF, void_type_node,
+	    gnu_get_parent = build3 (COMPONENT_REF, gnu_dummy_parent_type,
 				     build0 (PLACEHOLDER_EXPR, gnu_type),
 				     build_decl (input_location,
 						 FIELD_DECL, NULL_TREE,
-						 void_type_node),
+						 gnu_dummy_parent_type),
 				     NULL_TREE);
 
 	    if (has_discr)
@@ -6164,6 +6165,7 @@ elaborate_expression_1 (tree gnu_expr, Entity_Id gnat_entity, tree gnu_name,
   use_variable = expr_variable_p
 		 && (expr_global_p
 		     || (!optimize
+		         && definition
 			 && Is_Itype (gnat_entity)
 			 && Nkind (Associated_Node_For_Itype (gnat_entity))
 			    == N_Loop_Parameter_Specification));
@@ -7506,9 +7508,8 @@ build_subst_list (Entity_Id gnat_subtype, Entity_Id gnat_type, bool definition)
 				    (Node (gnat_value), gnat_subtype,
 				     get_entity_name (gnat_discrim),
 				     definition, true, false));
-	subst_pair *s = VEC_safe_push (subst_pair, heap, gnu_list, NULL);
-	s->discriminant = gnu_field;
-	s->replacement = replacement;
+	subst_pair s = {gnu_field, replacement};
+	VEC_safe_push (subst_pair, heap, gnu_list, s);
       }
 
   return gnu_list;
@@ -7540,14 +7541,10 @@ build_variant_list (tree qual_union_type, VEC(subst_pair,heap) *subst_list,
 	 still be accessed.  */
       if (!integer_zerop (qual))
 	{
-	  variant_desc *v;
 	  tree variant_type = TREE_TYPE (gnu_field), variant_subpart;
+	  variant_desc v = {variant_type, gnu_field, qual, NULL_TREE};
 
-	  v = VEC_safe_push (variant_desc, heap, gnu_list, NULL);
-	  v->type = variant_type;
-	  v->field = gnu_field;
-	  v->qual = qual;
-	  v->new_type = NULL_TREE;
+	  VEC_safe_push (variant_desc, heap, gnu_list, v);
 
 	  /* Recurse on the variant subpart of the variant, if any.  */
 	  variant_subpart = get_variant_part (variant_type);

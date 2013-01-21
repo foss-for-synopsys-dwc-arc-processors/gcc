@@ -1403,6 +1403,7 @@ create_loop_fn (location_t loc)
   struct function *act_cfun = cfun;
   static unsigned loopfn_num;
 
+  loc = LOCATION_LOCUS (loc);
   snprintf (buf, 100, "%s.$loopfn", current_function_name ());
   ASM_FORMAT_PRIVATE_NAME (tname, buf, loopfn_num++);
   clean_symbol_name (tname);
@@ -1517,7 +1518,7 @@ transform_to_exit_first_loop (struct loop *loop, htab_t reduction_list, tree nit
     {
       phi = gsi_stmt (gsi);
       res = PHI_RESULT (phi);
-      if (!is_gimple_reg (res))
+      if (virtual_operand_p (res))
 	{
 	  gsi_next (&gsi);
 	  continue;
@@ -1943,7 +1944,6 @@ gather_scalar_reductions (loop_p loop, htab_t reduction_list)
   gimple_stmt_iterator gsi;
   loop_vec_info simple_loop_info;
 
-  vect_dump = NULL;
   simple_loop_info = vect_analyze_loop_form (loop);
 
   for (gsi = gsi_start_phis (loop->header); !gsi_end_p (gsi); gsi_next (&gsi))
@@ -1953,7 +1953,7 @@ gather_scalar_reductions (loop_p loop, htab_t reduction_list)
       tree res = PHI_RESULT (phi);
       bool double_reduc;
 
-      if (!is_gimple_reg (res))
+      if (virtual_operand_p (res))
 	continue;
 
       if (!simple_iv (loop, loop, res, &iv, true)
@@ -2019,7 +2019,7 @@ try_create_reduction_list (loop_p loop, htab_t reduction_list)
       gimple reduc_phi;
       tree val = PHI_ARG_DEF_FROM_EDGE (phi, exit);
 
-      if (is_gimple_reg (val))
+      if (!virtual_operand_p (val))
 	{
 	  if (dump_file && (dump_flags & TDF_DETAILS))
 	    {
@@ -2074,7 +2074,7 @@ try_create_reduction_list (loop_p loop, htab_t reduction_list)
       tree def = PHI_RESULT (phi);
       affine_iv iv;
 
-      if (is_gimple_reg (def) && !simple_iv (loop, loop, def, &iv, true))
+      if (!virtual_operand_p (def) && !simple_iv (loop, loop, def, &iv, true))
 	{
 	  struct reduction_info *red;
 

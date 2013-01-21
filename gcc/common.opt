@@ -32,6 +32,9 @@ int optimize
 Variable
 int optimize_size
 
+Variable
+int optimize_debug
+
 ; Not used directly to control optimizations, only to save -Ofast
 ; setting for "optimize" attributes.
 Variable
@@ -137,9 +140,6 @@ bool use_gnu_debug_info_extensions
 ; -fpack-struct=<value>.
 Variable
 unsigned int initial_max_fld_align = TARGET_DEFAULT_PACK_STRUCT
-
-Variable
-enum vect_verbosity_levels user_vect_verbosity_level = MAX_VERBOSITY_LEVEL
 
 ; Type of stack check.
 Variable
@@ -290,6 +290,9 @@ Driver Alias(no-canonical-prefixes)
 
 -no-standard-libraries
 Driver Alias(nostdlib)
+
+-no-sysroot-suffix
+Driver Var(no_sysroot_suffix)
 
 -no-warnings
 Common Alias(w)
@@ -445,6 +448,10 @@ Optimize for space rather than speed
 Ofast
 Common Optimization
 Optimize for speed disregarding exact standards compliance
+
+Og
+Common Optimization
+Optimize for debugging experience rather than speed or size
 
 Q
 Driver
@@ -602,7 +609,7 @@ Common Warning
 Warn about code which might break strict aliasing rules
 
 Wstrict-aliasing=
-Common Joined RejectNegative UInteger Var(warn_strict_aliasing) Init(-1) Warning
+Common Joined RejectNegative UInteger Var(warn_strict_aliasing) Warning
 Warn about code which might break strict aliasing rules
 
 Wstrict-overflow
@@ -610,7 +617,7 @@ Common Warning
 Warn about optimizations that assume that signed overflow is undefined
 
 Wstrict-overflow=
-Common Joined RejectNegative UInteger Var(warn_strict_overflow) Init(-1) Warning
+Common Joined RejectNegative UInteger Var(warn_strict_overflow) Warning
 Warn about optimizations that assume that signed overflow is undefined
 
 Wsuggest-attribute=const
@@ -666,7 +673,7 @@ Common Var(warn_unused) Init(0) Warning
 Enable all -Wunused- warnings
 
 Wunused-but-set-parameter
-Common Var(warn_unused_but_set_parameter) Init(-1) Warning
+Common Var(warn_unused_but_set_parameter) Warning EnabledBy(Wunused && Wextra)
 Warn when a function parameter is only set, otherwise unused
 
 Wunused-but-set-variable
@@ -682,7 +689,7 @@ Common Var(warn_unused_label) Warning EnabledBy(Wunused)
 Warn when a label is unused
 
 Wunused-parameter
-Common Var(warn_unused_parameter) Init(-1) Warning
+Common Var(warn_unused_parameter) Warning EnabledBy(Wunused && Wextra)
 Warn when a function parameter is unused
 
 Wunused-value
@@ -1286,7 +1293,7 @@ Perform indirect inlining
 ; General flag to enable inlining.  Specifying -fno-inline will disable
 ; all inlining apart from always-inline functions.
 finline
-Common Report Var(flag_no_inline,0) Init(0)
+Common Report Var(flag_no_inline,0) Init(0) Optimization
 Enable inlining of function declared \"inline\", disabling disables all inlining
 
 finline-small-functions
@@ -1385,6 +1392,11 @@ Enum(ira_region) String(all) Value(IRA_REGION_ALL)
 EnumValue
 Enum(ira_region) String(mixed) Value(IRA_REGION_MIXED)
 
+fira-hoist-pressure
+Common Report Var(flag_ira_hoist_pressure) Init(1) Optimization
+Use IRA based register pressure calculation
+in RTL hoist optimizations.
+
 fira-loop-pressure
 Common Report Var(flag_ira_loop_pressure)
 Use IRA based register pressure calculation
@@ -1436,11 +1448,15 @@ Link-time optimization with number of parallel jobs or jobserver.
 
 flto-partition=1to1
 Common Var(flag_lto_partition_1to1)
-Partition functions and vars at linktime based on object files they originate from
+Partition symbols and vars at linktime based on object files they originate from
 
 flto-partition=balanced
 Common Var(flag_lto_partition_balanced)
 Partition functions and vars at linktime into approximately same sized buckets
+
+flto-partition=max
+Common Var(flag_lto_partition_max)
+Put every symbol into separate partition
 
 flto-partition=none
 Common Var(flag_lto_partition_none)
@@ -1466,6 +1482,10 @@ Common Joined RejectNegative UInteger Var(flag_max_errors)
 fmem-report
 Common Report Var(mem_report)
 Report on permanent memory allocation
+
+fmem-report-wpa
+Common Report Var(mem_report_wpa)
+Report on permanent memory allocation in WPA only
 
 ; This will attempt to merge constant section constants, if 1 only
 ; string constants and constants from constant pool, if 2 also constant
@@ -1517,6 +1537,14 @@ Support synchronous non-call exceptions
 fomit-frame-pointer
 Common Report Var(flag_omit_frame_pointer) Optimization
 When possible do not generate stack frames
+
+fopt-info
+Common Report Var(flag_opt_info) Optimization
+Enable all optimization info dumps on stderr
+
+fopt-info-
+Common Joined RejectNegative Var(common_deferred_options) Defer
+-fopt-info[-<type>=filename]	Dump compiler optimization details
 
 foptimize-register-move
 Common Report Var(flag_regmove) Optimization
@@ -1630,6 +1658,10 @@ Enable common options for performing profile feedback directed optimizations, an
 fprofile-values
 Common Report Var(flag_profile_values)
 Insert code to profile values of expressions
+
+fprofile-report
+Common Report Var(profile_report)
+Report on consistency of profile
 
 frandom-seed
 Common Var(common_deferred_options) Defer
@@ -2177,6 +2209,10 @@ ftree-vectorize
 Common Report Var(flag_tree_vectorize) Optimization
 Enable loop vectorization on trees
 
+ftree-vectorizer-verbose=
+Common RejectNegative Joined UInteger Var(common_deferred_options) Defer
+-ftree-vectorizer-verbose=<number>	This switch is deprecated. Use -fopt-info instead.
+
 ftree-slp-vectorize
 Common Report Var(flag_tree_slp_vectorize) Init(2) Optimization
 Enable basic block vectorization (SLP) on trees
@@ -2188,10 +2224,6 @@ Enable use of cost model in vectorization
 ftree-vect-loop-version
 Common Report Var(flag_tree_vect_loop_version) Init(1) Optimization
 Enable loop versioning when doing loop vectorization on trees
-
-ftree-vectorizer-verbose=
-Common RejectNegative Joined UInteger
--ftree-vectorizer-verbose=<number>	Set the verbosity level of the vectorizer
 
 ftree-scev-cprop
 Common Report Var(flag_tree_scev_cprop) Init(1) Optimization

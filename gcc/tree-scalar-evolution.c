@@ -3039,7 +3039,7 @@ analyze_scalar_evolution_for_all_loop_phi_nodes (VEC(gimple,heap) **exit_conditi
       for (psi = gsi_start_phis (bb); !gsi_end_p (psi); gsi_next (&psi))
 	{
 	  phi = gsi_stmt (psi);
-	  if (is_gimple_reg (PHI_RESULT (phi)))
+	  if (!virtual_operand_p (PHI_RESULT (phi)))
 	    {
 	      chrec = instantiate_parameters
 		        (loop,
@@ -3122,6 +3122,14 @@ scev_initialize (void)
     {
       loop->nb_iterations = NULL_TREE;
     }
+}
+
+/* Return true if SCEV is initialized.  */
+
+bool
+scev_initialized_p (void)
+{
+  return scalar_evolution_info != NULL;
 }
 
 /* Cleans up the information cached by the scalar evolutions analysis
@@ -3328,7 +3336,7 @@ scev_const_prop (void)
 	  phi = gsi_stmt (psi);
 	  name = PHI_RESULT (phi);
 
-	  if (!is_gimple_reg (name))
+	  if (virtual_operand_p (name))
 	    continue;
 
 	  type = TREE_TYPE (name);
@@ -3404,7 +3412,7 @@ scev_const_prop (void)
 	  phi = gsi_stmt (psi);
 	  rslt = PHI_RESULT (phi);
 	  def = PHI_ARG_DEF_FROM_EDGE (phi, exit);
-	  if (!is_gimple_reg (def))
+	  if (virtual_operand_p (def))
 	    {
 	      gsi_next (&psi);
 	      continue;

@@ -1,5 +1,5 @@
 /* Global, SSA-based optimizations using mathematical identities.
-   Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011
+   Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
    Free Software Foundation, Inc.
 
 This file is part of GCC.
@@ -154,6 +154,9 @@ static struct
 
 static struct
 {
+  /* Number of hand-written 16-bit bswaps found.  */
+  int found_16bit;
+
   /* Number of hand-written 32-bit bswaps found.  */
   int found_32bit;
 
@@ -531,8 +534,8 @@ execute_cse_reciprocals (void)
 	{
 	  phi = gsi_stmt (gsi);
 	  def = PHI_RESULT (phi);
-	  if (FLOAT_TYPE_P (TREE_TYPE (def))
-	      && is_gimple_reg (def))
+	  if (! virtual_operand_p (def)
+	      && FLOAT_TYPE_P (TREE_TYPE (def)))
 	    execute_cse_reciprocals_1 (NULL, def);
 	}
 
@@ -1378,11 +1381,17 @@ execute_cse_sincos (void)
   FOR_EACH_BB (bb)
     {
       gimple_stmt_iterator gsi;
+      bool cleanup_eh = false;
 
       for (gsi = gsi_after_labels (bb); !gsi_end_p (gsi); gsi_next (&gsi))
         {
 	  gimple stmt = gsi_stmt (gsi);
 	  tree fndecl;
+
+	  /* Only the last stmt in a bb could throw, no need to call
+	     gimple_purge_dead_eh_edges if we change something in the middle
+	     of a basic block.  */
+	  cleanup_eh = false;
 
 	  if (is_gimple_call (stmt)
 	      && gimple_call_lhs (stmt)
@@ -1421,6 +1430,7 @@ execute_cse_sincos (void)
 		      gimple_set_location (new_stmt, loc);
 		      unlink_stmt_vdef (stmt);
 		      gsi_replace (&gsi, new_stmt, true);
+		      cleanup_eh = true;
 		      if (gimple_vdef (stmt))
 			release_ssa_name (gimple_vdef (stmt));
 		    }
@@ -1443,6 +1453,7 @@ execute_cse_sincos (void)
 		      gimple_set_location (new_stmt, loc);
 		      unlink_stmt_vdef (stmt);
 		      gsi_replace (&gsi, new_stmt, true);
+		      cleanup_eh = true;
 		      if (gimple_vdef (stmt))
 			release_ssa_name (gimple_vdef (stmt));
 		    }
@@ -1460,6 +1471,7 @@ execute_cse_sincos (void)
 		      gimple_set_location (new_stmt, loc);
 		      unlink_stmt_vdef (stmt);
 		      gsi_replace (&gsi, new_stmt, true);
+		      cleanup_eh = true;
 		      if (gimple_vdef (stmt))
 			release_ssa_name (gimple_vdef (stmt));
 		    }
@@ -1469,6 +1481,8 @@ execute_cse_sincos (void)
 		}
 	    }
 	}
+      if (cleanup_eh)
+	cfg_changed |= gimple_purge_dead_eh_edges (bb);
     }
 
   statistics_counter_event (cfun, "sincos statements inserted",
@@ -1792,9 +1806,9 @@ static unsigned int
 execute_optimize_bswap (void)
 {
   basic_block bb;
-  bool bswap32_p, bswap64_p;
+  bool bswap16_p, bswap32_p, bswap64_p;
   bool changed = false;
-  tree bswap32_type = NULL_TREE, bswap64_type = NULL_TREE;
+  tree bswap16_type = NULL_TREE, bswap32_type = NULL_TREE, bswap64_type = NULL_TREE;
 
   if (BITS_PER_UNIT != 8)
     return 0;
@@ -1802,17 +1816,25 @@ execute_optimize_bswap (void)
   if (sizeof (HOST_WIDEST_INT) < 8)
     return 0;
 
+  bswap16_p = (builtin_decl_explicit_p (BUILT_IN_BSWAP16)
+	       && optab_handler (bswap_optab, HImode) != CODE_FOR_nothing);
   bswap32_p = (builtin_decl_explicit_p (BUILT_IN_BSWAP32)
 	       && optab_handler (bswap_optab, SImode) != CODE_FOR_nothing);
   bswap64_p = (builtin_decl_explicit_p (BUILT_IN_BSWAP64)
 	       && (optab_handler (bswap_optab, DImode) != CODE_FOR_nothing
 		   || (bswap32_p && word_mode == SImode)));
 
-  if (!bswap32_p && !bswap64_p)
+  if (!bswap16_p && !bswap32_p && !bswap64_p)
     return 0;
 
   /* Determine the argument type of the builtins.  The code later on
      assumes that the return and argument type are the same.  */
+  if (bswap16_p)
+    {
+      tree fndecl = builtin_decl_explicit (BUILT_IN_BSWAP16);
+      bswap16_type = TREE_VALUE (TYPE_ARG_TYPES (TREE_TYPE (fndecl)));
+    }
+
   if (bswap32_p)
     {
       tree fndecl = builtin_decl_explicit (BUILT_IN_BSWAP32);
@@ -1852,6 +1874,13 @@ execute_optimize_bswap (void)
 
 	  switch (type_size)
 	    {
+	    case 16:
+	      if (bswap16_p)
+		{
+		  fndecl = builtin_decl_explicit (BUILT_IN_BSWAP16);
+		  bswap_type = bswap16_type;
+		}
+	      break;
 	    case 32:
 	      if (bswap32_p)
 		{
@@ -1879,7 +1908,9 @@ execute_optimize_bswap (void)
 	    continue;
 
 	  changed = true;
-	  if (type_size == 32)
+	  if (type_size == 16)
+	    bswap_stats.found_16bit++;
+	  else if (type_size == 32)
 	    bswap_stats.found_32bit++;
 	  else
 	    bswap_stats.found_64bit++;
@@ -1924,6 +1955,8 @@ execute_optimize_bswap (void)
 	}
     }
 
+  statistics_counter_event (cfun, "16-bit bswap implementations found",
+			    bswap_stats.found_16bit);
   statistics_counter_event (cfun, "32-bit bswap implementations found",
 			    bswap_stats.found_32bit);
   statistics_counter_event (cfun, "64-bit bswap implementations found",
@@ -1958,6 +1991,47 @@ struct gimple_opt_pass pass_optimize_bswap =
  }
 };
 
+/* Return true if stmt is a type conversion operation that can be stripped
+   when used in a widening multiply operation.  */
+static bool
+widening_mult_conversion_strippable_p (tree result_type, gimple stmt)
+{
+  enum tree_code rhs_code = gimple_assign_rhs_code (stmt);
+
+  if (TREE_CODE (result_type) == INTEGER_TYPE)
+    {
+      tree op_type;
+      tree inner_op_type;
+
+      if (!CONVERT_EXPR_CODE_P (rhs_code))
+	return false;
+
+      op_type = TREE_TYPE (gimple_assign_lhs (stmt));
+
+      /* If the type of OP has the same precision as the result, then
+	 we can strip this conversion.  The multiply operation will be
+	 selected to create the correct extension as a by-product.  */
+      if (TYPE_PRECISION (result_type) == TYPE_PRECISION (op_type))
+	return true;
+
+      /* We can also strip a conversion if it preserves the signed-ness of
+	 the operation and doesn't narrow the range.  */
+      inner_op_type = TREE_TYPE (gimple_assign_rhs1 (stmt));
+
+      /* If the inner-most type is unsigned, then we can strip any
+	 intermediate widening operation.  If it's signed, then the
+	 intermediate widening operation must also be signed.  */
+      if ((TYPE_UNSIGNED (inner_op_type)
+	   || TYPE_UNSIGNED (op_type) == TYPE_UNSIGNED (inner_op_type))
+	  && TYPE_PRECISION (op_type) > TYPE_PRECISION (inner_op_type))
+	return true;
+
+      return false;
+    }
+
+  return rhs_code == FIXED_CONVERT_EXPR;
+}
+
 /* Return true if RHS is a suitable operand for a widening multiplication,
    assuming a target type of TYPE.
    There are two cases:
@@ -1974,17 +2048,13 @@ is_widening_mult_rhs_p (tree type, tree rhs, tree *type_out,
 {
   gimple stmt;
   tree type1, rhs1;
-  enum tree_code rhs_code;
 
   if (TREE_CODE (rhs) == SSA_NAME)
     {
       stmt = SSA_NAME_DEF_STMT (rhs);
       if (is_gimple_assign (stmt))
 	{
-	  rhs_code = gimple_assign_rhs_code (stmt);
-	  if (TREE_CODE (type) == INTEGER_TYPE
-	      ? !CONVERT_EXPR_CODE_P (rhs_code)
-	      : rhs_code != FIXED_CONVERT_EXPR)
+	  if (! widening_mult_conversion_strippable_p (type, stmt))
 	    rhs1 = rhs;
 	  else
 	    {
@@ -2556,10 +2626,10 @@ convert_mult_to_fma (gimple mul_stmt, tree op1, tree op2)
 					   true, NULL_TREE, true,
 					   GSI_SAME_STMT);
 
-      fma_stmt = gimple_build_assign_with_ops3 (FMA_EXPR,
-						gimple_assign_lhs (use_stmt),
-						mulop1, op2,
-						addop);
+      fma_stmt = gimple_build_assign_with_ops (FMA_EXPR,
+					       gimple_assign_lhs (use_stmt),
+					       mulop1, op2,
+					       addop);
       gsi_replace (&gsi, fma_stmt, true);
       widen_mul_stats.fmas_inserted++;
     }

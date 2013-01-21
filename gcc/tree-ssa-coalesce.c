@@ -29,7 +29,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "bitmap.h"
 #include "dumpfile.h"
 #include "tree-flow.h"
-#include "hashtab.h"
+#include "hash-table.h"
 #include "tree-ssa-live.h"
 #include "diagnostic-core.h"
 
@@ -504,10 +504,9 @@ dump_coalesce_list (FILE *f, coalesce_list_p cl)
 
 typedef struct ssa_conflicts_d
 {
-  unsigned size;
-  bitmap *conflicts;
+  bitmap_obstack obstack;	/* A place to allocate our bitmaps.  */
+  VEC(bitmap, heap)* conflicts;
 } * ssa_conflicts_p;
-
 
 /* Return an empty new conflict graph for SIZE elements.  */
 
@@ -517,8 +516,9 @@ ssa_conflicts_new (unsigned size)
   ssa_conflicts_p ptr;
 
   ptr = XNEW (struct ssa_conflicts_d);
-  ptr->conflicts = XCNEWVEC (bitmap, size);
-  ptr->size = size;
+  bitmap_obstack_initialize (&ptr->obstack);
+  ptr->conflicts = VEC_alloc (bitmap, heap, size);
+  VEC_safe_grow_cleared (bitmap, heap, ptr->conflicts, size);
   return ptr;
 }
 
@@ -528,12 +528,8 @@ ssa_conflicts_new (unsigned size)
 static inline void
 ssa_conflicts_delete (ssa_conflicts_p ptr)
 {
-  unsigned x;
-  for (x = 0; x < ptr->size; x++)
-    if (ptr->conflicts[x])
-      BITMAP_FREE (ptr->conflicts[x]);
-
-  free (ptr->conflicts);
+  bitmap_obstack_release (&ptr->obstack);
+  VEC_free (bitmap, heap, ptr->conflicts);
   free (ptr);
 }
 
@@ -543,16 +539,14 @@ ssa_conflicts_delete (ssa_conflicts_p ptr)
 static inline bool
 ssa_conflicts_test_p (ssa_conflicts_p ptr, unsigned x, unsigned y)
 {
-  bitmap b;
+  bitmap bx = VEC_index (bitmap, ptr->conflicts, x);
+  bitmap by = VEC_index (bitmap, ptr->conflicts, y);
 
-  gcc_checking_assert (x < ptr->size);
-  gcc_checking_assert (y < ptr->size);
   gcc_checking_assert (x != y);
 
-  b = ptr->conflicts[x];
-  if (b)
+  if (bx)
     /* Avoid the lookup if Y has no conflicts.  */
-    return ptr->conflicts[y] ? bitmap_bit_p (b, y) : false;
+    return by ? bitmap_bit_p (bx, y) : false;
   else
     return false;
 }
@@ -563,10 +557,11 @@ ssa_conflicts_test_p (ssa_conflicts_p ptr, unsigned x, unsigned y)
 static inline void
 ssa_conflicts_add_one (ssa_conflicts_p ptr, unsigned x, unsigned y)
 {
+  bitmap bx = VEC_index (bitmap, ptr->conflicts, x);
   /* If there are no conflicts yet, allocate the bitmap and set bit.  */
-  if (!ptr->conflicts[x])
-    ptr->conflicts[x] = BITMAP_ALLOC (NULL);
-  bitmap_set_bit (ptr->conflicts[x], y);
+  if (! bx)
+    bx = VEC_index (bitmap, ptr->conflicts, x) = BITMAP_ALLOC (&ptr->obstack);
+  bitmap_set_bit (bx, y);
 }
 
 
@@ -575,8 +570,6 @@ ssa_conflicts_add_one (ssa_conflicts_p ptr, unsigned x, unsigned y)
 static inline void
 ssa_conflicts_add (ssa_conflicts_p ptr, unsigned x, unsigned y)
 {
-  gcc_checking_assert (x < ptr->size);
-  gcc_checking_assert (y < ptr->size);
   gcc_checking_assert (x != y);
   ssa_conflicts_add_one (ptr, x, y);
   ssa_conflicts_add_one (ptr, y, x);
@@ -590,29 +583,35 @@ ssa_conflicts_merge (ssa_conflicts_p ptr, unsigned x, unsigned y)
 {
   unsigned z;
   bitmap_iterator bi;
+  bitmap bx = VEC_index (bitmap, ptr->conflicts, x);
+  bitmap by = VEC_index (bitmap, ptr->conflicts, y);
 
-  gcc_assert (x != y);
-  if (!(ptr->conflicts[y]))
+  gcc_checking_assert (x != y);
+  if (! by)
     return;
 
   /* Add a conflict between X and every one Y has.  If the bitmap doesn't
      exist, then it has already been coalesced, and we don't need to add a
      conflict.  */
-  EXECUTE_IF_SET_IN_BITMAP (ptr->conflicts[y], 0, z, bi)
-    if (ptr->conflicts[z])
-      bitmap_set_bit (ptr->conflicts[z], x);
+  EXECUTE_IF_SET_IN_BITMAP (by, 0, z, bi)
+    {
+      bitmap bz = VEC_index (bitmap, ptr->conflicts, z);
+      if (bz)
+	bitmap_set_bit (bz, x);
+    }
 
-  if (ptr->conflicts[x])
+  if (bx)
     {
       /* If X has conflicts, add Y's to X.  */
-      bitmap_ior_into (ptr->conflicts[x], ptr->conflicts[y]);
-      BITMAP_FREE (ptr->conflicts[y]);
+      bitmap_ior_into (bx, by);
+      BITMAP_FREE (by);
+      VEC_replace (bitmap, ptr->conflicts, y, NULL);
     }
   else
     {
       /* If X has no conflicts, simply use Y's.  */
-      ptr->conflicts[x] = ptr->conflicts[y];
-      ptr->conflicts[y] = NULL;
+      VEC_replace (bitmap, ptr->conflicts, x, by);
+      VEC_replace (bitmap, ptr->conflicts, y, NULL);
     }
 }
 
@@ -623,14 +622,15 @@ static void
 ssa_conflicts_dump (FILE *file, ssa_conflicts_p ptr)
 {
   unsigned x;
+  bitmap b;
 
   fprintf (file, "\nConflict graph:\n");
 
-  for (x = 0; x < ptr->size; x++)
-    if (ptr->conflicts[x])
+  FOR_EACH_VEC_ELT (bitmap, ptr->conflicts, x, b)
+    if (b)
       {
-	fprintf (dump_file, "%d: ", x);
-	dump_bitmap (file, ptr->conflicts[x]);
+	fprintf (file, "%d: ", x);
+	dump_bitmap (file, b);
       }
 }
 
@@ -649,6 +649,7 @@ ssa_conflicts_dump (FILE *file, ssa_conflicts_p ptr)
 
 typedef struct live_track_d
 {
+  bitmap_obstack obstack;	/* A place to allocate our bitmaps.  */
   bitmap live_base_var;		/* Indicates if a basevar is live.  */
   bitmap *live_base_partitions;	/* Live partitions for each basevar.  */
   var_map map;			/* Var_map being used for partition mapping.  */
@@ -670,10 +671,11 @@ new_live_track (var_map map)
   ptr = (live_track_p) xmalloc (sizeof (struct live_track_d));
   ptr->map = map;
   lim = num_basevars (map);
+  bitmap_obstack_initialize (&ptr->obstack);
   ptr->live_base_partitions = (bitmap *) xmalloc(sizeof (bitmap *) * lim);
-  ptr->live_base_var = BITMAP_ALLOC (NULL);
+  ptr->live_base_var = BITMAP_ALLOC (&ptr->obstack);
   for (x = 0; x < lim; x++)
-    ptr->live_base_partitions[x] = BITMAP_ALLOC (NULL);
+    ptr->live_base_partitions[x] = BITMAP_ALLOC (&ptr->obstack);
   return ptr;
 }
 
@@ -683,12 +685,7 @@ new_live_track (var_map map)
 static void
 delete_live_track (live_track_p ptr)
 {
-  int x, lim;
-
-  lim = num_basevars (ptr->map);
-  for (x = 0; x < lim; x++)
-    BITMAP_FREE (ptr->live_base_partitions[x]);
-  BITMAP_FREE (ptr->live_base_var);
+  bitmap_obstack_release (&ptr->obstack);
   free (ptr->live_base_partitions);
   free (ptr);
 }
@@ -1046,10 +1043,11 @@ create_outofssa_var_map (coalesce_list_p cl, bitmap used_in_copy)
 		noutputs = gimple_asm_noutputs (stmt);
 		ninputs = gimple_asm_ninputs (stmt);
 		outputs = (tree *) alloca (noutputs * sizeof (tree));
-		for (i = 0; i < noutputs; ++i) {
-		  link = gimple_asm_output_op (stmt, i);
-		  outputs[i] = TREE_VALUE (link);
-                }
+		for (i = 0; i < noutputs; ++i)
+		  {
+		    link = gimple_asm_output_op (stmt, i);
+		    outputs[i] = TREE_VALUE (link);
+		  }
 
 		for (i = 0; i < ninputs; ++i)
 		  {
@@ -1101,7 +1099,7 @@ create_outofssa_var_map (coalesce_list_p cl, bitmap used_in_copy)
   for (i = 1; i < num_ssa_names; i++)
     {
       var = ssa_name (i);
-      if (var != NULL_TREE && is_gimple_reg (var))
+      if (var != NULL_TREE && !virtual_operand_p (var))
         {
 	  /* Add coalesces between all the result decls.  */
 	  if (SSA_NAME_VAR (var)
@@ -1258,24 +1256,28 @@ coalesce_partitions (var_map map, ssa_conflicts_p graph, coalesce_list_p cl,
     }
 }
 
-/* Returns a hash code for P.  */
 
-static hashval_t
-hash_ssa_name_by_var (const void *p)
+/* Hashtable support for storing SSA names hashed by their SSA_NAME_VAR.  */
+
+struct ssa_name_var_hash : typed_noop_remove <union tree_node>
 {
-  const_tree n = (const_tree) p;
-  return (hashval_t) htab_hash_pointer (SSA_NAME_VAR (n));
+  typedef union tree_node T;
+  static inline hashval_t hash (const_tree);
+  static inline int equal (const_tree, const_tree);
+};
+
+inline hashval_t
+ssa_name_var_hash::hash (const_tree n)
+{
+  return DECL_UID (SSA_NAME_VAR (n));
 }
 
-/* Returns nonzero if P1 and P2 are equal.  */
-
-static int
-eq_ssa_name_by_var (const void *p1, const void *p2)
+inline int
+ssa_name_var_hash::equal (const_tree n1, const_tree n2)
 {
-  const_tree n1 = (const_tree) p1;
-  const_tree n2 = (const_tree) p2;
   return SSA_NAME_VAR (n1) == SSA_NAME_VAR (n2);
 }
+
 
 /* Reduce the number of copies by coalescing variables in the function.  Return
    a partition map with the resulting coalesces.  */
@@ -1289,7 +1291,7 @@ coalesce_ssa_name (void)
   bitmap used_in_copies = BITMAP_ALLOC (NULL);
   var_map map;
   unsigned int i;
-  static htab_t ssa_name_hash;
+  static hash_table <ssa_name_var_hash> ssa_name_hash;
 
   cl = create_coalesce_list ();
   map = create_outofssa_var_map (cl, used_in_copies);
@@ -1298,8 +1300,7 @@ coalesce_ssa_name (void)
      so debug info remains undisturbed.  */
   if (!optimize)
     {
-      ssa_name_hash = htab_create (10, hash_ssa_name_by_var,
-      				   eq_ssa_name_by_var, NULL);
+      ssa_name_hash.create (10);
       for (i = 1; i < num_ssa_names; i++)
 	{
 	  tree a = ssa_name (i);
@@ -1309,7 +1310,7 @@ coalesce_ssa_name (void)
 	      && !DECL_IGNORED_P (SSA_NAME_VAR (a))
 	      && (!has_zero_uses (a) || !SSA_NAME_IS_DEFAULT_DEF (a)))
 	    {
-	      tree *slot = (tree *) htab_find_slot (ssa_name_hash, a, INSERT);
+	      tree *slot = ssa_name_hash.find_slot (a, INSERT);
 
 	      if (!*slot)
 		*slot = a;
@@ -1322,7 +1323,7 @@ coalesce_ssa_name (void)
 		}
 	    }
 	}
-      htab_delete (ssa_name_hash);
+      ssa_name_hash.dispose ();
     }
   if (dump_file && (dump_flags & TDF_DETAILS))
     dump_var_map (dump_file, map);

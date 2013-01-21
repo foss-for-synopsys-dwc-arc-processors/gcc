@@ -33,11 +33,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "hashtab.h"
 #include "flags.h"
 
-#undef FFS  /* Some systems predefine this symbol; don't let it interfere.  */
-#undef FLOAT /* Likewise.  */
-#undef ABS /* Likewise.  */
-#undef PC /* Likewise.  */
-
 /* Value used by some passes to "recognize" noop moves as valid
  instructions.  */
 #define NOOP_MOVE_INSN_CODE	INT_MAX
@@ -272,7 +267,8 @@ struct GTY((chain_next ("RTX_NEXT (&%h)"),
      1 in a CALL_INSN if it is a sibling call.
      1 in a SET that is for a return.
      In a CODE_LABEL, part of the two-bit alternate entry field.
-     1 in a CONCAT is VAL_EXPR_IS_COPIED in var-tracking.c.  */
+     1 in a CONCAT is VAL_EXPR_IS_COPIED in var-tracking.c.
+     1 in a VALUE is SP_BASED_VALUE_P in cselib.c.  */
   unsigned int jump : 1;
   /* In a CODE_LABEL, part of the two-bit alternate entry field.
      1 in a MEM if it cannot trap.
@@ -403,8 +399,29 @@ struct GTY((variable_size)) rtvec_def {
 /* Predicate yielding nonzero iff X is an rtx for a memory location.  */
 #define MEM_P(X) (GET_CODE (X) == MEM)
 
+/* Match CONST_*s that can represent compile-time constant integers.  */
+#define CASE_CONST_SCALAR_INT \
+   case CONST_INT: \
+   case CONST_DOUBLE
+
+/* Match CONST_*s for which pointer equality corresponds to value equality.  */
+#define CASE_CONST_UNIQUE \
+   case CONST_INT: \
+   case CONST_DOUBLE: \
+   case CONST_FIXED
+
+/* Match all CONST_* rtxes.  */
+#define CASE_CONST_ANY \
+   case CONST_INT: \
+   case CONST_DOUBLE: \
+   case CONST_FIXED: \
+   case CONST_VECTOR
+
 /* Predicate yielding nonzero iff X is an rtx for a constant integer.  */
 #define CONST_INT_P(X) (GET_CODE (X) == CONST_INT)
+
+/* Predicate yielding nonzero iff X is an rtx for a constant fixed-point.  */
+#define CONST_FIXED_P(X) (GET_CODE (X) == CONST_FIXED)
 
 /* Predicate yielding true iff X is an rtx for a double-int
    or floating point constant.  */
@@ -747,6 +764,7 @@ extern void rtl_check_failed_flag (const char *, const_rtx, const char *,
 #endif
 
 #define XINT(RTX, N)	(RTL_CHECK2 (RTX, N, 'i', 'n').rt_int)
+#define XUINT(RTX, N)   (RTL_CHECK2 (RTX, N, 'i', 'n').rt_uint)
 #define XSTR(RTX, N)	(RTL_CHECK2 (RTX, N, 's', 'S').rt_str)
 #define XEXP(RTX, N)	(RTL_CHECK2 (RTX, N, 'e', 'u').rt_rtx)
 #define XVEC(RTX, N)	(RTL_CHECK2 (RTX, N, 'E', 'V').rt_rtvec)
@@ -810,13 +828,14 @@ extern void rtl_check_failed_flag (const char *, const_rtx, const char *,
 /* The body of an insn.  */
 #define PATTERN(INSN)	XEXP (INSN, 4)
 
-#define INSN_LOCATOR(INSN) XINT (INSN, 5)
+#define INSN_LOCATION(INSN) XUINT (INSN, 5)
+
+#define INSN_HAS_LOCATION(INSN) ((LOCATION_LOCUS (INSN_LOCATION (INSN)))\
+  != UNKNOWN_LOCATION)
+
 /* LOCATION of an RTX if relevant.  */
 #define RTL_LOCATION(X) (INSN_P (X) ? \
-			 locator_location (INSN_LOCATOR (X)) \
-			 : UNKNOWN_LOCATION)
-/* LOCATION of current INSN.  */
-#define CURR_INSN_LOCATION (locator_location (curr_insn_locator ()))
+			 INSN_LOCATION (X) : UNKNOWN_LOCATION)
 
 /* Code number of instruction, from when it was recognized.
    -1 means this instruction has not been recognized yet.  */
@@ -1815,12 +1834,8 @@ extern rtx prev_cc0_setter (rtx);
 /* In emit-rtl.c  */
 extern int insn_line (const_rtx);
 extern const char * insn_file (const_rtx);
-extern location_t locator_location (int);
-extern int locator_line (int);
-extern const char * locator_file (int);
-extern bool locator_eq (int, int);
-extern int prologue_locator, epilogue_locator;
 extern tree insn_scope (const_rtx);
+extern location_t prologue_location, epilogue_location;
 
 /* In jump.c */
 extern enum rtx_code reverse_condition (enum rtx_code);
@@ -1915,6 +1930,7 @@ extern bool nonzero_address_p (const_rtx);
 extern int rtx_unstable_p (const_rtx);
 extern bool rtx_varies_p (const_rtx, bool);
 extern bool rtx_addr_varies_p (const_rtx, bool);
+extern rtx get_call_rtx_from (rtx);
 extern HOST_WIDE_INT get_integer_term (const_rtx);
 extern rtx get_related_value (const_rtx);
 extern bool offset_within_block_p (const_rtx, HOST_WIDE_INT);
@@ -2495,6 +2511,7 @@ extern void print_mem_expr (FILE *, const_tree);
 extern void print_rtl (FILE *, const_rtx);
 extern void print_simple_rtl (FILE *, const_rtx);
 extern int print_rtl_single (FILE *, const_rtx);
+extern int print_rtl_single_with_indent (FILE *, const_rtx, int);
 extern void print_inline_rtx (FILE *, const_rtx, int);
 
 /* In function.c */
@@ -2599,6 +2616,7 @@ extern void init_alias_analysis (void);
 extern void end_alias_analysis (void);
 extern void vt_equate_reg_base_value (const_rtx, const_rtx);
 extern bool memory_modified_in_insn_p (const_rtx, const_rtx);
+extern bool memory_must_be_modified_in_insn_p (const_rtx, const_rtx);
 extern bool may_be_sp_based_p (rtx);
 extern rtx gen_hard_reg_clobber (enum machine_mode, unsigned int);
 extern rtx get_reg_known_value (unsigned int);
@@ -2657,14 +2675,10 @@ extern const struct rtl_hooks general_rtl_hooks;
 /* Keep this for the nonce.  */
 #define gen_lowpart rtl_hooks.gen_lowpart
 
-extern void insn_locators_alloc (void);
-extern void insn_locators_free (void);
-extern void insn_locators_finalize (void);
-extern void set_curr_insn_source_location (location_t);
-extern location_t get_curr_insn_source_location (void);
-extern void set_curr_insn_block (tree);
-extern tree get_curr_insn_block (void);
-extern int curr_insn_locator (void);
+extern void insn_locations_init (void);
+extern void insn_locations_finalize (void);
+extern void set_curr_insn_location (location_t);
+extern location_t curr_insn_location (void);
 extern bool optimize_insn_for_size_p (void);
 extern bool optimize_insn_for_speed_p (void);
 

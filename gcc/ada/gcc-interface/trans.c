@@ -293,6 +293,9 @@ gigi (Node_Id gnat_root, int max_gnat_node, int number_name ATTRIBUTE_UNUSED,
   tree int64_type = gnat_type_for_size (64, 0);
   struct elab_info *info;
   int i;
+#ifdef ORDINARY_MAP_INSTANCE
+  struct line_map *map;
+#endif
 
   max_gnat_nodes = max_gnat_node;
 
@@ -326,6 +329,11 @@ gigi (Node_Id gnat_root, int max_gnat_node, int number_name ATTRIBUTE_UNUSED,
       /* We create the line map for a source file at once, with a fixed number
 	 of columns chosen to avoid jumping over the next power of 2.  */
       linemap_add (line_table, LC_ENTER, 0, filename, 1);
+#ifdef ORDINARY_MAP_INSTANCE
+      map = LINEMAPS_ORDINARY_MAP_AT (line_table, i);
+      if (flag_debug_instances)
+	ORDINARY_MAP_INSTANCE (map) = file_info_ptr[i].Instance;
+#endif
       linemap_line_start (line_table, file_info_ptr[i].Num_Source_Lines, 252);
       linemap_position_for_column (line_table, 252 - 1);
       linemap_add (line_table, LC_LEAVE, 0, NULL, 0);
@@ -2417,14 +2425,15 @@ Loop_Statement_to_gnu (Node_Id gnat_node)
 
 	  /* Otherwise, use the do-while form with the help of a special
 	     induction variable in the unsigned version of the base type
-	     or the unsigned version of sizetype, whichever is the
+	     or the unsigned version of the size type, whichever is the
 	     largest, in order to have wrap-around arithmetics for it.  */
 	  else
 	    {
-	      if (TYPE_PRECISION (gnu_base_type) > TYPE_PRECISION (sizetype))
+	      if (TYPE_PRECISION (gnu_base_type)
+		  > TYPE_PRECISION (size_type_node))
 		gnu_base_type = gnat_unsigned_type (gnu_base_type);
 	      else
-		gnu_base_type = sizetype;
+		gnu_base_type = size_type_node;
 
 	      gnu_first = convert (gnu_base_type, gnu_first);
 	      gnu_last = convert (gnu_base_type, gnu_last);
@@ -2921,7 +2930,7 @@ finalize_nrv_unc_r (tree *tp, int *walk_subtrees, void *data)
 	      = VEC_index (constructor_elt,
 			   CONSTRUCTOR_ELTS
 			   (TREE_OPERAND (TREE_OPERAND (ret_val, 0), 1)),
-			    1)->value;
+			    1).value;
 	  else
 	    ret_val = TREE_OPERAND (TREE_OPERAND (ret_val, 0), 1);
 	}
@@ -2980,7 +2989,7 @@ finalize_nrv_unc_r (tree *tp, int *walk_subtrees, void *data)
 		      TREE_OPERAND (alloc, 0),
 		      VEC_index (constructor_elt,
 				 CONSTRUCTOR_ELTS (TREE_OPERAND (alloc, 1)),
-						   0)->value);
+						   0).value);
 
 	  /* Build a modified CONSTRUCTOR that references NEW_VAR.  */
 	  p_array = TYPE_FIELDS (TREE_TYPE (alloc));
@@ -2990,7 +2999,7 @@ finalize_nrv_unc_r (tree *tp, int *walk_subtrees, void *data)
 				  VEC_index (constructor_elt,
 					     CONSTRUCTOR_ELTS
 					     (TREE_OPERAND (alloc, 1)),
-					      1)->value);
+					      1).value);
 	  new_ret = build_constructor (TREE_TYPE (alloc), v);
 	}
       else
@@ -3149,6 +3158,7 @@ build_return_expr (tree ret_obj, tree ret_val)
       if (optimize
 	  && AGGREGATE_TYPE_P (operation_type)
 	  && !TYPE_IS_FAT_POINTER_P (operation_type)
+	  && TYPE_MODE (operation_type) == BLKmode
 	  && aggregate_value_p (operation_type, current_function_decl))
 	{
 	  /* Recognize the temporary created for a return value with variable
@@ -5968,7 +5978,7 @@ gnat_to_gnu (Node_Id gnat_node)
       }
       break;
 
-    case N_Conditional_Expression:
+    case N_If_Expression:
       {
 	tree gnu_cond = gnat_to_gnu (First (Expressions (gnat_node)));
 	tree gnu_true = gnat_to_gnu (Next (First (Expressions (gnat_node))));
@@ -6231,7 +6241,7 @@ gnat_to_gnu (Node_Id gnat_node)
 		   : VEC_last (loop_info, gnu_loop_stack)->label));
       break;
 
-    case N_Return_Statement:
+    case N_Simple_Return_Statement:
       {
 	tree gnu_ret_obj, gnu_ret_val;
 

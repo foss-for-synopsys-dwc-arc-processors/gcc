@@ -92,8 +92,7 @@ gimple_assign_rhs_to_tree (gimple stmt)
 	   && gimple_location (stmt) != EXPR_LOCATION (t))
 	  || (gimple_block (stmt)
 	      && currently_expanding_to_rtl
-	      && EXPR_P (t)
-	      && gimple_block (stmt) != TREE_BLOCK (t)))
+	      && EXPR_P (t)))
 	t = copy_node (t);
     }
   else
@@ -101,8 +100,6 @@ gimple_assign_rhs_to_tree (gimple stmt)
 
   if (gimple_has_location (stmt) && CAN_HAVE_LOCATION_P (t))
     SET_EXPR_LOCATION (t, gimple_location (stmt));
-  if (gimple_block (stmt) && currently_expanding_to_rtl && EXPR_P (t))
-    TREE_BLOCK (t) = gimple_block (stmt);
 
   return t;
 }
@@ -184,6 +181,10 @@ static struct stack_var *stack_vars;
 static size_t stack_vars_alloc;
 static size_t stack_vars_num;
 static struct pointer_map_t *decl_to_stack_part;
+
+/* Conflict bitmaps go on this obstack.  This allows us to destroy
+   all of them in one big sweep.  */
+static bitmap_obstack stack_var_bitmap_obstack;
 
 /* An array of indices such that stack_vars[stack_vars_sorted[i]].size
    is non-decreasing.  */
@@ -299,9 +300,9 @@ add_stack_var_conflict (size_t x, size_t y)
   struct stack_var *a = &stack_vars[x];
   struct stack_var *b = &stack_vars[y];
   if (!a->conflicts)
-    a->conflicts = BITMAP_ALLOC (NULL);
+    a->conflicts = BITMAP_ALLOC (&stack_var_bitmap_obstack);
   if (!b->conflicts)
-    b->conflicts = BITMAP_ALLOC (NULL);
+    b->conflicts = BITMAP_ALLOC (&stack_var_bitmap_obstack);
   bitmap_set_bit (a->conflicts, y);
   bitmap_set_bit (b->conflicts, x);
 }
@@ -431,7 +432,7 @@ add_scope_conflicts_1 (basic_block bb, bitmap work, bool for_conflict)
 		{
 		  struct stack_var *a = &stack_vars[i];
 		  if (!a->conflicts)
-		    a->conflicts = BITMAP_ALLOC (NULL);
+		    a->conflicts = BITMAP_ALLOC (&stack_var_bitmap_obstack);
 		  bitmap_ior_into (a->conflicts, work);
 		}
 	      visit = visit_conflict;
@@ -464,7 +465,7 @@ add_scope_conflicts (void)
      We then do a mostly classical bitmap liveness algorithm.  */
 
   FOR_ALL_BB (bb)
-    bb->aux = BITMAP_ALLOC (NULL);
+    bb->aux = BITMAP_ALLOC (&stack_var_bitmap_obstack);
 
   rpo = XNEWVEC (int, last_basic_block);
   n_bbs = pre_and_rev_post_order_compute (NULL, rpo, false);
@@ -634,6 +635,8 @@ update_alias_info_with_stack_vars (void)
 					   (void *)(size_t) uid)) = part;
 	  *((tree *) pointer_map_insert (cfun->gimple_df->decls_to_pointers,
 					 decl)) = name;
+	  if (TREE_ADDRESSABLE (decl))
+	    TREE_ADDRESSABLE (name) = 1;
 	}
 
       /* Make the SSA name point to all partition members.  */
@@ -647,7 +650,7 @@ update_alias_info_with_stack_vars (void)
     {
       unsigned i;
       struct pointer_set_t *visited = pointer_set_create ();
-      bitmap temp = BITMAP_ALLOC (NULL);
+      bitmap temp = BITMAP_ALLOC (&stack_var_bitmap_obstack);
 
       for (i = 1; i < num_ssa_names; i++)
 	{
@@ -1378,14 +1381,11 @@ create_stack_guard (void)
 static void
 init_vars_expansion (void)
 {
-  tree t;
-  unsigned ix;
-  /* Set TREE_USED on all variables in the local_decls.  */
-  FOR_EACH_LOCAL_DECL (cfun, ix, t)
-    TREE_USED (t) = 1;
+  /* Conflict bitmaps, and a few related temporary bitmaps, go here.  */
+  bitmap_obstack_initialize (&stack_var_bitmap_obstack);
 
-  /* Clear TREE_USED on all variables associated with a block scope.  */
-  clear_tree_used (DECL_INITIAL (current_function_decl));
+  /* A map from decl to stack partition.  */
+  decl_to_stack_part = pointer_map_create ();
 
   /* Initialize local stack smashing state.  */
   has_protected_decls = false;
@@ -1396,11 +1396,11 @@ init_vars_expansion (void)
 static void
 fini_vars_expansion (void)
 {
-  size_t i, n = stack_vars_num;
-  for (i = 0; i < n; i++)
-    BITMAP_FREE (stack_vars[i].conflicts);
-  XDELETEVEC (stack_vars);
-  XDELETEVEC (stack_vars_sorted);
+  bitmap_obstack_release (&stack_var_bitmap_obstack);
+  if (stack_vars)
+    XDELETEVEC (stack_vars);
+  if (stack_vars_sorted)
+    XDELETEVEC (stack_vars_sorted);
   stack_vars = NULL;
   stack_vars_sorted = NULL;
   stack_vars_alloc = stack_vars_num = 0;
@@ -1422,11 +1422,11 @@ estimated_stack_frame_size (struct cgraph_node *node)
   HOST_WIDE_INT size = 0;
   size_t i;
   tree var;
-  tree old_cur_fun_decl = current_function_decl;
   struct function *fn = DECL_STRUCT_FUNCTION (node->symbol.decl);
 
-  current_function_decl = node->symbol.decl;
   push_cfun (fn);
+
+  init_vars_expansion ();
 
   FOR_EACH_LOCAL_DECL (fn, i, var)
     if (auto_var_in_fn_p (var, fn->decl))
@@ -1439,10 +1439,10 @@ estimated_stack_frame_size (struct cgraph_node *node)
       for (i = 0; i < stack_vars_num; ++i)
 	stack_vars_sorted[i] = i;
       size += account_stack_vars ();
-      fini_vars_expansion ();
     }
+
+  fini_vars_expansion ();
   pop_cfun ();
-  current_function_decl = old_cur_fun_decl;
   return size;
 }
 
@@ -1464,6 +1464,12 @@ expand_used_vars (void)
     frame_phase = off ? align - off : 0;
   }
 
+  /* Set TREE_USED on all variables in the local_decls.  */
+  FOR_EACH_LOCAL_DECL (cfun, i, var)
+    TREE_USED (var) = 1;
+  /* Clear TREE_USED on all variables associated with a block scope.  */
+  clear_tree_used (DECL_INITIAL (current_function_decl));
+
   init_vars_expansion ();
 
   ssa_name_decls = pointer_map_create ();
@@ -1471,7 +1477,7 @@ expand_used_vars (void)
     {
       tree var = partition_to_var (SA.map, i);
 
-      gcc_assert (is_gimple_reg (var));
+      gcc_assert (!virtual_operand_p (var));
 
       /* Assign decls to each SSA name partition, share decls for partitions
          we could have coalesced (those with the same type).  */
@@ -1613,9 +1619,9 @@ expand_used_vars (void)
 	}
 
       expand_stack_vars (NULL);
-
-      fini_vars_expansion ();
     }
+
+  fini_vars_expansion ();
 
   /* If there were any artificial non-ignored vars without rtl
      found earlier, see if deferred stack allocation hasn't assigned
@@ -1821,8 +1827,7 @@ expand_gimple_cond (basic_block bb, gimple stmt)
   last2 = last = get_last_insn ();
 
   extract_true_false_edges_from_block (bb, &true_edge, &false_edge);
-  set_curr_insn_source_location (gimple_location (stmt));
-  set_curr_insn_block (gimple_block (stmt));
+  set_curr_insn_location (gimple_location (stmt));
 
   /* These flags have no purpose in RTL land.  */
   true_edge->flags &= ~EDGE_TRUE_VALUE;
@@ -1835,13 +1840,8 @@ expand_gimple_cond (basic_block bb, gimple stmt)
       jumpif_1 (code, op0, op1, label_rtx_for_bb (true_edge->dest),
 		true_edge->probability);
       maybe_dump_rtl_for_gimple_stmt (stmt, last);
-      if (true_edge->goto_locus)
-	{
-	  set_curr_insn_source_location (true_edge->goto_locus);
-	  set_curr_insn_block (true_edge->goto_block);
-	  true_edge->goto_locus = curr_insn_locator ();
-	}
-      true_edge->goto_block = NULL;
+      if (true_edge->goto_locus != UNKNOWN_LOCATION)
+	set_curr_insn_location (true_edge->goto_locus);
       false_edge->flags |= EDGE_FALLTHRU;
       maybe_cleanup_end_of_block (false_edge, last);
       return NULL;
@@ -1851,13 +1851,8 @@ expand_gimple_cond (basic_block bb, gimple stmt)
       jumpifnot_1 (code, op0, op1, label_rtx_for_bb (false_edge->dest),
 		   false_edge->probability);
       maybe_dump_rtl_for_gimple_stmt (stmt, last);
-      if (false_edge->goto_locus)
-	{
-	  set_curr_insn_source_location (false_edge->goto_locus);
-	  set_curr_insn_block (false_edge->goto_block);
-	  false_edge->goto_locus = curr_insn_locator ();
-	}
-      false_edge->goto_block = NULL;
+      if (false_edge->goto_locus != UNKNOWN_LOCATION)
+	set_curr_insn_location (false_edge->goto_locus);
       true_edge->flags |= EDGE_FALLTHRU;
       maybe_cleanup_end_of_block (true_edge, last);
       return NULL;
@@ -1866,13 +1861,8 @@ expand_gimple_cond (basic_block bb, gimple stmt)
   jumpif_1 (code, op0, op1, label_rtx_for_bb (true_edge->dest),
 	    true_edge->probability);
   last = get_last_insn ();
-  if (false_edge->goto_locus)
-    {
-      set_curr_insn_source_location (false_edge->goto_locus);
-      set_curr_insn_block (false_edge->goto_block);
-      false_edge->goto_locus = curr_insn_locator ();
-    }
-  false_edge->goto_block = NULL;
+  if (false_edge->goto_locus != UNKNOWN_LOCATION)
+    set_curr_insn_location (false_edge->goto_locus);
   emit_jump (label_rtx_for_bb (false_edge->dest));
 
   BB_END (bb) = last;
@@ -1897,13 +1887,11 @@ expand_gimple_cond (basic_block bb, gimple stmt)
 
   maybe_dump_rtl_for_gimple_stmt (stmt, last2);
 
-  if (true_edge->goto_locus)
+  if (true_edge->goto_locus != UNKNOWN_LOCATION)
     {
-      set_curr_insn_source_location (true_edge->goto_locus);
-      set_curr_insn_block (true_edge->goto_block);
-      true_edge->goto_locus = curr_insn_locator ();
+      set_curr_insn_location (true_edge->goto_locus);
+      true_edge->goto_locus = curr_insn_location ();
     }
-  true_edge->goto_block = NULL;
 
   return new_bb;
 }
@@ -2003,7 +1991,6 @@ expand_call_stmt (gimple stmt)
     CALL_FROM_THUNK_P (exp) = gimple_call_from_thunk_p (stmt);
   CALL_EXPR_VA_ARG_PACK (exp) = gimple_call_va_arg_pack_p (stmt);
   SET_EXPR_LOCATION (exp, gimple_location (stmt));
-  TREE_BLOCK (exp) = gimple_block (stmt);
 
   /* Ensure RTL is created for debug args.  */
   if (decl && DECL_HAS_DEBUG_ARGS_P (decl))
@@ -2038,8 +2025,7 @@ expand_gimple_stmt_1 (gimple stmt)
 {
   tree op0;
 
-  set_curr_insn_source_location (gimple_location (stmt));
-  set_curr_insn_block (gimple_block (stmt));
+  set_curr_insn_location (gimple_location (stmt));
 
   switch (gimple_code (stmt))
     {
@@ -3537,22 +3523,13 @@ expand_debug_source_expr (tree exp)
 	    && !DECL_INCOMING_RTL (exp)
 	    && DECL_ABSTRACT_ORIGIN (current_function_decl))
 	  {
-	    tree aexp = exp;
-	    if (DECL_ABSTRACT_ORIGIN (exp))
-	      aexp = DECL_ABSTRACT_ORIGIN (exp);
+	    tree aexp = DECL_ORIGIN (exp);
 	    if (DECL_CONTEXT (aexp)
 		== DECL_ABSTRACT_ORIGIN (current_function_decl))
 	      {
 		VEC(tree, gc) **debug_args;
 		unsigned int ix;
 		tree ddecl;
-#ifdef ENABLE_CHECKING
-		tree parm;
-		for (parm = DECL_ARGUMENTS (current_function_decl);
-		     parm; parm = DECL_CHAIN (parm))
-		  gcc_assert (parm != exp
-			      && DECL_ABSTRACT_ORIGIN (parm) != aexp);
-#endif
 		debug_args = decl_debug_args_lookup (current_function_decl);
 		if (debug_args != NULL)
 		  {
@@ -3783,8 +3760,7 @@ expand_gimple_basic_block (basic_block bb)
 	  tree op;
 	  gimple def;
 
-	  location_t sloc = get_curr_insn_source_location ();
-	  tree sblock = get_curr_insn_block ();
+	  location_t sloc = curr_insn_location ();
 
 	  /* Look for SSA names that have their last use here (TERed
 	     names always have only one real use).  */
@@ -3817,8 +3793,7 @@ expand_gimple_basic_block (basic_block bb)
 		    rtx val;
 		    enum machine_mode mode;
 
-		    set_curr_insn_source_location (gimple_location (def));
-		    set_curr_insn_block (gimple_block (def));
+		    set_curr_insn_location (gimple_location (def));
 
 		    DECL_ARTIFICIAL (vexpr) = 1;
 		    TREE_TYPE (vexpr) = TREE_TYPE (value);
@@ -3845,8 +3820,7 @@ expand_gimple_basic_block (basic_block bb)
 		      }
 		  }
 	      }
-	  set_curr_insn_source_location (sloc);
-	  set_curr_insn_block (sblock);
+	  set_curr_insn_location (sloc);
 	}
 
       currently_expanding_gimple_stmt = stmt;
@@ -3861,8 +3835,7 @@ expand_gimple_basic_block (basic_block bb)
 	}
       else if (gimple_debug_bind_p (stmt))
 	{
-	  location_t sloc = get_curr_insn_source_location ();
-	  tree sblock = get_curr_insn_block ();
+	  location_t sloc = curr_insn_location ();
 	  gimple_stmt_iterator nsi = gsi;
 
 	  for (;;)
@@ -3884,8 +3857,7 @@ expand_gimple_basic_block (basic_block bb)
 
 	      last = get_last_insn ();
 
-	      set_curr_insn_source_location (gimple_location (stmt));
-	      set_curr_insn_block (gimple_block (stmt));
+	      set_curr_insn_location (gimple_location (stmt));
 
 	      if (DECL_P (var))
 		mode = DECL_MODE (var);
@@ -3923,13 +3895,11 @@ expand_gimple_basic_block (basic_block bb)
 		break;
 	    }
 
-	  set_curr_insn_source_location (sloc);
-	  set_curr_insn_block (sblock);
+	  set_curr_insn_location (sloc);
 	}
       else if (gimple_debug_source_bind_p (stmt))
 	{
-	  location_t sloc = get_curr_insn_source_location ();
-	  tree sblock = get_curr_insn_block ();
+	  location_t sloc = curr_insn_location ();
 	  tree var = gimple_debug_source_bind_get_var (stmt);
 	  tree value = gimple_debug_source_bind_get_value (stmt);
 	  rtx val;
@@ -3937,8 +3907,7 @@ expand_gimple_basic_block (basic_block bb)
 
 	  last = get_last_insn ();
 
-	  set_curr_insn_source_location (gimple_location (stmt));
-	  set_curr_insn_block (gimple_block (stmt));
+	  set_curr_insn_location (gimple_location (stmt));
 
 	  mode = DECL_MODE (var);
 
@@ -3956,8 +3925,7 @@ expand_gimple_basic_block (basic_block bb)
 	      PAT_VAR_LOCATION_LOC (val) = (rtx)value;
 	    }
 
-	  set_curr_insn_source_location (sloc);
-	  set_curr_insn_block (sblock);
+	  set_curr_insn_location (sloc);
 	}
       else
 	{
@@ -3998,13 +3966,8 @@ expand_gimple_basic_block (basic_block bb)
   /* Expand implicit goto and convert goto_locus.  */
   FOR_EACH_EDGE (e, ei, bb->succs)
     {
-      if (e->goto_locus && e->goto_block)
-	{
-	  set_curr_insn_source_location (e->goto_locus);
-	  set_curr_insn_block (e->goto_block);
-	  e->goto_locus = curr_insn_locator ();
-	}
-      e->goto_block = NULL;
+      if (e->goto_locus != UNKNOWN_LOCATION)
+	set_curr_insn_location (e->goto_locus);
       if ((e->flags & EDGE_FALLTHRU) && e->dest != bb->next_bb)
 	{
 	  emit_jump (label_rtx_for_bb (e->dest));
@@ -4124,11 +4087,8 @@ construct_exit_block (void)
 
   /* Make sure the locus is set to the end of the function, so that
      epilogue line numbers and warnings are set properly.  */
-  if (cfun->function_end_locus != UNKNOWN_LOCATION)
+  if (LOCATION_LOCUS (cfun->function_end_locus) != UNKNOWN_LOCATION)
     input_location = cfun->function_end_locus;
-
-  /* The following insns belong to the top scope.  */
-  set_curr_insn_block (DECL_INITIAL (current_function_decl));
 
   /* Generate rtl for function exit.  */
   expand_function_end ();
@@ -4334,8 +4294,7 @@ gimple_expand_cfg (void)
   timevar_push (TV_OUT_OF_SSA);
   rewrite_out_of_ssa (&SA);
   timevar_pop (TV_OUT_OF_SSA);
-  SA.partition_to_pseudo = (rtx *)xcalloc (SA.map->num_partitions,
-					   sizeof (rtx));
+  SA.partition_to_pseudo = XCNEWVEC (rtx, SA.map->num_partitions);
 
   /* Make sure all values used by the optimization passes have sane
      defaults.  */
@@ -4348,20 +4307,19 @@ gimple_expand_cfg (void)
 
   rtl_profile_for_bb (ENTRY_BLOCK_PTR);
 
-  insn_locators_alloc ();
+  insn_locations_init ();
   if (!DECL_IS_BUILTIN (current_function_decl))
     {
       /* Eventually, all FEs should explicitly set function_start_locus.  */
-      if (cfun->function_start_locus == UNKNOWN_LOCATION)
-       set_curr_insn_source_location
+      if (LOCATION_LOCUS (cfun->function_start_locus) == UNKNOWN_LOCATION)
+       set_curr_insn_location
          (DECL_SOURCE_LOCATION (current_function_decl));
       else
-       set_curr_insn_source_location (cfun->function_start_locus);
+       set_curr_insn_location (cfun->function_start_locus);
     }
   else
-    set_curr_insn_source_location (UNKNOWN_LOCATION);
-  set_curr_insn_block (DECL_INITIAL (current_function_decl));
-  prologue_locator = curr_insn_locator ();
+    set_curr_insn_location (UNKNOWN_LOCATION);
+  prologue_location = curr_insn_location ();
 
 #ifdef INSN_SCHEDULING
   init_sched_attrs ();
@@ -4542,8 +4500,7 @@ gimple_expand_cfg (void)
   free_histograms ();
 
   construct_exit_block ();
-  set_curr_insn_block (DECL_INITIAL (current_function_decl));
-  insn_locators_finalize ();
+  insn_locations_finalize ();
 
   /* Zap the tree EH table.  */
   set_eh_throw_stmt_table (cfun, NULL);

@@ -1202,7 +1202,8 @@ default_hard_regno_scratch_ok (unsigned int regno ATTRIBUTE_UNUSED)
 /* The default implementation of TARGET_MODE_DEPENDENT_ADDRESS_P.  */
 
 bool
-default_mode_dependent_address_p (const_rtx addr ATTRIBUTE_UNUSED)
+default_mode_dependent_address_p (const_rtx addr ATTRIBUTE_UNUSED,
+				  addr_space_t addrspace ATTRIBUTE_UNUSED)
 {
   return false;
 }
@@ -1511,6 +1512,14 @@ default_pch_valid_p (const void *data_p, size_t len)
       }
 
   return NULL;
+}
+
+/* Default version of member_type_forces_blk.  */
+
+bool
+default_member_type_forces_blk (const_tree, enum machine_mode)
+{
+  return false;
 }
 
 #include "gt-targhooks.h"

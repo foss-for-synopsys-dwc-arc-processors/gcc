@@ -1,7 +1,7 @@
 /* Definitions for C parsing and type checking.
    Copyright (C) 1987, 1993, 1994, 1995, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011,
+   2012 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -142,8 +142,8 @@ DEF_VEC_ALLOC_O (c_expr_t, heap);
 /* Append a new c_expr_t element to V.  */
 #define C_EXPR_APPEND(V, ELEM) \
   do { \
-    c_expr_t *__elem_p = VEC_safe_push (c_expr_t, gc, V, NULL); \
-    *__elem_p = (ELEM); \
+    c_expr_t __elem = (ELEM); \
+    VEC_safe_push (c_expr_t, gc, V, __elem); \
   } while (0)
 
 /* A kind of type specifier.  Note that this information is currently
@@ -572,6 +572,8 @@ extern bool c_vla_unspec_p (tree x, tree fn);
 extern int in_alignof;
 extern int in_sizeof;
 extern int in_typeof;
+
+extern tree c_last_sizeof_arg;
 
 extern struct c_switch *c_switch_stack;
 

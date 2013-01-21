@@ -1878,7 +1878,7 @@ darwin_asm_named_section (const char *name,
          the assumption of how this is done.  */
       if (lto_section_names == NULL)
         lto_section_names = VEC_alloc (darwin_lto_section_e, gc, 16);
-      VEC_safe_push (darwin_lto_section_e, gc, lto_section_names, &e);
+      VEC_safe_push (darwin_lto_section_e, gc, lto_section_names, e);
    }
   else if (strncmp (name, "__DWARF,", 8) == 0)
     darwin_asm_dwarf_section (name, flags, decl);
@@ -2623,7 +2623,7 @@ darwin_assemble_visibility (tree decl, int vis)
 {
   if (vis == VISIBILITY_DEFAULT)
     ;
-  else if (vis == VISIBILITY_HIDDEN)
+  else if (vis == VISIBILITY_HIDDEN || vis == VISIBILITY_INTERNAL)
     {
       fputs ("\t.private_extern ", asm_out_file);
       assemble_name (asm_out_file,
@@ -2631,7 +2631,7 @@ darwin_assemble_visibility (tree decl, int vis)
       fputs ("\n", asm_out_file);
     }
   else
-    warning (OPT_Wattributes, "internal and protected visibility attributes "
+    warning (OPT_Wattributes, "protected visibility attribute "
 	     "not supported in this configuration; ignored");
 }
 
@@ -2698,7 +2698,7 @@ darwin_asm_dwarf_section (const char *name, unsigned int flags,
       fprintf (asm_out_file, "Lsection%.*s:\n", namelen, sname);
       e.count = 1;
       e.name = xstrdup (sname);
-      VEC_safe_push (dwarf_sect_used_entry, gc, dwarf_sect_names_table, &e);
+      VEC_safe_push (dwarf_sect_used_entry, gc, dwarf_sect_names_table, e);
     }
 }
 

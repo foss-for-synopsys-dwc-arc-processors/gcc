@@ -121,7 +121,7 @@ lower_function_body (void)
   if (gimple_seq_may_fallthru (lowered_body)
       && (VEC_empty (return_statements_t, data.return_statements)
 	  || gimple_return_retval (VEC_last (return_statements_t,
-			           data.return_statements)->stmt) != NULL))
+			           data.return_statements).stmt) != NULL))
     {
       x = gimple_build_return (NULL);
       gimple_set_location (x, cfun->function_end_locus);
@@ -137,7 +137,7 @@ lower_function_body (void)
 
       /* Unfortunately, we can't use VEC_pop because it returns void for
 	 objects.  */
-      t = *VEC_last (return_statements_t, data.return_statements);
+      t = VEC_last (return_statements_t, data.return_statements);
       VEC_truncate (return_statements_t,
 	  	    data.return_statements,
 	  	    VEC_length (return_statements_t,
@@ -425,6 +425,14 @@ lower_stmt (gimple_stmt_iterator *gsi, struct lower_data *data)
     case GIMPLE_CALL:
       {
 	tree decl = gimple_call_fndecl (stmt);
+	unsigned i;
+
+	for (i = 0; i < gimple_call_num_args (stmt); i++)
+	  {
+	    tree arg = gimple_call_arg (stmt, i);
+	    if (EXPR_P (arg))
+	      TREE_SET_BLOCK (arg, data->block);
+	  }
 
 	if (decl
 	    && DECL_BUILT_IN_CLASS (decl) == BUILT_IN_NORMAL
@@ -835,7 +843,7 @@ lower_gimple_return (gimple_stmt_iterator *gsi, struct lower_data *data)
   for (i = VEC_length (return_statements_t, data->return_statements) - 1;
        i >= 0; i--)
     {
-      tmp_rs = *VEC_index (return_statements_t, data->return_statements, i);
+      tmp_rs = VEC_index (return_statements_t, data->return_statements, i);
 
       if (gimple_return_retval (stmt) == gimple_return_retval (tmp_rs.stmt))
 	{
@@ -851,7 +859,7 @@ lower_gimple_return (gimple_stmt_iterator *gsi, struct lower_data *data)
   /* Not found.  Create a new label and record the return statement.  */
   tmp_rs.label = create_artificial_label (cfun->function_end_locus);
   tmp_rs.stmt = stmt;
-  VEC_safe_push (return_statements_t, heap, data->return_statements, &tmp_rs);
+  VEC_safe_push (return_statements_t, heap, data->return_statements, tmp_rs);
 
   /* Generate a goto statement and remove the return statement.  */
  found:
@@ -991,7 +999,9 @@ lower_builtin_setjmp (gimple_stmt_iterator *gsi)
 void
 record_vars_into (tree vars, tree fn)
 {
-  if (fn != current_function_decl)
+  bool change_cfun = fn != current_function_decl;
+
+  if (change_cfun)
     push_cfun (DECL_STRUCT_FUNCTION (fn));
 
   for (; vars; vars = DECL_CHAIN (vars))
@@ -1011,7 +1021,7 @@ record_vars_into (tree vars, tree fn)
       add_local_decl (cfun, var);
     }
 
-  if (fn != current_function_decl)
+  if (change_cfun)
     pop_cfun ();
 }
 

@@ -1345,9 +1345,10 @@ package body Sem_Ch9 is
       --  Check for unreferenced variables etc. Before the Check_References
       --  call, we transfer Never_Set_In_Source and Referenced flags from
       --  parameters in the spec to the corresponding entities in the body,
-      --  since we want the warnings on the body entities. Note that we do
-      --  not have to transfer Referenced_As_LHS, since that flag can only
-      --  be set for simple variables.
+      --  since we want the warnings on the body entities. Note that we do not
+      --  have to transfer Referenced_As_LHS, since that flag can only be set
+      --  for simple variables, but we include Has_Pragma_Unreferenced,
+      --  which may have been specified for a formal in the body.
 
       --  At the same time, we set the flags on the spec entities to suppress
       --  any warnings on the spec formals, since we also scan the spec.
@@ -1382,6 +1383,7 @@ package body Sem_Ch9 is
 
             Set_Referenced (E2, Referenced (E1));
             Set_Referenced (E1);
+            Set_Has_Pragma_Unreferenced (E2, Has_Pragma_Unreferenced (E1));
             Set_Entry_Component (E2, Entry_Component (E1));
 
          <<Continue>>
@@ -2378,6 +2380,18 @@ package body Sem_Ch9 is
                end loop;
             end;
          end if;
+      end if;
+
+      --  AI05-0225: the target protected object of a requeue must be a
+      --  variable. This is a binding interpretation that applies to all
+      --  versions of the language.
+
+      if Present (Target_Obj)
+        and then Ekind (Scope (Entry_Id)) in Protected_Kind
+        and then not Is_Variable (Target_Obj)
+      then
+         Error_Msg_N
+           ("target protected object of requeue must be a variable", N);
       end if;
    end Analyze_Requeue;
 

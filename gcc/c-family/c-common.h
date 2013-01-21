@@ -1,6 +1,6 @@
 /* Definitions for c-common.c.
-   Copyright (C) 1987, 1993, 1994, 1995, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011
+   Copyright (C) 1987, 1993, 1994, 1995, 1997, 1998, 1999, 2000, 2001, 2002,
+   2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011, 2012
    Free Software Foundation, Inc.
 
 This file is part of GCC.
@@ -45,7 +45,6 @@ never after.
 
 /* Usage of TREE_LANG_FLAG_?:
    0: IDENTIFIER_MARKED (used by search routines).
-      DECL_PRETTY_FUNCTION_P (in VAR_DECL)
       C_MAYBE_CONST_EXPR_INT_OPERANDS (in C_MAYBE_CONST_EXPR, for C)
    1: C_DECLARED_LABEL_FLAG (in LABEL_DECL)
       STATEMENT_LIST_STMT_EXPR (in STATEMENT_LIST)
@@ -478,7 +477,9 @@ typedef enum ref_operator {
   /* -> */
   RO_ARROW,
   /* implicit conversion */
-  RO_IMPLICIT_CONVERSION
+  RO_IMPLICIT_CONVERSION,
+  /* ->* */
+  RO_ARROW_STAR
 } ref_operator;
 
 /* Information about a statement tree.  */
@@ -768,6 +769,9 @@ extern tree fix_string_type (tree);
 extern void constant_expression_warning (tree);
 extern void constant_expression_error (tree);
 extern bool strict_aliasing_warning (tree, tree, tree);
+extern void sizeof_pointer_memaccess_warning (location_t *, tree,
+					      VEC(tree, gc) *, tree *,
+					      bool (*) (tree, tree));
 extern void warnings_for_convert_and_check (tree, tree, tree);
 extern tree convert_and_check (tree, tree);
 extern void overflow_warning (location_t, tree);
@@ -787,6 +791,7 @@ extern bool keyword_begins_type_specifier (enum rid);
 extern bool keyword_is_storage_class_specifier (enum rid);
 extern bool keyword_is_type_qualifier (enum rid);
 extern bool keyword_is_decl_specifier (enum rid);
+extern bool cxx_fundamental_alignment_p (unsigned);
 
 #define c_sizeof(LOC, T)  c_sizeof_or_alignof_type (LOC, T, true, 1)
 #define c_alignof(LOC, T) c_sizeof_or_alignof_type (LOC, T, false, 1)
@@ -986,7 +991,8 @@ extern tree builtin_type_for_size (int, bool);
 extern void c_common_mark_addressable_vec (tree);
 
 extern void warn_array_subscript_with_type_char (tree);
-extern void warn_about_parentheses (enum tree_code,
+extern void warn_about_parentheses (location_t,
+				    enum tree_code,
 				    enum tree_code, tree,
 				    enum tree_code, tree);
 extern void warn_for_unused_label (tree label);
@@ -1119,5 +1125,16 @@ struct GTY(()) tree_userdef_literal {
 extern tree build_userdef_literal (tree suffix_id, tree value, tree num_string);
 
 extern void convert_vector_to_pointer_for_subscript (location_t, tree*, tree);
+
+/* Possibe cases of scalar_to_vector conversion.  */
+enum stv_conv {
+  stv_error,        /* Error occured.  */
+  stv_nothing,      /* Nothing happened.  */
+  stv_firstarg,     /* First argument must be expanded.  */
+  stv_secondarg     /* Second argument must be expanded.  */
+};
+
+extern enum stv_conv scalar_to_vector (location_t loc, enum tree_code code,
+				       tree op0, tree op1, bool);
 
 #endif /* ! GCC_C_COMMON_H */

@@ -68,7 +68,7 @@ redirect_edge_var_map_add (edge e, tree result, tree def, source_location locus)
   new_node.result = result;
   new_node.locus = locus;
 
-  VEC_safe_push (edge_var_map, heap, head, &new_node);
+  VEC_safe_push (edge_var_map, heap, head, new_node);
   if (old_head != head)
     {
       /* The push did some reallocation.  Update the pointer map.  */
@@ -642,7 +642,7 @@ verify_ssa_name (tree ssa_name, bool is_virtual)
       return true;
     }
 
-  if (is_virtual && is_gimple_reg (ssa_name))
+  if (is_virtual && !virtual_operand_p (ssa_name))
     {
       error ("found a virtual definition for a GIMPLE register");
       return true;
@@ -654,7 +654,7 @@ verify_ssa_name (tree ssa_name, bool is_virtual)
       return true;
     }
 
-  if (!is_virtual && !is_gimple_reg (ssa_name))
+  if (!is_virtual && virtual_operand_p (ssa_name))
     {
       error ("found a real definition for a non-register");
       return true;
@@ -864,7 +864,7 @@ verify_phi_args (gimple phi, basic_block bb, basic_block *definition_block)
 
       if (TREE_CODE (op) == SSA_NAME)
 	{
-	  err = verify_ssa_name (op, !is_gimple_reg (gimple_phi_result (phi)));
+	  err = verify_ssa_name (op, virtual_operand_p (gimple_phi_result (phi)));
 	  err |= verify_use (e->src, definition_block[SSA_NAME_VERSION (op)],
 			     op_p, phi, e->flags & EDGE_ABNORMAL, NULL);
 	}
@@ -938,14 +938,14 @@ verify_ssa (bool check_modified_stmt)
 	  gimple stmt;
 	  TREE_VISITED (name) = 0;
 
-	  verify_ssa_name (name, !is_gimple_reg (name));
+	  verify_ssa_name (name, virtual_operand_p (name));
 
 	  stmt = SSA_NAME_DEF_STMT (name);
 	  if (!gimple_nop_p (stmt))
 	    {
 	      basic_block bb = gimple_bb (stmt);
 	      verify_def (bb, definition_block,
-			  name, stmt, !is_gimple_reg (name));
+			  name, stmt, virtual_operand_p (name));
 
 	    }
 	}
@@ -1157,7 +1157,7 @@ delete_tree_ssa (void)
   fini_ssanames ();
 
   /* We no longer maintain the SSA operand cache at this point.  */
-  if (ssa_operands_active ())
+  if (ssa_operands_active (cfun))
     fini_ssa_operands ();
 
   htab_delete (cfun->gimple_df->default_defs);
@@ -1833,10 +1833,9 @@ non_rewritable_mem_ref_base (tree ref)
 	   || TREE_CODE (TREE_TYPE (decl)) == COMPLEX_TYPE)
 	  && useless_type_conversion_p (TREE_TYPE (base),
 					TREE_TYPE (TREE_TYPE (decl)))
-	  && double_int_fits_in_uhwi_p (mem_ref_offset (base))
-	  && double_int_ucmp
-	       (tree_to_double_int (TYPE_SIZE_UNIT (TREE_TYPE (decl))),
-		mem_ref_offset (base)) == 1
+	  && mem_ref_offset (base).fits_uhwi ()
+	  && tree_to_double_int (TYPE_SIZE_UNIT (TREE_TYPE (decl)))
+	     .ugt (mem_ref_offset (base))
 	  && multiple_of_p (sizetype, TREE_OPERAND (base, 1),
 			    TYPE_SIZE_UNIT (TREE_TYPE (base))))
 	return NULL_TREE;

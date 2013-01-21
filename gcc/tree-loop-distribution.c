@@ -125,8 +125,12 @@ ssa_name_has_uses_outside_loop_p (tree def, loop_p loop)
   use_operand_p use_p;
 
   FOR_EACH_IMM_USE_FAST (use_p, imm_iter, def)
-    if (loop != loop_containing_stmt (USE_STMT (use_p)))
-      return true;
+    {
+      gimple use_stmt = USE_STMT (use_p);
+      if (!is_gimple_debug (use_stmt)
+	  && loop != loop_containing_stmt (use_stmt))
+	return true;
+    }
 
   return false;
 }
@@ -288,7 +292,7 @@ generate_loops_for_partition (struct loop *loop, partition_t partition,
 	if (!bitmap_bit_p (partition->stmts, x++))
 	  {
 	    gimple phi = gsi_stmt (bsi);
-	    if (!is_gimple_reg (gimple_phi_result (phi)))
+	    if (virtual_operand_p (gimple_phi_result (phi)))
 	      mark_virtual_phi_result_for_renaming (phi);
 	    remove_phi_node (&bsi, true);
 	  }
@@ -492,7 +496,7 @@ destroy_loop (struct loop *loop)
       for (gsi = gsi_start_phis (bbs[i]); !gsi_end_p (gsi); gsi_next (&gsi))
 	{
 	  gimple phi = gsi_stmt (gsi);
-	  if (!is_gimple_reg (gimple_phi_result (phi)))
+	  if (virtual_operand_p (gimple_phi_result (phi)))
 	    mark_virtual_phi_result_for_renaming (phi);
 	}
       for (gsi = gsi_start_bb (bbs[i]); !gsi_end_p (gsi); gsi_next (&gsi))
@@ -1011,6 +1015,43 @@ classify_partition (loop_p loop, struct graph *rdg, partition_t partition)
 	  || !operand_equal_p (DR_STEP (single_store),
 			       DR_STEP (single_load), 0))
 	return;
+      /* Now check that if there is a dependence this dependence is
+         of a suitable form for memmove.  */
+      VEC(loop_p, heap) *loops = NULL;
+      ddr_p ddr;
+      VEC_safe_push (loop_p, heap, loops, loop);
+      ddr = initialize_data_dependence_relation (single_load, single_store,
+						 loops);
+      compute_affine_dependence (ddr, loop);
+      if (DDR_ARE_DEPENDENT (ddr) == chrec_dont_know)
+	{
+	  free_dependence_relation (ddr);
+	  VEC_free (loop_p, heap, loops);
+	  return;
+	}
+      if (DDR_ARE_DEPENDENT (ddr) != chrec_known)
+	{
+	  if (DDR_NUM_DIST_VECTS (ddr) == 0)
+	    {
+	      free_dependence_relation (ddr);
+	      VEC_free (loop_p, heap, loops);
+	      return;
+	    }
+	  lambda_vector dist_v;
+	  FOR_EACH_VEC_ELT (lambda_vector, DDR_DIST_VECTS (ddr), i, dist_v)
+	    {
+	      int dist = dist_v[index_in_loop_nest (loop->num,
+						    DDR_LOOP_NEST (ddr))];
+	      if (dist > 0 && !DDR_REVERSED_P (ddr))
+		{
+		  free_dependence_relation (ddr);
+		  VEC_free (loop_p, heap, loops);
+		  return;
+		}
+	    }
+	}
+      free_dependence_relation (ddr);
+      VEC_free (loop_p, heap, loops);
       partition->kind = PKIND_MEMCPY;
       partition->main_dr = single_store;
       partition->secondary_dr = single_load;

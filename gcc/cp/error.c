@@ -657,7 +657,7 @@ dump_aggr_type (tree t, int flags)
       else
 	pp_printf (pp_base (cxx_pp), M_("<anonymous %s>"), variety);
     }
-  else if (LAMBDANAME_P (name))
+  else if (LAMBDA_TYPE_P (name))
     {
       /* A lambda's "type" is essentially its signature.  */
       pp_string (cxx_pp, M_("<lambda"));
@@ -846,7 +846,9 @@ dump_type_suffix (tree t, int flags)
 	{
 	  tree dtype = TYPE_DOMAIN (t);
 	  tree max = TYPE_MAX_VALUE (dtype);
-	  if (host_integerp (max, 0))
+	  if (integer_all_onesp (max))
+	    pp_character (cxx_pp, '0');
+	  else if (host_integerp (max, 0))
 	    pp_wide_integer (cxx_pp, tree_low_cst (max, 0) + 1);
 	  else if (TREE_CODE (max) == MINUS_EXPR)
 	    dump_expr (TREE_OPERAND (max, 0),
@@ -1042,7 +1044,7 @@ dump_decl (tree t, int flags)
     case SCOPE_REF:
       dump_type (TREE_OPERAND (t, 0), flags);
       pp_string (cxx_pp, "::");
-      dump_decl (TREE_OPERAND (t, 1), flags|TFF_UNQUALIFIED_NAME);
+      dump_decl (TREE_OPERAND (t, 1), TFF_UNQUALIFIED_NAME);
       break;
 
     case ARRAY_REF:
@@ -1283,7 +1285,7 @@ struct find_typenames_t
 };
 
 static tree
-find_typenames_r (tree *tp, int *walk_subtrees ATTRIBUTE_UNUSED, void *data)
+find_typenames_r (tree *tp, int * /*walk_subtrees*/, void *data)
 {
   struct find_typenames_t *d = (struct find_typenames_t *)data;
   tree mv = NULL_TREE;
@@ -1346,7 +1348,7 @@ dump_function_decl (tree t, int flags)
       return;
     }
 
-  flags &= ~TFF_UNQUALIFIED_NAME;
+  flags &= ~(TFF_UNQUALIFIED_NAME | TFF_TEMPLATE_NAME);
   if (TREE_CODE (t) == TEMPLATE_DECL)
     t = DECL_TEMPLATE_RESULT (t);
 
@@ -2310,7 +2312,9 @@ dump_expr (tree t, int flags)
 	}
       pp_cxx_whitespace (cxx_pp);
       pp_cxx_left_paren (cxx_pp);
-      if (TYPE_P (TREE_OPERAND (t, 0)))
+      if (TREE_CODE (t) == SIZEOF_EXPR && SIZEOF_EXPR_TYPE_P (t))
+	dump_type (TREE_TYPE (TREE_OPERAND (t, 0)), flags);
+      else if (TYPE_P (TREE_OPERAND (t, 0)))
 	dump_type (TREE_OPERAND (t, 0), flags);
       else
 	dump_expr (TREE_OPERAND (t, 0), flags);
@@ -3370,6 +3374,16 @@ maybe_warn_cpp0x (cpp0x_warn_str str)
 		 "delegating constructors "
 		 "only available with -std=c++11 or -std=gnu++11");
         break;
+      case CPP0X_INHERITING_CTORS:
+	pedwarn (input_location, 0,
+		 "inheriting constructors "
+		 "only available with -std=c++11 or -std=gnu++11");
+        break;
+      case CPP0X_ATTRIBUTES:
+	pedwarn (input_location, 0,
+		 "c++11 attributes "
+		 "only available with -std=c++11 or -std=gnu++11");
+	break;
       default:
 	gcc_unreachable ();
       }

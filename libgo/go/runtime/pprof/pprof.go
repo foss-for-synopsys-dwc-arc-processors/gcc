@@ -11,7 +11,6 @@ package pprof
 import (
 	"bufio"
 	"bytes"
-	_ "debug/elf"
 	"fmt"
 	"io"
 	"runtime"
@@ -357,7 +356,7 @@ func countHeap() int {
 	return n
 }
 
-// writeHeapProfile writes the current runtime heap profile to w.
+// writeHeap writes the current runtime heap profile to w.
 func writeHeap(w io.Writer, debug int) error {
 	// Find out how many records there are (MemProfile(nil, false)),
 	// allocate that many records, and get the data.

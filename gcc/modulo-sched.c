@@ -229,7 +229,7 @@ static void remove_node_from_ps (partial_schedule_ptr, ps_insn_ptr);
 
 #define NODE_ASAP(node) ((node)->aux.count)
 
-#define SCHED_PARAMS(x) VEC_index (node_sched_params, node_sched_param_vec, x)
+#define SCHED_PARAMS(x) (&VEC_index (node_sched_params, node_sched_param_vec, x))
 #define SCHED_TIME(x) (SCHED_PARAMS (x)->time)
 #define SCHED_ROW(x) (SCHED_PARAMS (x)->row)
 #define SCHED_STAGE(x) (SCHED_PARAMS (x)->stage)
@@ -305,7 +305,7 @@ static struct ps_reg_move_info *
 ps_reg_move (partial_schedule_ptr ps, int id)
 {
   gcc_checking_assert (id >= ps->g->num_nodes);
-  return VEC_index (ps_reg_move_info, ps->reg_moves, id - ps->g->num_nodes);
+  return &VEC_index (ps_reg_move_info, ps->reg_moves, id - ps->g->num_nodes);
 }
 
 /* Return the rtl instruction that is being scheduled by partial schedule
@@ -1246,9 +1246,9 @@ loop_single_full_bb_p (struct loop *loop)
 /* Dump file:line from INSN's location info to dump_file.  */
 
 static void
-dump_insn_locator (rtx insn)
+dump_insn_location (rtx insn)
 {
-  if (dump_file && INSN_LOCATOR (insn))
+  if (dump_file && INSN_LOCATION (insn))
     {
       const char *file = insn_file (insn);
       if (file)
@@ -1282,7 +1282,7 @@ loop_canon_p (struct loop *loop)
 	  rtx insn = BB_END (loop->header);
 
 	  fprintf (dump_file, "SMS loop many exits");
-	  dump_insn_locator (insn);
+	  dump_insn_location (insn);
 	  fprintf (dump_file, "\n");
 	}
       return false;
@@ -1295,7 +1295,7 @@ loop_canon_p (struct loop *loop)
 	  rtx insn = BB_END (loop->header);
 
 	  fprintf (dump_file, "SMS loop many BBs.");
-	  dump_insn_locator (insn);
+	  dump_insn_location (insn);
 	  fprintf (dump_file, "\n");
 	}
       return false;
@@ -1413,7 +1413,7 @@ sms_schedule (void)
           if (dump_file)
             fprintf (dump_file, "SMS reached max limit... \n");
 
-          break;
+	  FOR_EACH_LOOP_BREAK (li);
         }
 
       if (dump_file)
@@ -1421,7 +1421,7 @@ sms_schedule (void)
 	  rtx insn = BB_END (loop->header);
 
 	  fprintf (dump_file, "SMS loop num: %d", loop->num);
-	  dump_insn_locator (insn);
+	  dump_insn_location (insn);
 	  fprintf (dump_file, "\n");
 	}
 
@@ -1450,7 +1450,7 @@ sms_schedule (void)
 	{
 	  if (dump_file)
 	    {
-	      dump_insn_locator (tail);
+	      dump_insn_location (tail);
 	      fprintf (dump_file, "\nSMS single-bb-loop\n");
 	      if (profile_info && flag_branch_probabilities)
 	    	{
@@ -1556,7 +1556,7 @@ sms_schedule (void)
 	  rtx insn = BB_END (loop->header);
 
 	  fprintf (dump_file, "SMS loop num: %d", loop->num);
-	  dump_insn_locator (insn);
+	  dump_insn_location (insn);
 	  fprintf (dump_file, "\n");
 
 	  print_ddg (dump_file, g);
@@ -1571,7 +1571,7 @@ sms_schedule (void)
 
       if (dump_file)
 	{
-	  dump_insn_locator (tail);
+	  dump_insn_location (tail);
 	  fprintf (dump_file, "\nSMS single-bb-loop\n");
 	  if (profile_info && flag_branch_probabilities)
 	    {
@@ -1714,7 +1714,7 @@ sms_schedule (void)
 
           if (dump_file)
             {
-	      dump_insn_locator (tail);
+	      dump_insn_location (tail);
 	      fprintf (dump_file, " SMS succeeded %d %d (with ii, sc)\n",
 		       ps->ii, stage_count);
 	      print_partial_schedule (ps, dump_file);

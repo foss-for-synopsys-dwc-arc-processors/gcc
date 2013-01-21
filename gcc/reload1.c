@@ -659,14 +659,12 @@ grow_reg_equivs (void)
   int old_size = VEC_length (reg_equivs_t, reg_equivs);
   int max_regno = max_reg_num ();
   int i;
+  reg_equivs_t ze;
 
+  memset (&ze, 0, sizeof (reg_equivs_t));
   VEC_reserve (reg_equivs_t, gc, reg_equivs, max_regno);
   for (i = old_size; i < max_regno; i++)
-    {
-      VEC_quick_insert (reg_equivs_t, reg_equivs, i, 0);
-      memset (VEC_index (reg_equivs_t, reg_equivs, i), 0, sizeof (reg_equivs_t));
-    }
-    
+    VEC_quick_insert (reg_equivs_t, reg_equivs, i, ze);
 }
 
 
@@ -2565,10 +2563,7 @@ eliminate_regs_1 (rtx x, enum machine_mode mem_mode, rtx insn,
 
   switch (code)
     {
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CONST:
     case SYMBOL_REF:
     case CODE_LABEL:
@@ -2982,10 +2977,7 @@ elimination_effects (rtx x, enum machine_mode mem_mode)
 
   switch (code)
     {
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CONST:
     case SYMBOL_REF:
     case CODE_LABEL:
@@ -4453,13 +4445,10 @@ scan_paradoxical_subregs (rtx x)
   switch (code)
     {
     case REG:
-    case CONST_INT:
     case CONST:
     case SYMBOL_REF:
     case LABEL_REF:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR: /* shouldn't happen, but just in case.  */
+    CASE_CONST_ANY:
     case CC0:
     case PC:
     case USE:
@@ -6363,6 +6352,20 @@ choose_reload_regs_init (struct insn_chain *chain, rtx *save_reload_reg_rtx)
 			      rld[i].when_needed, rld[i].mode);
 }
 
+#ifdef SECONDARY_MEMORY_NEEDED
+/* If X is not a subreg, return it unmodified.  If it is a subreg,
+   look up whether we made a replacement for the SUBREG_REG.  Return
+   either the replacement or the SUBREG_REG.  */
+
+static rtx
+replaced_subreg (rtx x)
+{
+  if (GET_CODE (x) == SUBREG)
+    return find_replacement (&SUBREG_REG (x));
+  return x;
+}
+#endif
+
 /* Assign hard reg targets for the pseudo-registers we must reload
    into hard regs for this insn.
    Also output the instructions to copy them in and out of the hard regs.
@@ -6954,6 +6957,9 @@ choose_reload_regs (struct insn_chain *chain)
 	{
 	  int r = reload_order[j];
 	  rtx check_reg;
+#ifdef SECONDARY_MEMORY_NEEDED
+	  rtx tem;
+#endif
 	  if (reload_inherited[r] && rld[r].reg_rtx)
 	    check_reg = rld[r].reg_rtx;
 	  else if (reload_override_in[r]
@@ -6987,8 +6993,28 @@ choose_reload_regs (struct insn_chain *chain)
 	     removal of one reload might allow us to inherit another one.  */
 	  else if (rld[r].in
 		   && rld[r].out != rld[r].in
-		   && remove_address_replacements (rld[r].in) && pass)
-	    pass = 2;
+		   && remove_address_replacements (rld[r].in))
+	    {
+	      if (pass)
+	        pass = 2;
+	    }
+#ifdef SECONDARY_MEMORY_NEEDED
+	  /* If we needed a memory location for the reload, we also have to
+	     remove its related reloads.  */
+	  else if (rld[r].in
+		   && rld[r].out != rld[r].in
+		   && (tem = replaced_subreg (rld[r].in), REG_P (tem))		   
+		   && REGNO (tem) < FIRST_PSEUDO_REGISTER
+		   && SECONDARY_MEMORY_NEEDED (REGNO_REG_CLASS (REGNO (tem)),
+					       rld[r].rclass, rld[r].inmode)
+		   && remove_address_replacements
+		      (get_secondary_mem (tem, rld[r].inmode, rld[r].opnum,
+					  rld[r].when_needed)))
+	    {
+	      if (pass)
+	        pass = 2;
+	    }
+#endif
 	}
     }
 
@@ -8468,20 +8494,6 @@ emit_insn_if_valid_for_reload (rtx insn)
   delete_insns_since (last);
   return NULL;
 }
-
-#ifdef SECONDARY_MEMORY_NEEDED
-/* If X is not a subreg, return it unmodified.  If it is a subreg,
-   look up whether we made a replacement for the SUBREG_REG.  Return
-   either the replacement or the SUBREG_REG.  */
-
-static rtx
-replaced_subreg (rtx x)
-{
-  if (GET_CODE (x) == SUBREG)
-    return find_replacement (&SUBREG_REG (x));
-  return x;
-}
-#endif
 
 /* Emit code to perform a reload from IN (which may be a reload register) to
    OUT (which may also be a reload register).  IN or OUT is from operand

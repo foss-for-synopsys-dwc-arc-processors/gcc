@@ -519,24 +519,6 @@ blocks_in_phiopt_order (void)
 #undef VISITED_P
 }
 
-
-/* Return TRUE if block BB has no executable statements, otherwise return
-   FALSE.  */
-
-bool
-empty_block_p (basic_block bb)
-{
-  /* BB must have no executable statements.  */
-  gimple_stmt_iterator gsi = gsi_after_labels (bb);
-  if (phi_nodes (bb))
-    return false;
-  if (gsi_end_p (gsi))
-    return true;
-  if (is_gimple_debug (gsi_stmt (gsi)))
-    gsi_next_nondebug (&gsi);
-  return gsi_end_p (gsi);
-}
-
 /* Replace PHI node element whose edge is E in block BB with variable NEW.
    Remove the edge from COND_BLOCK which does not lead to BB (COND_BLOCK
    is known to have two edges, one of which must reach BB).  */
@@ -720,9 +702,7 @@ jump_function_from_stmt (tree *arg, gimple stmt)
 						&offset);
       if (tem
 	  && TREE_CODE (tem) == MEM_REF
-	  && double_int_zero_p
-	       (double_int_add (mem_ref_offset (tem),
-				shwi_to_double_int (offset))))
+	  && (mem_ref_offset (tem) + double_int::from_shwi (offset)).is_zero ())
 	{
 	  *arg = TREE_OPERAND (tem, 0);
 	  return true;
@@ -1820,7 +1800,8 @@ hoist_adjacent_loads (basic_block bb0, basic_block bb1,
       gimple_stmt_iterator gsi2;
       basic_block bb_for_def1, bb_for_def2;
 
-      if (gimple_phi_num_args (phi_stmt) != 2)
+      if (gimple_phi_num_args (phi_stmt) != 2
+	  || virtual_operand_p (gimple_phi_result (phi_stmt)))
 	continue;
 
       arg1 = gimple_phi_arg_def (phi_stmt, 0);
@@ -1829,9 +1810,7 @@ hoist_adjacent_loads (basic_block bb0, basic_block bb1,
       if (TREE_CODE (arg1) != SSA_NAME
 	  || TREE_CODE (arg2) != SSA_NAME
 	  || SSA_NAME_IS_DEFAULT_DEF (arg1)
-	  || SSA_NAME_IS_DEFAULT_DEF (arg2)
-	  || !is_gimple_reg (arg1)
-	  || !is_gimple_reg (arg2))
+	  || SSA_NAME_IS_DEFAULT_DEF (arg2))
 	continue;
 
       def1 = SSA_NAME_DEF_STMT (arg1);
@@ -1843,7 +1822,8 @@ hoist_adjacent_loads (basic_block bb0, basic_block bb1,
 
       /* Check the mode of the arguments to be sure a conditional move
 	 can be generated for it.  */
-      if (!optab_handler (cmov_optab, TYPE_MODE (TREE_TYPE (arg1))))
+      if (optab_handler (movcc_optab, TYPE_MODE (TREE_TYPE (arg1)))
+	  == CODE_FOR_nothing)
 	continue;
 
       /* Both statements must be assignments whose RHS is a COMPONENT_REF.  */

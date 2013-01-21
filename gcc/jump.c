@@ -1078,8 +1078,6 @@ mark_jump_label_1 (rtx x, rtx insn, bool in_mem, bool is_target)
     case PC:
     case CC0:
     case REG:
-    case CONST_INT:
-    case CONST_DOUBLE:
     case CLOBBER:
     case CALL:
       return;
@@ -1259,9 +1257,9 @@ delete_related_insns (rtx insn)
 	  && GET_CODE (PATTERN (insn)) == SEQUENCE
 	  && CALL_P (XVECEXP (PATTERN (insn), 0, 0))))
     {
-      rtx p = insn;
+      rtx p;
 
-      for (p = NEXT_INSN (p);
+      for (p = next && INSN_DELETED_P (next) ? NEXT_INSN (next) : next;
 	   p && NOTE_P (p);
 	   p = NEXT_INSN (p))
 	if (NOTE_KIND (p) == NOTE_INSN_CALL_ARG_LOCATION)
@@ -1753,8 +1751,7 @@ rtx_renumbered_equal_p (const_rtx x, const_rtx y)
     case CC0:
     case ADDR_VEC:
     case ADDR_DIFF_VEC:
-    case CONST_INT:
-    case CONST_DOUBLE:
+    CASE_CONST_UNIQUE:
       return 0;
 
     case LABEL_REF:
@@ -1818,8 +1815,7 @@ rtx_renumbered_equal_p (const_rtx x, const_rtx y)
 	  if (XINT (x, i) != XINT (y, i))
 	    {
 	      if (((code == ASM_OPERANDS && i == 6)
-		   || (code == ASM_INPUT && i == 1))
-		  && locator_eq (XINT (x, i), XINT (y, i)))
+		   || (code == ASM_INPUT && i == 1)))
 		break;
 	      return 0;
 	    }

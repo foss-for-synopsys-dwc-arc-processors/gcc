@@ -1,5 +1,5 @@
 /* Perform doloop optimizations
-   Copyright (C) 2004, 2005, 2006, 2007, 2008, 2010
+   Copyright (C) 2004, 2005, 2006, 2007, 2008, 2010, 2012
    Free Software Foundation, Inc.
    Based on code by Michael P. Hayes (m.hayes@elec.canterbury.ac.nz)
 
@@ -34,7 +34,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "params.h"
 #include "target.h"
 #include "dumpfile.h"
-#include "optabs.h"
 
 /* This module is used to modify loops with a determinable number of
    iterations to use special low-overhead looping instructions.
@@ -255,92 +254,22 @@ doloop_condition_get (rtx doloop_pat)
   return 0;
 }
 
-static bool add_test (rtx cond, edge *e, basic_block dest, edge *);
+/* Return nonzero if the loop specified by LOOP is suitable for
+   the use of special low-overhead looping instructions.  DESC
+   describes the number of iterations of the loop.  */
 
-/* Check if the loop specified by LOOP is suitable for
-   the use of special low-overhead looping instructions.
-   If necessary to properly implement infinite loops, this may cause
-   a new enclosing loop to be formed.  Returns the (possible changed)
-   loop structure pointer on success, else NULL.
-   DESC describes the number of iterations of the loop.  */
-
-static struct loop *
-validize_doloop (struct loop *loop, struct niter_desc *desc)
+static bool
+doloop_valid_p (struct loop *loop, struct niter_desc *desc)
 {
   basic_block *body = get_loop_body (loop), bb;
   rtx insn;
   unsigned i;
   bool result = true;
-  rtx list;
-  edge out_edge;
 
   /* Check for loops that may not terminate under special conditions.  */
   if (!desc->simple_p
       || desc->assumptions
-      || (desc->infinite
-	  && (EDGE_COUNT (loop->latch->preds) != 1
-	      || !optimize_loop_for_speed_p (loop))))
-    result = false;
-  if (desc->infinite)
-    {
-      edge e, latch_in;
-      edge_iterator ei;
-      rtx insn;
-
-      /* We want to set out_edge to the edge that is used to exit the loop
-	 if the loop count is exhausted.  For now, only handle the case
-	 of a single exit.  */
-      out_edge = NULL;
-      if (single_pred_p (loop->latch))
-	{
-	  latch_in = single_pred_edge (loop->latch);
-	  FOR_EACH_EDGE (e, ei, latch_in->src->succs)
-	    if (e == latch_in)
-	      ; /* do nothing */
-	    else if (!out_edge)
-	      out_edge = e;
-	    else
-	      result = false;
-	}
-      if (!out_edge)
-	result = false;
-      else if (dump_file)
-	fprintf (dump_file, "Doloop: considering putting infinite loop"
-		 " instructions on edge from %d to %d.\n",
-		 out_edge->src->index, out_edge->dest->index);
-      /* The (non-jump) instructions in the current loop latch shoould be
-	 copied int othe new loop latch cf. gcc.c-torture/execute/pr27285.c .
-	 For now, just punt when we see any insns in the latch.  */
-      FOR_BB_INSNS (loop->latch, insn)
-	if (NONJUMP_INSN_P (insn))
-	  {
-	    result = false;
-	    break;
-	  }
-	 
-    }
-  /* check_simple_exit can create conditions that do_compare_and_jump_rtx
-     can't grok.  */
-  for (list = desc->infinite; list; list = XEXP (list, 1))
-    {
-      rtx cond = XEXP (list, 0);
-      enum machine_mode mode;
-
-      if (!BINARY_P (cond))
-	{
-	  result = false;
-	  break;
-	}
-      mode = GET_MODE (XEXP (cond, 0));
-      if (mode == VOIDmode)
-	mode = GET_MODE (XEXP (cond, 1));
-
-      if (GET_MODE_CLASS (mode) == MODE_INT
-	  && !can_compare_p (GET_CODE (cond), mode, ccp_jump)
-	  && !COMPARISON_P (cond))
-	result = false;
-    }
-  if (!result)
+      || desc->infinite)
     {
       /* There are some cases that would require a special attention.
 	 For example if the comparison is LEU and the comparison value
@@ -392,84 +321,27 @@ validize_doloop (struct loop *loop, struct niter_desc *desc)
 	    }
 	}
     }
-  if (desc->infinite)
-    {
-      basic_block header = loop->header;
-      basic_block latch;
-      struct loop *new_loop;
-
-      gcc_assert (loops_state_satisfies_p (LOOPS_HAVE_PREHEADERS));
-	{
-	  edge latch_edge = single_succ_edge (loop->latch);
-	  edge in_edge;
-
-	  gcc_assert (EDGE_COUNT (header->preds) == 2);
-	  gcc_assert (latch_edge->dest == header);
-	  if (dump_file)
-	    fprintf (dump_file,
-		     "Doloop: infinite loop generation: latch %d header %d\n",
-		      loop->latch->index, header->index);
-	  in_edge = EDGE_PRED (header, 0);
-	  if (in_edge == latch_edge)
-	    in_edge = EDGE_PRED (header, 1);
-	  else
-	    gcc_assert (latch_edge == EDGE_PRED (header, 1));
-	  gcc_assert (in_edge != out_edge);
-	  header = split_edge (in_edge);
-	  set_immediate_dominator (CDI_DOMINATORS, loop->header, header);
-	  remove_bb_from_loops (header);
-	  add_bb_to_loop (header, loop);
-#if 0 /* For debugging, insert a marker insn.  */
-	  emit_insn_after (gen_unimp_s (GEN_INT (1)), BB_END (header));
-#endif
-	}
-      for (latch = header, list = desc->infinite; list; list = XEXP (list, 1))
-	{
-	  edge new_latch_edge = out_edge;
-
-	  add_test (XEXP (list, 0), &out_edge, latch, &new_latch_edge);
-	  remove_bb_from_loops (out_edge->src);
-	  add_bb_to_loop (out_edge->src, loop);
-	  if (latch == header)
-	    {
-	      latch = split_edge (new_latch_edge);
-	      remove_bb_from_loops (latch);
-	      add_bb_to_loop (latch, loop);
-#if 0 /* For debugging, insert a marker insn.  */
-	      emit_insn_after (gen_trap_s (GEN_INT (42)), BB_END (latch));
-#endif
-	    }
-	}
-      new_loop = alloc_loop ();
-      new_loop->header = loop->header;
-      new_loop->latch = loop->latch;
-      loop->header = header;
-      loop->latch = latch;
-      add_loop (new_loop, loop);
-      loop = new_loop;
-    }
+  result = true;
 
 cleanup:
   free (body);
 
-  return result ? loop : 0;
+  return result;
 }
 
 /* Adds test of COND jumping to DEST on edge *E and set *E to the new fallthru
    edge.  If the condition is always false, do not do anything.  If it is always
    true, redirect E to DEST and return false.  In all other cases, true is
-   returned.
-   If EDGEP is non-null, assign the any newly created edge to it.  */
+   returned.  */
 
 static bool
-add_test (rtx cond, edge *e, basic_block dest, edge *edgep)
+add_test (rtx cond, edge *e, basic_block dest)
 {
   rtx seq, jump, label;
   enum machine_mode mode;
   rtx op0 = XEXP (cond, 0), op1 = XEXP (cond, 1);
   enum rtx_code code = GET_CODE (cond);
   basic_block bb;
-  edge new_edge;
 
   mode = GET_MODE (XEXP (cond, 0));
   if (mode == VOIDmode)
@@ -514,9 +386,7 @@ add_test (rtx cond, edge *e, basic_block dest, edge *edgep)
 
   LABEL_NUSES (label)++;
 
-  new_edge = make_edge (bb, dest, (*e)->flags & ~EDGE_FALLTHRU);
-  if (edgep)
-    *edgep = new_edge;
+  make_edge (bb, dest, (*e)->flags & ~EDGE_FALLTHRU);
   return true;
 }
 
@@ -540,6 +410,7 @@ doloop_modify (struct loop *loop, struct niter_desc *desc,
   basic_block loop_end = desc->out_edge->src;
   enum machine_mode mode;
   rtx true_prob_val;
+  double_int iterations;
 
   jump_insn = BB_END (loop_end);
 
@@ -590,9 +461,10 @@ doloop_modify (struct loop *loop, struct niter_desc *desc,
 
       /* Determine if the iteration counter will be non-negative.
 	 Note that the maximum value loaded is iterations_max - 1.  */
-      if (desc->niter_max
-	  <= ((unsigned HOST_WIDEST_INT) 1
-	      << (GET_MODE_PRECISION (mode) - 1)))
+      if (max_loop_iterations (loop, &iterations)
+	  && (iterations.ule (double_int_one.llshift
+			       (GET_MODE_PRECISION (mode) - 1,
+				GET_MODE_PRECISION (mode)))))
 	nonneg = 1;
       break;
 
@@ -632,7 +504,7 @@ doloop_modify (struct loop *loop, struct niter_desc *desc,
 
       te = single_succ_edge (preheader);
       for (; ass; ass = XEXP (ass, 1))
-	if (!add_test (XEXP (ass, 0), &te, set_zero, NULL))
+	if (!add_test (XEXP (ass, 0), &te, set_zero))
 	  break;
 
       if (ass)
@@ -678,9 +550,17 @@ doloop_modify (struct loop *loop, struct niter_desc *desc,
   {
     rtx init;
     unsigned level = get_loop_level (loop) + 1;
+    double_int iter;
+    rtx iter_rtx;
+
+    if (!max_loop_iterations (loop, &iter)
+	|| !iter.fits_shwi ())
+      iter_rtx = const0_rtx;
+    else
+      iter_rtx = GEN_INT (iter.to_shwi());
     init = gen_doloop_begin (counter_reg,
 			     desc->const_iter ? desc->niter_expr : const0_rtx,
-			     GEN_INT (desc->niter_max),
+			     iter_rtx,
 			     GEN_INT (level),
 			     doloop_seq);
     if (init)
@@ -739,6 +619,7 @@ doloop_optimize (struct loop *loop)
   struct niter_desc *desc;
   unsigned word_mode_size;
   unsigned HOST_WIDE_INT word_mode_max;
+  double_int iter;
   int entered_at_top;
 
   if (dump_file)
@@ -750,8 +631,7 @@ doloop_optimize (struct loop *loop)
   desc = get_simple_loop_desc (loop);
 
   /* Check that loop is a candidate for a low-overhead looping insn.  */
-  loop = validize_doloop (loop, desc);
-  if (!loop)
+  if (!doloop_valid_p (loop, desc))
     {
       if (dump_file)
 	fprintf (dump_file,
@@ -791,7 +671,11 @@ doloop_optimize (struct loop *loop)
 
   count = copy_rtx (desc->niter_expr);
   iterations = desc->const_iter ? desc->niter_expr : const0_rtx;
-  iterations_max = GEN_INT (desc->niter_max);
+  if (!max_loop_iterations (loop, &iter)
+      || !iter.fits_shwi ())
+    iterations_max = const0_rtx;
+  else
+    iterations_max = GEN_INT (iter.to_shwi());
   level = get_loop_level (loop) + 1;
 
   /* Generate looping insn.  If the pattern FAILs then give up trying
@@ -799,7 +683,8 @@ doloop_optimize (struct loop *loop)
      not like.  */
   start_label = block_label (desc->in_edge->dest);
   doloop_reg = gen_reg_rtx (mode);
-  entered_at_top = loop_preheader_edge (loop)->dest == desc->in_edge->dest;
+  entered_at_top = (loop->latch == desc->in_edge->dest
+		    && contains_no_active_insn_p (loop->latch));
   doloop_seq = gen_doloop_end (doloop_reg, iterations, iterations_max,
 			       GEN_INT (level), start_label,
 			       GEN_INT (entered_at_top));
@@ -813,7 +698,7 @@ doloop_optimize (struct loop *loop)
 	 computed, we must be sure that the number of iterations fits into
 	 the new mode.  */
       && (word_mode_size >= GET_MODE_PRECISION (mode)
-	  || desc->niter_max <= word_mode_max))
+	  || iter.ule (double_int::from_shwi (word_mode_max))))
     {
       if (word_mode_size > GET_MODE_PRECISION (mode))
 	{

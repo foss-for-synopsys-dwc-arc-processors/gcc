@@ -154,13 +154,15 @@ canonicalize_constructor_val (tree cval, tree from_decl)
     }
   if (TREE_CODE (cval) == ADDR_EXPR)
     {
-      tree base = get_base_address (TREE_OPERAND (cval, 0));
-      if (!base && TREE_CODE (TREE_OPERAND (cval, 0)) == COMPOUND_LITERAL_EXPR)
+      tree base = NULL_TREE;
+      if (TREE_CODE (TREE_OPERAND (cval, 0)) == COMPOUND_LITERAL_EXPR)
 	{
 	  base = COMPOUND_LITERAL_EXPR_DECL (TREE_OPERAND (cval, 0));
 	  if (base)
 	    TREE_OPERAND (cval, 0) = base;
 	}
+      else
+	base = get_base_address (TREE_OPERAND (cval, 0));
       if (!base)
 	return NULL_TREE;
 
@@ -735,6 +737,11 @@ get_maxval_strlen (tree arg, tree *length, bitmap visited, int type)
       *length = val;
       return true;
     }
+
+  /* If ARG is registered for SSA update we cannot look at its defining
+     statement.  */
+  if (name_registered_for_update_p (arg))
+    return false;
 
   /* If we were already here, break the infinite cycle.  */
   if (!bitmap_set_bit (visited, SSA_NAME_VERSION (arg)))
@@ -1685,6 +1692,8 @@ static tree
 and_comparisons_1 (enum tree_code code1, tree op1a, tree op1b,
 		   enum tree_code code2, tree op2a, tree op2b)
 {
+  tree truth_type = truth_type_for (TREE_TYPE (op1a));
+
   /* First check for ((x CODE1 y) AND (x CODE2 y)).  */
   if (operand_equal_p (op1a, op2a, 0)
       && operand_equal_p (op1b, op2b, 0))
@@ -1692,7 +1701,7 @@ and_comparisons_1 (enum tree_code code1, tree op1a, tree op1b,
       /* Result will be either NULL_TREE, or a combined comparison.  */
       tree t = combine_comparisons (UNKNOWN_LOCATION,
 				    TRUTH_ANDIF_EXPR, code1, code2,
-				    boolean_type_node, op1a, op1b);
+				    truth_type, op1a, op1b);
       if (t)
 	return t;
     }
@@ -1705,7 +1714,7 @@ and_comparisons_1 (enum tree_code code1, tree op1a, tree op1b,
       tree t = combine_comparisons (UNKNOWN_LOCATION,
 				    TRUTH_ANDIF_EXPR, code1,
 				    swap_tree_comparison (code2),
-				    boolean_type_node, op1a, op1b);
+				    truth_type, op1a, op1b);
       if (t)
 	return t;
     }
@@ -2147,6 +2156,8 @@ static tree
 or_comparisons_1 (enum tree_code code1, tree op1a, tree op1b,
 		  enum tree_code code2, tree op2a, tree op2b)
 {
+  tree truth_type = truth_type_for (TREE_TYPE (op1a));
+
   /* First check for ((x CODE1 y) OR (x CODE2 y)).  */
   if (operand_equal_p (op1a, op2a, 0)
       && operand_equal_p (op1b, op2b, 0))
@@ -2154,7 +2165,7 @@ or_comparisons_1 (enum tree_code code1, tree op1a, tree op1b,
       /* Result will be either NULL_TREE, or a combined comparison.  */
       tree t = combine_comparisons (UNKNOWN_LOCATION,
 				    TRUTH_ORIF_EXPR, code1, code2,
-				    boolean_type_node, op1a, op1b);
+				    truth_type, op1a, op1b);
       if (t)
 	return t;
     }
@@ -2167,7 +2178,7 @@ or_comparisons_1 (enum tree_code code1, tree op1a, tree op1b,
       tree t = combine_comparisons (UNKNOWN_LOCATION,
 				    TRUTH_ORIF_EXPR, code1,
 				    swap_tree_comparison (code2),
-				    boolean_type_node, op1a, op1b);
+				    truth_type, op1a, op1b);
       if (t)
 	return t;
     }
@@ -2802,32 +2813,28 @@ fold_array_ctor_reference (tree type, tree ctor,
      be larger than size of array element.  */
   if (!TYPE_SIZE_UNIT (type)
       || TREE_CODE (TYPE_SIZE_UNIT (type)) != INTEGER_CST
-      || double_int_cmp (elt_size,
-			 tree_to_double_int (TYPE_SIZE_UNIT (type)), 0) < 0)
+      || elt_size.slt (tree_to_double_int (TYPE_SIZE_UNIT (type))))
     return NULL_TREE;
 
   /* Compute the array index we look for.  */
-  access_index = double_int_udiv (uhwi_to_double_int (offset / BITS_PER_UNIT),
-				  elt_size, TRUNC_DIV_EXPR);
-  access_index = double_int_add (access_index, low_bound);
+  access_index = double_int::from_uhwi (offset / BITS_PER_UNIT)
+		 .udiv (elt_size, TRUNC_DIV_EXPR);
+  access_index += low_bound;
   if (index_type)
-    access_index = double_int_ext (access_index,
-				   TYPE_PRECISION (index_type),
-				   TYPE_UNSIGNED (index_type));
+    access_index = access_index.ext (TYPE_PRECISION (index_type),
+				     TYPE_UNSIGNED (index_type));
 
   /* And offset within the access.  */
-  inner_offset = offset % (double_int_to_uhwi (elt_size) * BITS_PER_UNIT);
+  inner_offset = offset % (elt_size.to_uhwi () * BITS_PER_UNIT);
 
   /* See if the array field is large enough to span whole access.  We do not
      care to fold accesses spanning multiple array indexes.  */
-  if (inner_offset + size > double_int_to_uhwi (elt_size) * BITS_PER_UNIT)
+  if (inner_offset + size > elt_size.to_uhwi () * BITS_PER_UNIT)
     return NULL_TREE;
 
-  index = double_int_sub (low_bound, double_int_one);
+  index = low_bound - double_int_one;
   if (index_type)
-    index = double_int_ext (index,
-			    TYPE_PRECISION (index_type),
-			    TYPE_UNSIGNED (index_type));
+    index = index.ext (TYPE_PRECISION (index_type), TYPE_UNSIGNED (index_type));
 
   FOR_EACH_CONSTRUCTOR_ELT (CONSTRUCTOR_ELTS (ctor), cnt, cfield, cval)
     {
@@ -2847,17 +2854,16 @@ fold_array_ctor_reference (tree type, tree ctor,
 	}
       else
 	{
-	  index = double_int_add (index, double_int_one);
+	  index += double_int_one;
 	  if (index_type)
-	    index = double_int_ext (index,
-				    TYPE_PRECISION (index_type),
-				    TYPE_UNSIGNED (index_type));
+	    index = index.ext (TYPE_PRECISION (index_type),
+			       TYPE_UNSIGNED (index_type));
 	  max_index = index;
 	}
 
       /* Do we have match?  */
-      if (double_int_cmp (access_index, index, 1) >= 0
-	  && double_int_cmp (access_index, max_index, 1) <= 0)
+      if (access_index.cmp (index, 1) >= 0
+	  && access_index.cmp (max_index, 1) <= 0)
 	return fold_ctor_reference (type, cval, inner_offset, size,
 				    from_decl);
     }
@@ -2886,7 +2892,7 @@ fold_nonarray_ctor_reference (tree type, tree ctor,
       tree field_size = DECL_SIZE (cfield);
       double_int bitoffset;
       double_int byte_offset_cst = tree_to_double_int (byte_offset);
-      double_int bits_per_unit_cst = uhwi_to_double_int (BITS_PER_UNIT);
+      double_int bits_per_unit_cst = double_int::from_uhwi (BITS_PER_UNIT);
       double_int bitoffset_end, access_end;
 
       /* Variable sized objects in static constructors makes no sense,
@@ -2898,37 +2904,33 @@ fold_nonarray_ctor_reference (tree type, tree ctor,
 		      : TREE_CODE (TREE_TYPE (cfield)) == ARRAY_TYPE));
 
       /* Compute bit offset of the field.  */
-      bitoffset = double_int_add (tree_to_double_int (field_offset),
-				  double_int_mul (byte_offset_cst,
-						  bits_per_unit_cst));
+      bitoffset = tree_to_double_int (field_offset)
+		  + byte_offset_cst * bits_per_unit_cst;
       /* Compute bit offset where the field ends.  */
       if (field_size != NULL_TREE)
-	bitoffset_end = double_int_add (bitoffset,
-					tree_to_double_int (field_size));
+	bitoffset_end = bitoffset + tree_to_double_int (field_size);
       else
 	bitoffset_end = double_int_zero;
 
-      access_end = double_int_add (uhwi_to_double_int (offset),
-				   uhwi_to_double_int (size));
+      access_end = double_int::from_uhwi (offset)
+		   + double_int::from_uhwi (size);
 
       /* Is there any overlap between [OFFSET, OFFSET+SIZE) and
 	 [BITOFFSET, BITOFFSET_END)?  */
-      if (double_int_cmp (access_end, bitoffset, 0) > 0
+      if (access_end.cmp (bitoffset, 0) > 0
 	  && (field_size == NULL_TREE
-	      || double_int_cmp (uhwi_to_double_int (offset),
-				 bitoffset_end, 0) < 0))
+	      || double_int::from_uhwi (offset).slt (bitoffset_end)))
 	{
-	  double_int inner_offset = double_int_sub (uhwi_to_double_int (offset),
-						    bitoffset);
+	  double_int inner_offset = double_int::from_uhwi (offset) - bitoffset;
 	  /* We do have overlap.  Now see if field is large enough to
 	     cover the access.  Give up for accesses spanning multiple
 	     fields.  */
-	  if (double_int_cmp (access_end, bitoffset_end, 0) > 0)
+	  if (access_end.cmp (bitoffset_end, 0) > 0)
 	    return NULL_TREE;
-	  if (double_int_cmp (uhwi_to_double_int (offset), bitoffset, 0) < 0)
+	  if (double_int::from_uhwi (offset).slt (bitoffset))
 	    return NULL_TREE;
 	  return fold_ctor_reference (type, cval,
-				      double_int_to_uhwi (inner_offset), size,
+				      inner_offset.to_uhwi (), size,
 				      from_decl);
 	}
     }
@@ -3023,13 +3025,11 @@ fold_const_aggregate_ref_1 (tree t, tree (*valueize) (tree))
 	       TREE_CODE (low_bound) == INTEGER_CST)
 	      && (unit_size = array_ref_element_size (t),
 		  host_integerp (unit_size, 1))
-	      && (doffset = double_int_sext
-			    (double_int_sub (TREE_INT_CST (idx),
-					     TREE_INT_CST (low_bound)),
-			     TYPE_PRECISION (TREE_TYPE (idx))),
-		  double_int_fits_in_shwi_p (doffset)))
+	      && (doffset = (TREE_INT_CST (idx) - TREE_INT_CST (low_bound))
+			    .sext (TYPE_PRECISION (TREE_TYPE (idx))),
+		  doffset.fits_shwi ()))
 	    {
-	      offset = double_int_to_shwi (doffset);
+	      offset = doffset.to_shwi ();
 	      offset *= TREE_INT_CST_LOW (unit_size);
 	      offset *= BITS_PER_UNIT;
 

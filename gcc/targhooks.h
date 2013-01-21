@@ -142,7 +142,7 @@ extern tree default_mangle_decl_assembler_name (tree, tree);
 extern tree default_emutls_var_fields (tree, tree *);
 extern tree default_emutls_var_init (tree, tree, tree);
 extern bool default_hard_regno_scratch_ok (unsigned int);
-extern bool default_mode_dependent_address_p (const_rtx addr);
+extern bool default_mode_dependent_address_p (const_rtx, addr_space_t);
 extern bool default_target_option_valid_attribute_p (tree, tree, tree, int);
 extern bool default_target_option_pragma_parse (tree, tree);
 extern bool default_target_can_inline_p (tree, tree);
@@ -189,3 +189,4 @@ extern const char *default_pch_valid_p (const void *, size_t);
 
 extern void default_asm_output_ident_directive (const char*);
 
+extern bool default_member_type_forces_blk (const_tree, enum machine_mode);

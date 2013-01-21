@@ -37,6 +37,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "lto-streamer.h"
 #include "data-streamer.h"
 #include "tree-streamer.h"
+#include "params.h"
 
 
 /* Intermediate information about a parameter that is only useful during the
@@ -94,7 +95,7 @@ ipa_populate_param_decls (struct cgraph_node *node,
   for (parm = fnargs; parm; parm = DECL_CHAIN (parm))
     {
       VEC_index (ipa_param_descriptor_t,
-		 info->descriptors, param_num)->decl = parm;
+		 info->descriptors, param_num).decl = parm;
       param_num++;
     }
 }
@@ -286,6 +287,31 @@ ipa_print_all_jump_functions (FILE *f)
     }
 }
 
+/* Worker for prune_expression_for_jf.  */
+
+static tree
+prune_expression_for_jf_1 (tree *tp, int *walk_subtrees, void *)
+{
+  if (EXPR_P (*tp))
+    SET_EXPR_LOCATION (*tp, UNKNOWN_LOCATION);
+  else
+    *walk_subtrees = 0;
+  return NULL_TREE;
+}
+
+/* Return the expression tree EXPR unshared and with location stripped off.  */
+
+static tree
+prune_expression_for_jf (tree exp)
+{
+  if (EXPR_P (exp))
+    {
+      exp = unshare_expr (exp);
+      walk_tree (&exp, prune_expression_for_jf_1, NULL, NULL);
+    }
+  return exp;
+}
+
 /* Set JFUNC to be a known type jump function.  */
 
 static void
@@ -303,8 +329,11 @@ ipa_set_jf_known_type (struct ipa_jump_func *jfunc, HOST_WIDE_INT offset,
 static void
 ipa_set_jf_constant (struct ipa_jump_func *jfunc, tree constant)
 {
+  constant = unshare_expr (constant);
+  if (constant && EXPR_P (constant))
+    SET_EXPR_LOCATION (constant, UNKNOWN_LOCATION);
   jfunc->type = IPA_JF_CONST;
-  jfunc->value.constant = constant;
+  jfunc->value.constant = prune_expression_for_jf (constant);
 }
 
 /* Set JFUNC to be a simple pass-through jump function.  */
@@ -326,7 +355,7 @@ ipa_set_jf_arith_pass_through (struct ipa_jump_func *jfunc, int formal_id,
 			       tree operand, enum tree_code operation)
 {
   jfunc->type = IPA_JF_PASS_THROUGH;
-  jfunc->value.pass_through.operand = operand;
+  jfunc->value.pass_through.operand = prune_expression_for_jf (operand);
   jfunc->value.pass_through.formal_id = formal_id;
   jfunc->value.pass_through.operation = operation;
   jfunc->value.pass_through.agg_preserved = false;
@@ -1145,9 +1174,6 @@ get_ssa_def_if_simple_copy (tree rhs)
   return rhs;
 }
 
-/* TODO: Turn this into a PARAM.  */
-#define IPA_MAX_AFF_JF_ITEMS 16
-
 /* Simple linked list, describing known contents of an aggregate beforere
    call.  */
 
@@ -1327,8 +1353,8 @@ determine_known_aggregate_parts (gimple call, tree arg,
       *p = n;
 
       item_count++;
-      if (const_count == IPA_MAX_AFF_JF_ITEMS
-	  || item_count == 2 * IPA_MAX_AFF_JF_ITEMS)
+      if (const_count == PARAM_VALUE (PARAM_IPA_MAX_AGG_ITEMS)
+	  || item_count == 2 * PARAM_VALUE (PARAM_IPA_MAX_AGG_ITEMS))
 	break;
     }
 
@@ -1344,11 +1370,10 @@ determine_known_aggregate_parts (gimple call, tree arg,
 	{
 	  if (list->constant)
 	    {
-	      struct ipa_agg_jf_item *item;
-	      item = VEC_quick_push (ipa_agg_jf_item_t,
-				     jfunc->agg.items, NULL);
-	      item->offset = list->offset - arg_offset;
-	      item->value = list->constant;
+	      struct ipa_agg_jf_item item;
+	      item.offset = list->offset - arg_offset;
+	      item.value = prune_expression_for_jf (list->constant);
+	      VEC_quick_push (ipa_agg_jf_item_t, jfunc->agg.items, item);
 	    }
 	  list = list->next;
 	}
@@ -1916,7 +1941,6 @@ ipa_analyze_node (struct cgraph_node *node)
   ipa_check_create_edge_args ();
   info = IPA_NODE_REF (node);
   push_cfun (DECL_STRUCT_FUNCTION (node->symbol.decl));
-  current_function_decl = node->symbol.decl;
   ipa_initialize_node_params (node);
 
   param_count = ipa_get_param_count (info);
@@ -1934,7 +1958,6 @@ ipa_analyze_node (struct cgraph_node *node)
 	BITMAP_FREE (parms_ainfo[i].pt_visited_statements);
     }
 
-  current_function_decl = NULL;
   pop_cfun ();
 }
 
@@ -2439,10 +2462,10 @@ ipa_edge_duplication_hook (struct cgraph_edge *src, struct cgraph_edge *dst,
 				       old_args->jump_functions);
 
   for (i = 0; i < VEC_length (ipa_jump_func_t, old_args->jump_functions); i++)
-    VEC_index (ipa_jump_func_t, new_args->jump_functions, i)->agg.items
+    VEC_index (ipa_jump_func_t, new_args->jump_functions, i).agg.items
       = VEC_copy (ipa_agg_jf_item_t, gc,
 		  VEC_index (ipa_jump_func_t,
-			     old_args->jump_functions, i)->agg.items);
+			     old_args->jump_functions, i).agg.items);
 }
 
 /* Hook that is called by cgraph.c when a node is duplicated.  */
@@ -2672,7 +2695,7 @@ ipa_modify_formal_parameters (tree fndecl, ipa_parm_adjustment_vec adjustments,
       struct ipa_parm_adjustment *adj;
       gcc_assert (link);
 
-      adj = VEC_index (ipa_parm_adjustment_t, adjustments, i);
+      adj = &VEC_index (ipa_parm_adjustment_t, adjustments, i);
       parm = VEC_index (tree, oparms, adj->base_index);
       adj->base = parm;
 
@@ -2738,8 +2761,8 @@ ipa_modify_formal_parameters (tree fndecl, ipa_parm_adjustment_vec adjustments,
      When we are asked to remove it, we need to build new FUNCTION_TYPE
      instead.  */
   if (TREE_CODE (orig_type) != METHOD_TYPE
-       || (VEC_index (ipa_parm_adjustment_t, adjustments, 0)->copy_param
-	 && VEC_index (ipa_parm_adjustment_t, adjustments, 0)->base_index == 0))
+       || (VEC_index (ipa_parm_adjustment_t, adjustments, 0).copy_param
+	  && VEC_index (ipa_parm_adjustment_t, adjustments, 0).base_index == 0))
     {
       new_type = build_distinct_type_copy (orig_type);
       TYPE_ARG_TYPES (new_type) = new_reversed;
@@ -2806,7 +2829,7 @@ ipa_modify_call_arguments (struct cgraph_edge *cs, gimple stmt,
     {
       struct ipa_parm_adjustment *adj;
 
-      adj = VEC_index (ipa_parm_adjustment_t, adjustments, i);
+      adj = &VEC_index (ipa_parm_adjustment_t, adjustments, i);
 
       if (adj->copy_param)
 	{
@@ -2887,8 +2910,8 @@ ipa_modify_call_arguments (struct cgraph_edge *cs, gimple stmt,
 	      unsigned HOST_WIDE_INT misalign;
 
 	      get_pointer_alignment_1 (base, &align, &misalign);
-	      misalign += (double_int_sext (tree_to_double_int (off),
-					    TYPE_PRECISION (TREE_TYPE (off))).low
+	      misalign += (tree_to_double_int (off)
+			   .sext (TYPE_PRECISION (TREE_TYPE (off))).low
 			   * BITS_PER_UNIT);
 	      misalign = misalign & (align - 1);
 	      if (misalign != 0)
@@ -2989,7 +3012,7 @@ index_in_adjustments_multiple_times_p (int base_index,
   for (i = 0; i < len; i++)
     {
       struct ipa_parm_adjustment *adj;
-      adj = VEC_index (ipa_parm_adjustment_t, adjustments, i);
+      adj = &VEC_index (ipa_parm_adjustment_t, adjustments, i);
 
       if (adj->base_index == base_index)
 	{
@@ -3020,59 +3043,58 @@ ipa_combine_adjustments (ipa_parm_adjustment_vec inner,
   for (i = 0; i < inlen; i++)
     {
       struct ipa_parm_adjustment *n;
-      n = VEC_index (ipa_parm_adjustment_t, inner, i);
+      n = &VEC_index (ipa_parm_adjustment_t, inner, i);
 
       if (n->remove_param)
 	removals++;
       else
-	VEC_quick_push (ipa_parm_adjustment_t, tmp, n);
+	VEC_quick_push (ipa_parm_adjustment_t, tmp, *n);
     }
 
   adjustments = VEC_alloc (ipa_parm_adjustment_t, heap, outlen + removals);
   for (i = 0; i < outlen; i++)
     {
-      struct ipa_parm_adjustment *r;
-      struct ipa_parm_adjustment *out = VEC_index (ipa_parm_adjustment_t,
-						   outer, i);
-      struct ipa_parm_adjustment *in = VEC_index (ipa_parm_adjustment_t, tmp,
-						  out->base_index);
+      struct ipa_parm_adjustment r;
+      struct ipa_parm_adjustment *out = &VEC_index (ipa_parm_adjustment_t,
+						    outer, i);
+      struct ipa_parm_adjustment *in = &VEC_index (ipa_parm_adjustment_t, tmp,
+						   out->base_index);
 
+      memset (&r, 0, sizeof (r));
       gcc_assert (!in->remove_param);
       if (out->remove_param)
 	{
 	  if (!index_in_adjustments_multiple_times_p (in->base_index, tmp))
 	    {
-	      r = VEC_quick_push (ipa_parm_adjustment_t, adjustments, NULL);
-	      memset (r, 0, sizeof (*r));
-	      r->remove_param = true;
+	      r.remove_param = true;
+	      VEC_quick_push (ipa_parm_adjustment_t, adjustments, r);
 	    }
 	  continue;
 	}
 
-      r = VEC_quick_push (ipa_parm_adjustment_t, adjustments, NULL);
-      memset (r, 0, sizeof (*r));
-      r->base_index = in->base_index;
-      r->type = out->type;
+      r.base_index = in->base_index;
+      r.type = out->type;
 
       /* FIXME:  Create nonlocal value too.  */
 
       if (in->copy_param && out->copy_param)
-	r->copy_param = true;
+	r.copy_param = true;
       else if (in->copy_param)
-	r->offset = out->offset;
+	r.offset = out->offset;
       else if (out->copy_param)
-	r->offset = in->offset;
+	r.offset = in->offset;
       else
-	r->offset = in->offset + out->offset;
+	r.offset = in->offset + out->offset;
+      VEC_quick_push (ipa_parm_adjustment_t, adjustments, r);
     }
 
   for (i = 0; i < inlen; i++)
     {
-      struct ipa_parm_adjustment *n = VEC_index (ipa_parm_adjustment_t,
-						 inner, i);
+      struct ipa_parm_adjustment *n = &VEC_index (ipa_parm_adjustment_t,
+						  inner, i);
 
       if (n->remove_param)
-	VEC_quick_push (ipa_parm_adjustment_t, adjustments, n);
+	VEC_quick_push (ipa_parm_adjustment_t, adjustments, *n);
     }
 
   VEC_free (ipa_parm_adjustment_t, heap, tmp);
@@ -3094,7 +3116,7 @@ ipa_dump_param_adjustments (FILE *file, ipa_parm_adjustment_vec adjustments,
   for (i = 0; i < len; i++)
     {
       struct ipa_parm_adjustment *adj;
-      adj = VEC_index (ipa_parm_adjustment_t, adjustments, i);
+      adj = &VEC_index (ipa_parm_adjustment_t, adjustments, i);
 
       if (!first)
 	fprintf (file, "                 ");
@@ -3154,6 +3176,8 @@ ipa_write_jump_function (struct output_block *ob,
       stream_write_tree (ob, jump_func->value.known_type.component_type, true);
       break;
     case IPA_JF_CONST:
+      gcc_assert (
+	  EXPR_LOCATION (jump_func->value.constant) == UNKNOWN_LOCATION);
       stream_write_tree (ob, jump_func->value.constant, true);
       break;
     case IPA_JF_PASS_THROUGH:
@@ -3240,11 +3264,10 @@ ipa_read_jump_function (struct lto_input_block *ib,
     }
   for (i = 0; i < count; i++)
     {
-      struct ipa_agg_jf_item *item = VEC_quick_push (ipa_agg_jf_item_t,
-				       jump_func->agg.items, NULL);
-
-      item->offset = streamer_read_uhwi (ib);
-      item->value = stream_read_tree (ib, data_in);
+      struct ipa_agg_jf_item item;
+      item.offset = streamer_read_uhwi (ib);
+      item.value = stream_read_tree (ib, data_in);
+      VEC_quick_push (ipa_agg_jf_item_t, jump_func->agg.items, item);
     }
 }
 

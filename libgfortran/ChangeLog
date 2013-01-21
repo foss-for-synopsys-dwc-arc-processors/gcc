@@ -1,3 +1,38 @@
+2012-10-10  Tobias Burnus  <burnus@net-b.de>
+
+	PR fortran/54878
+	* io/unix.c (tempfile_open): Set umask before calling mkstemp.
+
+2012-10-06  Janne Blomqvist  <jb@gcc.gnu.org>
+
+	* configure.ac: Check for presence of secure_getenv.
+	* libgfortran.h: Use HAVE_SECURE_GETENV.
+	* Makefile.in: Regenerated.
+	* aclocal.m4: Regenerated.
+	* config.h.in: Regenerated.
+	* configure: Regenerated.
+
+2012-10-06  Thomas König  <tkoenig@gcc.gnu.org>
+
+	PR libfortran/54736
+	* runtime/environ.c (search_unit):  Correct logic
+	for binary search.
+	(mark_single):  Fix index errors.
+
+2012-09-29  Thomas König  <tkoenig@gcc.gnu.org>
+
+	PR fortran/52724
+	* list_read.c (next_char):  Handle kind=4 characters.
+	* unix.c (open_internal4):  Correct lenth of internal file.
+
+2012-09-14  David Edelsohn  <dje.gcc@gmail.com>
+
+	* configure: Regenerated.
+
+2012-09-05  Uros Bizjak  <ubizjak@gmail.com>
+
+	* config/fpu-387.h (set_fpu): Prefix stmxcsr and ldmxcsr with %v.
+
 2012-07-25  Andreas Schwab  <schwab@linux-m68k.org>
 
 	* io/list_read.c (list_formatted_read_scalar): Fix copying real

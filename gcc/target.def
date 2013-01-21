@@ -1353,7 +1353,8 @@ DEFHOOK
 /* True if FOLLOWER may be modified to follow FOLLOWEE.  */
 DEFHOOK
 (can_follow_jump,
- "Return true if FOLLOWER may be modified to follow FOLLOWEE;\
+ "FOLLOWER and FOLLOWEE are JUMP_INSN instructions;\
+  return true if FOLLOWER may be modified to follow FOLLOWEE;\
   false, if it can't.\
   For example, on some targets, certain kinds of branches can't be made to\
   follow through a hot/cold partitioning.",
@@ -1423,7 +1424,7 @@ DEFHOOK
 DEFHOOK
 (mode_dependent_address_p,
  "",
- bool, (const_rtx addr),
+ bool, (const_rtx addr, addr_space_t addrspace),
  default_mode_dependent_address_p)
 
 /* Given an invalid address X for a given machine mode, try machine-specific
@@ -1768,7 +1769,7 @@ DEFHOOK
 DEFHOOK
 (address_cost,
  "",
- int, (rtx address, bool speed),
+ int, (rtx address, enum machine_mode mode, addr_space_t as, bool speed),
  default_address_cost)
 
 /* Return where to allocate pseudo for a given hard register initial value.  */
@@ -1993,6 +1994,15 @@ DEFHOOK
  "",
  const char *, (const_rtx insn),
  default_invalid_within_doloop)
+
+/* Returns true for a legitimate combined insn.  */
+DEFHOOK
+(legitimate_combined_insn,
+"Take an instruction in @var{insn} and return @code{false} if the instruction\
+ is not appropriate as a combination of two or more instructions.  The\
+ default is to accept all instructions.",
+ bool, (rtx insn),
+ hook_bool_rtx_true)
 
 DEFHOOK
 (valid_dllimport_attribute_p,
@@ -2342,6 +2352,14 @@ DEFHOOK
  tree, (tree type, tree expr),
  hook_tree_tree_tree_null)
 
+/* True if a structure, union or array with MODE containing FIELD should
+   be accessed using BLKmode.  */
+DEFHOOK
+(member_type_forces_blk,
+ "",
+ bool, (const_tree field, enum machine_mode mode),
+ default_member_type_forces_blk)
+
 /* Return the class for a secondary reload, and fill in extra information.  */
 DEFHOOK
 (secondary_reload,
@@ -2368,16 +2386,6 @@ DEFHOOK
  reg_class_t,
  (rtx x, reg_class_t rclass),
  default_preferred_output_reload_class)
-
-/* Return true if a reload loading IN should share a reload register
-   with an unrelated output reload.  */
-DEFHOOK
-(preserve_reload_p,
- "Called when doing an input reload using the value @var{in}.  Return true\
- if the reload register should be available for inheritance later.  This\
- might increase the spill pressure, but enhances reload inheritance.",
- bool, (rtx in),
- hook_bool_rtx_false)
 
 DEFHOOK
 (class_likely_spilled_p,

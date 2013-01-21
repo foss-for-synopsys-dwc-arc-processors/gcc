@@ -210,6 +210,9 @@ void (*cselib_record_sets_hook) (rtx insn, struct cselib_set *sets,
 #define PRESERVED_VALUE_P(RTX) \
   (RTL_FLAG_CHECK1("PRESERVED_VALUE_P", (RTX), VALUE)->unchanging)
 
+#define SP_BASED_VALUE_P(RTX) \
+  (RTL_FLAG_CHECK1("SP_BASED_VALUE_P", (RTX), VALUE)->jump)
+
 
 
 /* Allocate a struct elt_list and fill in its two elements with the
@@ -737,6 +740,24 @@ cselib_preserve_only_values (void)
   remove_useless_values ();
 
   gcc_assert (first_containing_mem == &dummy_val);
+}
+
+/* Arrange for a value to be marked as based on stack pointer
+   for find_base_term purposes.  */
+
+void
+cselib_set_value_sp_based (cselib_val *v)
+{
+  SP_BASED_VALUE_P (v->val_rtx) = 1;
+}
+
+/* Test whether a value is based on stack pointer for
+   find_base_term purposes.  */
+
+bool
+cselib_sp_based_value_p (cselib_val *v)
+{
+  return SP_BASED_VALUE_P (v->val_rtx);
 }
 
 /* Return the mode in which a register was last set.  If X is not a
@@ -1603,9 +1624,7 @@ cselib_expand_value_rtx_1 (rtx orig, struct expand_value_data *evd,
 	    }
       }
 
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case CODE_LABEL:
     case PC:
@@ -1856,10 +1875,7 @@ cselib_subst_to_values (rtx x, enum machine_mode memmode)
 	break;
       return e->val_rtx;
 
-    case CONST_DOUBLE:
-    case CONST_VECTOR:
-    case CONST_INT:
-    case CONST_FIXED:
+    CASE_CONST_ANY:
       return x;
 
     case PRE_DEC:

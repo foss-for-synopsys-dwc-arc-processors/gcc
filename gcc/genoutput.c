@@ -1,6 +1,6 @@
 /* Generate code from to output assembler insns as recognized from rtl.
    Copyright (C) 1987, 1988, 1992, 1994, 1995, 1997, 1998, 1999, 2000, 2002,
-   2003, 2004, 2005, 2007, 2008, 2009, 2010, 2012
+   2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011, 2012
    Free Software Foundation, Inc.
 
 This file is part of GCC.
@@ -1225,7 +1225,7 @@ note_constraint (rtx exp, int lineno)
 	}
     }
   new_cdata = XNEWVAR (struct constraint_data, sizeof (struct constraint_data) + namelen);
-  strcpy ((char *)new_cdata + offsetof(struct constraint_data, name), name);
+  strcpy (CONST_CAST(char *, new_cdata->name), name);
   new_cdata->namelen = namelen;
   new_cdata->lineno = lineno;
   new_cdata->next_this_letter = *slot;

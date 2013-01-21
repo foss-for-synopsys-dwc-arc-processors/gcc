@@ -1179,7 +1179,8 @@ static tree c_parser_transaction_cancel (c_parser *);
 static struct c_expr c_parser_expression (c_parser *);
 static struct c_expr c_parser_expression_conv (c_parser *);
 static VEC(tree,gc) *c_parser_expr_list (c_parser *, bool, bool,
-					 VEC(tree,gc) **);
+					 VEC(tree,gc) **, location_t *,
+					 tree *);
 static void c_parser_omp_construct (c_parser *);
 static void c_parser_omp_threadprivate (c_parser *);
 static void c_parser_omp_barrier (c_parser *);
@@ -3578,7 +3579,8 @@ c_parser_attributes (c_parser *parser)
 		{
 		  tree tree_list;
 		  c_parser_consume_token (parser);
-		  expr_list = c_parser_expr_list (parser, false, true, NULL);
+		  expr_list = c_parser_expr_list (parser, false, true,
+						  NULL, NULL, NULL);
 		  tree_list = build_tree_list_vec (expr_list);
 		  attr_args = tree_cons (NULL_TREE, arg1, tree_list);
 		  release_tree_vector (expr_list);
@@ -3590,7 +3592,8 @@ c_parser_attributes (c_parser *parser)
 		attr_args = NULL_TREE;
 	      else
 		{
-		  expr_list = c_parser_expr_list (parser, false, true, NULL);
+		  expr_list = c_parser_expr_list (parser, false, true,
+						  NULL, NULL, NULL);
 		  attr_args = build_tree_list_vec (expr_list);
 		  release_tree_vector (expr_list);
 		}
@@ -4318,7 +4321,7 @@ c_parser_label (c_parser *parser)
 		    "a declaration is not a statement");
 	  c_parser_declaration_or_fndef (parser, /*fndef_ok*/ false,
 					 /*static_assert_ok*/ true,
-					 /*nested*/ true, /*empty_ok*/ false,
+					 /*empty_ok*/ true, /*nested*/ true,
 					 /*start_attr_ok*/ true, NULL);
 	}
     }
@@ -6529,9 +6532,9 @@ c_parser_postfix_expression (c_parser *parser)
 		break;
 	      }
 
-	    e1_p = VEC_index (c_expr_t, cexpr_list, 0);
-	    e2_p = VEC_index (c_expr_t, cexpr_list, 1);
-	    e3_p = VEC_index (c_expr_t, cexpr_list, 2);
+	    e1_p = &VEC_index (c_expr_t, cexpr_list, 0);
+	    e2_p = &VEC_index (c_expr_t, cexpr_list, 1);
+	    e3_p = &VEC_index (c_expr_t, cexpr_list, 2);
 
 	    c = e1_p->value;
 	    mark_exp_read (e2_p->value);
@@ -6611,8 +6614,8 @@ c_parser_postfix_expression (c_parser *parser)
 		break;
 	      }
 
-	    e1_p = VEC_index (c_expr_t, cexpr_list, 0);
-	    e2_p = VEC_index (c_expr_t, cexpr_list, 1);
+	    e1_p = &VEC_index (c_expr_t, cexpr_list, 0);
+	    e2_p = &VEC_index (c_expr_t, cexpr_list, 1);
 
 	    mark_exp_read (e1_p->value);
 	    if (TREE_CODE (e1_p->value) == EXCESS_PRECISION_EXPR)
@@ -6671,15 +6674,15 @@ c_parser_postfix_expression (c_parser *parser)
 	    if (VEC_length (c_expr_t, cexpr_list) == 2)
 	      expr.value =
 		c_build_vec_perm_expr
-		  (loc, VEC_index (c_expr_t, cexpr_list, 0)->value,
-		   NULL_TREE, VEC_index (c_expr_t, cexpr_list, 1)->value);
+		  (loc, VEC_index (c_expr_t, cexpr_list, 0).value,
+		   NULL_TREE, VEC_index (c_expr_t, cexpr_list, 1).value);
 
 	    else if (VEC_length (c_expr_t, cexpr_list) == 3)
 	      expr.value =
 		c_build_vec_perm_expr
-		  (loc, VEC_index (c_expr_t, cexpr_list, 0)->value,
-		   VEC_index (c_expr_t, cexpr_list, 1)->value,
-		   VEC_index (c_expr_t, cexpr_list, 2)->value);
+		  (loc, VEC_index (c_expr_t, cexpr_list, 0).value,
+		   VEC_index (c_expr_t, cexpr_list, 1).value,
+		   VEC_index (c_expr_t, cexpr_list, 2).value);
 	    else
 	      {
 		error_at (loc, "wrong number of arguments to "
@@ -6845,6 +6848,15 @@ c_parser_postfix_expression_after_paren_type (c_parser *parser,
   return c_parser_postfix_expression_after_primary (parser, start_loc, expr);
 }
 
+/* Callback function for sizeof_pointer_memaccess_warning to compare
+   types.  */
+
+static bool
+sizeof_ptr_memacc_comptypes (tree type1, tree type2)
+{
+  return comptypes (type1, type2) == 1;
+}
+
 /* Parse a postfix expression after the initial primary or compound
    literal; that is, parse a series of postfix operators.
 
@@ -6857,6 +6869,9 @@ c_parser_postfix_expression_after_primary (c_parser *parser,
 {
   struct c_expr orig_expr;
   tree ident, idx;
+  location_t sizeof_arg_loc[3];
+  tree sizeof_arg[3];
+  unsigned int i;
   VEC(tree,gc) *exprlist;
   VEC(tree,gc) *origtypes;
   while (true)
@@ -6877,14 +6892,25 @@ c_parser_postfix_expression_after_primary (c_parser *parser,
 	case CPP_OPEN_PAREN:
 	  /* Function call.  */
 	  c_parser_consume_token (parser);
+	  for (i = 0; i < 3; i++)
+	    {
+	      sizeof_arg[i] = NULL_TREE;
+	      sizeof_arg_loc[i] = UNKNOWN_LOCATION;
+	    }
 	  if (c_parser_next_token_is (parser, CPP_CLOSE_PAREN))
 	    exprlist = NULL;
 	  else
-	    exprlist = c_parser_expr_list (parser, true, false, &origtypes);
+	    exprlist = c_parser_expr_list (parser, true, false, &origtypes,
+					   sizeof_arg_loc, sizeof_arg);
 	  c_parser_skip_until_found (parser, CPP_CLOSE_PAREN,
 				     "expected %<)%>");
 	  orig_expr = expr;
 	  mark_exp_read (expr.value);
+	  if (warn_sizeof_pointer_memaccess)
+	    sizeof_pointer_memaccess_warning (sizeof_arg_loc,
+					      expr.value, exprlist,
+					      sizeof_arg,
+					      sizeof_ptr_memacc_comptypes);
 	  /* FIXME diagnostics: Ideally we want the FUNCNAME, not the
 	     "(" after the FUNCNAME, which is what we have now.    */
 	  expr.value = build_function_call_vec (op_loc, expr.value, exprlist,
@@ -7045,12 +7071,15 @@ c_parser_expression_conv (c_parser *parser)
 
 static VEC(tree,gc) *
 c_parser_expr_list (c_parser *parser, bool convert_p, bool fold_p,
-		    VEC(tree,gc) **p_orig_types)
+		    VEC(tree,gc) **p_orig_types, location_t *sizeof_arg_loc,
+		    tree *sizeof_arg)
 {
   VEC(tree,gc) *ret;
   VEC(tree,gc) *orig_types;
   struct c_expr expr;
   location_t loc = c_parser_peek_token (parser)->location;
+  location_t cur_sizeof_arg_loc = UNKNOWN_LOCATION;
+  unsigned int idx = 0;
 
   ret = make_tree_vector ();
   if (p_orig_types == NULL)
@@ -7058,6 +7087,9 @@ c_parser_expr_list (c_parser *parser, bool convert_p, bool fold_p,
   else
     orig_types = make_tree_vector ();
 
+  if (sizeof_arg != NULL
+      && c_parser_next_token_is_keyword (parser, RID_SIZEOF))
+    cur_sizeof_arg_loc = c_parser_peek_2nd_token (parser)->location;
   expr = c_parser_expr_no_commas (parser, NULL);
   if (convert_p)
     expr = default_function_array_read_conversion (loc, expr);
@@ -7066,10 +7098,22 @@ c_parser_expr_list (c_parser *parser, bool convert_p, bool fold_p,
   VEC_quick_push (tree, ret, expr.value);
   if (orig_types != NULL)
     VEC_quick_push (tree, orig_types, expr.original_type);
+  if (sizeof_arg != NULL
+      && cur_sizeof_arg_loc != UNKNOWN_LOCATION
+      && expr.original_code == SIZEOF_EXPR)
+    {
+      sizeof_arg[0] = c_last_sizeof_arg;
+      sizeof_arg_loc[0] = cur_sizeof_arg_loc;
+    }
   while (c_parser_next_token_is (parser, CPP_COMMA))
     {
       c_parser_consume_token (parser);
       loc = c_parser_peek_token (parser)->location;
+      if (sizeof_arg != NULL
+	  && c_parser_next_token_is_keyword (parser, RID_SIZEOF))
+	cur_sizeof_arg_loc = c_parser_peek_2nd_token (parser)->location;
+      else
+	cur_sizeof_arg_loc = UNKNOWN_LOCATION;
       expr = c_parser_expr_no_commas (parser, NULL);
       if (convert_p)
 	expr = default_function_array_read_conversion (loc, expr);
@@ -7078,6 +7122,14 @@ c_parser_expr_list (c_parser *parser, bool convert_p, bool fold_p,
       VEC_safe_push (tree, gc, ret, expr.value);
       if (orig_types != NULL)
 	VEC_safe_push (tree, gc, orig_types, expr.original_type);
+      if (++idx < 3
+	  && sizeof_arg != NULL
+	  && cur_sizeof_arg_loc != UNKNOWN_LOCATION
+	  && expr.original_code == SIZEOF_EXPR)
+	{
+	  sizeof_arg[idx] = c_last_sizeof_arg;
+	  sizeof_arg_loc[idx] = cur_sizeof_arg_loc;
+	}
     }
   if (orig_types != NULL)
     *p_orig_types = orig_types;
@@ -8157,7 +8209,8 @@ static tree
 c_parser_objc_keywordexpr (c_parser *parser)
 {
   tree ret;
-  VEC(tree,gc) *expr_list = c_parser_expr_list (parser, true, true, NULL);
+  VEC(tree,gc) *expr_list = c_parser_expr_list (parser, true, true,
+						NULL, NULL, NULL);
   if (VEC_length (tree, expr_list) == 1)
     {
       /* Just return the expression, remove a level of

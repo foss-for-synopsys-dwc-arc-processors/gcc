@@ -2096,24 +2096,22 @@ invalidate_for_call (void)
   unsigned hash;
   struct table_elt *p, *next;
   int in_table = 0;
+  hard_reg_set_iterator hrsi;
 
   /* Go through all the hard registers.  For each that is clobbered in
      a CALL_INSN, remove the register from quantity chains and update
      reg_tick if defined.  Also see if any of these registers is currently
      in the table.  */
-
-  for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
-    if (TEST_HARD_REG_BIT (regs_invalidated_by_call, regno))
-      {
-	delete_reg_equiv (regno);
-	if (REG_TICK (regno) >= 0)
-	  {
-	    REG_TICK (regno)++;
-	    SUBREG_TICKED (regno) = -1;
-	  }
-
-	in_table |= (TEST_HARD_REG_BIT (hard_regs_in_table, regno) != 0);
-      }
+  EXECUTE_IF_SET_IN_HARD_REG_SET (regs_invalidated_by_call, 0, regno, hrsi)
+    {
+      delete_reg_equiv (regno);
+      if (REG_TICK (regno) >= 0)
+	{
+	  REG_TICK (regno)++;
+	  SUBREG_TICKED (regno) = -1;
+	}
+      in_table |= (TEST_HARD_REG_BIT (hard_regs_in_table, regno) != 0);
+    }
 
   /* In the case where we have no call-clobbered hard registers in the
      table, we are done.  Otherwise, scan the table and remove any
@@ -2623,9 +2621,7 @@ exp_equiv_p (const_rtx x, const_rtx y, int validate, bool for_gcse)
     {
     case PC:
     case CC0:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
+    CASE_CONST_UNIQUE:
       return x == y;
 
     case LABEL_REF:
@@ -2829,10 +2825,7 @@ canon_reg (rtx x, rtx insn)
     case PC:
     case CC0:
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
     case ADDR_VEC:
@@ -3133,10 +3126,7 @@ fold_rtx (rtx x, rtx insn)
       return x;
 
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
     case REG:
@@ -3198,12 +3188,9 @@ fold_rtx (rtx x, rtx insn)
 	    break;
 
 	  case CONST:
-	  case CONST_INT:
+	  CASE_CONST_ANY:
 	  case SYMBOL_REF:
 	  case LABEL_REF:
-	  case CONST_DOUBLE:
-	  case CONST_FIXED:
-	  case CONST_VECTOR:
 	    const_arg = folded_arg;
 	    break;
 
@@ -6063,13 +6050,10 @@ cse_process_notes_1 (rtx x, rtx object, bool *changed)
 
   switch (code)
     {
-    case CONST_INT:
     case CONST:
     case SYMBOL_REF:
     case LABEL_REF:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case PC:
     case CC0:
     case LO_SUM:
@@ -6671,10 +6655,7 @@ count_reg_usage (rtx x, int *counts, rtx dest, int incr)
     case PC:
     case CC0:
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
       return;

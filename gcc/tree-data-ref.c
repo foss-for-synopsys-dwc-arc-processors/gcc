@@ -4130,7 +4130,7 @@ ddr_consistent_p (FILE *file,
    relation the first time we detect a CHREC_KNOWN element for a given
    subscript.  */
 
-static void
+void
 compute_affine_dependence (struct data_dependence_relation *ddr,
 			   struct loop *loop_nest)
 {
@@ -4300,17 +4300,17 @@ static bool
 get_references_in_stmt (gimple stmt, VEC (data_ref_loc, heap) **references)
 {
   bool clobbers_memory = false;
-  data_ref_loc *ref;
+  data_ref_loc ref;
   tree *op0, *op1;
   enum gimple_code stmt_code = gimple_code (stmt);
 
   *references = NULL;
 
   /* ASM_EXPR and CALL_EXPR may embed arbitrary side effects.
-     Calls have side-effects, except those to const or pure
-     functions.  */
+     As we cannot model data-references to not spelled out
+     accesses give up if they may occur.  */
   if ((stmt_code == GIMPLE_CALL
-       && !(gimple_call_flags (stmt) & (ECF_CONST | ECF_PURE)))
+       && !(gimple_call_flags (stmt) & ECF_CONST))
       || (stmt_code == GIMPLE_ASM
 	  && (gimple_asm_volatile_p (stmt) || gimple_vuse (stmt))))
     clobbers_memory = true;
@@ -4329,9 +4329,9 @@ get_references_in_stmt (gimple stmt, VEC (data_ref_loc, heap) **references)
 	      && (base = get_base_address (*op1))
 	      && TREE_CODE (base) != SSA_NAME))
 	{
-	  ref = VEC_safe_push (data_ref_loc, heap, *references, NULL);
-	  ref->pos = op1;
-	  ref->is_read = true;
+	  ref.pos = op1;
+	  ref.is_read = true;
+	  VEC_safe_push (data_ref_loc, heap, *references, ref);
 	}
     }
   else if (stmt_code == GIMPLE_CALL)
@@ -4347,9 +4347,9 @@ get_references_in_stmt (gimple stmt, VEC (data_ref_loc, heap) **references)
 	  if (DECL_P (*op1)
 	      || (REFERENCE_CLASS_P (*op1) && get_base_address (*op1)))
 	    {
-	      ref = VEC_safe_push (data_ref_loc, heap, *references, NULL);
-	      ref->pos = op1;
-	      ref->is_read = true;
+	      ref.pos = op1;
+	      ref.is_read = true;
+	      VEC_safe_push (data_ref_loc, heap, *references, ref);
 	    }
 	}
     }
@@ -4360,9 +4360,9 @@ get_references_in_stmt (gimple stmt, VEC (data_ref_loc, heap) **references)
       && (DECL_P (*op0)
 	  || (REFERENCE_CLASS_P (*op0) && get_base_address (*op0))))
     {
-      ref = VEC_safe_push (data_ref_loc, heap, *references, NULL);
-      ref->pos = op0;
-      ref->is_read = false;
+      ref.pos = op0;
+      ref.is_read = false;
+      VEC_safe_push (data_ref_loc, heap, *references, ref);
     }
   return clobbers_memory;
 }

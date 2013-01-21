@@ -4680,11 +4680,11 @@ dataflow_set_remove_mem_locs (void **slot, void *data)
 static void
 dataflow_set_clear_at_call (dataflow_set *set)
 {
-  int r;
+  unsigned int r;
+  hard_reg_set_iterator hrsi;
 
-  for (r = 0; r < FIRST_PSEUDO_REGISTER; r++)
-    if (TEST_HARD_REG_BIT (regs_invalidated_by_call, r))
-      var_regno_delete (set, r);
+  EXECUTE_IF_SET_IN_HARD_REG_SET (regs_invalidated_by_call, 0, r, hrsi)
+    var_regno_delete (set, r);
 
   if (MAY_HAVE_DEBUG_INSNS)
     {
@@ -5510,7 +5510,7 @@ add_uses (rtx *ploc, void *data)
 
       if (dump_file && (dump_flags & TDF_DETAILS))
 	log_op_type (mo.u.loc, cui->bb, cui->insn, mo.type, dump_file);
-      VEC_safe_push (micro_operation, heap, VTI (bb)->mos, &mo);
+      VEC_safe_push (micro_operation, heap, VTI (bb)->mos, mo);
     }
 
   return 0;
@@ -5769,6 +5769,11 @@ add_stores (rtx loc, const_rtx expr, void *cuip)
 
   resolve = preserve = !cselib_preserved_value_p (v);
 
+  if (loc == stack_pointer_rtx
+      && hard_frame_pointer_adjustment != -1
+      && preserve)
+    cselib_set_value_sp_based (v);
+
   nloc = replace_expr_with_values (oloc);
   if (nloc)
     oloc = nloc;
@@ -5794,7 +5799,7 @@ add_stores (rtx loc, const_rtx expr, void *cuip)
 	  if (dump_file && (dump_flags & TDF_DETAILS))
 	    log_op_type (moa.u.loc, cui->bb, cui->insn,
 			 moa.type, dump_file);
-	  VEC_safe_push (micro_operation, heap, VTI (bb)->mos, &moa);
+	  VEC_safe_push (micro_operation, heap, VTI (bb)->mos, moa);
 	}
 
       resolve = false;
@@ -5881,7 +5886,7 @@ add_stores (rtx loc, const_rtx expr, void *cuip)
  log_and_return:
   if (dump_file && (dump_flags & TDF_DETAILS))
     log_op_type (mo.u.loc, cui->bb, cui->insn, mo.type, dump_file);
-  VEC_safe_push (micro_operation, heap, VTI (bb)->mos, &mo);
+  VEC_safe_push (micro_operation, heap, VTI (bb)->mos, mo);
 }
 
 /* Arguments to the call.  */
@@ -5892,9 +5897,8 @@ static rtx call_arguments;
 static void
 prepare_call_arguments (basic_block bb, rtx insn)
 {
-  rtx link, x;
+  rtx link, x, call;
   rtx prev, cur, next;
-  rtx call = PATTERN (insn);
   rtx this_arg = NULL_RTX;
   tree type = NULL_TREE, t, fndecl = NULL_TREE;
   tree obj_type_ref = NULL_TREE;
@@ -5903,11 +5907,8 @@ prepare_call_arguments (basic_block bb, rtx insn)
 
   memset (&args_so_far_v, 0, sizeof (args_so_far_v));
   args_so_far = pack_cumulative_args (&args_so_far_v);
-  if (GET_CODE (call) == PARALLEL)
-    call = XVECEXP (call, 0, 0);
-  if (GET_CODE (call) == SET)
-    call = SET_SRC (call);
-  if (GET_CODE (call) == CALL && MEM_P (XEXP (call, 0)))
+  call = get_call_rtx_from (insn);
+  if (call)
     {
       if (GET_CODE (XEXP (XEXP (call, 0), 0)) == SYMBOL_REF)
 	{
@@ -6181,12 +6182,8 @@ prepare_call_arguments (basic_block bb, rtx insn)
     }
   call_arguments = prev;
 
-  x = PATTERN (insn);
-  if (GET_CODE (x) == PARALLEL)
-    x = XVECEXP (x, 0, 0);
-  if (GET_CODE (x) == SET)
-    x = SET_SRC (x);
-  if (GET_CODE (x) == CALL && MEM_P (XEXP (x, 0)))
+  x = get_call_rtx_from (insn);
+  if (x)
     {
       x = XEXP (XEXP (x, 0), 0);
       if (GET_CODE (x) == SYMBOL_REF)
@@ -6300,7 +6297,7 @@ add_with_sets (rtx insn, struct cselib_set *sets, int n_sets)
 
       if (dump_file && (dump_flags & TDF_DETAILS))
 	log_op_type (PATTERN (insn), bb, insn, mo.type, dump_file);
-      VEC_safe_push (micro_operation, heap, VTI (bb)->mos, &mo);
+      VEC_safe_push (micro_operation, heap, VTI (bb)->mos, mo);
     }
 
   n1 = VEC_length (micro_operation, VTI (bb)->mos);
@@ -7821,7 +7818,7 @@ loc_exp_dep_clear (variable var)
 {
   while (!VEC_empty (loc_exp_dep, VAR_LOC_DEP_VEC (var)))
     {
-      loc_exp_dep *led = VEC_last (loc_exp_dep, VAR_LOC_DEP_VEC (var));
+      loc_exp_dep *led = &VEC_last (loc_exp_dep, VAR_LOC_DEP_VEC (var));
       if (led->next)
 	led->next->pprev = led->pprev;
       if (led->pprev)
@@ -7864,8 +7861,10 @@ loc_exp_insert_dep (variable var, rtx x, htab_t vars)
     led = (loc_exp_dep *) pool_alloc (loc_exp_dep_pool);
   else
     {
-      VEC_quick_push (loc_exp_dep, VAR_LOC_DEP_VEC (var), NULL);
-      led = VEC_last (loc_exp_dep, VAR_LOC_DEP_VEC (var));
+      loc_exp_dep empty;
+      memset (&empty, 0, sizeof (empty));
+      VEC_quick_push (loc_exp_dep, VAR_LOC_DEP_VEC (var), empty);
+      led = &VEC_last (loc_exp_dep, VAR_LOC_DEP_VEC (var));
     }
   led->dv = var->dv;
   led->value = x;
@@ -9354,13 +9353,13 @@ vt_add_function_parameter (tree parm)
       && HARD_REGISTER_P (incoming)
       && OUTGOING_REGNO (REGNO (incoming)) != REGNO (incoming))
     {
-      parm_reg_t *p
-	= VEC_safe_push (parm_reg_t, gc, windowed_parm_regs, NULL);
-      p->incoming = incoming;
+      parm_reg_t p;
+      p.incoming = incoming;
       incoming
 	= gen_rtx_REG_offset (incoming, GET_MODE (incoming),
 			      OUTGOING_REGNO (REGNO (incoming)), 0);
-      p->outgoing = incoming;
+      p.outgoing = incoming;
+      VEC_safe_push (parm_reg_t, gc, windowed_parm_regs, p);
     }
   else if (MEM_P (incoming)
 	   && REG_P (XEXP (incoming, 0))
@@ -9369,11 +9368,11 @@ vt_add_function_parameter (tree parm)
       rtx reg = XEXP (incoming, 0);
       if (OUTGOING_REGNO (REGNO (reg)) != REGNO (reg))
 	{
-	  parm_reg_t *p
-	    = VEC_safe_push (parm_reg_t, gc, windowed_parm_regs, NULL);
-	  p->incoming = reg;
+	  parm_reg_t p;
+	  p.incoming = reg;
 	  reg = gen_raw_REG (GET_MODE (reg), OUTGOING_REGNO (REGNO (reg)));
-	  p->outgoing = reg;
+	  p.outgoing = reg;
+	  VEC_safe_push (parm_reg_t, gc, windowed_parm_regs, p);
 	  incoming = replace_equiv_address_nv (incoming, reg);
 	}
     }
@@ -9402,12 +9401,13 @@ vt_add_function_parameter (tree parm)
 
   if (parm != decl)
     {
-      /* Assume that DECL_RTL was a pseudo that got spilled to
-	 memory.  The spill slot sharing code will force the
-	 memory to reference spill_slot_decl (%sfp), so we don't
-	 match above.  That's ok, the pseudo must have referenced
-	 the entire parameter, so just reset OFFSET.  */
-      gcc_assert (decl == get_spill_slot_decl (false));
+      /* If that DECL_RTL wasn't a pseudo that got spilled to
+	 memory, bail out.  Otherwise, the spill slot sharing code
+	 will force the memory to reference spill_slot_decl (%sfp),
+	 so we don't match above.  That's ok, the pseudo must have
+	 referenced the entire parameter, so just reset OFFSET.  */
+      if (decl != get_spill_slot_decl (false))
+        return;
       offset = 0;
     }
 
@@ -9426,6 +9426,7 @@ vt_add_function_parameter (tree parm)
       && GET_CODE (incoming) != PARALLEL)
     {
       cselib_val *val;
+      rtx lowpart;
 
       /* ??? We shouldn't ever hit this, but it may happen because
 	 arguments passed by invisible reference aren't dealt with
@@ -9434,7 +9435,11 @@ vt_add_function_parameter (tree parm)
       if (offset)
 	return;
 
-      val = cselib_lookup_from_insn (var_lowpart (mode, incoming), mode, true,
+      lowpart = var_lowpart (mode, incoming);
+      if (!lowpart)
+	return;
+
+      val = cselib_lookup_from_insn (lowpart, mode, true,
 				     VOIDmode, get_insns ());
 
       /* ??? Float-typed values in memory are not handled by
@@ -9815,7 +9820,7 @@ vt_initialize (void)
 			    log_op_type (PATTERN (insn), bb, insn,
 					 MO_ADJUST, dump_file);
 			  VEC_safe_push (micro_operation, heap, VTI (bb)->mos,
-					 &mo);
+					 mo);
 			  VTI (bb)->out.stack_adjust += pre;
 			}
 		    }
@@ -9847,7 +9852,7 @@ vt_initialize (void)
 			log_op_type (PATTERN (insn), bb, insn,
 				     MO_ADJUST, dump_file);
 		      VEC_safe_push (micro_operation, heap, VTI (bb)->mos,
-				     &mo);
+				     mo);
 		      VTI (bb)->out.stack_adjust += post;
 		    }
 
@@ -9859,6 +9864,19 @@ vt_initialize (void)
 		    {
 		      vt_init_cfa_base ();
 		      hard_frame_pointer_adjustment = fp_cfa_offset;
+		      /* Disassociate sp from fp now.  */
+		      if (MAY_HAVE_DEBUG_INSNS)
+			{
+			  cselib_val *v;
+			  cselib_invalidate_rtx (stack_pointer_rtx);
+			  v = cselib_lookup (stack_pointer_rtx, Pmode, 1,
+					     VOIDmode);
+			  if (v && !cselib_preserved_value_p (v))
+			    {
+			      cselib_set_value_sp_based (v);
+			      preserve_value (v);
+			    }
+			}
 		    }
 		}
 	    }

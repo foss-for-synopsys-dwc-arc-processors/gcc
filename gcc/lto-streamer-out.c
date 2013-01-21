@@ -125,7 +125,7 @@ static bool
 tree_is_indexable (tree t)
 {
   if (TREE_CODE (t) == PARM_DECL)
-    return false;
+    return true;
   else if (TREE_CODE (t) == VAR_DECL && decl_function_context (t)
 	   && !TREE_STATIC (t))
     return false;
@@ -148,13 +148,13 @@ tree_is_indexable (tree t)
    After outputting bitpack, lto_output_location_data has
    to be done to output actual data.  */
 
-static inline void
-lto_output_location_bitpack (struct bitpack_d *bp,
-			     struct output_block *ob,
-			     location_t loc)
+void
+lto_output_location (struct output_block *ob, struct bitpack_d *bp,
+		     location_t loc)
 {
   expanded_location xloc;
 
+  loc = LOCATION_LOCUS (loc);
   bp_pack_value (bp, loc == UNKNOWN_LOCATION, 1);
   if (loc == UNKNOWN_LOCATION)
     return;
@@ -178,25 +178,6 @@ lto_output_location_bitpack (struct bitpack_d *bp,
   if (ob->current_col != xloc.column)
     bp_pack_var_len_unsigned (bp, xloc.column);
   ob->current_col = xloc.column;
-}
-
-
-/* Emit location LOC to output block OB.
-   If the output_location streamer hook exists, call it.
-   Otherwise, when bitpack is handy, it is more space efficient to call
-   lto_output_location_bitpack with existing bitpack.  */
-
-void
-lto_output_location (struct output_block *ob, location_t loc)
-{
-  if (streamer_hooks.output_location)
-    streamer_hooks.output_location (ob, loc);
-  else
-    {
-      struct bitpack_d bp = bitpack_create (ob->main_stream);
-      lto_output_location_bitpack (&bp, ob, loc);
-      streamer_write_bitpack (&bp);
-    }
 }
 
 
@@ -236,6 +217,7 @@ lto_output_tree_ref (struct output_block *ob, tree expr)
     case VAR_DECL:
     case DEBUG_EXPR_DECL:
       gcc_assert (decl_function_context (expr) == NULL || TREE_STATIC (expr));
+    case PARM_DECL:
       streamer_write_record_start (ob, LTO_global_decl_ref);
       lto_output_var_decl_index (ob->decl_state, ob->main_stream, expr);
       break;
@@ -331,7 +313,7 @@ lto_write_tree (struct output_block *ob, tree expr, bool ref_p)
   /* Pack all the non-pointer fields in EXPR into a bitpack and write
      the resulting bitpack.  */
   bp = bitpack_create (ob->main_stream);
-  streamer_pack_tree_bitfields (&bp, expr);
+  streamer_pack_tree_bitfields (ob, &bp, expr);
   streamer_write_bitpack (&bp);
 
   /* Write all the pointer fields in EXPR.  */
@@ -390,9 +372,10 @@ lto_output_tree (struct output_block *ob, tree expr,
       return;
     }
 
-  /* INTEGER_CST nodes are special because they need their original type
+  /* Shared INTEGER_CST nodes are special because they need their original type
      to be materialized by the reader (to implement TYPE_CACHED_VALUES).  */
-  if (TREE_CODE (expr) == INTEGER_CST)
+  if (TREE_CODE (expr) == INTEGER_CST
+      && !TREE_OVERFLOW (expr))
     {
       streamer_write_integer_cst (ob, expr, ref_p);
       return;
@@ -503,7 +486,9 @@ output_eh_region (struct output_block *ob, eh_region r)
   else if (r->type == ERT_MUST_NOT_THROW)
     {
       stream_write_tree (ob, r->u.must_not_throw.failure_decl, true);
-      lto_output_location (ob, r->u.must_not_throw.failure_loc);
+      bitpack_d bp = bitpack_create (ob->main_stream);
+      stream_output_location (ob, &bp, r->u.must_not_throw.failure_loc);
+      streamer_write_bitpack (&bp);
     }
 
   if (r->landing_pads)
@@ -613,7 +598,7 @@ output_ssa_names (struct output_block *ob, struct function *fn)
 
       if (ptr == NULL_TREE
 	  || SSA_NAME_IN_FREE_LIST (ptr)
-	  || !is_gimple_reg (ptr))
+	  || virtual_operand_p (ptr))
 	continue;
 
       streamer_write_uhwi (ob, i);
@@ -749,10 +734,6 @@ output_struct_function_base (struct output_block *ob, struct function *fn)
   FOR_EACH_VEC_ELT (tree, fn->local_decls, i, t)
     stream_write_tree (ob, t, true);
 
-  /* Output the function start and end loci.  */
-  lto_output_location (ob, fn->function_start_locus);
-  lto_output_location (ob, fn->function_end_locus);
-
   /* Output current IL state of the function.  */
   streamer_write_uhwi (ob, fn->curr_properties);
 
@@ -772,6 +753,11 @@ output_struct_function_base (struct output_block *ob, struct function *fn)
   bp_pack_value (&bp, fn->calls_setjmp, 1);
   bp_pack_value (&bp, fn->va_list_fpr_size, 8);
   bp_pack_value (&bp, fn->va_list_gpr_size, 8);
+
+  /* Output the function start and end loci.  */
+  stream_output_location (ob, &bp, fn->function_start_locus);
+  stream_output_location (ob, &bp, fn->function_end_locus);
+
   streamer_write_bitpack (&bp);
 }
 
@@ -796,7 +782,6 @@ output_function (struct cgraph_node *node)
   gcc_assert (current_function_decl == NULL_TREE && cfun == NULL);
 
   /* Set current_function_decl and cfun.  */
-  current_function_decl = function;
   push_cfun (fn);
 
   /* Make string 0 be a NULL string.  */
@@ -805,9 +790,6 @@ output_function (struct cgraph_node *node)
   streamer_write_record_start (ob, LTO_function);
 
   output_struct_function_base (ob, fn);
-
-  /* Output the head of the arguments list.  */
-  stream_write_tree (ob, DECL_ARGUMENTS (function), true);
 
   /* Output all the SSA names used in the function.  */
   output_ssa_names (ob, fn);
@@ -850,7 +832,6 @@ output_function (struct cgraph_node *node)
 
   destroy_output_block (ob);
 
-  current_function_decl = NULL;
   pop_cfun ();
 }
 
@@ -1288,11 +1269,9 @@ produce_symtab (struct output_block *ob)
   struct streamer_tree_cache_d *cache = ob->writer_cache;
   char *section_name = lto_get_section_name (LTO_section_symtab, NULL, NULL);
   struct pointer_set_t *seen;
-  struct cgraph_node *node;
-  struct varpool_node *vnode;
   struct lto_output_stream stream;
   lto_symtab_encoder_t encoder = ob->decl_state->symtab_node_encoder;
-  int i;
+  lto_symtab_encoder_iterator lsei;
 
   lto_begin_section (section_name, false);
   free (section_name);
@@ -1300,78 +1279,26 @@ produce_symtab (struct output_block *ob)
   seen = pointer_set_create ();
   memset (&stream, 0, sizeof (stream));
 
-  /* Write all functions. 
-     First write all defined functions and then write all used functions.
-     This is done so only to handle duplicated symbols in cgraph.  */
-  for (i = 0; i < lto_symtab_encoder_size (encoder); i++)
+  /* Write the symbol table.
+     First write everything defined and then all declarations.
+     This is neccesary to handle cases where we have duplicated symbols.  */
+  for (lsei = lsei_start (encoder);
+       !lsei_end_p (lsei); lsei_next (&lsei))
     {
-      if (!symtab_function_p (lto_symtab_encoder_deref (encoder, i)))
-	continue;
-      node = cgraph (lto_symtab_encoder_deref (encoder, i));
-      if (DECL_EXTERNAL (node->symbol.decl))
-	continue;
-      if (DECL_COMDAT (node->symbol.decl)
-	  && cgraph_comdat_can_be_unshared_p (node))
-	continue;
-      if ((node->alias && !node->thunk.alias) || node->global.inlined_to)
-	continue;
-      write_symbol (cache, &stream, node->symbol.decl, seen, false);
-    }
-  for (i = 0; i < lto_symtab_encoder_size (encoder); i++)
-    {
-      if (!symtab_function_p (lto_symtab_encoder_deref (encoder, i)))
-	continue;
-      node = cgraph (lto_symtab_encoder_deref (encoder, i));
-      if (!DECL_EXTERNAL (node->symbol.decl))
-	continue;
-      /* We keep around unused extern inlines in order to be able to inline
-	 them indirectly or via vtables.  Do not output them to symbol
-	 table: they end up being undefined and just consume space.  */
-      if (!node->symbol.address_taken && !node->callers)
-	continue;
-      if (DECL_COMDAT (node->symbol.decl)
-	  && cgraph_comdat_can_be_unshared_p (node))
-	continue;
-      if ((node->alias && !node->thunk.alias) || node->global.inlined_to)
-	continue;
-      write_symbol (cache, &stream, node->symbol.decl, seen, false);
-    }
+      symtab_node node = lsei_node (lsei);
 
-  /* Write all variables.  */
-  for (i = 0; i < lto_symtab_encoder_size (encoder); i++)
-    {
-      if (!symtab_variable_p (lto_symtab_encoder_deref (encoder, i)))
+      if (!symtab_real_symbol_p (node) || DECL_EXTERNAL (node->symbol.decl))
 	continue;
-      vnode = varpool (lto_symtab_encoder_deref (encoder, i));
-      if (DECL_EXTERNAL (vnode->symbol.decl))
-	continue;
-      /* COMDAT virtual tables can be unshared.  Do not declare them
-	 in the LTO symbol table to prevent linker from forcing them
-	 into the output. */
-      if (DECL_COMDAT (vnode->symbol.decl)
-	  && !vnode->symbol.force_output
-	  && vnode->finalized 
-	  && DECL_VIRTUAL_P (vnode->symbol.decl))
-	continue;
-      if (vnode->alias && !vnode->alias_of)
-	continue;
-      write_symbol (cache, &stream, vnode->symbol.decl, seen, false);
+      write_symbol (cache, &stream, node->symbol.decl, seen, false);
     }
-  for (i = 0; i < lto_symtab_encoder_size (encoder); i++)
+  for (lsei = lsei_start (encoder);
+       !lsei_end_p (lsei); lsei_next (&lsei))
     {
-      if (!symtab_variable_p (lto_symtab_encoder_deref (encoder, i)))
+      symtab_node node = lsei_node (lsei);
+
+      if (!symtab_real_symbol_p (node) || !DECL_EXTERNAL (node->symbol.decl))
 	continue;
-      vnode = varpool (lto_symtab_encoder_deref (encoder, i));
-      if (!DECL_EXTERNAL (vnode->symbol.decl))
-	continue;
-      if (DECL_COMDAT (vnode->symbol.decl)
-	  && !vnode->symbol.force_output
-	  && vnode->finalized 
-	  && DECL_VIRTUAL_P (vnode->symbol.decl))
-	continue;
-      if (vnode->alias && !vnode->alias_of)
-	continue;
-      write_symbol (cache, &stream, vnode->symbol.decl, seen, false);
+      write_symbol (cache, &stream, node->symbol.decl, seen, false);
     }
 
   lto_write_stream (&stream);

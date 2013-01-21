@@ -484,9 +484,8 @@ cgraph_add_thunk (struct cgraph_node *decl_node ATTRIBUTE_UNUSED,
   
   node = cgraph_create_node (alias);
   gcc_checking_assert (!virtual_offset
-		       || double_int_equal_p
-		            (tree_to_double_int (virtual_offset),
-			     shwi_to_double_int (virtual_value)));
+		       || tree_to_double_int (virtual_offset) ==
+			     double_int::from_shwi (virtual_value));
   node->thunk.fixed_offset = fixed_offset;
   node->thunk.this_adjusting = this_adjusting;
   node->thunk.virtual_value = virtual_value;
@@ -1128,7 +1127,6 @@ cgraph_release_function_body (struct cgraph_node *node)
 {
   if (DECL_STRUCT_FUNCTION (node->symbol.decl))
     {
-      tree old_decl = current_function_decl;
       push_cfun (DECL_STRUCT_FUNCTION (node->symbol.decl));
       if (cfun->cfg
 	  && current_loops)
@@ -1138,11 +1136,9 @@ cgraph_release_function_body (struct cgraph_node *node)
 	}
       if (cfun->gimple_df)
 	{
-	  current_function_decl = node->symbol.decl;
 	  delete_tree_ssa ();
 	  delete_tree_cfg_annotations ();
 	  cfun->eh = NULL;
-	  current_function_decl = old_decl;
 	}
       if (cfun->cfg)
 	{
@@ -1735,7 +1731,7 @@ cgraph_set_const_flag (struct cgraph_node *node, bool readonly, bool looping)
 static bool
 cgraph_set_pure_flag_1 (struct cgraph_node *node, void *data)
 {
-  /* Static pureructors and destructors without a side effect can be
+  /* Static constructors and destructors without a side effect can be
      optimized out.  */
   if (data && !((size_t)data & 2))
     {

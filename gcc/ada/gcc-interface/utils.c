@@ -1369,7 +1369,8 @@ void
 finish_fat_pointer_type (tree record_type, tree field_list)
 {
   /* Make sure we can put it into a register.  */
-  TYPE_ALIGN (record_type) = MIN (BIGGEST_ALIGNMENT, 2 * POINTER_SIZE);
+  if (STRICT_ALIGNMENT)
+    TYPE_ALIGN (record_type) = MIN (BIGGEST_ALIGNMENT, 2 * POINTER_SIZE);
 
   /* Show what it really is.  */
   TYPE_FAT_POINTER_P (record_type) = 1;
@@ -4491,10 +4492,10 @@ convert (tree type, tree expr)
 	 inner expression.  */
       if (TREE_CODE (expr) == CONSTRUCTOR
 	  && !VEC_empty (constructor_elt, CONSTRUCTOR_ELTS (expr))
-	  && VEC_index (constructor_elt, CONSTRUCTOR_ELTS (expr), 0)->index
+	  && VEC_index (constructor_elt, CONSTRUCTOR_ELTS (expr), 0).index
 	     == TYPE_FIELDS (etype))
 	unpadded
-	  = VEC_index (constructor_elt, CONSTRUCTOR_ELTS (expr), 0)->value;
+	  = VEC_index (constructor_elt, CONSTRUCTOR_ELTS (expr), 0).value;
 
       /* Otherwise, build an explicit component reference.  */
       else
@@ -4614,16 +4615,14 @@ convert (tree type, tree expr)
 
 	  FOR_EACH_CONSTRUCTOR_ELT(e, idx, index, value)
 	    {
-	      constructor_elt *elt;
 	      /* We expect only simple constructors.  */
 	      if (!SAME_FIELD_P (index, efield))
 		break;
 	      /* The field must be the same.  */
 	      if (!SAME_FIELD_P (efield, field))
 		break;
-	      elt = VEC_quick_push (constructor_elt, v, NULL);
-	      elt->index = field;
-	      elt->value = convert (TREE_TYPE (field), value);
+	      constructor_elt elt = {field, convert (TREE_TYPE (field), value)};
+	      VEC_quick_push (constructor_elt, v, elt);
 
 	      /* If packing has made this field a bitfield and the input
 		 value couldn't be emitted statically any more, we need to
@@ -4689,9 +4688,8 @@ convert (tree type, tree expr)
 	  v = VEC_alloc (constructor_elt, gc, len);
 	  FOR_EACH_CONSTRUCTOR_VALUE (e, ix, value)
 	    {
-	      constructor_elt *elt = VEC_quick_push (constructor_elt, v, NULL);
-	      elt->index = NULL_TREE;
-	      elt->value = value;
+	      constructor_elt elt = {NULL_TREE, value};
+	      VEC_quick_push (constructor_elt, v, elt);
 	    }
 	  expr = copy_node (expr);
 	  TREE_TYPE (expr) = type;
@@ -5047,7 +5045,7 @@ remove_conversions (tree exp, bool true_address)
 	  && TYPE_JUSTIFIED_MODULAR_P (TREE_TYPE (exp)))
 	return
 	  remove_conversions (VEC_index (constructor_elt,
-					 CONSTRUCTOR_ELTS (exp), 0)->value,
+					 CONSTRUCTOR_ELTS (exp), 0).value,
 			      true);
       break;
 

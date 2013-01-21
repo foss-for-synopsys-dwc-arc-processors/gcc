@@ -500,7 +500,7 @@ store_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 		 && MEM_ALIGN (op0) % GET_MODE_BITSIZE (fieldmode) == 0))))
     {
       if (MEM_P (op0))
-	op0 = adjust_address (op0, fieldmode, offset);
+	op0 = adjust_bitfield_address (op0, fieldmode, offset);
       else if (GET_MODE (op0) != fieldmode)
 	op0 = simplify_gen_subreg (fieldmode, op0, GET_MODE (op0),
 				   byte_offset);
@@ -517,7 +517,7 @@ store_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
     if (imode != GET_MODE (op0))
       {
 	if (MEM_P (op0))
-	  op0 = adjust_address (op0, imode, 0);
+	  op0 = adjust_bitfield_address (op0, imode, 0);
 	else
 	  {
 	    gcc_assert (imode != BLKmode);
@@ -525,16 +525,6 @@ store_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 	  }
       }
   }
-
-  /* We may be accessing data outside the field, which means
-     we can alias adjacent data.  */
-  /* ?? not always for C++0x memory model ?? */
-  if (MEM_P (op0))
-    {
-      op0 = shallow_copy_rtx (op0);
-      set_mem_alias_set (op0, 0);
-      set_mem_expr (op0, 0);
-    }
 
   /* If OP0 is a register, BITPOS must count within a word.
      But as we have it, it counts within whatever size OP0 now has.
@@ -718,7 +708,7 @@ store_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 
       /* Add OFFSET into OP0's address.  */
       if (MEM_P (xop0))
-	xop0 = adjust_address (xop0, byte_mode, offset);
+	xop0 = adjust_bitfield_address (xop0, byte_mode, offset);
 
       /* If xop0 is a register, we need it in OP_MODE
 	 to make it acceptable to the format of insv.  */
@@ -852,7 +842,7 @@ store_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 	  unit = GET_MODE_BITSIZE (bestmode);
 	  xoffset = (bitnum / unit) * GET_MODE_SIZE (bestmode);
 	  xbitpos = bitnum % unit;
-	  xop0 = adjust_address (op0, bestmode, xoffset);
+	  xop0 = adjust_bitfield_address (op0, bestmode, xoffset);
 
 	  /* Fetch that unit, store the bitfield in it, then store
 	     the unit.  */
@@ -1024,7 +1014,7 @@ store_fixed_bit_field (rtx op0, unsigned HOST_WIDE_INT offset,
 	 Then alter OP0 to refer to that word.  */
       bitpos += (offset % (total_bits / BITS_PER_UNIT)) * BITS_PER_UNIT;
       offset -= (offset % (total_bits / BITS_PER_UNIT));
-      op0 = adjust_address (op0, mode, offset);
+      op0 = adjust_bitfield_address (op0, mode, offset);
     }
 
   mode = GET_MODE (op0);
@@ -1388,7 +1378,7 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
     if (imode != GET_MODE (op0))
       {
 	if (MEM_P (op0))
-	  op0 = adjust_address (op0, imode, 0);
+	  op0 = adjust_bitfield_address (op0, imode, 0);
 	else if (imode != BLKmode)
 	  {
 	    op0 = gen_lowpart (imode, op0);
@@ -1414,19 +1404,10 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 	    rtx mem = assign_stack_temp (GET_MODE (op0),
 					 GET_MODE_SIZE (GET_MODE (op0)));
 	    emit_move_insn (mem, op0);
-	    op0 = adjust_address (mem, BLKmode, 0);
+	    op0 = adjust_bitfield_address (mem, BLKmode, 0);
 	  }
       }
   }
-
-  /* We may be accessing data outside the field, which means
-     we can alias adjacent data.  */
-  if (MEM_P (op0))
-    {
-      op0 = shallow_copy_rtx (op0);
-      set_mem_alias_set (op0, 0);
-      set_mem_expr (op0, 0);
-    }
 
   /* Extraction of a full-word or multi-word value from a structure
      in a register or aligned memory can be done with just a SUBREG.
@@ -1487,7 +1468,7 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 		      && MEM_ALIGN (op0) % bitsize == 0)))))
     {
       if (MEM_P (op0))
-	op0 = adjust_address (op0, mode1, offset);
+	op0 = adjust_bitfield_address (op0, mode1, offset);
       else if (mode1 != GET_MODE (op0))
 	{
 	  rtx sub = simplify_gen_subreg (mode1, op0, GET_MODE (op0),
@@ -1513,6 +1494,7 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 
       unsigned int nwords = (bitsize + (BITS_PER_WORD - 1)) / BITS_PER_WORD;
       unsigned int i;
+      rtx last;
 
       if (target == 0 || !REG_P (target) || !valid_multiword_target_p (target))
 	target = gen_reg_rtx (mode);
@@ -1520,6 +1502,7 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
       /* Indicate for flow that the entire target reg is being set.  */
       emit_clobber (target);
 
+      last = get_last_insn ();
       for (i = 0; i < nwords; i++)
 	{
 	  /* If I is 0, use the low-order word in both field and target;
@@ -1536,12 +1519,17 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 				     : (int) i * BITS_PER_WORD);
 	  rtx target_part = operand_subword (target, wordnum, 1, VOIDmode);
 	  rtx result_part
-	    = extract_bit_field (op0, MIN (BITS_PER_WORD,
-					   bitsize - i * BITS_PER_WORD),
-				 bitnum + bit_offset, 1, false, target_part, mode,
-				 word_mode);
+	    = extract_bit_field_1 (op0, MIN (BITS_PER_WORD,
+					     bitsize - i * BITS_PER_WORD),
+				   bitnum + bit_offset, 1, false, target_part,
+				   mode, word_mode, fallback_p);
 
 	  gcc_assert (target_part);
+	  if (!result_part)
+	    {
+	      delete_insns_since (last);
+	      return NULL;
+	    }
 
 	  if (result_part != target_part)
 	    emit_move_insn (target_part, result_part);
@@ -1629,7 +1617,7 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 	xop0 = gen_lowpart_SUBREG (ext_mode, xop0);
       if (MEM_P (xop0))
 	/* Get ref to first byte containing part of the field.  */
-	xop0 = adjust_address (xop0, byte_mode, xoffset);
+	xop0 = adjust_bitfield_address (xop0, byte_mode, xoffset);
 
       /* Now convert from counting within UNIT to counting in EXT_MODE.  */
       if (BYTES_BIG_ENDIAN && !MEM_P (xop0))
@@ -1725,7 +1713,7 @@ extract_bit_field_1 (rtx str_rtx, unsigned HOST_WIDE_INT bitsize,
 	      last = get_last_insn ();
 
 	      /* Fetch it to a register in that size.  */
-	      xop0 = adjust_address (op0, bestmode, xoffset);
+	      xop0 = adjust_bitfield_address (op0, bestmode, xoffset);
 	      xop0 = force_reg (bestmode, xop0);
 	      result = extract_bit_field_1 (xop0, bitsize, xbitpos,
 					    unsignedp, packedp, target,
@@ -1906,7 +1894,7 @@ extract_fixed_bit_field (enum machine_mode tmode, rtx op0,
 	  offset -= (offset % (total_bits / BITS_PER_UNIT));
 	}
 
-      op0 = adjust_address (op0, mode, offset);
+      op0 = adjust_bitfield_address (op0, mode, offset);
     }
 
   mode = GET_MODE (op0);
@@ -1985,11 +1973,11 @@ mask_rtx (enum machine_mode mode, int bitpos, int bitsize, int complement)
 {
   double_int mask;
 
-  mask = double_int_mask (bitsize);
-  mask = double_int_lshift (mask, bitpos, HOST_BITS_PER_DOUBLE_INT, false);
+  mask = double_int::mask (bitsize);
+  mask = mask.llshift (bitpos, HOST_BITS_PER_DOUBLE_INT);
 
   if (complement)
-    mask = double_int_not (mask);
+    mask = ~mask;
 
   return immed_double_int_const (mask, mode);
 }
@@ -2002,8 +1990,8 @@ lshift_value (enum machine_mode mode, rtx value, int bitpos, int bitsize)
 {
   double_int val;
   
-  val = double_int_zext (uhwi_to_double_int (INTVAL (value)), bitsize);
-  val = double_int_lshift (val, bitpos, HOST_BITS_PER_DOUBLE_INT, false);
+  val = double_int::from_uhwi (INTVAL (value)).zext (bitsize);
+  val = val.llshift (bitpos, HOST_BITS_PER_DOUBLE_INT);
 
   return immed_double_int_const (val, mode);
 }
@@ -3261,7 +3249,6 @@ expand_mult (enum machine_mode mode, rtx op0, rtx op1, rtx target,
       /* Attempt to handle multiplication of DImode values by negative
 	 coefficients, by performing the multiplication by a positive
 	 multiplier and then inverting the result.  */
-      /* ??? How is this not slightly redundant with the neg variant?  */
       if (is_neg && mode_bitsize > HOST_BITS_PER_WIDE_INT)
 	{
 	  /* Its safe to use -coeff even for INT_MIN, as the
@@ -3278,6 +3265,7 @@ expand_mult (enum machine_mode mode, rtx op0, rtx op1, rtx target,
 					    &algorithm, variant);
 	      return expand_unop (mode, neg_optab, temp, target, 0);
 	    }
+	  goto skip_synth;
 	}
 
       /* Exclude cost of op0 from max_cost to match the cost
@@ -3404,12 +3392,9 @@ choose_multiplier (unsigned HOST_WIDE_INT d, int n, int precision,
 		   unsigned HOST_WIDE_INT *multiplier_ptr,
 		   int *post_shift_ptr, int *lgup_ptr)
 {
-  HOST_WIDE_INT mhigh_hi, mlow_hi;
-  unsigned HOST_WIDE_INT mhigh_lo, mlow_lo;
+  double_int mhigh, mlow;
   int lgup, post_shift;
   int pow, pow2;
-  unsigned HOST_WIDE_INT nl, dummy1;
-  HOST_WIDE_INT nh, dummy2;
 
   /* lgup = ceil(log2(divisor)); */
   lgup = ceil_log2 (d);
@@ -3425,32 +3410,17 @@ choose_multiplier (unsigned HOST_WIDE_INT d, int n, int precision,
   gcc_assert (pow != HOST_BITS_PER_DOUBLE_INT);
 
   /* mlow = 2^(N + lgup)/d */
- if (pow >= HOST_BITS_PER_WIDE_INT)
-    {
-      nh = (HOST_WIDE_INT) 1 << (pow - HOST_BITS_PER_WIDE_INT);
-      nl = 0;
-    }
-  else
-    {
-      nh = 0;
-      nl = (unsigned HOST_WIDE_INT) 1 << pow;
-    }
-  div_and_round_double (TRUNC_DIV_EXPR, 1, nl, nh, d, (HOST_WIDE_INT) 0,
-			&mlow_lo, &mlow_hi, &dummy1, &dummy2);
+  double_int val = double_int_zero.set_bit (pow);
+  mlow = val.div (double_int::from_uhwi (d), true, TRUNC_DIV_EXPR); 
 
-  /* mhigh = (2^(N + lgup) + 2^N + lgup - precision)/d */
-  if (pow2 >= HOST_BITS_PER_WIDE_INT)
-    nh |= (HOST_WIDE_INT) 1 << (pow2 - HOST_BITS_PER_WIDE_INT);
-  else
-    nl |= (unsigned HOST_WIDE_INT) 1 << pow2;
-  div_and_round_double (TRUNC_DIV_EXPR, 1, nl, nh, d, (HOST_WIDE_INT) 0,
-			&mhigh_lo, &mhigh_hi, &dummy1, &dummy2);
+  /* mhigh = (2^(N + lgup) + 2^(N + lgup - precision))/d */
+  val |= double_int_zero.set_bit (pow2);
+  mhigh = val.div (double_int::from_uhwi (d), true, TRUNC_DIV_EXPR);
 
-  gcc_assert (!mhigh_hi || nh - d < d);
-  gcc_assert (mhigh_hi <= 1 && mlow_hi <= 1);
+  gcc_assert (!mhigh.high || val.high - d < d);
+  gcc_assert (mhigh.high <= 1 && mlow.high <= 1);
   /* Assert that mlow < mhigh.  */
-  gcc_assert (mlow_hi < mhigh_hi
-	      || (mlow_hi == mhigh_hi && mlow_lo < mhigh_lo));
+  gcc_assert (mlow.ult (mhigh));
 
   /* If precision == N, then mlow, mhigh exceed 2^N
      (but they do not exceed 2^(N+1)).  */
@@ -3458,15 +3428,14 @@ choose_multiplier (unsigned HOST_WIDE_INT d, int n, int precision,
   /* Reduce to lowest terms.  */
   for (post_shift = lgup; post_shift > 0; post_shift--)
     {
-      unsigned HOST_WIDE_INT ml_lo = (mlow_hi << (HOST_BITS_PER_WIDE_INT - 1)) | (mlow_lo >> 1);
-      unsigned HOST_WIDE_INT mh_lo = (mhigh_hi << (HOST_BITS_PER_WIDE_INT - 1)) | (mhigh_lo >> 1);
+      int shft = HOST_BITS_PER_WIDE_INT - 1;
+      unsigned HOST_WIDE_INT ml_lo = (mlow.high << shft) | (mlow.low >> 1);
+      unsigned HOST_WIDE_INT mh_lo = (mhigh.high << shft) | (mhigh.low >> 1);
       if (ml_lo >= mh_lo)
 	break;
 
-      mlow_hi = 0;
-      mlow_lo = ml_lo;
-      mhigh_hi = 0;
-      mhigh_lo = mh_lo;
+      mlow = double_int::from_uhwi (ml_lo);
+      mhigh = double_int::from_uhwi (mh_lo);
     }
 
   *post_shift_ptr = post_shift;
@@ -3474,13 +3443,13 @@ choose_multiplier (unsigned HOST_WIDE_INT d, int n, int precision,
   if (n < HOST_BITS_PER_WIDE_INT)
     {
       unsigned HOST_WIDE_INT mask = ((unsigned HOST_WIDE_INT) 1 << n) - 1;
-      *multiplier_ptr = mhigh_lo & mask;
-      return mhigh_lo >= mask;
+      *multiplier_ptr = mhigh.low & mask;
+      return mhigh.low >= mask;
     }
   else
     {
-      *multiplier_ptr = mhigh_lo;
-      return mhigh_hi;
+      *multiplier_ptr = mhigh.low;
+      return mhigh.high;
     }
 }
 

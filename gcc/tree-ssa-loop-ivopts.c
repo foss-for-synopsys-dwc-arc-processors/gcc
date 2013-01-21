@@ -1,5 +1,5 @@
 /* Induction variable optimizations.
-   Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
+   Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
    Free Software Foundation, Inc.
 
 This file is part of GCC.
@@ -980,7 +980,7 @@ determine_biv_step (gimple phi)
   tree name = PHI_RESULT (phi);
   affine_iv iv;
 
-  if (!is_gimple_reg (name))
+  if (virtual_operand_p (name))
     return NULL_TREE;
 
   if (!simple_iv (loop, loop, name, &iv, true))
@@ -1225,7 +1225,7 @@ record_invariant (struct ivopts_data *data, tree op, bool nonlinear_use)
   struct version_info *info;
 
   if (TREE_CODE (op) != SSA_NAME
-      || !is_gimple_reg (op))
+      || virtual_operand_p (op))
     return;
 
   bb = gimple_bb (SSA_NAME_DEF_STMT (op));
@@ -1571,8 +1571,7 @@ constant_multiple_of (tree top, tree bot, double_int *mul)
       if (!constant_multiple_of (TREE_OPERAND (top, 0), bot, &res))
 	return false;
 
-      *mul = double_int_sext (double_int_mul (res, tree_to_double_int (mby)),
-			      precision);
+      *mul = (res * tree_to_double_int (mby)).sext (precision);
       return true;
 
     case PLUS_EXPR:
@@ -1582,21 +1581,20 @@ constant_multiple_of (tree top, tree bot, double_int *mul)
 	return false;
 
       if (code == MINUS_EXPR)
-	p1 = double_int_neg (p1);
-      *mul = double_int_sext (double_int_add (p0, p1), precision);
+	p1 = -p1;
+      *mul = (p0 + p1).sext (precision);
       return true;
 
     case INTEGER_CST:
       if (TREE_CODE (bot) != INTEGER_CST)
 	return false;
 
-      p0 = double_int_sext (tree_to_double_int (top), precision);
-      p1 = double_int_sext (tree_to_double_int (bot), precision);
-      if (double_int_zero_p (p1))
+      p0 = tree_to_double_int (top).sext (precision);
+      p1 = tree_to_double_int (bot).sext (precision);
+      if (p1.is_zero ())
 	return false;
-      *mul = double_int_sext (double_int_sdivmod (p0, p1, FLOOR_DIV_EXPR, &res),
-			      precision);
-      return double_int_zero_p (res);
+      *mul = p0.sdivmod (p1, FLOOR_DIV_EXPR, &res).sext (precision);
+      return res.is_zero ();
 
     default:
       return false;
@@ -1927,7 +1925,7 @@ find_interesting_uses_outside (struct ivopts_data *data, edge exit)
     {
       phi = gsi_stmt (psi);
       def = PHI_ARG_DEF_FROM_EDGE (phi, exit);
-      if (is_gimple_reg (def))
+      if (!virtual_operand_p (def))
         find_interesting_uses_op (data, def);
     }
 }
@@ -3000,7 +2998,7 @@ get_computation_aff (struct loop *loop,
       aff_combination_add (&cbase_aff, &cstep_aff);
     }
 
-  aff_combination_scale (&cbase_aff, double_int_neg (rat));
+  aff_combination_scale (&cbase_aff, -rat);
   aff_combination_add (aff, &cbase_aff);
   if (common_type != uutype)
     aff_combination_convert (aff, uutype);
@@ -3120,7 +3118,7 @@ multiplier_allowed_in_address_p (HOST_WIDE_INT ratio, enum machine_mode mode,
 
    TODO -- there must be some better way.  This all is quite crude.  */
 
-typedef struct
+typedef struct address_cost_data_s
 {
   HOST_WIDE_INT min_offset, max_offset;
   unsigned costs[2][2][2][2];
@@ -3173,7 +3171,7 @@ get_address_cost (bool symbol_present, bool var_present,
 
       for (i = width; i >= 0; i--)
 	{
-	  off = -((HOST_WIDE_INT) 1 << i);
+	  off = -((unsigned HOST_WIDE_INT) 1 << i);
 	  XEXP (addr, 1) = gen_int_mode (off, address_mode);
 	  if (memory_address_addr_space_p (mem_mode, addr, as))
 	    break;
@@ -3182,7 +3180,7 @@ get_address_cost (bool symbol_present, bool var_present,
 
       for (i = width; i >= 0; i--)
 	{
-	  off = ((HOST_WIDE_INT) 1 << i) - 1;
+	  off = ((unsigned HOST_WIDE_INT) 1 << i) - 1;
 	  XEXP (addr, 1) = gen_int_mode (off, address_mode);
 	  if (memory_address_addr_space_p (mem_mode, addr, as))
 	    break;
@@ -3777,7 +3775,7 @@ compare_aff_trees (aff_tree *aff1, aff_tree *aff2)
 
   for (i = 0; i < aff1->n; i++)
     {
-      if (double_int_cmp (aff1->elts[i].coef, aff2->elts[i].coef, 0) != 0)
+      if (aff1->elts[i].coef != aff2->elts[i].coef)
         return false;
 
       if (!operand_equal_p (aff1->elts[i].val, aff2->elts[i].val, 0))
@@ -3904,7 +3902,7 @@ get_loop_invariant_expr_id (struct ivopts_data *data, tree ubase,
   tree_to_aff_combination (ub, TREE_TYPE (ub), &ubase_aff);
   tree_to_aff_combination (cb, TREE_TYPE (cb), &cbase_aff);
 
-  aff_combination_scale (&cbase_aff, shwi_to_double_int (-1 * ratio));
+  aff_combination_scale (&cbase_aff, double_int::from_shwi (-1 * ratio));
   aff_combination_add (&ubase_aff, &cbase_aff);
   expr = aff_combination_to_tree (&ubase_aff);
   return get_expr_id (data, expr);
@@ -3990,8 +3988,8 @@ get_computation_cost_at (struct ivopts_data *data,
   if (!constant_multiple_of (ustep, cstep, &rat))
     return infinite_cost;
 
-  if (double_int_fits_in_shwi_p (rat))
-    ratio = double_int_to_shwi (rat);
+  if (rat.fits_shwi ())
+    ratio = rat.to_shwi ();
   else
     return infinite_cost;
 
@@ -4504,7 +4502,7 @@ iv_elimination_compare_lt (struct ivopts_data *data,
   aff_combination_scale (&tmpa, double_int_minus_one);
   aff_combination_add (&tmpb, &tmpa);
   aff_combination_add (&tmpb, &nit);
-  if (tmpb.n != 0 || !double_int_equal_p (tmpb.offset, double_int_one))
+  if (tmpb.n != 0 || tmpb.offset != double_int_one)
     return false;
 
   /* Finally, check that CAND->IV->BASE - CAND->IV->STEP * A does not
@@ -4594,9 +4592,9 @@ may_eliminate_iv (struct ivopts_data *data,
 
       max_niter = desc->max;
       if (stmt_after_increment (loop, cand, use->stmt))
-        max_niter = double_int_add (max_niter, double_int_one);
+        max_niter += double_int_one;
       period_value = tree_to_double_int (period);
-      if (double_int_ucmp (max_niter, period_value) > 0)
+      if (max_niter.ugt (period_value))
         {
           /* See if we can take advantage of inferred loop bound information.  */
           if (data->loop_single_exit_p)
@@ -4604,7 +4602,7 @@ may_eliminate_iv (struct ivopts_data *data,
               if (!max_loop_iterations (loop, &max_niter))
                 return false;
               /* The loop bound is already adjusted by adding 1.  */
-              if (double_int_ucmp (max_niter, period_value) > 0)
+              if (max_niter.ugt (period_value))
                 return false;
             }
           else
@@ -5048,7 +5046,7 @@ determine_set_costs (struct ivopts_data *data)
       phi = gsi_stmt (psi);
       op = PHI_RESULT (phi);
 
-      if (!is_gimple_reg (op))
+      if (virtual_operand_p (op))
 	continue;
 
       if (get_iv (data, op))

@@ -1488,8 +1488,8 @@ build_ref_for_offset (location_t loc, tree base, HOST_WIDE_INT offset,
 	  || TREE_CODE (prev_base) == TARGET_MEM_REF)
 	align = TYPE_ALIGN (TREE_TYPE (prev_base));
     }
-  misalign += (double_int_sext (tree_to_double_int (off),
-				TYPE_PRECISION (TREE_TYPE (off))).low
+  misalign += (tree_to_double_int (off)
+	       .sext (TYPE_PRECISION (TREE_TYPE (off))).low
 	       * BITS_PER_UNIT);
   misalign = misalign & (align - 1);
   if (misalign != 0)
@@ -4050,36 +4050,35 @@ turn_representatives_into_adjustments (VEC (access_p, heap) *representatives,
 
       if (!repr || no_accesses_p (repr))
 	{
-	  struct ipa_parm_adjustment *adj;
+	  struct ipa_parm_adjustment adj;
 
-	  adj = VEC_quick_push (ipa_parm_adjustment_t, adjustments, NULL);
-	  memset (adj, 0, sizeof (*adj));
-	  adj->base_index = get_param_index (parm, parms);
-	  adj->base = parm;
+	  memset (&adj, 0, sizeof (adj));
+	  adj.base_index = get_param_index (parm, parms);
+	  adj.base = parm;
 	  if (!repr)
-	    adj->copy_param = 1;
+	    adj.copy_param = 1;
 	  else
-	    adj->remove_param = 1;
+	    adj.remove_param = 1;
+	  VEC_quick_push (ipa_parm_adjustment_t, adjustments, adj);
 	}
       else
 	{
-	  struct ipa_parm_adjustment *adj;
+	  struct ipa_parm_adjustment adj;
 	  int index = get_param_index (parm, parms);
 
 	  for (; repr; repr = repr->next_grp)
 	    {
-	      adj = VEC_quick_push (ipa_parm_adjustment_t, adjustments, NULL);
-	      memset (adj, 0, sizeof (*adj));
+	      memset (&adj, 0, sizeof (adj));
 	      gcc_assert (repr->base == parm);
-	      adj->base_index = index;
-	      adj->base = repr->base;
-	      adj->type = repr->type;
-	      adj->alias_ptr_type = reference_alias_ptr_type (repr->expr);
-	      adj->offset = repr->offset;
-	      adj->by_ref = (POINTER_TYPE_P (TREE_TYPE (repr->base))
-			     && (repr->grp_maybe_modified
-				 || repr->grp_not_necessarilly_dereferenced));
-
+	      adj.base_index = index;
+	      adj.base = repr->base;
+	      adj.type = repr->type;
+	      adj.alias_ptr_type = reference_alias_ptr_type (repr->expr);
+	      adj.offset = repr->offset;
+	      adj.by_ref = (POINTER_TYPE_P (TREE_TYPE (repr->base))
+			    && (repr->grp_maybe_modified
+				|| repr->grp_not_necessarilly_dereferenced));
+	      VEC_quick_push (ipa_parm_adjustment_t, adjustments, adj);
 	    }
 	}
     }
@@ -4208,7 +4207,7 @@ get_adjustment_for_base (ipa_parm_adjustment_vec adjustments, tree base)
     {
       struct ipa_parm_adjustment *adj;
 
-      adj = VEC_index (ipa_parm_adjustment_t, adjustments, i);
+      adj = &VEC_index (ipa_parm_adjustment_t, adjustments, i);
       if (!adj->copy_param && adj->base == base)
 	return adj;
     }
@@ -4315,7 +4314,7 @@ sra_ipa_modify_expr (tree *expr, bool convert,
 
   for (i = 0; i < len; i++)
     {
-      adj = VEC_index (ipa_parm_adjustment_t, adjustments, i);
+      adj = &VEC_index (ipa_parm_adjustment_t, adjustments, i);
 
       if (adj->base == base &&
 	  (adj->offset == offset || adj->remove_param))
@@ -4522,7 +4521,7 @@ sra_ipa_reset_debug_stmts (ipa_parm_adjustment_vec adjustments)
       tree name, vexpr, copy = NULL_TREE;
       use_operand_p use_p;
 
-      adj = VEC_index (ipa_parm_adjustment_t, adjustments, i);
+      adj = &VEC_index (ipa_parm_adjustment_t, adjustments, i);
       if (adj->copy_param || !is_gimple_reg (adj->base))
 	continue;
       name = ssa_default_def (cfun, adj->base);
@@ -4617,7 +4616,6 @@ convert_callers_for_node (struct cgraph_node *node,
 
   for (cs = node->callers; cs; cs = cs->next_caller)
     {
-      current_function_decl = cs->caller->symbol.decl;
       push_cfun (DECL_STRUCT_FUNCTION (cs->caller->symbol.decl));
 
       if (dump_file)
@@ -4646,13 +4644,10 @@ static void
 convert_callers (struct cgraph_node *node, tree old_decl,
 		 ipa_parm_adjustment_vec adjustments)
 {
-  tree old_cur_fndecl = current_function_decl;
   basic_block this_block;
 
   cgraph_for_node_and_aliases (node, convert_callers_for_node,
 			       adjustments, false);
-
-  current_function_decl = old_cur_fndecl;
 
   if (!encountered_recursive_call)
     return;
@@ -4694,13 +4689,12 @@ modify_function (struct cgraph_node *node, ipa_parm_adjustment_vec adjustments)
   rebuild_cgraph_edges ();
   free_dominance_info (CDI_DOMINATORS);
   pop_cfun ();
-  current_function_decl = NULL_TREE;
 
   new_node = cgraph_function_versioning (node, redirect_callers, NULL, NULL,
 					 false, NULL, NULL, "isra");
-  current_function_decl = new_node->symbol.decl;
-  push_cfun (DECL_STRUCT_FUNCTION (new_node->symbol.decl));
+  VEC_free (cgraph_edge_p, heap, redirect_callers);
 
+  push_cfun (DECL_STRUCT_FUNCTION (new_node->symbol.decl));
   ipa_modify_formal_parameters (current_function_decl, adjustments, "ISRA");
   cfg_changed = ipa_sra_modify_function_body (adjustments);
   sra_ipa_reset_debug_stmts (adjustments);

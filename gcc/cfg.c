@@ -53,8 +53,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "obstack.h"
 #include "ggc.h"
-#include "hashtab.h"
+#include "hash-table.h"
 #include "alloc-pool.h"
+#include "tree.h"
 #include "basic-block.h"
 #include "df.h"
 #include "cfgloop.h" /* FIXME: For struct loop.  */
@@ -404,14 +405,15 @@ check_bb_profile (basic_block bb, FILE * file, int indent, int flags)
   int sum = 0;
   gcov_type lsum;
   edge_iterator ei;
+  struct function *fun = DECL_STRUCT_FUNCTION (current_function_decl);
   char *s_indent = (char *) alloca ((size_t) indent + 1);
   memset ((void *) s_indent, ' ', (size_t) indent);
   s_indent[indent] = '\0';
 
-  if (profile_status == PROFILE_ABSENT)
+  if (profile_status_for_function (fun) == PROFILE_ABSENT)
     return;
 
-  if (bb != EXIT_BLOCK_PTR)
+  if (bb != EXIT_BLOCK_PTR_FOR_FUNCTION (fun))
     {
       FOR_EACH_EDGE (e, ei, bb->succs)
 	sum += e->probability;
@@ -428,7 +430,7 @@ check_bb_profile (basic_block bb, FILE * file, int indent, int flags)
 		 (flags & TDF_COMMENT) ? ";; " : "", s_indent,
 		 (int) lsum, (int) bb->count);
     }
-  if (bb != ENTRY_BLOCK_PTR)
+    if (bb != ENTRY_BLOCK_PTR_FOR_FUNCTION (fun))
     {
       sum = 0;
       FOR_EACH_EDGE (e, ei, bb->preds)
@@ -698,15 +700,16 @@ dump_bb_info (FILE *outf, basic_block bb, int indent, int flags,
       if (flags & TDF_COMMENT)
 	fputs (";; ", outf);
       fprintf (outf, "%sbasic block %d, loop depth %d",
-	       s_indent, bb->index, bb->loop_depth);
+	       s_indent, bb->index, bb_loop_depth (bb));
       if (flags & TDF_DETAILS)
 	{
+	  struct function *fun = DECL_STRUCT_FUNCTION (current_function_decl);
 	  fprintf (outf, ", count " HOST_WIDEST_INT_PRINT_DEC,
 		   (HOST_WIDEST_INT) bb->count);
 	  fprintf (outf, ", freq %i", bb->frequency);
-	  if (maybe_hot_bb_p (bb))
+	  if (maybe_hot_bb_p (fun, bb))
 	    fputs (", maybe hot", outf);
-	  if (probably_never_executed_bb_p (bb))
+	  if (probably_never_executed_bb_p (fun, bb))
 	    fputs (", probably never executed", outf);
 	}
       fputc ('\n', outf);
@@ -761,6 +764,8 @@ dump_bb_info (FILE *outf, basic_block bb, int indent, int flags,
 	  dump_edge_info (outf, e, flags, 0);
 	  fputc ('\n', outf);
 	}
+      if (first)
+	fputc ('\n', outf);
     }
 
   if (do_footer)
@@ -781,6 +786,8 @@ dump_bb_info (FILE *outf, basic_block bb, int indent, int flags,
 	  dump_edge_info (outf, e, flags, 1);
 	  fputc ('\n', outf);
 	}
+      if (first)
+	fputc ('\n', outf);
     }
 }
 
@@ -969,14 +976,7 @@ scale_bbs_frequencies_gcov_type (basic_block *bbs, int nbbs, gcov_type num,
       }
 }
 
-/* Data structures used to maintain mapping between basic blocks and
-   copies.  */
-static htab_t bb_original;
-static htab_t bb_copy;
-
-/* And between loops and copies.  */
-static htab_t loop_copy;
-static alloc_pool original_copy_bb_pool;
+/* Helper types for hash tables.  */
 
 struct htab_bb_copy_original_entry
 {
@@ -986,24 +986,34 @@ struct htab_bb_copy_original_entry
   int index2;
 };
 
-static hashval_t
-bb_copy_original_hash (const void *p)
+struct bb_copy_hasher : typed_noop_remove <htab_bb_copy_original_entry>
 {
-  const struct htab_bb_copy_original_entry *data
-    = ((const struct htab_bb_copy_original_entry *)p);
+  typedef htab_bb_copy_original_entry T;
+  static inline hashval_t hash (const T *);
+  static inline bool equal (const T *existing, const T * candidate);
+};
 
+inline hashval_t
+bb_copy_hasher::hash (const T *data)
+{
   return data->index1;
 }
-static int
-bb_copy_original_eq (const void *p, const void *q)
-{
-  const struct htab_bb_copy_original_entry *data
-    = ((const struct htab_bb_copy_original_entry *)p);
-  const struct htab_bb_copy_original_entry *data2
-    = ((const struct htab_bb_copy_original_entry *)q);
 
+inline bool
+bb_copy_hasher::equal (const T *data, const T *data2)
+{
   return data->index1 == data2->index1;
 }
+
+/* Data structures used to maintain mapping between basic blocks and
+   copies.  */
+static hash_table <bb_copy_hasher> bb_original;
+static hash_table <bb_copy_hasher> bb_copy;
+
+/* And between loops and copies.  */
+static hash_table <bb_copy_hasher> loop_copy;
+static alloc_pool original_copy_bb_pool;
+
 
 /* Initialize the data structures to maintain mapping between blocks
    and its copies.  */
@@ -1014,10 +1024,9 @@ initialize_original_copy_tables (void)
   original_copy_bb_pool
     = create_alloc_pool ("original_copy",
 			 sizeof (struct htab_bb_copy_original_entry), 10);
-  bb_original = htab_create (10, bb_copy_original_hash,
-			     bb_copy_original_eq, NULL);
-  bb_copy = htab_create (10, bb_copy_original_hash, bb_copy_original_eq, NULL);
-  loop_copy = htab_create (10, bb_copy_original_hash, bb_copy_original_eq, NULL);
+  bb_original.create (10);
+  bb_copy.create (10);
+  loop_copy.create (10);
 }
 
 /* Free the data structures to maintain mapping between blocks and
@@ -1026,34 +1035,31 @@ void
 free_original_copy_tables (void)
 {
   gcc_assert (original_copy_bb_pool);
-  htab_delete (bb_copy);
-  htab_delete (bb_original);
-  htab_delete (loop_copy);
+  bb_copy.dispose ();
+  bb_original.dispose ();
+  loop_copy.dispose ();
   free_alloc_pool (original_copy_bb_pool);
-  bb_copy = NULL;
-  bb_original = NULL;
-  loop_copy = NULL;
   original_copy_bb_pool = NULL;
 }
 
 /* Removes the value associated with OBJ from table TAB.  */
 
 static void
-copy_original_table_clear (htab_t tab, unsigned obj)
+copy_original_table_clear (hash_table <bb_copy_hasher> tab, unsigned obj)
 {
-  void **slot;
+  htab_bb_copy_original_entry **slot;
   struct htab_bb_copy_original_entry key, *elt;
 
   if (!original_copy_bb_pool)
     return;
 
   key.index1 = obj;
-  slot = htab_find_slot (tab, &key, NO_INSERT);
+  slot = tab.find_slot (&key, NO_INSERT);
   if (!slot)
     return;
 
-  elt = (struct htab_bb_copy_original_entry *) *slot;
-  htab_clear_slot (tab, slot);
+  elt = *slot;
+  tab.clear_slot (slot);
   pool_free (original_copy_bb_pool, elt);
 }
 
@@ -1061,7 +1067,8 @@ copy_original_table_clear (htab_t tab, unsigned obj)
    Do nothing when data structures are not initialized.  */
 
 static void
-copy_original_table_set (htab_t tab, unsigned obj, unsigned val)
+copy_original_table_set (hash_table <bb_copy_hasher> tab,
+			 unsigned obj, unsigned val)
 {
   struct htab_bb_copy_original_entry **slot;
   struct htab_bb_copy_original_entry key;
@@ -1070,8 +1077,7 @@ copy_original_table_set (htab_t tab, unsigned obj, unsigned val)
     return;
 
   key.index1 = obj;
-  slot = (struct htab_bb_copy_original_entry **)
-		htab_find_slot (tab, &key, INSERT);
+  slot = tab.find_slot (&key, INSERT);
   if (!*slot)
     {
       *slot = (struct htab_bb_copy_original_entry *)
@@ -1099,7 +1105,7 @@ get_bb_original (basic_block bb)
   gcc_assert (original_copy_bb_pool);
 
   key.index1 = bb->index;
-  entry = (struct htab_bb_copy_original_entry *) htab_find (bb_original, &key);
+  entry = bb_original.find (&key);
   if (entry)
     return BASIC_BLOCK (entry->index2);
   else
@@ -1124,7 +1130,7 @@ get_bb_copy (basic_block bb)
   gcc_assert (original_copy_bb_pool);
 
   key.index1 = bb->index;
-  entry = (struct htab_bb_copy_original_entry *) htab_find (bb_copy, &key);
+  entry = bb_copy.find (&key);
   if (entry)
     return BASIC_BLOCK (entry->index2);
   else
@@ -1154,7 +1160,7 @@ get_loop_copy (struct loop *loop)
   gcc_assert (original_copy_bb_pool);
 
   key.index1 = loop->num;
-  entry = (struct htab_bb_copy_original_entry *) htab_find (loop_copy, &key);
+  entry = loop_copy.find (&key);
   if (entry)
     return get_loop (entry->index2);
   else

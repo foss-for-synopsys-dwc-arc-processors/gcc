@@ -212,7 +212,7 @@ static int mep_sched_reorder (FILE *, int, rtx *, int *, int);
 static rtx mep_make_bundle (rtx, rtx);
 static void mep_bundle_insns (rtx);
 static bool mep_rtx_cost (rtx, int, int, int, int *, bool);
-static int mep_address_cost (rtx, bool);
+static int mep_address_cost (rtx, enum machine_mode, addr_space_t, bool);
 static void mep_setup_incoming_varargs (cumulative_args_t, enum machine_mode,
 					tree, int *, int);
 static bool mep_pass_by_reference (cumulative_args_t cum, enum machine_mode,
@@ -595,132 +595,6 @@ mep_regno_reg_class (int regno)
   gcc_assert (regno >= FIRST_SHADOW_REGISTER && regno <= LAST_SHADOW_REGISTER);
   return NO_REGS;
 }
-
-#if 0
-int
-mep_reg_class_from_constraint (int c, const char *str)
-{
-  switch (c)
-    {
-    case 'a':
-      return SP_REGS;
-    case 'b':
-      return TP_REGS;
-    case 'c':
-      return CONTROL_REGS;
-    case 'd':
-      return HILO_REGS;
-    case 'e':
-      {
-	switch (str[1])
-	  {
-	  case 'm':
-	    return LOADABLE_CR_REGS;
-	  case 'x':
-	    return mep_have_copro_copro_moves_p ? CR_REGS : NO_REGS;
-	  case 'r':
-	    return mep_have_core_copro_moves_p ? CR_REGS : NO_REGS;
-	  default:
-	    return NO_REGS;
-	  }
-      }
-    case 'h':
-      return HI_REGS;
-    case 'j':
-      return RPC_REGS;
-    case 'l':
-      return LO_REGS;
-    case 't':
-      return TPREL_REGS;
-    case 'v':
-      return GP_REGS;
-    case 'x':
-      return CR_REGS;
-    case 'y':
-      return CCR_REGS;
-    case 'z':
-      return R0_REGS;
-
-    case 'A':
-    case 'B':
-    case 'C':
-    case 'D':
-      {
-	enum reg_class which = c - 'A' + USER0_REGS;
-	return (reg_class_size[which] > 0 ? which : NO_REGS);
-      }
-
-    default:
-      return NO_REGS;
-    }
-}
-
-bool
-mep_const_ok_for_letter_p (HOST_WIDE_INT value, int c)
-{
-  switch (c)
-    {
-      case 'I': return value >= -32768 && value <      32768;
-      case 'J': return value >=      0 && value <      65536;
-      case 'K': return value >=      0 && value < 0x01000000;
-      case 'L': return value >=    -32 && value <         32;
-      case 'M': return value >=      0 && value <         32;
-      case 'N': return value >=      0 && value <         16;
-      case 'O':
-	if (value & 0xffff)
-	  return false;
-	return value >= -2147483647-1 && value <= 2147483647;
-    default:
-      gcc_unreachable ();
-    }
-}
-
-bool
-mep_extra_constraint (rtx value, int c)
-{
-  encode_pattern (value);
-
-  switch (c)
-    {
-    case 'R':
-      /* For near symbols, like what call uses.  */
-      if (GET_CODE (value) == REG)
-	return 0;
-      return mep_call_address_operand (value, GET_MODE (value));
-
-    case 'S':
-      /* For signed 8-bit immediates.  */
-      return (GET_CODE (value) == CONST_INT
-	      && INTVAL (value) >= -128
-	      && INTVAL (value) <= 127);
-
-    case 'T':
-      /* For tp/gp relative symbol values.  */
-      return (RTX_IS ("u3s") || RTX_IS ("u2s")
-              || RTX_IS ("+u3si") || RTX_IS ("+u2si"));
-
-    case 'U':
-      /* Non-absolute memories.  */
-      return GET_CODE (value) == MEM && ! CONSTANT_P (XEXP (value, 0));
-
-    case 'W':
-      /* %hi(sym) */
-      return RTX_IS ("Hs");
-
-    case 'Y':
-      /* Register indirect.  */
-      return RTX_IS ("mr");
-
-    case 'Z':
-      return mep_section_tag (value) == 'c' && RTX_IS ("ms");
-    }
-
-  return false;
-}
-#endif
-
-#undef PASS
-#undef FAIL
 
 static bool
 const_in_range (rtx x, int minv, int maxv)
@@ -6940,9 +6814,9 @@ mep_make_bundle (rtx core, rtx cop)
   /* Derive a location for the bundle.  Individual instructions cannot
      have their own location because there can be no assembler labels
      between CORE and COP.  */
-  INSN_LOCATOR (insn) = INSN_LOCATOR (INSN_LOCATOR (core) ? core : cop);
-  INSN_LOCATOR (core) = 0;
-  INSN_LOCATOR (cop) = 0;
+  INSN_LOCATION (insn) = INSN_LOCATION (INSN_LOCATION (core) ? core : cop);
+  INSN_LOCATION (core) = 0;
+  INSN_LOCATION (cop) = 0;
 
   return insn;
 }
@@ -7039,7 +6913,7 @@ mep_bundle_insns (rtx insns)
 	     whenever the current line changes, set the location info
 	     for INSN to match FIRST.  */
 
-	  INSN_LOCATOR (insn) = INSN_LOCATOR (first);
+	  INSN_LOCATION (insn) = INSN_LOCATION (first);
 
 	  note = PREV_INSN (insn);
 	  while (note && note != first)
@@ -7278,7 +7152,10 @@ mep_rtx_cost (rtx x, int code, int outer_code ATTRIBUTE_UNUSED,
 }
 
 static int
-mep_address_cost (rtx addr ATTRIBUTE_UNUSED, bool ATTRIBUTE_UNUSED speed_p)
+mep_address_cost (rtx addr ATTRIBUTE_UNUSED,
+		  enum machine_mode mode ATTRIBUTE_UNUSED,
+		  addr_space_t as ATTRIBUTE_UNUSED,
+		  bool ATTRIBUTE_UNUSED speed_p)
 {
   return 1;
 }

@@ -2871,8 +2871,8 @@ compare_constant (const tree t1, const tree t2)
 
 	for (idx = 0; idx < VEC_length (constructor_elt, v1); ++idx)
 	  {
-	    constructor_elt *c1 = VEC_index (constructor_elt, v1, idx);
-	    constructor_elt *c2 = VEC_index (constructor_elt, v2, idx);
+	    constructor_elt *c1 = &VEC_index (constructor_elt, v1, idx);
+	    constructor_elt *c2 = &VEC_index (constructor_elt, v2, idx);
 
 	    /* Check that each value is the same...  */
 	    if (!compare_constant (c1->value, c2->value))
@@ -2999,9 +2999,8 @@ copy_constant (tree exp)
 						      CONSTRUCTOR_ELTS (exp)));
 	FOR_EACH_CONSTRUCTOR_ELT (CONSTRUCTOR_ELTS (exp), idx, purpose, value)
 	  {
-	    constructor_elt *ce = VEC_quick_push (constructor_elt, v, NULL);
-	    ce->index = purpose;
-	    ce->value = copy_constant (value);
+	    constructor_elt ce = {purpose, copy_constant (value)};
+	    VEC_quick_push (constructor_elt, v, ce);
 	  }
 	CONSTRUCTOR_ELTS (copy) = v;
 	return copy;
@@ -4649,14 +4648,13 @@ array_size_for_constructor (tree val)
 
   /* Compute the total number of array elements.  */
   tmp = TYPE_MIN_VALUE (TYPE_DOMAIN (TREE_TYPE (val)));
-  i = double_int_sub (tree_to_double_int (max_index), tree_to_double_int (tmp));
-  i = double_int_add (i, double_int_one);
+  i = tree_to_double_int (max_index) - tree_to_double_int (tmp);
+  i += double_int_one;
 
   /* Multiply by the array element unit size to find number of bytes.  */
-  i = double_int_mul (i, tree_to_double_int
-		           (TYPE_SIZE_UNIT (TREE_TYPE (TREE_TYPE (val)))));
+  i *= tree_to_double_int (TYPE_SIZE_UNIT (TREE_TYPE (TREE_TYPE (val))));
 
-  gcc_assert (double_int_fits_in_uhwi_p (i));
+  gcc_assert (i.fits_uhwi ());
   return i.low;
 }
 
@@ -4740,9 +4738,9 @@ output_constructor_regular_field (oc_local_state *local)
 	 sign-extend the result because Ada has negative DECL_FIELD_OFFSETs
 	 but we are using an unsigned sizetype.  */
       unsigned prec = TYPE_PRECISION (sizetype);
-      double_int idx = double_int_sub (tree_to_double_int (local->index),
-				       tree_to_double_int (local->min_index));
-      idx = double_int_sext (idx, prec);
+      double_int idx = tree_to_double_int (local->index)
+		       - tree_to_double_int (local->min_index);
+      idx = idx.sext (prec);
       fieldpos = (tree_low_cst (TYPE_SIZE_UNIT (TREE_TYPE (local->val)), 1)
 		  * idx.low);
     }
@@ -5564,9 +5562,8 @@ assemble_alias (tree decl, tree target)
     do_assemble_alias (decl, target);
   else
     {
-      alias_pair *p = VEC_safe_push (alias_pair, gc, alias_pairs, NULL);
-      p->decl = decl;
-      p->target = target;
+      alias_pair p = {decl, target};
+      VEC_safe_push (alias_pair, gc, alias_pairs, p);
     }
 }
 
@@ -5629,14 +5626,9 @@ static int
 dump_tm_clone_to_vec (void **slot, void *info)
 {
   struct tree_map *map = (struct tree_map *) *slot;
-  VEC(tm_alias_pair,heap) **tm_alias_pairs
-    = (VEC(tm_alias_pair, heap) **) info;
-  tm_alias_pair *p;
-
-  p = VEC_safe_push (tm_alias_pair, heap, *tm_alias_pairs, NULL);
-  p->from = map->base.from;
-  p->to = map->to;
-  p->uid = DECL_UID (p->from);
+  VEC(tm_alias_pair,heap) **tm_alias_pairs = (VEC(tm_alias_pair, heap) **) info;
+  tm_alias_pair p = {DECL_UID (map->base.from), map->base.from, map->to};
+  VEC_safe_push (tm_alias_pair, heap, *tm_alias_pairs, p);
   return 1;
 }
 

@@ -94,7 +94,7 @@ add_stmt_info_to_vec (stmt_vector_for_cost *stmt_cost_vec, int count,
   si.kind = kind;
   si.stmt = stmt;
   si.misalign = misalign;
-  VEC_safe_push (stmt_info_for_cost, heap, *stmt_cost_vec, &si);
+  VEC_safe_push (stmt_info_for_cost, heap, *stmt_cost_vec, si);
 }
 
 /************************************************************************
@@ -848,9 +848,8 @@ known_alignment_for_access_p (struct data_reference *data_ref_info)
   return (DR_MISALIGNMENT (data_ref_info) != -1);
 }
 
-/* vect_dump will be set to stderr or dump_file if exist.  */
-extern FILE *vect_dump;
-extern LOC vect_loop_location;
+/* Source location */
+extern LOC vect_location;
 
 /*-----------------------------------------------------------------*/
 /* Function prototypes.                                            */
@@ -977,7 +976,6 @@ extern bool vectorizable_live_operation (gimple, gimple_stmt_iterator *,
 extern bool vectorizable_reduction (gimple, gimple_stmt_iterator *, gimple *,
                                     slp_tree);
 extern bool vectorizable_induction (gimple, gimple_stmt_iterator *, gimple *);
-extern int vect_estimate_min_profitable_iters (loop_vec_info);
 extern tree get_initial_def_for_reduction (gimple, tree, tree *);
 extern int vect_min_worthwhile_factor (enum tree_code);
 extern int vect_get_known_peeling_cost (loop_vec_info, int, int *, int,
@@ -1012,7 +1010,5 @@ void vect_pattern_recog (loop_vec_info, bb_vec_info);
 
 /* In tree-vectorizer.c.  */
 unsigned vectorize_loops (void);
-/* Vectorization debug information */
-extern bool vect_print_dump_info (enum vect_verbosity_levels);
 
 #endif  /* GCC_TREE_VECTORIZER_H  */

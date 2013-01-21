@@ -2204,7 +2204,8 @@ gfc_define_st_label (gfc_st_label *lp, gfc_sl_type type, locus *label_locus)
       switch (type)
 	{
 	case ST_LABEL_FORMAT:
-	  if (lp->referenced == ST_LABEL_TARGET)
+	  if (lp->referenced == ST_LABEL_TARGET
+	      || lp->referenced == ST_LABEL_DO_TARGET)
 	    gfc_error ("Label %d at %C already referenced as branch target",
 		       labelno);
 	  else
@@ -2213,12 +2214,18 @@ gfc_define_st_label (gfc_st_label *lp, gfc_sl_type type, locus *label_locus)
 	  break;
 
 	case ST_LABEL_TARGET:
+	case ST_LABEL_DO_TARGET:
 	  if (lp->referenced == ST_LABEL_FORMAT)
 	    gfc_error ("Label %d at %C already referenced as a format label",
 		       labelno);
 	  else
-	    lp->defined = ST_LABEL_TARGET;
+	    lp->defined = type;
 
+	  if (lp->referenced == ST_LABEL_DO_TARGET && type != ST_LABEL_DO_TARGET
+      	      && gfc_notify_std (GFC_STD_F95_OBS, "DO termination statement "
+				 "which is not END DO or CONTINUE with label "
+				 "%d at %C", labelno) == FAILURE)
+	    return;
 	  break;
 
 	default:
@@ -2254,14 +2261,16 @@ gfc_reference_st_label (gfc_st_label *lp, gfc_sl_type type)
       lp->where = gfc_current_locus;
     }
 
-  if (label_type == ST_LABEL_FORMAT && type == ST_LABEL_TARGET)
+  if (label_type == ST_LABEL_FORMAT
+      && (type == ST_LABEL_TARGET || type == ST_LABEL_DO_TARGET))
     {
       gfc_error ("Label %d at %C previously used as a FORMAT label", labelno);
       rc = FAILURE;
       goto done;
     }
 
-  if ((label_type == ST_LABEL_TARGET || label_type == ST_LABEL_BAD_TARGET)
+  if ((label_type == ST_LABEL_TARGET || label_type == ST_LABEL_DO_TARGET
+       || label_type == ST_LABEL_BAD_TARGET)
       && type == ST_LABEL_FORMAT)
     {
       gfc_error ("Label %d at %C previously used as branch target", labelno);
@@ -2269,7 +2278,13 @@ gfc_reference_st_label (gfc_st_label *lp, gfc_sl_type type)
       goto done;
     }
 
-  lp->referenced = type;
+  if (lp->referenced == ST_LABEL_DO_TARGET && type == ST_LABEL_DO_TARGET
+      && gfc_notify_std (GFC_STD_F95_OBS, "Shared DO termination label %d "
+			 "at %C", labelno) == FAILURE)
+    return FAILURE;
+
+  if (lp->referenced != ST_LABEL_DO_TARGET)
+    lp->referenced = type;
   rc = SUCCESS;
 
 done:
@@ -2496,7 +2511,8 @@ gfc_free_symbol (gfc_symbol *sym)
 
   gfc_free_namelist (sym->namelist);
 
-  gfc_free_namespace (sym->formal_ns);
+  if (sym->ns != sym->formal_ns)
+    gfc_free_namespace (sym->formal_ns);
 
   if (!sym->attr.generic_copy)
     gfc_free_interface (sym->generic);
@@ -2504,6 +2520,13 @@ gfc_free_symbol (gfc_symbol *sym)
   gfc_free_formal_arglist (sym->formal);
 
   gfc_free_namespace (sym->f2k_derived);
+
+  if (sym->common_block && sym->common_block->name[0] != '\0')
+    { 
+      sym->common_block->refs--; 
+      if (sym->common_block->refs == 0)
+	free (sym->common_block);
+    }
 
   free (sym);
 }
@@ -2517,7 +2540,8 @@ gfc_release_symbol (gfc_symbol *sym)
   if (sym == NULL)
     return;
 
-  if (sym->formal_ns != NULL && sym->refs == 2)
+  if (sym->formal_ns != NULL && sym->refs == 2 && sym->formal_ns != sym->ns
+      && (!sym->attr.entry || !sym->module))
     {
       /* As formal_ns contains a reference to sym, delete formal_ns just
 	 before the deletion of sym.  */
@@ -2843,6 +2867,30 @@ gfc_get_ha_symbol (const char *name, gfc_symbol **result)
   return i;
 }
 
+
+/* Search for the symtree belonging to a gfc_common_head; we cannot use
+   head->name as the common_root symtree's name might be mangled.  */
+
+static gfc_symtree *
+find_common_symtree (gfc_symtree *st, gfc_common_head *head)
+{
+
+  gfc_symtree *result;
+
+  if (st == NULL)
+    return NULL;
+
+  if (st->n.common == head)
+    return st;
+
+  result = find_common_symtree (st->left, head);
+  if (!result)  
+    result = find_common_symtree (st->right, head);
+
+  return result;
+}
+
+
 /* Undoes all the changes made to symbols in the current statement.
    This subroutine is made simpler due to the fact that attributes are
    never removed once added.  */
@@ -2865,6 +2913,19 @@ gfc_undo_symbols (void)
 	      /* If the symbol was added to any common block, it
 		 needs to be removed to stop the resolver looking
 		 for a (possibly) dead symbol.  */
+
+	      if (p->common_block->head == p && !p->common_next)
+		{
+		  gfc_symtree st, *st0;
+		  st0 = find_common_symtree (p->ns->common_root,
+					     p->common_block);
+		  if (st0)
+		    {
+		      st.name = st0->name;
+		      gfc_delete_bbt (&p->ns->common_root, &st, compare_symtree);
+		      free (st0);
+		    }
+		}
 
 	      if (p->common_block->head == p)
 	        p->common_block->head = p->common_next;
@@ -2935,7 +2996,7 @@ gfc_undo_symbols (void)
 	{
 	  if (p->namelist_tail != old->namelist_tail)
 	    {
-	      gfc_free_namelist (old->namelist_tail);
+	      gfc_free_namelist (old->namelist_tail->next);
 	      old->namelist_tail->next = NULL;
 	    }
 	}
@@ -4079,6 +4140,7 @@ gfc_copy_formal_args (gfc_symbol *dest, gfc_symbol *src, ifsrc if_src)
      of the formal args).  */
   gfc_current_ns = gfc_get_namespace (parent_ns, 0);
   gfc_current_ns->proc_name = dest;
+  dest->formal_ns = gfc_current_ns;
 
   for (curr_arg = src->formal; curr_arg; curr_arg = curr_arg->next)
     {
@@ -4784,7 +4846,9 @@ gfc_get_typebound_proc (gfc_typebound_proc *tb0)
 gfc_symbol*
 gfc_get_derived_super_type (gfc_symbol* derived)
 {
-  if (derived && derived->attr.generic)
+  gcc_assert (derived);
+
+  if (derived->attr.generic)
     derived = gfc_find_dt_in_generic (derived);
 
   if (!derived->attr.extension)
@@ -4906,7 +4970,7 @@ gfc_find_dt_in_generic (gfc_symbol *sym)
     return sym;
 
   if (sym->attr.generic)
-    for (intr = (sym ? sym->generic : NULL); intr; intr = intr->next)
+    for (intr = sym->generic; intr; intr = intr->next)
       if (intr->sym->attr.flavor == FL_DERIVED)
         break;
   return intr ? intr->sym : NULL;

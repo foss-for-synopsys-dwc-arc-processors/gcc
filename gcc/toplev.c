@@ -1815,6 +1815,9 @@ finalize (bool no_backend)
   if (mem_report)
     dump_memory_report (true);
 
+  if (profile_report)
+    dump_profile_report ();
+
   /* Language-specific end of compilation actions.  */
   lang_hooks.finish ();
 }
@@ -1946,6 +1949,7 @@ toplev_main (int argc, char **argv)
   invoke_plugin_callbacks (PLUGIN_FINISH, NULL);
 
   finalize_plugins ();
+  location_adhoc_data_fini (line_table);
   if (seen_error ())
     return (FATAL_EXIT_CODE);
 

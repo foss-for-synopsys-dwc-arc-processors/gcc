@@ -108,8 +108,7 @@ set_location_for_edge (edge e)
 {
   if (e->goto_locus)
     {
-      set_curr_insn_source_location (e->goto_locus);
-      set_curr_insn_block (e->goto_block);
+      set_curr_insn_location (e->goto_locus);
     }
   else
     {
@@ -125,8 +124,7 @@ set_location_for_edge (edge e)
 		continue;
 	      if (gimple_has_location (stmt) || gimple_block (stmt))
 		{
-		  set_curr_insn_source_location (gimple_location (stmt));
-		  set_curr_insn_block (gimple_block (stmt));
+		  set_curr_insn_location (gimple_location (stmt));
 		  return;
 		}
 	    }
@@ -191,7 +189,7 @@ insert_partition_copy_on_edge (edge e, int dest, int src, source_location locus)
   set_location_for_edge (e);
   /* If a locus is provided, override the default.  */
   if (locus)
-    set_curr_insn_source_location (locus);
+    set_curr_insn_location (locus);
 
   var = partition_to_var (SA.map, src);
   seq = emit_partition_copy (SA.partition_to_pseudo[dest],
@@ -228,7 +226,7 @@ insert_value_copy_on_edge (edge e, int dest, tree src, source_location locus)
   set_location_for_edge (e);
   /* If a locus is provided, override the default.  */
   if (locus)
-    set_curr_insn_source_location (locus);
+    set_curr_insn_location (locus);
 
   start_sequence ();
 
@@ -284,7 +282,7 @@ insert_rtx_to_part_on_edge (edge e, int dest, rtx src, int unsignedsrcp,
   set_location_for_edge (e);
   /* If a locus is provided, override the default.  */
   if (locus)
-    set_curr_insn_source_location (locus);
+    set_curr_insn_location (locus);
 
   /* We give the destination as sizeexp in case src/dest are BLKmode
      mems.  Usually we give the source.  As we result from SSA names
@@ -320,7 +318,7 @@ insert_part_to_rtx_on_edge (edge e, rtx dest, int src, source_location locus)
   set_location_for_edge (e);
   /* If a locus is provided, override the default.  */
   if (locus)
-    set_curr_insn_source_location (locus);
+    set_curr_insn_location (locus);
 
   var = partition_to_var (SA.map, src);
   seq = emit_partition_copy (dest,
@@ -762,7 +760,7 @@ eliminate_useless_phis (void)
         {
 	  gimple phi = gsi_stmt (gsi);
 	  result = gimple_phi_result (phi);
-	  if (!is_gimple_reg (result))
+	  if (virtual_operand_p (result))
 	    {
 #ifdef ENABLE_CHECKING
 	      size_t i;
@@ -772,7 +770,7 @@ eliminate_useless_phis (void)
 	        {
 		  tree arg = PHI_ARG_DEF (phi, i);
 		  if (TREE_CODE (arg) == SSA_NAME
-		      && is_gimple_reg (arg))
+		      && !virtual_operand_p (arg))
 		    {
 		      fprintf (stderr, "Argument of PHI is not virtual (");
 		      print_generic_expr (stderr, arg, TDF_SLIM);
@@ -1032,7 +1030,7 @@ insert_backedge_copies (void)
 	  tree result = gimple_phi_result (phi);
 	  size_t i;
 
-	  if (!is_gimple_reg (result))
+	  if (virtual_operand_p (result))
 	    continue;
 
 	  for (i = 0; i < gimple_phi_num_args (phi); i++)

@@ -1,7 +1,7 @@
 /* C-compiler utilities for types and variables storage layout
    Copyright (C) 1987, 1988, 1992, 1993, 1994, 1995, 1996, 1996, 1998,
    1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011 Free Software Foundation, Inc.
+   2011, 2012 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -1627,13 +1627,10 @@ compute_record_mode (tree type)
       if (simple_cst_equal (TYPE_SIZE (type), DECL_SIZE (field)))
 	mode = DECL_MODE (field);
 
-#ifdef MEMBER_TYPE_FORCES_BLK
-      /* With some targets, eg. c4x, it is sub-optimal
-	 to access an aligned BLKmode structure as a scalar.  */
-
-      if (MEMBER_TYPE_FORCES_BLK (field, mode))
+      /* With some targets, it is sub-optimal to access an aligned
+	 BLKmode structure as a scalar.  */
+      if (targetm.member_type_forces_blk (field, mode))
 	return;
-#endif /* MEMBER_TYPE_FORCES_BLK  */
     }
 
   /* If we only have one real field; use its mode if that mode's size
@@ -2221,14 +2218,13 @@ layout_type (tree type)
 		    && TYPE_UNSIGNED (TREE_TYPE (lb))
 		    && tree_int_cst_lt (ub, lb))
 		  {
+		    unsigned prec = TYPE_PRECISION (TREE_TYPE (lb));
 		    lb = double_int_to_tree
 			   (ssizetype,
-			    double_int_sext (tree_to_double_int (lb),
-					     TYPE_PRECISION (TREE_TYPE (lb))));
+			    tree_to_double_int (lb).sext (prec));
 		    ub = double_int_to_tree
 			   (ssizetype,
-			    double_int_sext (tree_to_double_int (ub),
-					     TYPE_PRECISION (TREE_TYPE (ub))));
+			    tree_to_double_int (ub).sext (prec));
 		  }
 		length
 		  = fold_convert (sizetype,
@@ -2270,9 +2266,7 @@ layout_type (tree type)
 	TYPE_USER_ALIGN (type) = TYPE_USER_ALIGN (element);
 	SET_TYPE_MODE (type, BLKmode);
 	if (TYPE_SIZE (type) != 0
-#ifdef MEMBER_TYPE_FORCES_BLK
-	    && ! MEMBER_TYPE_FORCES_BLK (type, VOIDmode)
-#endif
+	    && ! targetm.member_type_forces_blk (type, VOIDmode)
 	    /* BLKmode elements force BLKmode aggregate;
 	       else extract/store fields may lose.  */
 	    && (TYPE_MODE (TREE_TYPE (type)) != BLKmode
@@ -2568,10 +2562,14 @@ set_min_and_max_values_for_integral_type (tree type,
 	= build_int_cst_wide (type,
 			      (precision - HOST_BITS_PER_WIDE_INT > 0
 			       ? -1
-			       : ((HOST_WIDE_INT) 1 << (precision - 1)) - 1),
+			       : (HOST_WIDE_INT)
+				 (((unsigned HOST_WIDE_INT) 1
+				   << (precision - 1)) - 1)),
 			      (precision - HOST_BITS_PER_WIDE_INT - 1 > 0
-			       ? (((HOST_WIDE_INT) 1
-				   << (precision - HOST_BITS_PER_WIDE_INT - 1))) - 1
+			       ? (HOST_WIDE_INT)
+				 ((((unsigned HOST_WIDE_INT) 1
+				    << (precision - HOST_BITS_PER_WIDE_INT
+					- 1))) - 1)
 			       : 0));
     }
 

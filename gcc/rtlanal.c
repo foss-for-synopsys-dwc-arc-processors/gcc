@@ -97,10 +97,7 @@ rtx_unstable_p (const_rtx x)
       return !MEM_READONLY_P (x) || rtx_unstable_p (XEXP (x, 0));
 
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
       return 0;
@@ -170,10 +167,7 @@ rtx_varies_p (const_rtx x, bool for_alias)
       return !MEM_READONLY_P (x) || rtx_varies_p (XEXP (x, 0), for_alias);
 
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
       return 0;
@@ -472,6 +466,22 @@ rtx_addr_varies_p (const_rtx x, bool for_alias)
   return 0;
 }
 
+/* Return the CALL in X if there is one.  */
+
+rtx
+get_call_rtx_from (rtx x)
+{
+  if (INSN_P (x))
+    x = PATTERN (x);
+  if (GET_CODE (x) == PARALLEL)
+    x = XVECEXP (x, 0, 0);
+  if (GET_CODE (x) == SET)
+    x = SET_SRC (x);
+  if (GET_CODE (x) == CALL && MEM_P (XEXP (x, 0)))
+    return x;
+  return NULL_RTX;
+}
+
 /* Return the value of the integer term in X, if one is apparent;
    otherwise return 0.
    Only obvious integer terms are detected.
@@ -585,10 +595,7 @@ count_occurrences (const_rtx x, const_rtx find, int count_dest)
   switch (code)
     {
     case REG:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case CODE_LABEL:
     case PC:
@@ -690,10 +697,7 @@ reg_mentioned_p (const_rtx reg, const_rtx in)
     case PC:
       return 0;
 
-    case CONST_INT:
-    case CONST_VECTOR:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
+    CASE_CONST_ANY:
       /* These are kept unique for a given value.  */
       return 0;
 
@@ -887,10 +891,7 @@ modified_between_p (const_rtx x, const_rtx start, const_rtx end)
 
   switch (code)
     {
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CONST:
     case SYMBOL_REF:
     case LABEL_REF:
@@ -946,10 +947,7 @@ modified_in_p (const_rtx x, const_rtx insn)
 
   switch (code)
     {
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CONST:
     case SYMBOL_REF:
     case LABEL_REF:
@@ -2096,11 +2094,8 @@ volatile_insn_p (const_rtx x)
     {
     case LABEL_REF:
     case SYMBOL_REF:
-    case CONST_INT:
     case CONST:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CC0:
     case PC:
     case REG:
@@ -2161,11 +2156,8 @@ volatile_refs_p (const_rtx x)
     {
     case LABEL_REF:
     case SYMBOL_REF:
-    case CONST_INT:
     case CONST:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CC0:
     case PC:
     case REG:
@@ -2224,11 +2216,8 @@ side_effects_p (const_rtx x)
     {
     case LABEL_REF:
     case SYMBOL_REF:
-    case CONST_INT:
     case CONST:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CC0:
     case PC:
     case REG:
@@ -2313,10 +2302,7 @@ may_trap_p_1 (const_rtx x, unsigned flags)
   switch (code)
     {
       /* Handle these cases quickly.  */
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case LABEL_REF:
     case CONST:
@@ -2515,10 +2501,7 @@ inequality_comparisons_p (const_rtx x)
     case SCRATCH:
     case PC:
     case CC0:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case CONST:
     case LABEL_REF:
     case SYMBOL_REF:
@@ -2761,10 +2744,7 @@ computed_jump_p_1 (const_rtx x)
       return 0;
 
     case CONST:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case REG:
       return 1;
@@ -3857,13 +3837,13 @@ address_cost (rtx x, enum machine_mode mode, addr_space_t as, bool speed)
   if (!memory_address_addr_space_p (mode, x, as))
     return 1000;
 
-  return targetm.address_cost (x, speed);
+  return targetm.address_cost (x, mode, as, speed);
 }
 
 /* If the target doesn't override, compute the cost as with arithmetic.  */
 
 int
-default_address_cost (rtx x, bool speed)
+default_address_cost (rtx x, enum machine_mode, addr_space_t, bool speed)
 {
   return rtx_cost (x, MEM, 0, speed);
 }

@@ -1,7 +1,7 @@
 /* Build expressions with type checking for C compiler.
    Copyright (C) 1987, 1988, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
+   2011, 2012 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -40,6 +40,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "bitmap.h"
 #include "gimple.h"
 #include "c-family/c-objc.h"
+#include "c-family/c-common.h"
 
 /* Possible cases of implicit bad conversions.  Used to select
    diagnostic messages in convert_for_assignment.  */
@@ -50,14 +51,6 @@ enum impl_conv {
   ic_return
 };
 
-/* Possibe cases of scalar_to_vector conversion.  */
-enum stv_conv {
-  stv_error,        /* Error occured.  */
-  stv_nothing,      /* Nothing happened.  */
-  stv_firstarg,     /* First argument must be expanded.  */
-  stv_secondarg     /* Second argument must be expanded.  */
-};
-
 /* The level of nesting inside "__alignof__".  */
 int in_alignof;
 
@@ -66,6 +59,10 @@ int in_sizeof;
 
 /* The level of nesting inside "typeof".  */
 int in_typeof;
+
+/* The argument of last parsed sizeof expression, only to be tested
+   if expr.original_code == SIZEOF_EXPR.  */
+tree c_last_sizeof_arg;
 
 /* Nonzero if we've already printed a "missing braces around initializer"
    message within this initializer.  */
@@ -2603,7 +2600,8 @@ c_expr_sizeof_expr (location_t loc, struct c_expr expr)
       tree folded_expr = c_fully_fold (expr.value, require_constant_value,
 				       &expr_const_operands);
       ret.value = c_sizeof (loc, TREE_TYPE (folded_expr));
-      ret.original_code = ERROR_MARK;
+      c_last_sizeof_arg = expr.value;
+      ret.original_code = SIZEOF_EXPR;
       ret.original_type = NULL;
       if (c_vla_type_p (TREE_TYPE (folded_expr)))
 	{
@@ -2631,7 +2629,8 @@ c_expr_sizeof_type (location_t loc, struct c_type_name *t)
   bool type_expr_const = true;
   type = groktypename (t, &type_expr, &type_expr_const);
   ret.value = c_sizeof (loc, type);
-  ret.original_code = ERROR_MARK;
+  c_last_sizeof_arg = type;
+  ret.original_code = SIZEOF_EXPR;
   ret.original_type = NULL;
   if ((type_expr || TREE_CODE (ret.value) == INTEGER_CST)
       && c_vla_type_p (type))
@@ -3255,7 +3254,8 @@ parser_build_binary_op (location_t location, enum tree_code code,
   /* Check for cases such as x+y<<z which users are likely
      to misinterpret.  */
   if (warn_parentheses)
-    warn_about_parentheses (code, code1, arg1.value, code2, arg2.value);
+    warn_about_parentheses (input_location, code,
+			    code1, arg1.value, code2, arg2.value);
 
   if (warn_logical_op)
     warn_logical_operator (input_location, code, TREE_TYPE (result.value),
@@ -3547,7 +3547,13 @@ build_unary_op (location_t location,
 		    "wrong type argument to unary exclamation mark");
 	  return error_mark_node;
 	}
-      arg = c_objc_common_truthvalue_conversion (location, arg);
+      if (int_operands)
+	{
+	  arg = c_objc_common_truthvalue_conversion (location, xarg);
+	  arg = remove_c_maybe_const_expr (arg);
+	}
+      else
+	arg = c_objc_common_truthvalue_conversion (location, arg);
       ret = invert_truthvalue_loc (location, arg);
       /* If the TRUTH_NOT_EXPR has been folded, reset the location.  */
       if (EXPR_P (ret) && EXPR_HAS_LOCATION (ret))
@@ -4767,8 +4773,11 @@ c_cast_expr (location_t loc, struct c_type_name *type_name, tree expr)
   ret = build_c_cast (loc, type, expr);
   if (type_expr)
     {
+      bool inner_expr_const = true;
+      ret = c_fully_fold (ret, require_constant_value, &inner_expr_const);
       ret = build2 (C_MAYBE_CONST_EXPR, TREE_TYPE (ret), type_expr, ret);
-      C_MAYBE_CONST_EXPR_NON_CONST (ret) = !type_expr_const;
+      C_MAYBE_CONST_EXPR_NON_CONST (ret) = !(type_expr_const
+					     && inner_expr_const);
       SET_EXPR_LOCATION (ret, loc);
     }
 
@@ -6950,7 +6959,7 @@ pop_init_level (int implicit, struct obstack * braced_init_obstack)
 	bool constructor_zeroinit =
 	 (VEC_length (constructor_elt, constructor_elements) == 1
 	  && integer_zerop
-	      (VEC_index (constructor_elt, constructor_elements, 0)->value));
+	      (VEC_index (constructor_elt, constructor_elements, 0).value));
 
 	/* Do not warn for flexible array members or zero-length arrays.  */
 	while (constructor_unfilled_fields
@@ -6997,10 +7006,10 @@ pop_init_level (int implicit, struct obstack * braced_init_obstack)
       else if (VEC_length (constructor_elt,constructor_elements) != 1)
 	{
 	  error_init ("extra elements in scalar initializer");
-	  ret.value = VEC_index (constructor_elt,constructor_elements,0)->value;
+	  ret.value = VEC_index (constructor_elt,constructor_elements,0).value;
 	}
       else
-	ret.value = VEC_index (constructor_elt,constructor_elements,0)->value;
+	ret.value = VEC_index (constructor_elt,constructor_elements,0).value;
     }
   else
     {
@@ -7671,9 +7680,9 @@ find_init_member (tree field, struct obstack * braced_init_obstack)
   else if (TREE_CODE (constructor_type) == UNION_TYPE)
     {
       if (!VEC_empty (constructor_elt, constructor_elements)
-	  && (VEC_last (constructor_elt, constructor_elements)->index
+	  && (VEC_last (constructor_elt, constructor_elements).index
 	      == field))
-	return VEC_last (constructor_elt, constructor_elements)->value;
+	return VEC_last (constructor_elt, constructor_elements).value;
     }
   return 0;
 }
@@ -7703,7 +7712,6 @@ output_init_element (tree value, tree origtype, bool strict_string, tree type,
 		     struct obstack * braced_init_obstack)
 {
   tree semantic_type = NULL_TREE;
-  constructor_elt *celt;
   bool maybe_const = true;
   bool npc;
 
@@ -7856,7 +7864,7 @@ output_init_element (tree value, tree origtype, bool strict_string, tree type,
       if (!implicit)
 	{
 	  if (TREE_SIDE_EFFECTS (VEC_last (constructor_elt,
-					   constructor_elements)->value))
+					   constructor_elements).value))
 	    warning_init (0,
 			  "initialized field with side-effects overwritten");
 	  else if (warn_override_init)
@@ -7870,9 +7878,8 @@ output_init_element (tree value, tree origtype, bool strict_string, tree type,
   /* Otherwise, output this element either to
      constructor_elements or to the assembler file.  */
 
-  celt = VEC_safe_push (constructor_elt, gc, constructor_elements, NULL);
-  celt->index = field;
-  celt->value = value;
+  constructor_elt celt = {field, value};
+  VEC_safe_push (constructor_elt, gc, constructor_elements, celt);
 
   /* Advance the variable that indicates sequential elements output.  */
   if (TREE_CODE (constructor_type) == ARRAY_TYPE)
@@ -8678,12 +8685,18 @@ c_finish_return (location_t loc, tree retval, tree origtype)
 				       npc, NULL_TREE, NULL_TREE, 0);
       tree res = DECL_RESULT (current_function_decl);
       tree inner;
+      bool save;
 
       current_function_returns_value = 1;
       if (t == error_mark_node)
 	return NULL_TREE;
 
+      save = in_late_binary_op;
+      if (TREE_CODE (TREE_TYPE (res)) == BOOLEAN_TYPE
+          || TREE_CODE (TREE_TYPE (res)) == COMPLEX_TYPE)
+        in_late_binary_op = true;
       inner = t = convert (TREE_TYPE (res), t);
+      in_late_binary_op = save;
 
       /* Strip any conversions, additions, and subtractions, and see if
 	 we are returning the address of a local variable.  Warn if so.  */
@@ -9356,88 +9369,6 @@ push_cleanup (tree decl, tree cleanup, bool eh_only)
   TREE_OPERAND (stmt, 0) = list;
   STATEMENT_LIST_STMT_EXPR (list) = stmt_expr;
 }
-
-/* Convert scalar to vector for the range of operations.  */
-static enum stv_conv
-scalar_to_vector (location_t loc, enum tree_code code, tree op0, tree op1)
-{
-  tree type0 = TREE_TYPE (op0);
-  tree type1 = TREE_TYPE (op1);
-  bool integer_only_op = false;
-  enum stv_conv ret = stv_firstarg;
-
-  gcc_assert (TREE_CODE (type0) == VECTOR_TYPE
-	      || TREE_CODE (type1) == VECTOR_TYPE);
-  switch (code)
-    {
-      case RSHIFT_EXPR:
-      case LSHIFT_EXPR:
-	if (TREE_CODE (type0) == INTEGER_TYPE
-	    && TREE_CODE (TREE_TYPE (type1)) == INTEGER_TYPE)
-	  {
-	    if (unsafe_conversion_p (TREE_TYPE (type1), op0, false))
-	      {
-		error_at (loc, "conversion of scalar to vector "
-			       "involves truncation");
-		return stv_error;
-	      }
-	    else
-	      return stv_firstarg;
-	  }
-	break;
-
-      case BIT_IOR_EXPR:
-      case BIT_XOR_EXPR:
-      case BIT_AND_EXPR:
-	integer_only_op = true;
-	/* ... fall through ...  */
-
-      case PLUS_EXPR:
-      case MINUS_EXPR:
-      case MULT_EXPR:
-      case TRUNC_DIV_EXPR:
-      case TRUNC_MOD_EXPR:
-      case RDIV_EXPR:
-	if (TREE_CODE (type0) == VECTOR_TYPE)
-	  {
-	    tree tmp;
-	    ret = stv_secondarg;
-	    /* Swap TYPE0 with TYPE1 and OP0 with OP1  */
-	    tmp = type0; type0 = type1; type1 = tmp;
-	    tmp = op0; op0 = op1; op1 = tmp;
-	  }
-
-	if (TREE_CODE (type0) == INTEGER_TYPE
-	    && TREE_CODE (TREE_TYPE (type1)) == INTEGER_TYPE)
-	  {
-	    if (unsafe_conversion_p (TREE_TYPE (type1), op0, false))
-	      {
-		error_at (loc, "conversion of scalar to vector "
-			       "involves truncation");
-		return stv_error;
-	      }
-	    return ret;
-	  }
-	else if (!integer_only_op
-		    /* Allow integer --> real conversion if safe.  */
-		 && (TREE_CODE (type0) == REAL_TYPE
-		     || TREE_CODE (type0) == INTEGER_TYPE)
-		 && SCALAR_FLOAT_TYPE_P (TREE_TYPE (type1)))
-	  {
-	    if (unsafe_conversion_p (TREE_TYPE (type1), op0, false))
-	      {
-		error_at (loc, "conversion of scalar to vector "
-			       "involves truncation");
-		return stv_error;
-	      }
-	    return ret;
-	  }
-      default:
-	break;
-    }
-
-  return stv_nothing;
-}
 
 /* Build a binary-operation expression without default conversions.
    CODE is the kind of expression to build.
@@ -9628,7 +9559,8 @@ build_binary_op (location_t location, enum tree_code code,
      a vector and another is a scalar -- convert scalar to vector.  */
   if ((code0 == VECTOR_TYPE) != (code1 == VECTOR_TYPE))
     {
-      enum stv_conv convert_flag = scalar_to_vector (location, code, op0, op1);
+      enum stv_conv convert_flag = scalar_to_vector (location, code, op0, op1,
+						     true);
 
       switch (convert_flag)
 	{
@@ -9797,8 +9729,20 @@ build_binary_op (location_t location, enum tree_code code,
 	     but that does not mean the operands should be
 	     converted to ints!  */
 	  result_type = integer_type_node;
-	  op0 = c_common_truthvalue_conversion (location, op0);
-	  op1 = c_common_truthvalue_conversion (location, op1);
+	  if (op0_int_operands)
+	    {
+	      op0 = c_objc_common_truthvalue_conversion (location, orig_op0);
+	      op0 = remove_c_maybe_const_expr (op0);
+	    }
+	  else
+	    op0 = c_objc_common_truthvalue_conversion (location, op0);
+	  if (op1_int_operands)
+	    {
+	      op1 = c_objc_common_truthvalue_conversion (location, orig_op1);
+	      op1 = remove_c_maybe_const_expr (op1);
+	    }
+	  else
+	    op1 = c_objc_common_truthvalue_conversion (location, op1);
 	  converted = 1;
 	  boolean_op = true;
 	}
@@ -10510,12 +10454,17 @@ c_objc_common_truthvalue_conversion (location_t location, tree expr)
 
   int_const = (TREE_CODE (expr) == INTEGER_CST && !TREE_OVERFLOW (expr));
   int_operands = EXPR_INT_CONST_OPERANDS (expr);
-  if (int_operands)
-    expr = remove_c_maybe_const_expr (expr);
-
-  /* ??? Should we also give an error for vectors rather than leaving
-     those to give errors later?  */
-  expr = c_common_truthvalue_conversion (location, expr);
+  if (int_operands && TREE_CODE (expr) != INTEGER_CST)
+    {
+      expr = remove_c_maybe_const_expr (expr);
+      expr = build2 (NE_EXPR, integer_type_node, expr,
+		     convert (TREE_TYPE (expr), integer_zero_node));
+      expr = note_integer_operands (expr);
+    }
+  else
+    /* ??? Should we also give an error for vectors rather than leaving
+       those to give errors later?  */
+    expr = c_common_truthvalue_conversion (location, expr);
 
   if (TREE_CODE (expr) == INTEGER_CST && int_operands && !int_const)
     {

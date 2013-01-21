@@ -675,9 +675,7 @@ attr_copy_rtx (rtx orig)
   switch (code)
     {
     case REG:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case SYMBOL_REF:
     case MATCH_TEST:
     case CODE_LABEL:
@@ -3094,9 +3092,7 @@ clear_struct_flag (rtx x)
   switch (code)
     {
     case REG:
-    case CONST_INT:
-    case CONST_DOUBLE:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case MATCH_TEST:
     case SYMBOL_REF:
     case CODE_LABEL:

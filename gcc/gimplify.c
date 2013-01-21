@@ -116,6 +116,19 @@ mark_addressable (tree x)
       && TREE_CODE (x) != RESULT_DECL)
     return;
   TREE_ADDRESSABLE (x) = 1;
+
+  /* Also mark the artificial SSA_NAME that points to the partition of X.  */
+  if (TREE_CODE (x) == VAR_DECL
+      && !DECL_EXTERNAL (x)
+      && !TREE_STATIC (x)
+      && cfun->gimple_df != NULL
+      && cfun->gimple_df->decls_to_pointers != NULL)
+    {
+      void *namep
+	= pointer_map_contains (cfun->gimple_df->decls_to_pointers, x); 
+      if (namep)
+	TREE_ADDRESSABLE (*(tree *)namep) = 1;
+    }
 }
 
 /* Return a hash value for a formal temporary table entry.  */
@@ -488,58 +501,6 @@ create_tmp_reg (tree type, const char *prefix)
   return tmp;
 }
 
-/* Create a temporary with a name derived from VAL.  Subroutine of
-   lookup_tmp_var; nobody else should call this function.  */
-
-static inline tree
-create_tmp_from_val (tree val)
-{
-  /* Drop all qualifiers and address-space information from the value type.  */
-  return create_tmp_var (TYPE_MAIN_VARIANT (TREE_TYPE (val)), get_name (val));
-}
-
-/* Create a temporary to hold the value of VAL.  If IS_FORMAL, try to reuse
-   an existing expression temporary.  */
-
-static tree
-lookup_tmp_var (tree val, bool is_formal)
-{
-  tree ret;
-
-  /* If not optimizing, never really reuse a temporary.  local-alloc
-     won't allocate any variable that is used in more than one basic
-     block, which means it will go into memory, causing much extra
-     work in reload and final and poorer code generation, outweighing
-     the extra memory allocation here.  */
-  if (!optimize || !is_formal || TREE_SIDE_EFFECTS (val))
-    ret = create_tmp_from_val (val);
-  else
-    {
-      elt_t elt, *elt_p;
-      void **slot;
-
-      elt.val = val;
-      if (gimplify_ctxp->temp_htab == NULL)
-        gimplify_ctxp->temp_htab
-	  = htab_create (1000, gimple_tree_hash, gimple_tree_eq, free);
-      slot = htab_find_slot (gimplify_ctxp->temp_htab, (void *)&elt, INSERT);
-      if (*slot == NULL)
-	{
-	  elt_p = XNEW (elt_t);
-	  elt_p->val = val;
-	  elt_p->temp = ret = create_tmp_from_val (val);
-	  *slot = (void *) elt_p;
-	}
-      else
-	{
-	  elt_p = (elt_t *) *slot;
-          ret = elt_p->temp;
-	}
-    }
-
-  return ret;
-}
-
 /* Returns true iff T is a valid RHS for an assignment to a renamed
    user -- or front-end generated artificial -- variable.  */
 
@@ -591,6 +552,64 @@ is_gimple_mem_rhs_or_call (tree t)
 	    || TREE_CODE (t) == CALL_EXPR);
 }
 
+/* Create a temporary with a name derived from VAL.  Subroutine of
+   lookup_tmp_var; nobody else should call this function.  */
+
+static inline tree
+create_tmp_from_val (tree val, bool is_formal)
+{
+  /* Drop all qualifiers and address-space information from the value type.  */
+  tree type = TYPE_MAIN_VARIANT (TREE_TYPE (val));
+  tree var = create_tmp_var (type, get_name (val));
+  if (is_formal
+      && (TREE_CODE (TREE_TYPE (var)) == COMPLEX_TYPE
+	  || TREE_CODE (TREE_TYPE (var)) == VECTOR_TYPE))
+    DECL_GIMPLE_REG_P (var) = 1;
+  return var;
+}
+
+/* Create a temporary to hold the value of VAL.  If IS_FORMAL, try to reuse
+   an existing expression temporary.  */
+
+static tree
+lookup_tmp_var (tree val, bool is_formal)
+{
+  tree ret;
+
+  /* If not optimizing, never really reuse a temporary.  local-alloc
+     won't allocate any variable that is used in more than one basic
+     block, which means it will go into memory, causing much extra
+     work in reload and final and poorer code generation, outweighing
+     the extra memory allocation here.  */
+  if (!optimize || !is_formal || TREE_SIDE_EFFECTS (val))
+    ret = create_tmp_from_val (val, is_formal);
+  else
+    {
+      elt_t elt, *elt_p;
+      void **slot;
+
+      elt.val = val;
+      if (gimplify_ctxp->temp_htab == NULL)
+        gimplify_ctxp->temp_htab
+	  = htab_create (1000, gimple_tree_hash, gimple_tree_eq, free);
+      slot = htab_find_slot (gimplify_ctxp->temp_htab, (void *)&elt, INSERT);
+      if (*slot == NULL)
+	{
+	  elt_p = XNEW (elt_t);
+	  elt_p->val = val;
+	  elt_p->temp = ret = create_tmp_from_val (val, is_formal);
+	  *slot = (void *) elt_p;
+	}
+      else
+	{
+	  elt_p = (elt_t *) *slot;
+          ret = elt_p->temp;
+	}
+    }
+
+  return ret;
+}
+
 /* Helper for get_formal_tmp_var and get_initialized_tmp_var.  */
 
 static tree
@@ -604,12 +623,11 @@ internal_get_tmp_var (tree val, gimple_seq *pre_p, gimple_seq *post_p,
   gimplify_expr (&val, pre_p, post_p, is_gimple_reg_rhs_or_call,
 		 fb_rvalue);
 
-  t = lookup_tmp_var (val, is_formal);
-
-  if (is_formal
-      && (TREE_CODE (TREE_TYPE (t)) == COMPLEX_TYPE
-	  || TREE_CODE (TREE_TYPE (t)) == VECTOR_TYPE))
-    DECL_GIMPLE_REG_P (t) = 1;
+  if (gimplify_ctxp->into_ssa
+      && is_gimple_reg_type (TREE_TYPE (val)))
+    t = make_ssa_name (TYPE_MAIN_VARIANT (TREE_TYPE (val)), NULL);
+  else
+    t = lookup_tmp_var (val, is_formal);
 
   mod = build2 (INIT_EXPR, TREE_TYPE (t), t, unshare_expr (val));
 
@@ -618,14 +636,6 @@ internal_get_tmp_var (tree val, gimple_seq *pre_p, gimple_seq *post_p,
   /* gimplify_modify_expr might want to reduce this further.  */
   gimplify_and_add (mod, pre_p);
   ggc_free (mod);
-
-  /* If we're gimplifying into ssa, gimplify_modify_expr will have
-     given our temporary an SSA name.  Find and return it.  */
-  if (gimplify_ctxp->into_ssa)
-    {
-      gimple last = gimple_seq_last_stmt (*pre_p);
-      t = gimple_get_lhs (last);
-    }
 
   return t;
 }
@@ -1678,7 +1688,7 @@ preprocess_case_label_vec_for_gimple (VEC(tree,heap) *labels,
 	  gcc_assert (!default_case);
 	  default_case = elt;
 	  /* The default case must be passed separately to the
-	     gimple_build_switch routines.  But if DEFAULT_CASEP
+	     gimple_build_switch routine.  But if DEFAULT_CASEP
 	     is NULL, we do not remove the default case (it would
 	     be completely lost).  */
 	  if (default_casep)
@@ -1791,8 +1801,8 @@ gimplify_switch_expr (tree *expr_p, gimple_seq *pre_p)
 	  gimplify_seq_add_stmt (&switch_body_seq, new_default);
 	}
 
-      gimple_switch = gimple_build_switch_vec (SWITCH_COND (switch_expr),
-					       default_case, labels);
+      gimple_switch = gimple_build_switch (SWITCH_COND (switch_expr),
+					   default_case, labels);
       gimplify_seq_add_stmt (pre_p, gimple_switch);
       gimplify_seq_add_seq (pre_p, switch_body_seq);
       VEC_free(tree, heap, labels);
@@ -2119,7 +2129,7 @@ gimplify_compound_lval (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 			fallback_t fallback)
 {
   tree *p;
-  VEC(tree,heap) *stack;
+  VEC(tree,heap) *expr_stack;
   enum gimplify_status ret = GS_ALL_DONE, tret;
   int i;
   location_t loc = EXPR_LOCATION (*expr_p);
@@ -2127,7 +2137,7 @@ gimplify_compound_lval (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 
   /* Create a stack of the subexpressions so later we can walk them in
      order from inner to outer.  */
-  stack = VEC_alloc (tree, heap, 10);
+  expr_stack = VEC_alloc (tree, heap, 10);
 
   /* We can handle anything that get_inner_reference can deal with.  */
   for (p = expr_p; ; p = &TREE_OPERAND (*p, 0))
@@ -2147,13 +2157,13 @@ gimplify_compound_lval (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
       else
 	break;
 
-      VEC_safe_push (tree, heap, stack, *p);
+      VEC_safe_push (tree, heap, expr_stack, *p);
     }
 
-  gcc_assert (VEC_length (tree, stack));
+  gcc_assert (VEC_length (tree, expr_stack));
 
-  /* Now STACK is a stack of pointers to all the refs we've walked through
-     and P points to the innermost expression.
+  /* Now EXPR_STACK is a stack of pointers to all the refs we've
+     walked through and P points to the innermost expression.
 
      Java requires that we elaborated nodes in source order.  That
      means we must gimplify the inner expression followed by each of
@@ -2164,9 +2174,9 @@ gimplify_compound_lval (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
      So we do this in three steps.  First we deal with the annotations
      for any variables in the components, then we gimplify the base,
      then we gimplify any indices, from left to right.  */
-  for (i = VEC_length (tree, stack) - 1; i >= 0; i--)
+  for (i = VEC_length (tree, expr_stack) - 1; i >= 0; i--)
     {
-      tree t = VEC_index (tree, stack, i);
+      tree t = VEC_index (tree, expr_stack, i);
 
       if (TREE_CODE (t) == ARRAY_REF || TREE_CODE (t) == ARRAY_RANGE_REF)
 	{
@@ -2259,9 +2269,9 @@ gimplify_compound_lval (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 
   /* And finally, the indices and operands of ARRAY_REF.  During this
      loop we also remove any useless conversions.  */
-  for (; VEC_length (tree, stack) > 0; )
+  for (; VEC_length (tree, expr_stack) > 0; )
     {
-      tree t = VEC_pop (tree, stack);
+      tree t = VEC_pop (tree, expr_stack);
 
       if (TREE_CODE (t) == ARRAY_REF || TREE_CODE (t) == ARRAY_RANGE_REF)
 	{
@@ -2289,7 +2299,7 @@ gimplify_compound_lval (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
       canonicalize_component_ref (expr_p);
     }
 
-  VEC_free (tree, heap, stack);
+  VEC_free (tree, heap, expr_stack);
 
   gcc_assert (*expr_p == expr || ret != GS_ALL_DONE);
 
@@ -2501,21 +2511,11 @@ gimplify_call_expr (tree *expr_p, gimple_seq *pre_p, bool want_value)
      transform all calls in the same manner as the expanders do, but
      we do transform most of them.  */
   fndecl = get_callee_fndecl (*expr_p);
-  if (fndecl && DECL_BUILT_IN (fndecl))
-    {
-      tree new_tree = fold_call_expr (input_location, *expr_p, !want_value);
-
-      if (new_tree && new_tree != *expr_p)
-	{
-	  /* There was a transformation of this call which computes the
-	     same value, but in a more efficient way.  Return and try
-	     again.  */
-	  *expr_p = new_tree;
-	  return GS_OK;
-	}
-
-      if (DECL_BUILT_IN_CLASS (fndecl) == BUILT_IN_NORMAL
-	  && DECL_FUNCTION_CODE (fndecl) == BUILT_IN_VA_START)
+  if (fndecl
+      && DECL_BUILT_IN_CLASS (fndecl) == BUILT_IN_NORMAL)
+    switch (DECL_FUNCTION_CODE (fndecl))
+      {
+      case BUILT_IN_VA_START:
         {
 	  builtin_va_start_p = TRUE;
 	  if (call_expr_nargs (*expr_p) < 2)
@@ -2530,6 +2530,40 @@ gimplify_call_expr (tree *expr_p, gimple_seq *pre_p, bool want_value)
 	      *expr_p = build_empty_stmt (EXPR_LOCATION (*expr_p));
 	      return GS_OK;
 	    }
+	  break;
+	}
+      case BUILT_IN_LINE:
+	{
+	  expanded_location loc = expand_location (EXPR_LOCATION (*expr_p));
+	  *expr_p = build_int_cst (TREE_TYPE (*expr_p), loc.line);
+	  return GS_OK;
+	}
+      case BUILT_IN_FILE:
+	{
+	  expanded_location loc = expand_location (EXPR_LOCATION (*expr_p));
+	  *expr_p = build_string_literal (strlen (loc.file) + 1, loc.file);
+	  return GS_OK;
+	}
+      case BUILT_IN_FUNCTION:
+	{
+	  const char *function;
+	  function = IDENTIFIER_POINTER (DECL_NAME (current_function_decl));
+	  *expr_p = build_string_literal (strlen (function) + 1, function);
+	  return GS_OK;
+	}
+      default:
+        ;
+      }
+  if (fndecl && DECL_BUILT_IN (fndecl))
+    {
+      tree new_tree = fold_call_expr (input_location, *expr_p, !want_value);
+      if (new_tree && new_tree != *expr_p)
+	{
+	  /* There was a transformation of this call which computes the
+	     same value, but in a more efficient way.  Return and try
+	     again.  */
+	  *expr_p = new_tree;
+	  return GS_OK;
 	}
     }
 
@@ -2591,7 +2625,6 @@ gimplify_call_expr (tree *expr_p, gimple_seq *pre_p, bool want_value)
 	    = CALL_EXPR_RETURN_SLOT_OPT (call);
 	  CALL_FROM_THUNK_P (*expr_p) = CALL_FROM_THUNK_P (call);
 	  SET_EXPR_LOCATION (*expr_p, EXPR_LOCATION (call));
-	  TREE_BLOCK (*expr_p) = TREE_BLOCK (call);
 
 	  /* Set CALL_EXPR_VA_ARG_PACK.  */
 	  CALL_EXPR_VA_ARG_PACK (*expr_p) = 1;
@@ -3848,7 +3881,7 @@ optimize_compound_literals_in_ctor (tree orig_ctor)
 
   for (idx = 0; idx < num; idx++)
     {
-      tree value = VEC_index (constructor_elt, elts, idx)->value;
+      tree value = VEC_index (constructor_elt, elts, idx).value;
       tree newval = value;
       if (TREE_CODE (value) == CONSTRUCTOR)
 	newval = optimize_compound_literals_in_ctor (value);
@@ -3860,7 +3893,8 @@ optimize_compound_literals_in_ctor (tree orig_ctor)
 
 	  if (!TREE_ADDRESSABLE (value)
 	      && !TREE_ADDRESSABLE (decl)
-	      && init)
+	      && init
+	      && TREE_CODE (init) == CONSTRUCTOR)
 	    newval = optimize_compound_literals_in_ctor (init);
 	}
       if (newval == value)
@@ -3872,7 +3906,7 @@ optimize_compound_literals_in_ctor (tree orig_ctor)
 	  CONSTRUCTOR_ELTS (ctor) = VEC_copy (constructor_elt, gc, elts);
 	  elts = CONSTRUCTOR_ELTS (ctor);
 	}
-      VEC_index (constructor_elt, elts, idx)->value = newval;
+      VEC_index (constructor_elt, elts, idx).value = newval;
     }
   return ctor;
 }
@@ -4123,8 +4157,8 @@ gimplify_init_constructor (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 
 	/* Extract the real and imaginary parts out of the ctor.  */
 	gcc_assert (VEC_length (constructor_elt, elts) == 2);
-	r = VEC_index (constructor_elt, elts, 0)->value;
-	i = VEC_index (constructor_elt, elts, 1)->value;
+	r = VEC_index (constructor_elt, elts, 0).value;
+	i = VEC_index (constructor_elt, elts, 1).value;
 	if (r == NULL || i == NULL)
 	  {
 	    tree zero = build_zero_cst (TREE_TYPE (type));
@@ -4919,11 +4953,8 @@ gimplify_modify_expr (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 
   if (gimplify_ctxp->into_ssa && is_gimple_reg (*to_p))
     {
-      /* If we've somehow already got an SSA_NAME on the LHS, then
-	 we've probably modified it twice.  Not good.  */
-      gcc_assert (TREE_CODE (*to_p) != SSA_NAME);
-      *to_p = make_ssa_name (*to_p, assign);
-      gimple_set_lhs (assign, *to_p);
+      /* We should have got an SSA name from the start.  */
+      gcc_assert (TREE_CODE (*to_p) == SSA_NAME);
     }
 
   gimplify_seq_add_stmt (pre_p, assign);
@@ -7434,6 +7465,15 @@ gimplify_expr (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 	    gimple_seq eval, cleanup;
 	    gimple try_;
 
+	    /* Calls to destructors are generated automatically in FINALLY/CATCH
+	       block. They should have location as UNKNOWN_LOCATION. However,
+	       gimplify_call_expr will reset these call stmts to input_location
+	       if it finds stmt's location is unknown. To prevent resetting for
+	       destructors, we set the input_location to unknown.
+	       Note that this only affects the destructor calls in FINALLY/CATCH
+	       block, and will automatically reset to its original value by the
+	       end of gimplify_expr.  */
+	    input_location = UNKNOWN_LOCATION;
 	    eval = cleanup = NULL;
 	    gimplify_and_add (TREE_OPERAND (*expr_p, 0), &eval);
 	    gimplify_and_add (TREE_OPERAND (*expr_p, 1), &cleanup);
@@ -7448,6 +7488,10 @@ gimplify_expr (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 				     TREE_CODE (*expr_p) == TRY_FINALLY_EXPR
 				     ? GIMPLE_TRY_FINALLY
 				     : GIMPLE_TRY_CATCH);
+	    if (LOCATION_LOCUS (saved_location) != UNKNOWN_LOCATION)
+	      gimple_set_location (try_, saved_location);
+	    else
+	      gimple_set_location (try_, EXPR_LOCATION (save_expr));
 	    if (TREE_CODE (*expr_p) == TRY_CATCH_EXPR)
 	      gimple_try_set_catch_is_cleanup (try_,
 					       TRY_CATCH_IS_CLEANUP (*expr_p));
@@ -7652,6 +7696,7 @@ gimplify_expr (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 	  }
 
 	case FMA_EXPR:
+	case VEC_COND_EXPR:
 	case VEC_PERM_EXPR:
 	  /* Classified as tcc_expression.  */
 	  goto expr_3;
@@ -8260,14 +8305,12 @@ flag_instrument_functions_exclude_p (tree fndecl)
 void
 gimplify_function_tree (tree fndecl)
 {
-  tree oldfn, parm, ret;
+  tree parm, ret;
   gimple_seq seq;
   gimple bind;
 
   gcc_assert (!gimple_body (fndecl));
 
-  oldfn = current_function_decl;
-  current_function_decl = fndecl;
   if (DECL_STRUCT_FUNCTION (fndecl))
     push_cfun (DECL_STRUCT_FUNCTION (fndecl));
   else
@@ -8352,7 +8395,6 @@ gimplify_function_tree (tree fndecl)
   DECL_SAVED_TREE (fndecl) = NULL_TREE;
   cfun->curr_properties = PROP_gimple_any;
 
-  current_function_decl = oldfn;
   pop_cfun ();
 }
 
@@ -8552,7 +8594,12 @@ force_gimple_operand_1 (tree expr, gimple_seq *stmts,
   gimplify_ctxp->allow_rhs_cond_expr = true;
 
   if (var)
-    expr = build2 (MODIFY_EXPR, TREE_TYPE (var), var, expr);
+    {
+      if (gimplify_ctxp->into_ssa
+	  && is_gimple_reg (var))
+	var = make_ssa_name (var, NULL);
+      expr = build2 (MODIFY_EXPR, TREE_TYPE (var), var, expr);
+    }
 
   if (TREE_CODE (expr) != MODIFY_EXPR
       && TREE_TYPE (expr) == void_type_node)

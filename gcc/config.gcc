@@ -245,7 +245,8 @@ md_file=
 
 # Obsolete configurations.
 case ${target} in
-   score-*				\
+   picochip-*				\
+ | score-*				\
  )
     if test "x$enable_obsolete" != xyes; then
       echo "*** Configuration ${target} is obsolete." >&2
@@ -269,7 +270,6 @@ case ${target} in
  | arm*-*-elf				\
  | arm*-*-freebsd*			\
  | arm*-*-linux*			\
- | arm*-*-rtems*			\
  | arm*-*-uclinux*			\
  | i[34567]86-go32-*			\
  | i[34567]86-*-go32*			\
@@ -708,6 +708,11 @@ case ${target} in
     *-*-openbsd2.*|*-*-openbsd3.[012])
       tm_defines="${tm_defines} HAS_LIBC_R=1" ;;
   esac
+  case ${target} in
+    *-*-openbsd4.[3-9]|*-*-openbsd[5-9]*)
+      default_use_cxa_atexit=yes
+      ;;
+  esac
   ;;
 *-*-rtems*)
   case ${enable_threads} in
@@ -856,7 +861,7 @@ arm*-*-netbsdelf*)
 	extra_options="${extra_options} netbsd.opt netbsd-elf.opt"
 	tmake_file="${tmake_file} arm/t-arm"
 	;;
-arm*-*-linux-*eabi*)			# ARM GNU/Linux with ELF
+arm*-*-linux-*)			# ARM GNU/Linux with ELF
 	tm_file="dbxelf.h elfos.h gnu-user.h linux.h linux-android.h glibc-stdint.h arm/elf.h arm/linux-gas.h arm/linux-elf.h"
 	case $target in
 	arm*b-*-linux*)
@@ -890,7 +895,7 @@ arm*-*-uclinux*eabi*)		# ARM ucLinux
 	# The EABI requires the use of __cxa_atexit.
 	default_use_cxa_atexit=yes
 	;;
-arm*-*-eabi* | arm*-*-symbianelf* | arm*-*-rtemseabi*)
+arm*-*-eabi* | arm*-*-symbianelf* | arm*-*-rtems*)
 	# The BPABI long long divmod functions return a 128-bit value in
 	# registers r0-r3.  Correctly modeling that requires the use of
 	# TImode.
@@ -904,7 +909,7 @@ arm*-*-eabi* | arm*-*-symbianelf* | arm*-*-rtemseabi*)
 	  tmake_file="${tmake_file} arm/t-bpabi"
 	  use_gcc_stdint=wrap
 	  ;;
-	arm*-*-rtemseabi*)
+	arm*-*-rtems*)
 	  tm_file="${tm_file} rtems.h arm/rtems-eabi.h newlib-stdint.h"
 	  tmake_file="${tmake_file} arm/t-bpabi t-rtems arm/t-rtems-eabi"
 	  ;;
@@ -918,13 +923,17 @@ arm*-*-eabi* | arm*-*-symbianelf* | arm*-*-rtemseabi*)
 	tm_file="${tm_file} arm/aout.h arm/arm.h"
 	;;
 avr-*-rtems*)
-	tm_file="elfos.h avr/elf.h avr/avr.h dbxelf.h avr/rtems.h rtems.h newlib-stdint.h"
+	tm_file="elfos.h avr/elf.h avr/avr-arch.h avr/avr.h dbxelf.h avr/rtems.h rtems.h newlib-stdint.h"
 	tmake_file="avr/t-avr avr/t-multilib t-rtems avr/t-rtems"
 	extra_gcc_objs="driver-avr.o avr-devices.o"
 	extra_objs="avr-devices.o avr-log.o"
 	;;
 avr-*-*)
-	tm_file="elfos.h avr/elf.h avr/avr.h dbxelf.h avr/avr-stdint.h"
+	tm_file="elfos.h avr/elf.h avr/avr-arch.h avr/avr.h dbxelf.h avr/avr-stdint.h"
+	if test x${with_avrlibc} != xno; then
+	    tm_file="${tm_file} ${cpu_type}/avrlibc.h"
+	    tm_defines="${tm_defines} WITH_AVRLIBC"
+	fi
 	tmake_file="avr/t-avr avr/t-multilib"
 	use_gcc_stdint=wrap
 	extra_gcc_objs="driver-avr.o avr-devices.o"
@@ -1045,10 +1054,15 @@ hppa*-*-linux*)
 	tm_file="${tm_file} dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h pa/pa-linux.h \
 		 pa/pa32-regs.h pa/pa32-linux.h"
 	;;
-# port not yet contributed.
-#hppa*-*-openbsd*)
-#	target_cpu_default="MASK_PA_11"
-#	;;
+hppa*-*-openbsd*)
+	target_cpu_default="MASK_PA_11"
+	tm_file="${tm_file} dbxelf.h elfos.h openbsd.h openbsd-stdint.h openbsd-libpthread.h \
+		 pa/pa-openbsd.h pa/pa32-regs.h pa/pa32-openbsd.h"
+	tmake_file="${tmake_file} pa/t-openbsd"
+	extra_options="${extra_options} openbsd.opt"
+	gas=yes
+	gnu_ld=yes
+	;;
 hppa[12]*-*-hpux10*)
 	case ${target} in
 	hppa1.1-*-* | hppa2*-*-*)
@@ -1212,6 +1226,13 @@ i[34567]86-*-openbsd2.*|i[34567]86-*openbsd3.[0123])
 i[34567]86-*-openbsd*)
 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h"
 	tm_file="${tm_file} openbsd.h openbsd-stdint.h openbsd-libpthread.h i386/openbsdelf.h"
+	extra_options="${extra_options} openbsd.opt"
+	gas=yes
+	gnu_ld=yes
+	;;
+x86_64-*-openbsd*)
+	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h"
+	tm_file="${tm_file} openbsd.h openbsd-stdint.h openbsd-libpthread.h i386/x86-64.h i386/openbsdelf.h"
 	extra_options="${extra_options} openbsd.opt"
 	gas=yes
 	gnu_ld=yes
@@ -1718,6 +1739,14 @@ mips*-*-netbsd*)			# NetBSD/mips, either endian.
 	tm_file="elfos.h ${tm_file} mips/elf.h netbsd.h netbsd-elf.h mips/netbsd.h"
 	extra_options="${extra_options} netbsd.opt netbsd-elf.opt"
 	;;
+mips*-mti-linux*)
+	tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} mips/gnu-user.h mips/gnu-user64.h mips/linux64.h mips/linux-common.h mips/mti-linux.h"
+	tmake_file="${tmake_file} mips/t-mti-linux"
+	tm_defines="${tm_defines} MIPS_ISA_DEFAULT=33 MIPS_ABI_DEFAULT=ABI_32"
+	gnu_ld=yes
+	gas=yes
+	test x$with_llsc != x || with_llsc=yes
+	;;
 mips64*-*-linux* | mipsisa64*-*-linux*)
 	tm_file="dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} mips/gnu-user.h mips/gnu-user64.h mips/linux64.h mips/linux-common.h"
 	tmake_file="${tmake_file} mips/t-linux64"
@@ -1754,6 +1783,11 @@ mips*-*-linux*)				# Linux MIPS, either endian.
 		tm_defines="${tm_defines} MIPS_ISA_DEFAULT=32"
         esac
 	test x$with_llsc != x || with_llsc=yes
+	;;
+mips*-mti-elf*)
+	tm_file="elfos.h newlib-stdint.h ${tm_file} mips/elf.h mips/sde.h mips/mti-elf.h"
+	tmake_file="mips/t-mti-elf"
+	tm_defines="${tm_defines} MIPS_ISA_DEFAULT=33 MIPS_ABI_DEFAULT=ABI_32"
 	;;
 mips*-sde-elf*)
 	tm_file="elfos.h newlib-stdint.h ${tm_file} mips/elf.h mips/sde.h"
@@ -1922,7 +1956,7 @@ powerpc*-*-freebsd*)
 	tm_file="${tm_file} dbxelf.h elfos.h ${fbsd_tm_file} rs6000/sysv4.h"
 	extra_options="${extra_options} rs6000/sysv4.opt"
 	tmake_file="rs6000/t-fprules rs6000/t-ppcos ${tmake_file} rs6000/t-ppccomm"
-	case ${host} in
+	case ${target} in
 	     powerpc64*)
 	    	tm_file="${tm_file} rs6000/default64.h rs6000/freebsd64.h"
 		tmake_file="${tmake_file} rs6000/t-freebsd64"
@@ -2473,6 +2507,7 @@ tilegx-*-linux*)
 	extra_objs="mul-tables.o"
 	c_target_objs="tilegx-c.o"
 	cxx_target_objs="tilegx-c.o"
+	extra_headers="feedback.h"
 	;;
 tilepro-*-linux*)
 	tm_file="elfos.h gnu-user.h linux.h glibc-stdint.h tilepro/linux.h ${tm_file}"
@@ -2480,6 +2515,7 @@ tilepro-*-linux*)
 	extra_objs="mul-tables.o"
 	c_target_objs="tilepro-c.o"
 	cxx_target_objs="tilepro-c.o"
+	extra_headers="feedback.h"
 	;;
 v850-*-rtems*)
 	target_cpu_default="TARGET_CPU_generic"
@@ -3047,7 +3083,7 @@ case "${target}" in
 		"" \
 		| armv[23456] | armv2a | armv3m | armv4t | armv5t \
 		| armv5te | armv6j |armv6k | armv6z | armv6zk | armv6-m \
-		| armv7 | armv7-a | armv7-r | armv7-m \
+		| armv7 | armv7-a | armv7-r | armv7-m | armv8-a \
 		| iwmmxt | ep9312)
 			# OK
 			;;
@@ -3073,7 +3109,8 @@ case "${target}" in
 		| vfp | vfp3 | vfpv3 \
 		| vfpv3-fp16 | vfpv3-d16 | vfpv3-d16-fp16 | vfpv3xd \
 		| vfpv3xd-fp16 | neon | neon-fp16 | vfpv4 | vfpv4-d16 \
-		| fpv4-sp-d16 | neon-vfpv4)
+		| fpv4-sp-d16 | neon-vfpv4 | fp-arm-v8 | neon-fp-armv8 \
+                | crypto-neon-fp-armv8)
 			# OK
 			;;
 		*)
@@ -3304,9 +3341,10 @@ case "${target}" in
 		yes)
 			with_synci=synci
 			;;
-		"" | no)
-			# No is the default.
+		no)
 			with_synci=no-synci
+			;;
+		"")
 			;;
 		*)
 			echo "Unknown synci type used in --with-synci" 1>&2
@@ -3361,7 +3399,7 @@ case "${target}" in
 		for which in arch tune; do
 			eval "val=\$with_$which"
 			case ${val} in
-			"" | g5 | g6 | z900 | z990 | z9-109 | z9-ec | z10 | z196)
+			"" | g5 | g6 | z900 | z990 | z9-109 | z9-ec | z10 | z196 | zEC12)
 				# OK
 				;;
 			*)

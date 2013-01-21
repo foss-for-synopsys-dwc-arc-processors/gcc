@@ -638,6 +638,11 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 /* Get libiberty declarations.  */
 #include "libiberty.h"
 
+#undef FFS  /* Some systems predefine this symbol; don't let it interfere.  */
+#undef FLOAT /* Likewise.  */
+#undef ABS /* Likewise.  */
+#undef PC /* Likewise.  */
+
 /* Provide a default for the HOST_BIT_BUCKET.
    This suffices for POSIX-like hosts.  */
 
@@ -808,7 +813,7 @@ extern void fancy_abort (const char *, int, const char *) ATTRIBUTE_NORETURN;
 	CAN_DEBUG_WITHOUT_FP UNLIKELY_EXECUTED_TEXT_SECTION_NAME	\
 	HOT_TEXT_SECTION_NAME LEGITIMATE_CONSTANT_P ALWAYS_STRIP_DOTDOT	\
 	OUTPUT_ADDR_CONST_EXTRA SMALL_REGISTER_CLASSES ASM_OUTPUT_IDENT	\
-	ASM_BYTE_OP
+	ASM_BYTE_OP MEMBER_TYPE_FORCES_BLK
 
 /* Target macros only used for code built for the target, that have
    moved to libgcc-tm.h or have never been present elsewhere.  */

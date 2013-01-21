@@ -144,9 +144,11 @@ typedef enum
 { AR_FULL = 1, AR_ELEMENT, AR_SECTION, AR_UNKNOWN }
 ar_type;
 
-/* Statement label types.  */
+/* Statement label types. ST_LABEL_DO_TARGET is used for obsolescent warnings
+   related to shared DO terminations and DO targets which are neither END DO
+   nor CONTINUE; otherwise it is identical to ST_LABEL_TARGET.  */
 typedef enum
-{ ST_LABEL_UNKNOWN = 1, ST_LABEL_TARGET,
+{ ST_LABEL_UNKNOWN = 1, ST_LABEL_TARGET, ST_LABEL_DO_TARGET,
   ST_LABEL_BAD_TARGET, ST_LABEL_FORMAT
 }
 gfc_sl_type;
@@ -759,6 +761,10 @@ typedef struct
   /* Set if a function must always be referenced by an explicit interface.  */
   unsigned always_explicit:1;
 
+  /* Set if the symbol is generated and, hence, standard violations
+     shouldn't be flaged.  */
+  unsigned artificial:1;
+
   /* Set if the symbol has been referenced in an expression.  No further
      modification of type or type parameters is permitted.  */
   unsigned referenced:1;
@@ -1264,6 +1270,7 @@ typedef struct gfc_common_head
   struct gfc_symbol *head;
   const char* binding_label;
   int is_bind_c;
+  int refs;
 }
 gfc_common_head;
 
@@ -2223,6 +2230,8 @@ typedef struct
   int warn_unused_dummy_argument;
   int warn_realloc_lhs;
   int warn_realloc_lhs_all;
+  int warn_compare_reals;
+  int warn_target_lifetime;
   int max_errors;
 
   int flag_all_intrinsics;
@@ -2764,7 +2773,8 @@ gfc_try gfc_expr_check_typed (gfc_expr*, gfc_namespace*, bool);
 void gfc_expr_replace_symbols (gfc_expr *, gfc_symbol *);
 void gfc_expr_replace_comp (gfc_expr *, gfc_component *);
 
-bool gfc_is_proc_ptr_comp (gfc_expr *, gfc_component **);
+gfc_component * gfc_get_proc_ptr_comp (gfc_expr *);
+bool gfc_is_proc_ptr_comp (gfc_expr *);
 
 bool gfc_ref_this_image (gfc_ref *ref);
 bool gfc_is_coindexed (gfc_expr *);

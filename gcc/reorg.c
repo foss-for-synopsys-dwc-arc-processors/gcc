@@ -1,6 +1,6 @@
 /* Perform instruction reorganizations for delay slot filling.
    Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012
    Free Software Foundation, Inc.
    Contributed by Richard Kenner (kenner@vlsi1.ultra.nyu.edu).
    Hacked by Michael Tiemann (tiemann@cygnus.com).
@@ -134,6 +134,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "params.h"
 #include "target.h"
 #include "tree-pass.h"
+#include "emit-rtl.h"
 
 #ifdef DELAY_SLOTS
 
@@ -545,7 +546,7 @@ emit_delay_sequence (rtx insn, rtx list, int length)
   INSN_DELETED_P (delay_insn) = 0;
   PREV_INSN (delay_insn) = PREV_INSN (seq_insn);
 
-  INSN_LOCATOR (seq_insn) = INSN_LOCATOR (delay_insn);
+  INSN_LOCATION (seq_insn) = INSN_LOCATION (delay_insn);
 
   for (li = list; li; li = XEXP (li, 1), i++)
     {
@@ -561,9 +562,9 @@ emit_delay_sequence (rtx insn, rtx list, int length)
 
       /* SPARC assembler, for instance, emit warning when debug info is output
          into the delay slot.  */
-      if (INSN_LOCATOR (tem) && !INSN_LOCATOR (seq_insn))
-	INSN_LOCATOR (seq_insn) = INSN_LOCATOR (tem);
-      INSN_LOCATOR (tem) = 0;
+      if (INSN_LOCATION (tem) && !INSN_LOCATION (seq_insn))
+	INSN_LOCATION (seq_insn) = INSN_LOCATION (tem);
+      INSN_LOCATION (tem) = 0;
 
       for (note = REG_NOTES (tem); note; note = next)
 	{
@@ -1297,7 +1298,7 @@ steal_delay_list_from_target (rtx insn, rtx condition, rtx seq,
 	{
 	  if (must_annul)
 	    used_annul = 1;
-	  temp = copy_rtx (trial);
+	  temp = copy_delay_slot_insn (trial);
 	  INSN_FROM_TARGET_P (temp) = 1;
 	  new_delay_list = add_to_delay_list (temp, new_delay_list);
 	  total_slots_filled++;
@@ -2369,7 +2370,8 @@ fill_simple_delay_slots (int non_jumps_p)
 	      if (new_label)
 	        {
 		  delay_list
-		    = add_to_delay_list (copy_rtx (next_trial), delay_list);
+		    = add_to_delay_list (copy_delay_slot_insn (next_trial),
+					 delay_list);
 		  slots_filled++;
 		  reorg_redirect_jump (trial, new_label);
 
@@ -2494,7 +2496,7 @@ fill_simple_delay_slots (int non_jumps_p)
 #endif
 }
 
-/* Follow any unconditional jump at LABEL, for the purpose of refirecting JUMP;
+/* Follow any unconditional jump at LABEL, for the purpose of redirecting JUMP;
    return the ultimate label reached by any such chain of jumps.
    Return a suitable return rtx if the chain ultimately leads to a
    return instruction.
@@ -2502,20 +2504,19 @@ fill_simple_delay_slots (int non_jumps_p)
    If the chain loops or we can't find end, return LABEL,
    since that tells caller to avoid changing the insn.
    If the returned label is obtained by following a REG_CROSSING_JUMP
-   jump, set *cp to (one of) the note(s), otherwise set it to NULL_RTX.  */
+   jump, set *CROSSING to true, otherwise set it to false.  */
 
 static rtx
-follow_jumps (rtx label, rtx jump, rtx *cp)
+follow_jumps (rtx label, rtx jump, bool *crossing)
 {
   rtx insn;
   rtx next;
   rtx value = label;
   int depth;
-  rtx crossing = NULL_RTX;
 
+  *crossing = false;
   if (ANY_RETURN_P (label))
     return label;
-  *cp = 0;
   for (depth = 0;
        (depth < 10
 	&& (insn = next_active_insn (value)) != 0
@@ -2543,13 +2544,13 @@ follow_jumps (rtx label, rtx jump, rtx *cp)
 
       if (!targetm.can_follow_jump (jump, insn))
 	break;
-      if (!crossing)
-	crossing = find_reg_note (insn, REG_CROSSING_JUMP, NULL_RTX);
+      if (!*crossing)
+	*crossing
+	  = find_reg_note (insn, REG_CROSSING_JUMP, NULL_RTX) != NULL_RTX;
       value = this_label;
     }
   if (depth == 10)
     return label;
-  *cp = crossing;
   return value;
 }
 
@@ -2794,7 +2795,7 @@ fill_slots_from_thread (rtx insn, rtx condition, rtx thread,
 		  else
 		    new_thread = next_active_insn (trial);
 
-		  temp = own_thread ? trial : copy_rtx (trial);
+		  temp = own_thread ? trial : copy_delay_slot_insn (trial);
 		  if (thread_if_true)
 		    INSN_FROM_TARGET_P (temp) = 1;
 
@@ -2975,7 +2976,7 @@ fill_slots_from_thread (rtx insn, rtx condition, rtx thread,
 	  else
 	    new_thread = next_active_insn (trial);
 
-	  ninsn = own_thread ? trial : copy_rtx (trial);
+	  ninsn = own_thread ? trial : copy_delay_slot_insn (trial);
 	  if (thread_if_true)
 	    INSN_FROM_TARGET_P (ninsn) = 1;
 
@@ -2993,7 +2994,7 @@ fill_slots_from_thread (rtx insn, rtx condition, rtx thread,
   if (new_thread != thread)
     {
       rtx label;
-      rtx crossing = NULL_RTX;
+      bool crossing = false;
 
       gcc_assert (thread_if_true);
 
@@ -3361,7 +3362,7 @@ relax_delay_slots (rtx first)
   for (insn = first; insn; insn = next)
     {
       rtx other;
-      rtx crossing;
+      bool crossing;
 
       next = next_active_insn (insn);
 
@@ -3453,9 +3454,8 @@ relax_delay_slots (rtx first)
 	    reorg_redirect_jump (insn, other_target);
 	}
 
-      /* Now look only at cases where we have filled a delay slot.  */
-      if (!NONJUMP_INSN_P (insn)
-	  || GET_CODE (PATTERN (insn)) != SEQUENCE)
+      /* Now look only at cases where we have a filled delay slot.  */
+      if (!NONJUMP_INSN_P (insn) || GET_CODE (PATTERN (insn)) != SEQUENCE)
 	continue;
 
       pat = PATTERN (insn);
@@ -3515,9 +3515,8 @@ relax_delay_slots (rtx first)
 	}
 
       /* Now look only at the cases where we have a filled JUMP_INSN.  */
-      if (!JUMP_P (XVECEXP (PATTERN (insn), 0, 0))
-	  || ! (condjump_p (XVECEXP (PATTERN (insn), 0, 0))
-		|| condjump_in_parallel_p (XVECEXP (PATTERN (insn), 0, 0))))
+      if (!JUMP_P (delay_insn)
+	  || !(condjump_p (delay_insn) || condjump_in_parallel_p (delay_insn)))
 	continue;
 
       target_label = JUMP_LABEL (delay_insn);
@@ -4089,7 +4088,7 @@ dbr_schedule (rtx first)
     for (link = crtl->epilogue_delay_list;
          link;
          link = XEXP (link, 1))
-      INSN_LOCATOR (XEXP (link, 0)) = 0;
+      INSN_LOCATION (XEXP (link, 0)) = 0;
   }
 
 #endif

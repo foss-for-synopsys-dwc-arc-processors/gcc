@@ -312,7 +312,6 @@ dbr_sequence_length (void)
    `insn_current_length'.  */
 
 static int *insn_lengths;
-static char *uid_lock_length;
 
 VEC(int,heap) *insn_addresses_;
 
@@ -447,20 +446,6 @@ get_attr_length (rtx insn)
 {
   return get_attr_length_1 (insn, insn_default_length);
 }
-
-#ifdef HAVE_ATTR_lock_length
-int
-get_attr_lock_length (rtx insn)
-{
-  if (uid_lock_length && insn_lengths_max_uid > INSN_UID (insn))
-    return uid_lock_length[INSN_UID (insn)];
-  return get_attr_length_1 (insn, insn_min_lock_length);
-}
-#define INSN_VARIABLE_LENGTH_P(INSN) \
-  (insn_variable_length_p (INSN) || insn_variable_lock_length_p (INSN))
-#else
-#define INSN_VARIABLE_LENGTH_P(INSN) (insn_variable_length_p (INSN))
-#endif
 
 /* Obtain the current length of an insn.  If branch shortening has been done,
    get its actual length.  Otherwise, get its minimum length.  */
@@ -754,7 +739,8 @@ compute_alignments (void)
 	{
 	  if (dump_file)
 	    fprintf(dump_file, "BB %4i freq %4i loop %2i loop_depth %2i skipped.\n",
-		    bb->index, bb->frequency, bb->loop_father->num, bb->loop_depth);
+		    bb->index, bb->frequency, bb->loop_father->num,
+		    bb_loop_depth (bb));
 	  continue;
 	}
       max_log = LABEL_ALIGN (label);
@@ -771,7 +757,7 @@ compute_alignments (void)
 	{
 	  fprintf(dump_file, "BB %4i freq %4i loop %2i loop_depth %2i fall %4i branch %4i",
 		  bb->index, bb->frequency, bb->loop_father->num,
-		  bb->loop_depth,
+		  bb_loop_depth (bb),
 		  fallthru_frequency, branch_frequency);
 	  if (!bb->loop_father->inner && bb->loop_father->num)
 	    fprintf (dump_file, " inner_loop");
@@ -879,7 +865,6 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
   rtx body;
   int uid;
   rtx align_tab[MAX_CODE_ALIGN];
-  int (*length_fun) (rtx);
 
 #endif
 
@@ -890,10 +875,6 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
   free (uid_shuid);
 
   uid_shuid = XNEWVEC (int, max_uid);
-#ifdef HAVE_ATTR_lock_length
-  uid_lock_length = XNEWVEC (char, max_uid);
-  memset (uid_lock_length, 0, max_uid);
-#endif
 
   if (max_labelno != max_label_num ())
     {
@@ -1028,6 +1009,13 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 	    align_tab[i] = seq;
 	}
     }
+
+  /* When optimizing, we start assuming minimum length, and keep increasing
+     lengths as we find the need for this, till nothing changes.
+     When not optimizing, we start assuming maximum lengths, and
+     do a single pass to update the lengths.  */
+  bool increasing = optimize != 0;
+
 #ifdef CASE_VECTOR_SHORTEN_MODE
   if (optimize)
     {
@@ -1081,15 +1069,16 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 	  flags.min_after_base = min > rel;
 	  flags.max_after_base = max > rel;
 	  ADDR_DIFF_VEC_FLAGS (pat) = flags;
+
+	  if (increasing)
+	    PUT_MODE (pat, CASE_VECTOR_SHORTEN_MODE (0, 0, pat));
 	}
     }
 #endif /* CASE_VECTOR_SHORTEN_MODE */
 
   /* Compute initial lengths, addresses, and varying flags for each insn.  */
-  length_fun = insn_default_length;
-#ifdef HAVE_ATTR_lock_length
-  length_fun = insn_min_length;
-#endif
+  int (*length_fun) (rtx) = increasing ? insn_min_length : insn_default_length;
+
   for (insn_current_address = 0, insn = first;
        insn != 0;
        insn_current_address += insn_lengths[uid], insn = NEXT_INSN (insn))
@@ -1140,6 +1129,8 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 #else
 	  const_delay_slots = 0;
 #endif
+	  int (*inner_length_fun) (rtx)
+	    = const_delay_slots ? length_fun : insn_default_length;
 	  /* Inside a delay slot sequence, we do not do any branch shortening
 	     if the shortening could change the number of delay slots
 	     of the branch.  */
@@ -1154,32 +1145,26 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 		inner_length = (asm_insn_count (PATTERN (inner_insn))
 				* insn_default_length (inner_insn));
 	      else
-		inner_length = length_fun (inner_insn);
+		inner_length = inner_length_fun (inner_insn);
 
 	      insn_lengths[inner_uid] = inner_length;
 	      if (const_delay_slots)
 		{
 		  if ((varying_length[inner_uid]
-		       = INSN_VARIABLE_LENGTH_P (inner_insn)) != 0)
+		       = insn_variable_length_p (inner_insn)) != 0)
 		    varying_length[uid] = 1;
 		  INSN_ADDRESSES (inner_uid) = (insn_current_address
 						+ insn_lengths[uid]);
 		}
 	      else
-		{
-		  /* We'd need to make this code a bit more complicated
-		     to properly support non-const-delay-slots with the
-		     lock_length attribute.  */
-		  gcc_assert (length_fun == &insn_default_length);
-		  varying_length[inner_uid] = 0;
-		}
+		varying_length[inner_uid] = 0;
 	      insn_lengths[uid] += inner_length;
 	    }
 	}
       else if (GET_CODE (body) != USE && GET_CODE (body) != CLOBBER)
 	{
 	  insn_lengths[uid] = length_fun (insn);
-	  varying_length[uid] = INSN_VARIABLE_LENGTH_P (insn);
+	  varying_length[uid] = insn_variable_length_p (insn);
 	}
 
       /* If needed, do any adjustment.  */
@@ -1330,13 +1315,10 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 		}
 	      vec_mode = CASE_VECTOR_SHORTEN_MODE (min_addr - rel_addr,
 						   max_addr - rel_addr, body);
-	      if (!uid_lock_length
-		  || !uid_lock_length[uid]
+	      if (!increasing
 		  || (GET_MODE_SIZE (vec_mode)
 		      >= GET_MODE_SIZE (GET_MODE (body))))
 		PUT_MODE (body, vec_mode);
-	      if (uid_lock_length)
-		uid_lock_length[uid] = 1;
 	      if (JUMP_TABLES_IN_TEXT_SECTION
 		  || readonly_data_section == text_section)
 		{
@@ -1396,24 +1378,15 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 		  else
 		    inner_length = insn_current_length (inner_insn);
 
-		  /* We can't record lengths of delay slot insns.  */
-		  if (i == 0 && inner_length != insn_lengths[inner_uid])
+		  if (inner_length != insn_lengths[inner_uid])
 		    {
-#ifdef HAVE_ATTR_lock_length
-		      int lock_length = insn_current_lock_length (inner_insn);
-
-		      if (lock_length > uid_lock_length[inner_uid])
-			uid_lock_length[inner_uid] = lock_length;
-		      else
-			lock_length = uid_lock_length[inner_uid];
-		      if (inner_length < lock_length)
-			inner_length = lock_length;
-		      if (inner_length != insn_lengths[inner_uid])
-#endif
+		      if (!increasing || inner_length > insn_lengths[inner_uid])
 			{
 			  insn_lengths[inner_uid] = inner_length;
 			  something_changed = 1;
 			}
+		      else
+			inner_length = insn_lengths[inner_uid];
 		    }
 		  insn_current_address += inner_length;
 		  new_length += inner_length;
@@ -1422,18 +1395,6 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 	  else
 	    {
 	      new_length = insn_current_length (insn);
-#ifdef HAVE_ATTR_lock_length
-		{
-		  int lock_length = insn_current_lock_length (insn);
-
-		  if (lock_length > uid_lock_length[uid])
-		    uid_lock_length[uid] = lock_length;
-		  else
-		    lock_length = uid_lock_length[uid];
-		  if (new_length < lock_length)
-		    new_length = lock_length;
-		}
-#endif
 	      insn_current_address += new_length;
 	    }
 
@@ -1444,23 +1405,21 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 	  insn_current_address += (new_length - tmp_length);
 #endif
 
-	  if (new_length != insn_lengths[uid])
+	  if (new_length != insn_lengths[uid]
+	      && (!increasing || new_length > insn_lengths[uid]))
 	    {
 	      insn_lengths[uid] = new_length;
 	      something_changed = 1;
 	    }
+	  else
+	    insn_current_address += insn_lengths[uid] - new_length;
 	}
-#ifndef HAVE_ATTR_lock_length
       /* For a non-optimizing compile, do only a single pass.  */
-      if (!optimize)
+      if (!increasing)
 	break;
-#endif
     }
 
   free (varying_length);
-  if (uid_lock_length)
-    free (uid_lock_length);
-  uid_lock_length = 0;
 
 #endif /* HAVE_ATTR_length */
 }
@@ -1468,8 +1427,7 @@ shorten_branches (rtx first ATTRIBUTE_UNUSED)
 #ifdef HAVE_ATTR_length
 /* Given the body of an INSN known to be generated by an ASM statement, return
    the number of machine instructions likely to be generated for this insn.
-   This is used to compute its length.
-   Note that an empty asm body like in execute/20001009-2.c has length zero.  */
+   This is used to compute its length.  */
 
 static int
 asm_insn_count (rtx body)
@@ -1490,21 +1448,15 @@ asm_insn_count (rtx body)
 int
 asm_str_count (const char *templ)
 {
-  int count = 0;
-  int text;
+  int count = 1;
 
-  for (text = 0; *templ; templ++)
-    {
-      if (IS_ASM_LOGICAL_LINE_SEPARATOR (*templ, templ)
-	  || *templ == '\n')
-	{
-	  count += text;
-	  text = 0;
-	}
-      else
-	text = 1;
-    }
-  count += text;
+  if (!*templ)
+    return 0;
+
+  for (; *templ; templ++)
+    if (IS_ASM_LOGICAL_LINE_SEPARATOR (*templ, templ)
+	|| *templ == '\n')
+      count++;
 
   return count;
 }
@@ -1680,7 +1632,7 @@ reemit_insn_block_notes (void)
 					     insn_scope (XVECEXP (body, 0, i)));
 	}
       if (! this_block)
-	continue;
+	this_block = DECL_INITIAL (cfun->decl);
 
       if (this_block != cur_block)
 	{
@@ -1715,8 +1667,8 @@ final_start_function (rtx first ATTRIBUTE_UNUSED, FILE *file,
 
   this_is_asm_operands = 0;
 
-  last_filename = locator_file (prologue_locator);
-  last_linenum = locator_line (prologue_locator);
+  last_filename = LOCATION_FILE (prologue_location);
+  last_linenum = LOCATION_LINE (prologue_location);
   last_discriminator = discriminator = 0;
 
   high_block_linenum = high_function_linenum = last_linenum;
@@ -4451,7 +4403,7 @@ struct rtl_opt_pass pass_shorten_branches =
   NULL,                                 /* sub */
   NULL,                                 /* next */
   0,                                    /* static_pass_number */
-  TV_FINAL,                             /* tv_id */
+  TV_SHORTEN_BRANCH,                    /* tv_id */
   0,                                    /* properties_required */
   0,                                    /* properties_provided */
   0,                                    /* properties_destroyed */

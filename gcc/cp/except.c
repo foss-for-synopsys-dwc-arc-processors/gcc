@@ -671,8 +671,7 @@ do_free_exception (tree ptr)
    Called from build_throw via walk_tree_without_duplicates.  */
 
 static tree
-wrap_cleanups_r (tree *tp, int *walk_subtrees ATTRIBUTE_UNUSED,
-		 void *data ATTRIBUTE_UNUSED)
+wrap_cleanups_r (tree *tp, int *walk_subtrees, void * /*data*/)
 {
   tree exp = *tp;
   tree cleanup;
@@ -1052,7 +1051,7 @@ can_convert_eh (tree to, tree from)
     }
 
   if (CLASS_TYPE_P (to) && CLASS_TYPE_P (from)
-      && PUBLICLY_UNIQUELY_DERIVED_P (to, from))
+      && publicly_uniquely_derived_p (to, from))
     return 1;
 
   return 0;
@@ -1129,8 +1128,7 @@ check_handlers (tree handlers)
      expression whose type is a polymorphic class type (10.3).  */
 
 static tree
-check_noexcept_r (tree *tp, int *walk_subtrees ATTRIBUTE_UNUSED,
-		  void *data ATTRIBUTE_UNUSED)
+check_noexcept_r (tree *tp, int * /*walk_subtrees*/, void * /*data*/)
 {
   tree t = *tp;
   enum tree_code code = TREE_CODE (t);
@@ -1249,11 +1247,8 @@ expr_noexcept_p (tree expr, tsubst_flags_t complain)
 	  if (!DECL_INITIAL (fn))
 	    {
 	      /* Not defined yet; check again at EOF.  */
-	      pending_noexcept *p
-		= VEC_safe_push (pending_noexcept, gc,
-				 pending_noexcept_checks, NULL);
-	      p->fn = fn;
-	      p->loc = input_location;
+	      pending_noexcept p = {fn, input_location};
+	      VEC_safe_push (pending_noexcept, gc, pending_noexcept_checks, p);
 	    }
 	  else
 	    maybe_noexcept_warning (fn);

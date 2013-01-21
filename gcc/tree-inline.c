@@ -830,10 +830,6 @@ remap_gimple_op_r (tree *tp, int *walk_subtrees, void *data)
       /* Otherwise, just copy the node.  Note that copy_tree_r already
 	 knows not to copy VAR_DECLs, etc., so this is safe.  */
 
-      /* We should never have TREE_BLOCK set on non-statements.  */
-      if (EXPR_P (*tp))
-	gcc_assert (!TREE_BLOCK (*tp));
-
       if (TREE_CODE (*tp) == MEM_REF)
 	{
 	  tree ptr = TREE_OPERAND (*tp, 0);
@@ -848,6 +844,7 @@ remap_gimple_op_r (tree *tp, int *walk_subtrees, void *data)
 			     ptr, TREE_OPERAND (*tp, 1));
 	  TREE_THIS_NOTRAP (*tp) = TREE_THIS_NOTRAP (old);
 	  TREE_THIS_VOLATILE (*tp) = TREE_THIS_VOLATILE (old);
+	  TREE_SIDE_EFFECTS (*tp) = TREE_SIDE_EFFECTS (old);
 	  TREE_NO_WARNING (*tp) = TREE_NO_WARNING (old);
 	  *walk_subtrees = 0;
 	  return NULL;
@@ -871,13 +868,9 @@ remap_gimple_op_r (tree *tp, int *walk_subtrees, void *data)
 	{
 	  /* Variable substitution need not be simple.  In particular,
 	     the MEM_REF substitution above.  Make sure that
-	     TREE_CONSTANT and friends are up-to-date.  But make sure
-	     to not improperly set TREE_BLOCK on some sub-expressions.  */
+	     TREE_CONSTANT and friends are up-to-date.  */
 	  int invariant = is_gimple_min_invariant (*tp);
-	  tree block = id->block;
-	  id->block = NULL_TREE;
 	  walk_tree (&TREE_OPERAND (*tp, 0), remap_gimple_op_r, data, NULL);
-	  id->block = block;
 	  recompute_tree_invariant_for_addr_expr (*tp);
 
 	  /* If this used to be invariant, but is not any longer,
@@ -887,6 +880,22 @@ remap_gimple_op_r (tree *tp, int *walk_subtrees, void *data)
 
 	  *walk_subtrees = 0;
 	}
+    }
+
+  /* Update the TREE_BLOCK for the cloned expr.  */
+  if (EXPR_P (*tp))
+    {
+      tree new_block = id->remapping_type_depth == 0 ? id->block : NULL;
+      tree old_block = TREE_BLOCK (*tp);
+      if (old_block)
+	{
+	  tree *n;
+	  n = (tree *) pointer_map_contains (id->decl_map,
+					     TREE_BLOCK (*tp));
+	  if (n)
+	    new_block = *n;
+	}
+      TREE_SET_BLOCK (*tp, new_block);
     }
 
   /* Keep iterating.  */
@@ -1106,11 +1115,10 @@ copy_tree_body_r (tree *tp, int *walk_subtrees, void *data)
 	      tree *n;
 	      n = (tree *) pointer_map_contains (id->decl_map,
 						 TREE_BLOCK (*tp));
-	      gcc_assert (n || id->remapping_type_depth != 0);
 	      if (n)
 		new_block = *n;
 	    }
-	  TREE_BLOCK (*tp) = new_block;
+	  TREE_SET_BLOCK (*tp, new_block);
 	}
 
       if (TREE_CODE (*tp) != OMP_CLAUSE)
@@ -1830,7 +1838,7 @@ update_ssa_across_abnormal_edges (basic_block bb, basic_block ret_bb,
 	    gcc_assert ((e->flags & EDGE_EH)
 			|| SSA_NAME_OCCURS_IN_ABNORMAL_PHI (PHI_RESULT (phi)));
 
-	    if (!is_gimple_reg (PHI_RESULT (phi)))
+	    if (virtual_operand_p (PHI_RESULT (phi)))
 	      {
 		mark_virtual_operands_for_renaming (cfun);
 		continue;
@@ -1970,7 +1978,7 @@ copy_phis_for_bb (basic_block bb, copy_body_data *id)
       phi = gsi_stmt (si);
       res = PHI_RESULT (phi);
       new_res = res;
-      if (is_gimple_reg (res))
+      if (!virtual_operand_p (res))
 	{
 	  walk_tree (&new_res, copy_tree_body_r, id, NULL);
 	  new_phi = create_phi_node (new_res, new_bb);
@@ -1981,6 +1989,7 @@ copy_phis_for_bb (basic_block bb, copy_body_data *id)
 	      tree new_arg;
 	      tree block = id->block;
 	      edge_iterator ei2;
+	      location_t locus;
 
 	      /* When doing partial cloning, we allow PHIs on the entry block
 		 as long as all the arguments are the same.  Find any input
@@ -1992,9 +2001,7 @@ copy_phis_for_bb (basic_block bb, copy_body_data *id)
 
 	      arg = PHI_ARG_DEF_FROM_EDGE (phi, old_edge);
 	      new_arg = arg;
-	      id->block = NULL_TREE;
 	      walk_tree (&new_arg, copy_tree_body_r, id, NULL);
-	      id->block = block;
 	      gcc_assert (new_arg);
 	      /* With return slot optimization we can end up with
 	         non-gimple (foo *)&this->m, fix that here.  */
@@ -2007,8 +2014,20 @@ copy_phis_for_bb (basic_block bb, copy_body_data *id)
 		  gsi_insert_seq_on_edge (new_edge, stmts);
 		  inserted = true;
 		}
-	      add_phi_arg (new_phi, new_arg, new_edge,
-			   gimple_phi_arg_location_from_edge (phi, old_edge));
+	      locus = gimple_phi_arg_location_from_edge (phi, old_edge);
+	      block = id->block;
+	      if (LOCATION_BLOCK (locus))
+		{
+		  tree *n;
+		  n = (tree *) pointer_map_contains (id->decl_map,
+			LOCATION_BLOCK (locus));
+		  gcc_assert (n);
+		  block = *n;
+		}
+
+	      add_phi_arg (new_phi, new_arg, new_edge, block ?
+		  COMBINE_LOCATION_DATA (line_table, locus, block) :
+		  LOCATION_LOCUS (locus));
 	    }
 	}
     }
@@ -2029,7 +2048,8 @@ remap_decl_1 (tree decl, void *data)
 }
 
 /* Build struct function and associated datastructures for the new clone
-   NEW_FNDECL to be build.  CALLEE_FNDECL is the original */
+   NEW_FNDECL to be build.  CALLEE_FNDECL is the original.  Function changes
+   the cfun to the function of new_fndecl (and current_function_decl too).  */
 
 static void
 initialize_cfun (tree new_fndecl, tree callee_fndecl, gcov_type count)
@@ -2094,7 +2114,6 @@ initialize_cfun (tree new_fndecl, tree callee_fndecl, gcov_type count)
       cfun->gimple_df->in_ssa_p = true;
       init_ssa_operands (cfun);
     }
-  pop_cfun ();
 }
 
 /* Helper function for copy_cfg_body.  Move debug stmts from the end
@@ -2355,6 +2374,31 @@ copy_debug_stmt (gimple stmt, copy_body_data *id)
       gimple_debug_source_bind_set_var (stmt, t);
       walk_tree (gimple_debug_source_bind_get_value_ptr (stmt),
 		 remap_gimple_op_r, &wi, NULL);
+      /* When inlining and source bind refers to one of the optimized
+	 away parameters, change the source bind into normal debug bind
+	 referring to the corresponding DEBUG_EXPR_DECL that should have
+	 been bound before the call stmt.  */
+      t = gimple_debug_source_bind_get_value (stmt);
+      if (t != NULL_TREE
+	  && TREE_CODE (t) == PARM_DECL
+	  && id->gimple_call)
+	{
+	  VEC(tree, gc) **debug_args = decl_debug_args_lookup (id->src_fn);
+	  unsigned int i;
+	  if (debug_args != NULL)
+	    {
+	      for (i = 0; i < VEC_length (tree, *debug_args); i += 2)
+		if (VEC_index (tree, *debug_args, i) == DECL_ORIGIN (t)
+		    && TREE_CODE (VEC_index (tree, *debug_args, i + 1))
+		       == DEBUG_EXPR_DECL)
+		  {
+		    t = VEC_index (tree, *debug_args, i + 1);
+		    stmt->gsbase.subcode = GIMPLE_DEBUG_BIND;
+		    gimple_debug_bind_set_value (stmt, t);
+		    break;
+		  }
+	    }
+	}      
     }
 
   processing_debug_stmt = 0;
@@ -3795,6 +3839,12 @@ expand_call_inline (basic_block bb, gimple stmt, copy_body_data *id)
 	goto egress;
 
       if (lookup_attribute ("always_inline", DECL_ATTRIBUTES (fn))
+          /* For extern inline functions that get redefined we always
+	     silently ignored always_inline flag. Better behaviour would
+	     be to be able to keep both bodies and use extern inline body
+	     for inlining, but we can't do that because frontends overwrite
+	     the body.  */
+	  && !cg_edge->callee->local.redefined_extern_inline
 	  /* Avoid warnings during early inline pass. */
 	  && cgraph_global_info_ready
 	  /* PR 20090218-1_0.c. Body can be provided by another module. */
@@ -3873,7 +3923,8 @@ expand_call_inline (basic_block bb, gimple stmt, copy_body_data *id)
   id->block = make_node (BLOCK);
   BLOCK_ABSTRACT_ORIGIN (id->block) = fn;
   BLOCK_SOURCE_LOCATION (id->block) = input_location;
-  prepend_lexical_block (gimple_block (stmt), id->block);
+  if (gimple_block (stmt))
+    prepend_lexical_block (gimple_block (stmt), id->block);
 
   /* Local declarations will be replaced by their equivalents in this
      map.  */
@@ -3901,7 +3952,29 @@ expand_call_inline (basic_block bb, gimple stmt, copy_body_data *id)
   initialize_inlined_parameters (id, stmt, fn, bb);
 
   if (DECL_INITIAL (fn))
-    prepend_lexical_block (id->block, remap_blocks (DECL_INITIAL (fn), id));
+    {
+      tree *var;
+
+      prepend_lexical_block (id->block, remap_blocks (DECL_INITIAL (fn), id));
+      gcc_checking_assert (BLOCK_SUBBLOCKS (id->block)
+			   && (BLOCK_CHAIN (BLOCK_SUBBLOCKS (id->block))
+			       == NULL_TREE));
+      /* Move vars for PARM_DECLs from DECL_INITIAL block to id->block,
+	 otherwise for DWARF DW_TAG_formal_parameter will not be children of
+	 DW_TAG_inlined_subroutine, but of a DW_TAG_lexical_block
+	 under it.  The parameters can be then evaluated in the debugger,
+	 but don't show in backtraces.  */
+      for (var = &BLOCK_VARS (BLOCK_SUBBLOCKS (id->block)); *var; )
+	if (TREE_CODE (DECL_ORIGIN (*var)) == PARM_DECL)
+	  {
+	    tree v = *var;
+	    *var = TREE_CHAIN (v);
+	    TREE_CHAIN (v) = BLOCK_VARS (id->block);
+	    BLOCK_VARS (id->block) = v;
+	  }
+	else
+	  var = &TREE_CHAIN (*var);
+    }
 
   /* Return statements in the function body will be replaced by jumps
      to the RET_LABEL.  */
@@ -5027,8 +5100,6 @@ tree_function_versioning (tree old_decl, tree new_decl,
   struct ipa_replace_map *replace_info;
   basic_block old_entry_block, bb;
   VEC (gimple, heap) *init_stmts = VEC_alloc (gimple, heap, 10);
-
-  tree old_current_function_decl = current_function_decl;
   tree vars = NULL_TREE;
 
   gcc_assert (TREE_CODE (old_decl) == FUNCTION_DECL
@@ -5089,6 +5160,7 @@ tree_function_versioning (tree old_decl, tree new_decl,
 		       VEC_index (ipa_opt_pass,
 		       		  old_transforms_to_apply,
 				  i));
+      VEC_free (ipa_opt_pass, heap, old_transforms_to_apply);
     }
 
   id.copy_decl = copy_decl_no_change;
@@ -5098,14 +5170,12 @@ tree_function_versioning (tree old_decl, tree new_decl,
   id.transform_return_to_modify = false;
   id.transform_lang_insert_block = NULL;
 
-  current_function_decl = new_decl;
   old_entry_block = ENTRY_BLOCK_PTR_FOR_FUNCTION
     (DECL_STRUCT_FUNCTION (old_decl));
   initialize_cfun (new_decl, old_decl,
 		   old_entry_block->count);
   DECL_STRUCT_FUNCTION (new_decl)->gimple_df->ipa_pta
     = id.src_cfun->gimple_df->ipa_pta;
-  push_cfun (DECL_STRUCT_FUNCTION (new_decl));
 
   /* Copy the function's static chain.  */
   p = DECL_STRUCT_FUNCTION (old_decl)->static_chain_decl;
@@ -5259,9 +5329,6 @@ tree_function_versioning (tree old_decl, tree new_decl,
   gcc_assert (!id.debug_stmts);
   VEC_free (gimple, heap, init_stmts);
   pop_cfun ();
-  current_function_decl = old_current_function_decl;
-  gcc_assert (!current_function_decl
-	      || DECL_STRUCT_FUNCTION (current_function_decl) == cfun);
   return;
 }
 

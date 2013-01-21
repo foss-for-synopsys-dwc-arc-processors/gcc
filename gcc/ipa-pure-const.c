@@ -192,6 +192,7 @@ warn_function_noreturn (tree decl)
       = suggest_attribute (OPT_Wsuggest_attribute_noreturn, decl,
 			   true, warned_about, "noreturn");
 }
+
 /* Init the function state.  */
 
 static void
@@ -387,7 +388,7 @@ state_from_flags (enum pure_const_state_e *state, bool *looping,
   else
     {
       if (dump_file && (dump_flags & TDF_DETAILS))
-	fprintf (dump_file, " neihter\n");
+	fprintf (dump_file, " neither\n");
       *state = IPA_NEITHER;
       *looping = true;
     }
@@ -724,7 +725,6 @@ static funct_state
 analyze_function (struct cgraph_node *fn, bool ipa)
 {
   tree decl = fn->symbol.decl;
-  tree old_decl = current_function_decl;
   funct_state l;
   basic_block this_block;
 
@@ -752,7 +752,6 @@ analyze_function (struct cgraph_node *fn, bool ipa)
     }
 
   push_cfun (DECL_STRUCT_FUNCTION (decl));
-  current_function_decl = decl;
 
   FOR_EACH_BB (this_block)
     {
@@ -802,7 +801,7 @@ end:
 		    if (dump_file)
 		      fprintf (dump_file, "    can not prove finiteness of loop %i\n", loop->num);
 		    l->looping =true;
-		    break;
+		    FOR_EACH_LOOP_BREAK (li);
 		  }
 	      scev_finalize ();
 	    }
@@ -820,7 +819,6 @@ end:
     l->can_throw = false;
 
   pop_cfun ();
-  current_function_decl = old_decl;
   if (dump_file)
     {
       if (l->looping)
@@ -1573,7 +1571,7 @@ local_pure_const (void)
       warn_function_noreturn (cfun->decl);
       if (dump_file)
         fprintf (dump_file, "Function found to be noreturn: %s\n",
-	         lang_hooks.decl_printable_name (current_function_decl, 2));
+	         current_function_name ());
 
       /* Update declaration and reduce profile to executed once.  */
       TREE_THIS_VOLATILE (current_function_decl) = 1;
@@ -1597,8 +1595,7 @@ local_pure_const (void)
 	  if (dump_file)
 	    fprintf (dump_file, "Function found to be %sconst: %s\n",
 		     l->looping ? "looping " : "",
-		     lang_hooks.decl_printable_name (current_function_decl,
-						     2));
+		     current_function_name ());
 	}
       else if (DECL_LOOPING_CONST_OR_PURE_P (current_function_decl)
 	       && !l->looping)
@@ -1610,8 +1607,7 @@ local_pure_const (void)
 	    }
 	  if (dump_file)
 	    fprintf (dump_file, "Function found to be non-looping: %s\n",
-		     lang_hooks.decl_printable_name (current_function_decl,
-						     2));
+		     current_function_name ());
 	}
       break;
 
@@ -1627,8 +1623,7 @@ local_pure_const (void)
 	  if (dump_file)
 	    fprintf (dump_file, "Function found to be %spure: %s\n",
 		     l->looping ? "looping " : "",
-		     lang_hooks.decl_printable_name (current_function_decl,
-						     2));
+		     current_function_name ());
 	}
       else if (DECL_LOOPING_CONST_OR_PURE_P (current_function_decl)
 	       && !l->looping)
@@ -1640,8 +1635,7 @@ local_pure_const (void)
 	    }
 	  if (dump_file)
 	    fprintf (dump_file, "Function found to be non-looping: %s\n",
-		     lang_hooks.decl_printable_name (current_function_decl,
-						     2));
+		     current_function_name ());
 	}
       break;
 
@@ -1654,8 +1648,7 @@ local_pure_const (void)
       changed = true;
       if (dump_file)
 	fprintf (dump_file, "Function found to be nothrow: %s\n",
-		 lang_hooks.decl_printable_name (current_function_decl,
-						 2));
+		 current_function_name ());
     }
   free (l);
   if (changed)

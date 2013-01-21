@@ -510,6 +510,8 @@ static struct df_problem problem_SCAN =
   df_scan_start_dump,         /* Debugging.  */
   df_scan_start_block,        /* Debugging start block.  */
   NULL,                       /* Debugging end block.  */
+  NULL,                       /* Debugging start insn.  */
+  NULL,                       /* Debugging end insn.  */
   NULL,                       /* Incremental solution verify start.  */
   NULL,                       /* Incremental solution verify end.  */
   NULL,                       /* Dependent problem.  */
@@ -3107,11 +3109,8 @@ df_uses_record (struct df_collection_rec *collection_rec,
     {
     case LABEL_REF:
     case SYMBOL_REF:
-    case CONST_INT:
     case CONST:
-    case CONST_DOUBLE:
-    case CONST_FIXED:
-    case CONST_VECTOR:
+    CASE_CONST_ANY:
     case PC:
     case CC0:
     case ADDR_VEC:
