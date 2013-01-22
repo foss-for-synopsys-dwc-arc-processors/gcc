@@ -207,9 +207,7 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
-/* ARCOMPACT is true for all supported architectures.  */
-#define TARGET_ARCOMPACT  1
-#define TARGET_MIXED_CODE (TARGET_ARCOMPACT && TARGET_MIXED_CODE_SET)
+#define TARGET_MIXED_CODE (TARGET_MIXED_CODE_SET)
 
 #define TARGET_SPFP (TARGET_SPFP_FAST_SET || TARGET_SPFP_COMPACT_SET)
 #define TARGET_DPFP (TARGET_DPFP_FAST_SET || TARGET_DPFP_COMPACT_SET)
@@ -231,10 +229,6 @@ along with GCC; see the file COPYING3.  If not see
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */
 #define TARGET_SWAP (TARGET_ARC700 || TARGET_SWAP_SET)
-
-/* Non-zero means the cpu supports min and max instructions.
-   This flag is set by  default.  */
-#define TARGET_MINMAX (TARGET_ARCOMPACT || TARGET_MINMAX_SET)
 
 /* Provide some macros for size / scheduling features of the ARC700, so
    that we can pick & choose features if we get a new cpu family member.  */

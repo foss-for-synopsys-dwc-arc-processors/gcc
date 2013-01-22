@@ -159,12 +159,6 @@ main (int argc, char **argv)
 
   puts ("#include \"insn-attr-common.h\"\n");
 
-  /* For compatibility, define the attribute `alternative', which is just
-     a reference to the variable `which_alternative'.  */
-
-  puts ("#define HAVE_ATTR_alternative");
-  puts ("#define get_attr_alternative(insn) which_alternative");
-
   /* Read the machine description.  */
 
   while (1)

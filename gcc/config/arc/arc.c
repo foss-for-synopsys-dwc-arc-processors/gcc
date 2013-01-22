@@ -591,6 +591,7 @@ struct rtl_opt_pass pass_arc_ifcvt =
  {
   RTL_PASS,
   "arc_ifcvt",				/* name */
+  OPTGROUP_NONE,			/* optinfo_flags */
   NULL,					/* gate */
   arc_ifcvt,				/* execute */
   NULL,					/* sub */

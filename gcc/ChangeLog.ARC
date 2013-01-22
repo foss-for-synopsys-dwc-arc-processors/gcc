@@ -1,3 +1,17 @@
+2013-01-22  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config/arc/arc.c: Tidy up to synchronize with SVN changes.
+	* config/arc/arc.h: Likewise.
+	* config/arc/arc.opt: Likewise.
+	* config/arc/arc600.md: Likewise.
+	* config/arc/fpx.md: Likewise.
+	* config/avr/genopt.sh: Likewise.
+	* doc/invoke.texi: Likewise.
+	* doc/md.texi: Likewise.
+	* genattr.c: Likewise.
+	* genoutput.c: Likewise.
+	* reload.c: Likewise.
+
 2012-12-13  Vineet Gupta    <vgupta@synopsys.com>
 
 	* config/arc/arc.h (LINK_SPEC): max-page-size and common-page-size

@@ -1730,6 +1730,7 @@ A memory address suitable for a load/store pair instruction in TF mode
 
 @end table
 
+
 @item ARC ---@file{config/arc/constraints.md}
 @table @code
 @item q
@@ -1777,7 +1778,6 @@ A 8-bit unsigned integer constant.
 @item H
 Any const_double value.
 @end table
-
 
 @item ARM family---@file{config/arm/constraints.md}
 @table @code

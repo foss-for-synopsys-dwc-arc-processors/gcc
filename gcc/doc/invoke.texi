@@ -11059,7 +11059,6 @@ Enable floating-point instructions.
 Enable Advanced SIMD instructions.  This implies floating-point instructions
 are enabled.  This is the default for all current possible values for options
 @option{-march} and @option{-mcpu=}.
-
 @end table
 
 @node ARC Options
@@ -11447,6 +11446,7 @@ Annotate assembler instructions with estimated addresses.
 @opindex mannotate-align
 Explain what alignment considerations lead to the decision to make an
 instruction short or long.
+
 @end table
 
 @node ARM Options

@@ -1167,12 +1167,8 @@ strip_whitespace (const char *s)
 /* Record just enough information about a constraint to allow checking
    of operand constraint strings above, in validate_insn_alternatives.
    Does not validate most properties of the constraint itself; does
-   enforce no overlap with MI constraints, and no prefixes.
-   Check for no duplicate names is left to genpreds.c, since only there
-   is enough information to check for overloading.
-   Does not validate most properties of the constraint itself; does
    enforce no duplicate names, no overlap with MI constraints, and no
-EXP is the define_*constraint form, LINENO the line number
+   prefixes.  EXP is the define_*constraint form, LINENO the line number
    reported by the reader.  */
 static void
 note_constraint (rtx exp, int lineno)
@@ -1208,7 +1204,11 @@ note_constraint (rtx exp, int lineno)
 	slot = iter;
 
       if (!strcmp ((*iter)->name, name))
-	; /* Ignore here, see more detailed check in genpreds.  */
+	{
+	  error_with_line (lineno, "redefinition of constraint '%s'", name);
+	  message_with_line ((*iter)->lineno, "previous definition is here");
+	  return;
+	}
       else if (!strncmp ((*iter)->name, name, (*iter)->namelen))
 	{
 	  error_with_line (lineno, "defining constraint '%s' here", name);

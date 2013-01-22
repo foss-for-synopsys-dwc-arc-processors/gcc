@@ -93,10 +93,6 @@ mEA
 Target Report Mask(EA_SET)
 Generate Extended arithmetic instructions.  Currently only divaw, adds, subs and sat16 are supported
 
-mmin_max
-Target Report Mask(MINMAX_SET)
-Generate min and max instructions
-
 msoft-float
 Target Report Mask(0)
 Dummy flag. This is the default unless FPX switches are provided explicitly
@@ -107,7 +103,7 @@ Generate call insns as register indirect calls
 
 mno-brcc
 Target Report Mask(NO_BRCC_SET)
-Do no generate BRcc instructions.
+Do no generate BRcc instructions in arc_reorg.
 
 mno-sdata
 Target Report Mask(NO_SDATA_SET)

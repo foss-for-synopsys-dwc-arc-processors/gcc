@@ -34,17 +34,17 @@
   "issue+core, nothing*5, write_port")
 
 (define_insn_reservation "dpfp_compact_mult" 7
-  (and (ne (symbol_ref "TARGET_DPFP_COMPACT_SET") (const_int 0))
+  (and (match_test "TARGET_DPFP_COMPACT_SET")
        (eq_attr "type" "dpfp_mult"))
   "issue+core, nothing*6, write_port")
 
 (define_insn_reservation "dpfp_compact_addsub" 5
-  (and (ne (symbol_ref "TARGET_DPFP_COMPACT_SET") (const_int 0))
+  (and (match_test "TARGET_DPFP_COMPACT_SET")
        (eq_attr "type" "dpfp_addsub"))
   "issue+core, nothing*4, write_port")
 
 (define_insn_reservation "dpfp_fast" 5
-  (and (ne (symbol_ref "TARGET_DPFP_FAST_SET") (const_int 0))
+  (and (match_test "TARGET_DPFP_FAST_SET")
        (eq_attr "type" "dpfp_mult,dpfp_addsub"))
   "issue+core, nothing*4, write_port")
 
