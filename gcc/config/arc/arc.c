@@ -632,6 +632,10 @@ arc_init (void)
       arc_cpu_string = "ARC700";
       tune_dflt = TUNE_ARC700_4_2_STD;
     }
+  else if (TARGET_EM)
+    {
+      arc_cpu_string = "EM";
+    }
   else
     gcc_unreachable ();
   if (arc_tune == TUNE_NONE)
@@ -667,12 +671,12 @@ arc_init (void)
       }
 
   /* Support mul64 generation only for A5 and ARC600.  */
-  if (TARGET_MUL64_SET && TARGET_ARC700)
-      error ("-mmul64 not supported for ARC700");
+  if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_EM))
+      error ("-mmul64 not supported for ARC700 or ARCv2");
 
   /* MPY instructions valid only for ARC700.  */
-  if (TARGET_NOMPY_SET && !TARGET_ARC700)
-      error ("-mno-mpy supported only for ARC700");
+  if (TARGET_NOMPY_SET && (!(TARGET_ARC700 || TARGET_EM)))
+      error ("-mno-mpy supported only for ARC700 or ARCv2");
 
   /* mul/mac instructions only for ARC600.  */
   if (TARGET_MULMAC_32BY16_SET && !(TARGET_ARC600 || TARGET_ARC601))
@@ -696,7 +700,7 @@ arc_init (void)
     error ("FPX extensions not available on pre-ARC600 cores");
 
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
-  if (flag_pic && !TARGET_ARC700)
+  if (flag_pic && (!(TARGET_ARC700 || TARGET_EM)))
     {
       warning (DK_WARNING, "PIC is not supported for %s. Generating non-PIC code only..", arc_cpu_string);
       flag_pic = 0;
@@ -1121,6 +1125,9 @@ arc_init_reg_tables (void)
   char rname58[5] = "r58";
   char rname59[5] = "r59";
 
+char rname29[7] = "ilink1";
+char rname30[7] = "ilink2";
+
 static void
 arc_conditional_register_usage (void)
 {
@@ -1128,6 +1135,11 @@ arc_conditional_register_usage (void)
   int i;
   int fix_start = 60, fix_end = 55;
 
+  if (TARGET_EM)
+    {
+      strcpy(rname29, "ilink");
+      strcpy(rname30, "r30");
+    }
   if (TARGET_MUL64_SET)
     {
       fix_start = 57;
