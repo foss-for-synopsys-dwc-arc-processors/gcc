@@ -53,6 +53,10 @@ mARC700
 Target Report
 Same as -mA7
 
+mEM
+Target Report RejectNegative Var(arc_cpu, PROCESSOR_EM)
+Generate ARCv2 code for EM processor
+
 mmixed-code
 Target Report Mask(MIXED_CODE_SET)
 Tweak register allocation to help 16-bit instruction generation
@@ -167,6 +171,9 @@ Enum(processor_type) String(ARC601) Value(PROCESSOR_ARC601)
 
 EnumValue
 Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
+
+EnumValue
+Enum(processor_type) String(EM) Value(PROCESSOR_EM)
 
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
