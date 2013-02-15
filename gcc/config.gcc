@@ -866,7 +866,7 @@ arc*-*-elf*)
 	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
 	tmake_file="arc/t-arc-newlib arc/t-arc"
 	case x"${with_cpu}" in
-	  xarc600|xarc601|xarc700)
+	  xarc600|xarc601|xarc700|xEM)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
 	esac
@@ -3243,7 +3243,7 @@ case "${target}" in
 	arc*-*-*) # was:	arc*-*-linux-uclibc)
 		supported_defaults="cpu"
 		case $with_cpu in
-		  arc600|arc601|arc700)
+		  arc600|arc601|arc700|EM)
 			;;
 		  *) echo "Unknown cpu type"
 			exit 1
