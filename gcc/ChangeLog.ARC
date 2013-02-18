@@ -1,3 +1,14 @@
+2013-02-15  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_output_addsi): Take separate arguments cond_p
+	and output_p.	Return length of insn, output insn if indicated.
+	(arc_output_commutative_cond_exec): New function.
+	* config/arc/arc.md (addsi3_mixed): Update use of arc_output_addsi.
+	(add_cond_exec): Delete.
+	(commutative_cond_exec): Use arc_output_commutative_cond_exec.
+	* config/arc/arc-protos.h (arc_output_addsi): Update prototype.
+	(arc_output_commutative_cond_exec): Add prorotype.
+
 2013-01-22  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* config/arc/arc.c: Tidy up to synchronize with SVN changes.

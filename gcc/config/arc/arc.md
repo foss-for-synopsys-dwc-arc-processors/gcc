@@ -1,5 +1,5 @@
 ;; Machine description of the Synopsys DesignWare ARC cpu for GNU C compiler
-;; Copyright (C) 1994, 1997, 1999, 2006-2012
+;; Copyright (C) 1994, 1997, 1999, 2006-2013
 ;; Free Software Foundation, Inc.
 
 ;; Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
@@ -1564,10 +1564,10 @@
 	(plus:SI (match_operand:SI 1 "register_operand" "%0,      c,  0,  c,  0,  0,Rcb,   0, Rcqq,   0,    c,  c,0,  0,   0,  0,  c")
 		 (match_operand:SI 2 "nonmemory_operand" "cL,     0, cL,  0,CL2,Csp,CM4,cCca,RcqqK,  cO,cLCmL,Cca,I,C2a, Cal,Cal,Cal")))]
   ""
-  "*if (which_alternative == 6)
-      return arc_short_long (insn, \"add%? %0,%1,%2\", \"add1 %0,%1,%2/2\");
-    return arc_output_addsi (operands,
-			     arc_ccfsm_cond_exec_p () ? \"%?\" : \"\");"
+{
+  arc_output_addsi (operands, arc_ccfsm_cond_exec_p (), true);
+  return "";
+}
   "&& reload_completed && get_attr_length (insn) == 8
    && satisfies_constraint_I (operands[2])
    && GET_CODE (PATTERN (insn)) != COND_EXEC"
@@ -1575,7 +1575,7 @@
   "split_addsi (operands);"
   [(set_attr "type" "*,*,*,*,two_cycle_core,two_cycle_core,*,two_cycle_core,*,*,*,two_cycle_core,*,two_cycle_core,*,*,*")
    (set (attr "iscompact")
-	(cond [(match_test "!*arc_output_addsi (operands, 0)")
+	(cond [(match_test "~arc_output_addsi (operands, false, false) & 2")
 	       (const_string "false")
 	       (match_operand 2 "long_immediate_operand" "")
 	       (const_string "maybe_limm")]
@@ -3153,21 +3153,6 @@
   [(set_attr "type" "cmove")
    (set_attr "length" "4,8")])
 
-(define_insn "*add_cond_exec"
-  [(cond_exec
-     (match_operator 4 "proper_comparison_operator"
-       [(match_operand 3 "cc_register" "Rcc,Rcc") (const_int 0)])
-     (set (match_operand:SI 0 "dest_reg_operand" "=w,w")
-	  (plus:SI (match_operand:SI 1 "register_operand" "%0,0")
-		   (match_operand:SI 2 "nonmemory_operand" "cCca,?Cal"))))]
-  ""
-  "*return arc_output_addsi (operands, \".%d4\");"
-  [(set_attr "cond" "use")
-   (set_attr "type" "cmove")
-   (set_attr "length" "4,8")])
-
-; ??? and could use bclr,bmsk
-; ??? or / xor could use bset / bxor
 (define_insn "*commutative_cond_exec"
   [(cond_exec
      (match_operator 5 "proper_comparison_operator"
@@ -3177,10 +3162,19 @@
 	    [(match_operand:SI 1 "register_operand" "%0,0")
 	     (match_operand:SI 2 "nonmemory_operand" "cL,?Cal")])))]
   ""
-  "%O3.%d5 %0,%1,%2"
+{
+  arc_output_commutative_cond_exec (operands, true);
+  return "";
+}
   [(set_attr "cond" "use")
    (set_attr "type" "cmove")
-   (set_attr "length" "4,8")])
+   (set_attr_alternative "length"
+     [(const_int 4)
+      (cond
+	[(eq (symbol_ref "arc_output_commutative_cond_exec (operands, false)")
+	     (const_int 4))
+	 (const_int 4)]
+	(const_int 8))])])
 
 (define_insn "*sub_cond_exec"
   [(cond_exec

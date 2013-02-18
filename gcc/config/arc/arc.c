@@ -7181,67 +7181,76 @@ arc_register_move_cost (enum machine_mode,
   return 2;
 }
 
-/* Emit code and return a template suitable for outputting an addsi
-   instruction with OPERANDS and the conditional execution specifier
-   COND.  If COND is zero, don't output anything, just return an
-   empty string for instructions with 32 bit opcode, and a non-empty one
-   for insns with a 16 bit opcode.  */
-
-const char*
-arc_output_addsi (rtx *operands, const char *cond)
+/* Emit code for an addsi3 instruction with OPERANDS.
+   COND_P indicates if this will use conditional execution.
+   Return the length of the instruction.
+   If OUTPUT_P is false, don't actually output the instruction, just return
+   its length.  */
+int
+arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
 {
   char format[32];
 
-  int cond_p = cond ? *cond : 0;
   int match = operands_match_p (operands[0], operands[1]);
   int match2 = operands_match_p (operands[0], operands[2]);
   int intval = (REG_P (operands[2]) ? 1
 		: CONST_INT_P (operands[2]) ? INTVAL (operands[2]) : 0xbadc057);
   int neg_intval = -intval;
-  int shift = 0;
-  int short_p = 0;
+  int short_0 = satisfies_constraint_Rcq (operands[0]);
+  int short_p = (!cond_p && short_0 && satisfies_constraint_Rcq (operands[1]));
+  int ret = 0;
+
+#define ADDSI_OUTPUT1(FORMAT) do {\
+  if (output_p) \
+    output_asm_insn (FORMAT, operands);\
+  return ret; \
+} while (0)
+#define ADDSI_OUTPUT(LIST) do {\
+  if (output_p) \
+    sprintf LIST;\
+  ADDSI_OUTPUT1 (format);\
+  return ret; \
+} while (0)
 
   /* First try to emit a 16 bit insn.  */
-  if (1)
+  ret = 2;
+  if (!cond_p
+      /* If we are actually about to output this insn, don't try a 16 bit
+         variant if we already decided that we don't want that
+	 (I.e. we upsized this insn to align some following insn.)
+         E.g. add_s r0,sp,70 is 16 bit, but add r0,sp,70 requires a LIMM -
+	 but add1 r0,sp,35 doesn't.  */
+      && (!output_p || (get_attr_length (current_output_insn) & 2)))
     {
-      int short_0 = satisfies_constraint_Rcq (operands[0]);
-
-      short_p = (!cond_p && short_0 && satisfies_constraint_Rcq (operands[1]));
       if (short_p
 	  && (REG_P (operands[2])
 	      ? (match || satisfies_constraint_Rcq (operands[2]))
 	      : (unsigned) intval <= (match ? 127 : 7)))
-	return "add%? %0,%1,%2%&";
-      if (!cond_p && short_0 && satisfies_constraint_Rcq (operands[2])
-	  && REG_P (operands[1]) && match2)
-	return "add%? %0,%2,%1%&";
-      if (!cond_p && (short_0 || REGNO (operands[0]) == STACK_POINTER_REGNUM)
+	ADDSI_OUTPUT1 ("add%? %0,%1,%2");
+      if (short_0 && REG_P (operands[1]) && match2)
+	ADDSI_OUTPUT1 ("add%? %0,%2,%1");
+      if ((short_0 || REGNO (operands[0]) == STACK_POINTER_REGNUM)
 	  && REGNO (operands[1]) == STACK_POINTER_REGNUM && !(intval & ~124))
-	return "add%? %0,%1,%2%&";
+	ADDSI_OUTPUT1 ("add%? %0,%1,%2");
 
       if ((short_p && (unsigned) neg_intval <= (match ? 31 : 7))
-	  || (!cond_p && REGNO (operands[0]) == STACK_POINTER_REGNUM
+	  || (REGNO (operands[0]) == STACK_POINTER_REGNUM
 	      && match && !(neg_intval & ~124)))
-	return "sub%? %0,%1,%n2%&";
+	ADDSI_OUTPUT1 ("sub%? %0,%1,%n2");
     }
 
-#define ADDSI_OUTPUT(LIST) do {\
-  if (cond) \
-    sprintf LIST, output_asm_insn (format, operands);\
-  return ""; \
-} while (0)
-#define ADDSI_OUTPUT1(FORMAT) ADDSI_OUTPUT ((format, FORMAT, cond))
-
   /* Now try to emit a 32 bit insn without long immediate.  */
+  ret = 4;
   if (!match && match2 && REG_P (operands[1]))
-    ADDSI_OUTPUT1 ("add%s %%0,%%2,%%1");
+    ADDSI_OUTPUT1 ("add%? %0,%2,%1");
   if (match || !cond_p)
     {
       int limit = (match && !cond_p) ? 0x7ff : 0x3f;
       int range_factor = neg_intval & intval;
+      int shift;
 
       if (intval == -1 << 31)
-	ADDSI_OUTPUT1 ("bxor%s %%0,%%1,31");
+	ADDSI_OUTPUT1 ("bxor%? %0,%1,31");
 
       /* If we can use a straight add / sub instead of a {add,sub}[123] of
 	 same size, do, so - the insn latency is lower.  */
@@ -7249,32 +7258,74 @@ arc_output_addsi (rtx *operands, const char *cond)
 	 0x800 is not.  */
       if ((intval >= 0 && intval <= limit)
 	       || (intval == -0x800 && limit == 0x7ff))
-	ADDSI_OUTPUT1 ("add%s %%0,%%1,%%2");
+	ADDSI_OUTPUT1 ("add%? %0,%1,%2");
       else if ((intval < 0 && neg_intval <= limit)
 	       || (intval == 0x800 && limit == 0x7ff))
-	ADDSI_OUTPUT1 ("sub%s %%0,%%1,%%n2");
-      shift = range_factor >= 8 ? 3 : (range_factor >> 1 & 3);
+	ADDSI_OUTPUT1 ("sub%? %0,%1,%n2");
+      shift = range_factor >= 8 ? 3 : (range_factor >> 1);
+      gcc_assert (shift == 0 || shift == 1 || shift == 2 || shift == 3);
+      gcc_assert ((((1 << shift) - 1) & intval) == 0);
       if (((intval < 0 && intval != -0x4000)
 	   /* sub[123] is slower than add_s / sub, only use it if it
 	      avoids a long immediate.  */
 	   && neg_intval <= limit << shift)
 	  || (intval == 0x4000 && limit == 0x7ff))
-	ADDSI_OUTPUT ((format, "sub%d%s %%0,%%1,%d",
-		       shift, cond, neg_intval >> shift));
+	ADDSI_OUTPUT ((format, "sub%d%%? %%0,%%1,%d",
+		       shift, neg_intval >> shift));
       else if ((intval >= 0 && intval <= limit << shift)
 	       || (intval == -0x4000 && limit == 0x7ff))
-	ADDSI_OUTPUT ((format, "add%d%s %%0,%%1,%d", shift, cond,
-		       intval >> shift));
+	ADDSI_OUTPUT ((format, "add%d%%? %%0,%%1,%d", shift, intval >> shift));
     }
   /* Try to emit a 16 bit opcode with long immediate.  */
+  ret = 6;
   if (short_p && match)
-    return "add%? %0,%1,%S2%&";
+    ADDSI_OUTPUT1 ("add%? %0,%1,%S2");
 
-  /* We have to use a 32 bit opcode, possibly with a long immediate.
-     (We also get here for add a,b,u6)  */
-  ADDSI_OUTPUT ((format,
-		 intval < 0 ? "sub%s %%0,%%1,%%n2" : "add%s %%0,%%1,%%S2",
-		 cond));
+  /* We have to use a 32 bit opcode, and with a long immediate.  */
+  ret = 8;
+  ADDSI_OUTPUT1 (intval < 0 ? "sub%? %0,%1,%n2" : "add%? %0,%1,%S2");
+}
+
+/* Emit code for an commutative_cond_exec instruction with OPERANDS.
+   Return the length of the instruction.
+   If OUTPUT_P is false, don't actually output the instruction, just return
+   its length.  */
+int
+arc_output_commutative_cond_exec (rtx *operands, bool output_p)
+{
+  enum rtx_code commutative_op = GET_CODE (operands[3]);
+  const char *pat = NULL;
+
+  /* Canonical rtl should not have a constant in the first operand position.  */
+  gcc_assert (!CONSTANT_P (operands[1]));
+
+  switch (commutative_op)
+    {
+      case AND:
+	if (satisfies_constraint_C1p (operands[2]))
+	  pat = "bmsk%? %0,%1,%Z2";
+	else if (satisfies_constraint_Ccp (operands[2]))
+	  pat = "bclr%? %0,%1,%M2";
+	else if (satisfies_constraint_CnL (operands[2]))
+	  pat = "bic%? %0,%1,%n2-1";
+	break;
+      case IOR:
+	if (satisfies_constraint_C0p (operands[2]))
+	  pat = "bset%? %0,%1,%z2";
+	break;
+      case XOR:
+	if (satisfies_constraint_C0p (operands[2]))
+	  pat = "bxor%? %0,%1,%z2";
+	break;
+      case PLUS:
+	return arc_output_addsi (operands, true, output_p);
+      default: break;
+    }
+  if (output_p)
+    output_asm_insn (pat ? pat : "%O3.%d5 %0,%1,%2", operands);
+  if (pat || REG_P (operands[2]) || satisfies_constraint_L (operands[2]))
+    return 4;
+  return 8;
 }
 
 /* Helper function of arc_expand_movmem.  ADDR points to a chunk of memory.

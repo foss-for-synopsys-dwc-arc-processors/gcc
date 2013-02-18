@@ -1,5 +1,5 @@
 /* Definitions of target machine for GNU compiler, Synopsys DesignWare ARC cpu.
-   Copyright (C) 2000, 2007-2012 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2007-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -36,7 +36,8 @@ extern void arc_set_default_type_attributes(tree type);
 extern const char *arc_output_libcall (const char *);
 extern bool prepare_extend_operands (rtx *operands, enum rtx_code code,
 				     enum machine_mode omode);
-extern const char *arc_output_addsi (rtx *operands, const char *);
+extern int arc_output_addsi (rtx *operands, bool, bool);
+extern int arc_output_commutative_cond_exec (rtx *operands, bool);
 extern bool arc_expand_movmem (rtx *operands);
 extern bool prepare_move_operands (rtx *operands, enum machine_mode mode);
 extern void emit_shift (enum rtx_code, rtx, rtx, rtx);
