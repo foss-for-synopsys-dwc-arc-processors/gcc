@@ -866,7 +866,12 @@ arc*-*-elf*)
 	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
 	tmake_file="arc/t-arc-newlib arc/t-arc"
 	case x"${with_cpu}" in
-	  xarc600|xarc601|xarc700|xEM)
+	  xarc600|xarc601|xarc700)
+		target_cpu_default="TARGET_CPU_$with_cpu"
+		;;
+	  xEM)
+		echo "Select ARCv2EM"
+		tm_defines="${tm_defines} ARC_DEFAULT_CPU_EM"
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
 	esac

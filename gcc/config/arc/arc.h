@@ -128,6 +128,29 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:%{EL:%emay not use both -EB and -EL}} \
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
+#ifdef ARC_DEFAULT_CPU_EM
+#define ASM_SPEC  "\
+%{mbig-endian|EB:-EB} %{EL} \
+%{mcpu=A5|mcpu=a5|mA5:-mA5} \
+%{mcpu=ARC600|mcpu=arc600|mARC600|mA6:-mARC600} \
+%{mcpu=ARC601|mcpu=arc601:-mARC601} \
+%{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
+%{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
+%{!mcpu=*:%{!A5:%{!A6:%{!mARC600:%{!mARC700:-mEM}}}}} \
+%{mcpu=EM|mEM:%<mbarrel_shifter}\
+%{mcpu=EM|mEM:%<mno-mpy}\
+%{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
+%{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
+%{msimd} \
+%{mmac_d16} %{mmac_24} %{mdsp_packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
+%{mcpu=ARC700|mARC700|mA7:%{mlock}} \
+%{mcpu=ARC700|mARC700|mA7:%{mswape}} \
+%{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
+%{mcpu=EM|mEM:-mEM} \
+"
+
+#else
+
 #define ASM_SPEC  "\
 %{mbig-endian|EB:-EB} %{EL} \
 %{mcpu=A5|mcpu=a5|mA5:-mA5} \
@@ -147,6 +170,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
 %{mcpu=EM|mEM:-mEM} \
 "
+#endif
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
 /* Note that the default is to link against dynamic libraries, if they are
@@ -185,8 +209,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define STARTFILE_SPEC "%{!shared:crt0.o%s}"
-//#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} crtbegin.o%s"
+#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} crtbegin.o%s"
 #else
 #define STARTFILE_SPEC   "%{!shared:%{!mkernel:crt1.o%s}} crti.o%s \
   %{!shared:%{pg|p|profile:crtg.o%s} crtbegin.o%s} %{shared:crtbeginS.o%s}"
@@ -194,7 +217,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-//#define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
+#define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
 #else
 #define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s} crtend.o%s} \
   %{shared:crtendS.o%s} crtn.o%s"
@@ -276,7 +299,11 @@ along with GCC; see the file COPYING3.  If not see
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
 
 #ifndef MULTILIB_DEFAULTS
+#ifdef ARC_DEFAULT_CPU_EM
+#define MULTILIB_DEFAULTS { "mEM" }
+#else
 #define MULTILIB_DEFAULTS { "mARC700" }
+#endif
 #endif
 
 /* Target machine storage layout.  */

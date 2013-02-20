@@ -742,7 +742,11 @@ static void
 arc_override_options (void)
 {
   if (arc_cpu == PROCESSOR_NONE)
+#ifdef ARC_DEFAULT_CPU_EM
+    arc_cpu = PROCESSOR_EM;
+#else
     arc_cpu = PROCESSOR_ARC700;
+#endif
 
   if (arc_size_opt_level == 3)
     optimize_size = 1;
