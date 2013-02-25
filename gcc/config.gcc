@@ -323,6 +323,9 @@ alpha*-*-*)
 am33_2.0-*-linux*)
 	cpu_type=mn10300
 	;;
+arc*-*-*)
+	cpu_type=arc
+	;;
 arm*-*-*)
 	cpu_type=arm
 	extra_headers="mmintrin.h arm_neon.h"
@@ -802,7 +805,7 @@ case ${target} in
     *) echo 'Unknown thread configuration for VxWorks'; exit 1 ;;
   esac
   ;;
-*-*-elf|arc-*-elf*)
+*-*-elf|arc*-*-elf*)
   # Assume that newlib is being used and so __cxa_atexit is provided.
   default_use_cxa_atexit=yes
   use_gcc_stdint=wrap
@@ -855,7 +858,7 @@ alpha*-dec-*vms*)
 	tm_file="${tm_file} vms/vms.h alpha/vms.h"
 	tmake_file="${tmake_file} alpha/t-vms"
 	;;
-arc-*-elf*)
+arc*-*-elf*)
 	extra_headers="arc-simd.h"
 	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
 	tmake_file="arc/t-arc-newlib arc/t-arc"

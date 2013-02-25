@@ -1,3 +1,7 @@
+2013-02-25  Simon Cook  <simon.cook@embecosm.com>
+
+	* config.gcc: Change references for arc-*-elf* to arc*-*-elf*.
+
 2013-02-15  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_output_addsi): Take separate arguments cond_p
