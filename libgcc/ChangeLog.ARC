@@ -1,3 +1,8 @@
+2013-02-25  Simon Cook  <simon.cook@embecosm.com>
+
+	* config.host: arc-*-elf* renamed to arc*-*-elf*.
+	Added arc*-*-* definition as ARC cpu type.
+
 2012-10-25  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/t-arc: Add comment on fp-bit.c / dp-bit.c use.
