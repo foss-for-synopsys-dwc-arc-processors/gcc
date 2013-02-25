@@ -1,7 +1,5 @@
 /* Control flow graph manipulation code for GNU compiler.
-   Copyright (C) 1987, 1988, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -145,8 +143,12 @@ delete_insn (rtx insn)
 	  NOTE_KIND (insn) = NOTE_INSN_DELETED_LABEL;
 	  NOTE_DELETED_LABEL_NAME (insn) = name;
 
-	  if (bb_note != NULL_RTX && NOTE_INSN_BASIC_BLOCK_P (bb_note)
-	      && BLOCK_FOR_INSN (bb_note) == bb)
+	  /* If the note following the label starts a basic block, and the
+	     label is a member of the same basic block, interchange the two.  */
+	  if (bb_note != NULL_RTX
+	      && NOTE_INSN_BASIC_BLOCK_P (bb_note)
+	      && bb != NULL
+	      && bb == BLOCK_FOR_INSN (bb_note))
 	    {
 	      reorder_insns_nobb (insn, insn, bb_note);
 	      BB_HEAD (bb) = bb_note;
@@ -350,10 +352,10 @@ rtl_create_basic_block (void *headp, void *endp, basic_block after)
   basic_block bb;
 
   /* Grow the basic block array if needed.  */
-  if ((size_t) last_basic_block >= VEC_length (basic_block, basic_block_info))
+  if ((size_t) last_basic_block >= basic_block_info->length ())
     {
       size_t new_size = last_basic_block + (last_basic_block + 3) / 4;
-      VEC_safe_grow_cleared (basic_block, gc, basic_block_info, new_size);
+      vec_safe_grow_cleared (basic_block_info, new_size);
     }
 
   n_basic_blocks++;
@@ -890,7 +892,8 @@ rtl_merge_blocks (basic_block a, basic_block b)
   df_bb_delete (b->index);
 
   /* If B was a forwarder block, propagate the locus on the edge.  */
-  if (forwarder_p && !EDGE_SUCC (b, 0)->goto_locus)
+  if (forwarder_p
+      && LOCATION_LOCUS (EDGE_SUCC (b, 0)->goto_locus) == UNKNOWN_LOCATION)
     EDGE_SUCC (b, 0)->goto_locus = EDGE_SUCC (a, 0)->goto_locus;
 
   if (dump_file)
@@ -1401,7 +1404,7 @@ force_nonfallthru_and_redirect (edge e, basic_block target, rtx jump_label)
 	    {
 	      if (tmp == e)
 		{
-		  VEC_unordered_remove (edge, ENTRY_BLOCK_PTR->succs, ei.index);
+		  ENTRY_BLOCK_PTR->succs->unordered_remove (ei.index);
 		  found = true;
 		  break;
 		}
@@ -1411,7 +1414,7 @@ force_nonfallthru_and_redirect (edge e, basic_block target, rtx jump_label)
 
 	  gcc_assert (found);
 
-	  VEC_safe_push (edge, gc, bb->succs, e);
+	  vec_safe_push (bb->succs, e);
 	  make_single_succ_edge (ENTRY_BLOCK_PTR, bb, EDGE_FALLTHRU);
 	}
     }
@@ -1424,13 +1427,45 @@ force_nonfallthru_and_redirect (edge e, basic_block target, rtx jump_label)
       && (note = extract_asm_operands (PATTERN (BB_END (e->src)))))
     {
       int i, n = ASM_OPERANDS_LABEL_LENGTH (note);
+      bool adjust_jump_target = false;
 
       for (i = 0; i < n; ++i)
 	{
 	  if (XEXP (ASM_OPERANDS_LABEL (note, i), 0) == BB_HEAD (e->dest))
-	    XEXP (ASM_OPERANDS_LABEL (note, i), 0) = block_label (target);
+	    {
+	      LABEL_NUSES (XEXP (ASM_OPERANDS_LABEL (note, i), 0))--;
+	      XEXP (ASM_OPERANDS_LABEL (note, i), 0) = block_label (target);
+	      LABEL_NUSES (XEXP (ASM_OPERANDS_LABEL (note, i), 0))++;
+	      adjust_jump_target = true;
+	    }
 	  if (XEXP (ASM_OPERANDS_LABEL (note, i), 0) == BB_HEAD (target))
 	    asm_goto_edge = true;
+	}
+      if (adjust_jump_target)
+	{
+	  rtx insn = BB_END (e->src), note;
+	  rtx old_label = BB_HEAD (e->dest);
+	  rtx new_label = BB_HEAD (target);
+
+	  if (JUMP_LABEL (insn) == old_label)
+	    {
+	      JUMP_LABEL (insn) = new_label;
+	      note = find_reg_note (insn, REG_LABEL_TARGET, new_label);
+	      if (note)
+		remove_note (insn, note);
+	    }
+	  else
+	    {
+	      note = find_reg_note (insn, REG_LABEL_TARGET, old_label);
+	      if (note)
+		remove_note (insn, note);
+	      if (JUMP_LABEL (insn) != new_label
+		  && !find_reg_note (insn, REG_LABEL_TARGET, new_label))
+		add_reg_note (insn, REG_LABEL_TARGET, new_label);
+	    }
+	  while ((note = find_reg_note (insn, REG_LABEL_OPERAND, old_label))
+		 != NULL_RTX)
+	    XEXP (note, 0) = new_label;
 	}
     }
 
@@ -1981,14 +2016,6 @@ print_rtl_with_bb (FILE *outf, const_rtx rtx_first, int flags)
       free (start);
       free (end);
       free (in_bb_p);
-    }
-
-  if (crtl->epilogue_delay_list != 0)
-    {
-      fprintf (outf, "\n;; Insns in epilogue delay list:\n\n");
-      for (tmp_rtx = crtl->epilogue_delay_list; tmp_rtx != 0;
-	   tmp_rtx = XEXP (tmp_rtx, 1))
-	print_rtl_single (outf, XEXP (tmp_rtx, 0));
     }
 }
 
@@ -4117,7 +4144,7 @@ cfg_layout_merge_blocks (basic_block a, basic_block b)
 
   /* If B was a forwarder block, propagate the locus on the edge.  */
   if (forwarder_p
-      && LOCATION_LOCUS (EDGE_SUCC (b, 0)->goto_locus) != UNKNOWN_LOCATION)
+      && LOCATION_LOCUS (EDGE_SUCC (b, 0)->goto_locus) == UNKNOWN_LOCATION)
     EDGE_SUCC (b, 0)->goto_locus = EDGE_SUCC (a, 0)->goto_locus;
 
   if (dump_file)
@@ -4504,6 +4531,7 @@ struct cfg_hooks rtl_cfg_hooks = {
   "rtl",
   rtl_verify_flow_info,
   rtl_dump_bb,
+  rtl_dump_bb_for_graph,
   rtl_create_basic_block,
   rtl_redirect_edge_and_branch,
   rtl_redirect_edge_and_branch_force,
@@ -4545,6 +4573,7 @@ struct cfg_hooks cfg_layout_rtl_cfg_hooks = {
   "cfglayout mode",
   rtl_verify_flow_info_1,
   rtl_dump_bb,
+  rtl_dump_bb_for_graph,
   cfg_layout_create_basic_block,
   cfg_layout_redirect_edge_and_branch,
   cfg_layout_redirect_edge_and_branch_force,

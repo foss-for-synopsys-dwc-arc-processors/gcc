@@ -1,5 +1,5 @@
 /* Definitions of target machine for GNU compiler, for IBM RS/6000.
-   Copyright (C) 1992-2012 Free Software Foundation, Inc.
+   Copyright (C) 1992-2013 Free Software Foundation, Inc.
    Contributed by Richard Kenner (kenner@vlsi1.ultra.nyu.edu)
 
    This file is part of GCC.
@@ -89,6 +89,12 @@
 #define ASM_CPU_POWER7_SPEC "-mpower4 -maltivec"
 #endif
 
+#ifdef HAVE_AS_POWER8
+#define ASM_CPU_POWER8_SPEC "-mpower8"
+#else
+#define ASM_CPU_POWER8_SPEC "-mpower4 -maltivec"
+#endif
+
 #ifdef HAVE_AS_DCI
 #define ASM_CPU_476_SPEC "-m476"
 #else
@@ -112,6 +118,7 @@
 %{mcpu=power6: %(asm_cpu_power6) -maltivec} \
 %{mcpu=power6x: %(asm_cpu_power6) -maltivec} \
 %{mcpu=power7: %(asm_cpu_power7)} \
+%{mcpu=power8: %(asm_cpu_power8)} \
 %{mcpu=a2: -ma2} \
 %{mcpu=powerpc: -mppc} \
 %{mcpu=rs64a: -mppc64} \
@@ -184,6 +191,7 @@
   { "asm_cpu_power5",		ASM_CPU_POWER5_SPEC },			\
   { "asm_cpu_power6",		ASM_CPU_POWER6_SPEC },			\
   { "asm_cpu_power7",		ASM_CPU_POWER7_SPEC },			\
+  { "asm_cpu_power8",		ASM_CPU_POWER8_SPEC },			\
   { "asm_cpu_476",		ASM_CPU_476_SPEC },			\
   SUBTARGET_EXTRA_SPECS
 
@@ -347,6 +355,12 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
 /* Define the default processor.  This is overridden by other tm.h files.  */
 #define PROCESSOR_DEFAULT   PROCESSOR_PPC603
 #define PROCESSOR_DEFAULT64 PROCESSOR_RS64A
+
+/* Specify the dialect of assembler to use.  Only new mnemonics are supported
+   starting with GCC 4.8, i.e. just one dialect, but for backwards
+   compatibility with older inline asm ASSEMBLER_DIALECT needs to be
+   defined.  */
+#define ASSEMBLER_DIALECT 1
 
 /* Debug support */
 #define MASK_DEBUG_STACK	0x01	/* debug stack applications */
@@ -1398,7 +1412,7 @@ extern enum reg_class rs6000_constraints[RS6000_CONSTRAINT_MAX];
 
    On the RS/6000, we grow upwards, from the area after the outgoing
    arguments.  */
-#define FRAME_GROWS_DOWNWARD (flag_stack_protect != 0)
+#define FRAME_GROWS_DOWNWARD (flag_stack_protect != 0 || flag_asan != 0)
 
 /* Size of the outgoing register save area */
 #define RS6000_REG_SAVE ((DEFAULT_ABI == ABI_AIX			\
@@ -1721,7 +1735,8 @@ typedef struct rs6000_args
    They give nonzero only if REGNO is a hard reg of the suitable class
    or a pseudo reg currently allocated to a suitable hard reg.
    Since they use reg_renumber, they are safe only once reg_renumber
-   has been allocated, which happens in local-alloc.c.  */
+   has been allocated, which happens in reginfo.c during register
+   allocation.  */
 
 #define REGNO_OK_FOR_INDEX_P(REGNO)				\
 ((REGNO) < FIRST_PSEUDO_REGISTER				\

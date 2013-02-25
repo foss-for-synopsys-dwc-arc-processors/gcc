@@ -1,5 +1,5 @@
 /* Machine description for AArch64 architecture.
-   Copyright (C) 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 2009-2013 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GCC.
@@ -21,35 +21,6 @@
 
 #ifndef GCC_AARCH64_PROTOS_H
 #define GCC_AARCH64_PROTOS_H
-
- /* This generator struct and enum is used to wrap a function pointer
-    to a function that generates an RTX fragment but takes either 3 or
-    4 operands.
-
-    The omn flavour, wraps a function that generates a synchronization
-    instruction from 3 operands: old value, memory and new value.
-
-    The omrn flavour, wraps a function that generates a synchronization
-    instruction from 4 operands: old value, memory, required value and
-    new value.  */
-
-enum aarch64_sync_generator_tag
-{
-  aarch64_sync_generator_omn,
-  aarch64_sync_generator_omrn
-};
-
- /* Wrapper to pass around a polymorphic pointer to a sync instruction
-    generator and.  */
-struct aarch64_sync_generator
-{
-  enum aarch64_sync_generator_tag op;
-  union
-  {
-    rtx (*omn) (rtx, rtx, rtx);
-    rtx (*omrn) (rtx, rtx, rtx, rtx);
-  } u;
-};
 
 /*
   SYMBOL_CONTEXT_ADR
@@ -165,8 +136,8 @@ struct tune_params
 
 HOST_WIDE_INT aarch64_initial_elimination_offset (unsigned, unsigned);
 bool aarch64_bitmask_imm (HOST_WIDE_INT val, enum machine_mode);
-bool aarch64_const_double_zero_rtx_p (rtx);
 bool aarch64_constant_address_p (rtx);
+bool aarch64_float_const_zero_rtx_p (rtx);
 bool aarch64_function_arg_regno_p (unsigned);
 bool aarch64_gen_movmemqi (rtx *);
 bool aarch64_is_extend_from_extract (enum machine_mode, rtx, rtx);
@@ -186,8 +157,6 @@ bool aarch64_symbolic_constant_p (rtx, enum aarch64_symbol_context,
 				  enum aarch64_symbol_type *);
 bool aarch64_uimm12_shift (HOST_WIDE_INT);
 const char *aarch64_output_casesi (rtx *);
-const char *aarch64_output_sync_insn (rtx, rtx *);
-const char *aarch64_output_sync_lock_release (rtx, rtx);
 enum aarch64_symbol_type aarch64_classify_symbol (rtx,
 						  enum aarch64_symbol_context);
 enum aarch64_symbol_type aarch64_classify_tls_symbol (rtx);
@@ -210,14 +179,12 @@ rtx aarch64_simd_vect_par_cnst_half (enum machine_mode, bool);
 rtx aarch64_tls_get_addr (void);
 unsigned aarch64_dbx_register_number (unsigned);
 unsigned aarch64_trampoline_size (void);
-unsigned aarch64_sync_loop_insns (rtx, rtx *);
 void aarch64_asm_output_labelref (FILE *, const char *);
 void aarch64_elf_asm_named_section (const char *, unsigned, tree);
 void aarch64_expand_epilogue (bool);
 void aarch64_expand_mov_immediate (rtx, rtx);
 void aarch64_expand_prologue (void);
-void aarch64_expand_sync (enum machine_mode, struct aarch64_sync_generator *,
-			  rtx, rtx, rtx, rtx);
+void aarch64_expand_vector_init (rtx, rtx);
 void aarch64_function_profiler (FILE *, int);
 void aarch64_init_cumulative_args (CUMULATIVE_ARGS *, const_tree, rtx,
 				   const_tree, unsigned);
@@ -249,6 +216,9 @@ void aarch64_split_128bit_move (rtx, rtx);
 
 bool aarch64_split_128bit_move_p (rtx, rtx);
 
+/* Check for a legitimate floating point constant for FMOV.  */
+bool aarch64_float_const_representable_p (rtx);
+
 #if defined (RTX_CODE)
 
 bool aarch64_legitimate_address_p (enum machine_mode, rtx, RTX_CODE, bool);
@@ -256,6 +226,29 @@ enum machine_mode aarch64_select_cc_mode (RTX_CODE, rtx, rtx);
 rtx aarch64_gen_compare_reg (RTX_CODE, rtx, rtx);
 rtx aarch64_load_tp (rtx);
 
+void aarch64_expand_compare_and_swap (rtx op[]);
+void aarch64_split_compare_and_swap (rtx op[]);
+void aarch64_split_atomic_op (enum rtx_code, rtx, rtx, rtx, rtx, rtx, rtx);
+
 #endif /* RTX_CODE */
 
+void aarch64_init_builtins (void);
+rtx aarch64_expand_builtin (tree exp,
+			    rtx target,
+			    rtx subtarget ATTRIBUTE_UNUSED,
+			    enum machine_mode mode ATTRIBUTE_UNUSED,
+			    int ignore ATTRIBUTE_UNUSED);
+tree aarch64_builtin_decl (unsigned, bool ATTRIBUTE_UNUSED);
+
+tree
+aarch64_builtin_vectorized_function (tree fndecl,
+				     tree type_out,
+				     tree type_in);
+
+extern void aarch64_split_combinev16qi (rtx operands[3]);
+extern void aarch64_expand_vec_perm (rtx target, rtx op0, rtx op1, rtx sel);
+extern bool
+aarch64_expand_vec_perm_const (rtx target, rtx op0, rtx op1, rtx sel);
+
+char* aarch64_output_simd_mov_immediate (rtx *, enum machine_mode, unsigned);
 #endif /* GCC_AARCH64_PROTOS_H */

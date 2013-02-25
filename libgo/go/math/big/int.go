@@ -51,6 +51,13 @@ func (z *Int) SetInt64(x int64) *Int {
 	return z
 }
 
+// SetUint64 sets z to x and returns z.
+func (z *Int) SetUint64(x uint64) *Int {
+	z.abs = z.abs.setUint64(uint64(x))
+	z.neg = false
+	return z
+}
+
 // NewInt allocates and returns a new Int set to x.
 func NewInt(x int64) *Int {
 	return new(Int).SetInt64(x)
@@ -412,7 +419,7 @@ func (x *Int) Format(s fmt.State, ch rune) {
 	if precisionSet {
 		switch {
 		case len(digits) < precision:
-			zeroes = precision - len(digits) // count of zero padding 
+			zeroes = precision - len(digits) // count of zero padding
 		case digits == "0" && precision == 0:
 			return // print nothing if zero value (x == 0) and zero precision ("." or ".0")
 		}
@@ -519,6 +526,19 @@ func (x *Int) Int64() int64 {
 	return v
 }
 
+// Uint64 returns the uint64 representation of x.
+// If x cannot be represented in an uint64, the result is undefined.
+func (x *Int) Uint64() uint64 {
+	if len(x.abs) == 0 {
+		return 0
+	}
+	v := uint64(x.abs[0])
+	if _W == 32 && len(x.abs) > 1 {
+		v |= uint64(x.abs[1]) << 32
+	}
+	return v
+}
+
 // SetString sets z to the value of s, interpreted in the given base,
 // and returns z and a boolean indicating success. If SetString fails,
 // the value of z is undefined but the returned value is nil.
@@ -561,19 +581,18 @@ func (x *Int) BitLen() int {
 	return x.abs.bitLen()
 }
 
-// Exp sets z = x**y mod m and returns z. If m is nil, z = x**y.
+// Exp sets z = x**y mod |m| (i.e. the sign of m is ignored), and returns z.
+// If y <= 0, the result is 1; if m == nil or m == 0, z = x**y.
 // See Knuth, volume 2, section 4.6.3.
 func (z *Int) Exp(x, y, m *Int) *Int {
 	if y.neg || len(y.abs) == 0 {
-		neg := x.neg
-		z.SetInt64(1)
-		z.neg = neg
-		return z
+		return z.SetInt64(1)
 	}
+	// y > 0
 
 	var mWords nat
 	if m != nil {
-		mWords = m.abs
+		mWords = m.abs // m.abs may be nil for m == 0
 	}
 
 	z.abs = z.abs.expNN(x.abs, y.abs, mWords)

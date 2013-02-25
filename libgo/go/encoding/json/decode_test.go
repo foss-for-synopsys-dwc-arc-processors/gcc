@@ -199,11 +199,18 @@ var unmarshalTests = []unmarshalTest{
 	{in: `"invalid: \uD834x\uDD1E"`, ptr: new(string), out: "invalid: \uFFFDx\uFFFD"},
 	{in: "null", ptr: new(interface{}), out: nil},
 	{in: `{"X": [1,2,3], "Y": 4}`, ptr: new(T), out: T{Y: 4}, err: &UnmarshalTypeError{"array", reflect.TypeOf("")}},
-	{in: `{"x": 1}`, ptr: new(tx), out: tx{}, err: &UnmarshalFieldError{"x", txType, txType.Field(0)}},
+	{in: `{"x": 1}`, ptr: new(tx), out: tx{}},
 	{in: `{"F1":1,"F2":2,"F3":3}`, ptr: new(V), out: V{F1: float64(1), F2: int32(2), F3: Number("3")}},
 	{in: `{"F1":1,"F2":2,"F3":3}`, ptr: new(V), out: V{F1: Number("1"), F2: int32(2), F3: Number("3")}, useNumber: true},
 	{in: `{"k1":1,"k2":"s","k3":[1,2.0,3e-3],"k4":{"kk1":"s","kk2":2}}`, ptr: new(interface{}), out: ifaceNumAsFloat64},
 	{in: `{"k1":1,"k2":"s","k3":[1,2.0,3e-3],"k4":{"kk1":"s","kk2":2}}`, ptr: new(interface{}), out: ifaceNumAsNumber, useNumber: true},
+
+	// raw values with whitespace
+	{in: "\n true ", ptr: new(bool), out: true},
+	{in: "\t 1 ", ptr: new(int), out: 1},
+	{in: "\r 1.2 ", ptr: new(float64), out: 1.2},
+	{in: "\t -5 \n", ptr: new(int16), out: int16(-5)},
+	{in: "\t \"a\\u1234\" \n", ptr: new(string), out: "a\u1234"},
 
 	// Z has a "-" tag.
 	{in: `{"Y": 1, "Z": 2}`, ptr: new(T), out: T{Y: 1}},
@@ -216,6 +223,16 @@ var unmarshalTests = []unmarshalTest{
 	{in: `{"X": "foo", "Y"}`, err: &SyntaxError{"invalid character '}' after object key", 17}},
 	{in: `[1, 2, 3+]`, err: &SyntaxError{"invalid character '+' after array element", 9}},
 	{in: `{"X":12x}`, err: &SyntaxError{"invalid character 'x' after object key:value pair", 8}, useNumber: true},
+
+	// raw value errors
+	{in: "\x01 42", err: &SyntaxError{"invalid character '\\x01' looking for beginning of value", 1}},
+	{in: " 42 \x01", err: &SyntaxError{"invalid character '\\x01' after top-level value", 5}},
+	{in: "\x01 true", err: &SyntaxError{"invalid character '\\x01' looking for beginning of value", 1}},
+	{in: " false \x01", err: &SyntaxError{"invalid character '\\x01' after top-level value", 8}},
+	{in: "\x01 1.2", err: &SyntaxError{"invalid character '\\x01' looking for beginning of value", 1}},
+	{in: " 3.4 \x01", err: &SyntaxError{"invalid character '\\x01' after top-level value", 6}},
+	{in: "\x01 \"string\"", err: &SyntaxError{"invalid character '\\x01' looking for beginning of value", 1}},
+	{in: " \"string\" \x01", err: &SyntaxError{"invalid character '\\x01' after top-level value", 11}},
 
 	// array tests
 	{in: `[1, 2, 3]`, ptr: new([3]int), out: [3]int{1, 2, 3}},
@@ -422,7 +439,7 @@ func TestUnmarshalMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
-	if bytes.Compare(jsonBig, b) != 0 {
+	if !bytes.Equal(jsonBig, b) {
 		t.Errorf("Marshal jsonBig")
 		diff(t, b, jsonBig)
 		return
@@ -474,7 +491,7 @@ func TestLargeByteSlice(t *testing.T) {
 	if err := Unmarshal(b, &s1); err != nil {
 		t.Fatalf("Unmarshal: %v", err)
 	}
-	if bytes.Compare(s0, s1) != 0 {
+	if !bytes.Equal(s0, s1) {
 		t.Errorf("Marshal large byte slice")
 		diff(t, s0, s1)
 	}
@@ -951,5 +968,142 @@ func TestInterfaceSet(t *testing.T) {
 		if !reflect.DeepEqual(b.X, tt.post) {
 			t.Errorf("Unmarshal %#q into %#v: X=%#v, want %#v", blob, tt.pre, b.X, tt.post)
 		}
+	}
+}
+
+// JSON null values should be ignored for primitives and string values instead of resulting in an error.
+// Issue 2540
+func TestUnmarshalNulls(t *testing.T) {
+	jsonData := []byte(`{
+		"Bool"    : null, 
+		"Int"     : null, 
+		"Int8"    : null,
+		"Int16"   : null,
+		"Int32"   : null,
+		"Int64"   : null,
+		"Uint"    : null,
+		"Uint8"   : null,
+		"Uint16"  : null,
+		"Uint32"  : null,
+		"Uint64"  : null,
+		"Float32" : null,
+		"Float64" : null,
+		"String"  : null}`)
+
+	nulls := All{
+		Bool:    true,
+		Int:     2,
+		Int8:    3,
+		Int16:   4,
+		Int32:   5,
+		Int64:   6,
+		Uint:    7,
+		Uint8:   8,
+		Uint16:  9,
+		Uint32:  10,
+		Uint64:  11,
+		Float32: 12.1,
+		Float64: 13.1,
+		String:  "14"}
+
+	err := Unmarshal(jsonData, &nulls)
+	if err != nil {
+		t.Errorf("Unmarshal of null values failed: %v", err)
+	}
+	if !nulls.Bool || nulls.Int != 2 || nulls.Int8 != 3 || nulls.Int16 != 4 || nulls.Int32 != 5 || nulls.Int64 != 6 ||
+		nulls.Uint != 7 || nulls.Uint8 != 8 || nulls.Uint16 != 9 || nulls.Uint32 != 10 || nulls.Uint64 != 11 ||
+		nulls.Float32 != 12.1 || nulls.Float64 != 13.1 || nulls.String != "14" {
+
+		t.Errorf("Unmarshal of null values affected primitives")
+	}
+}
+
+func TestStringKind(t *testing.T) {
+	type stringKind string
+	type aMap map[stringKind]int
+
+	var m1, m2 map[stringKind]int
+	m1 = map[stringKind]int{
+		"foo": 42,
+	}
+
+	data, err := Marshal(m1)
+	if err != nil {
+		t.Errorf("Unexpected error marshalling: %v", err)
+	}
+
+	err = Unmarshal(data, &m2)
+	if err != nil {
+		t.Errorf("Unexpected error unmarshalling: %v", err)
+	}
+
+	if !reflect.DeepEqual(m1, m2) {
+		t.Error("Items should be equal after encoding and then decoding")
+	}
+
+}
+
+var decodeTypeErrorTests = []struct {
+	dest interface{}
+	src  string
+}{
+	{new(string), `{"user": "name"}`}, // issue 4628.
+	{new(error), `{}`},                // issue 4222
+	{new(error), `[]`},
+	{new(error), `""`},
+	{new(error), `123`},
+	{new(error), `true`},
+}
+
+func TestUnmarshalTypeError(t *testing.T) {
+	for _, item := range decodeTypeErrorTests {
+		err := Unmarshal([]byte(item.src), item.dest)
+		if _, ok := err.(*UnmarshalTypeError); !ok {
+			t.Errorf("expected type error for Unmarshal(%q, type %T): got %T",
+				item.src, item.dest, err)
+		}
+	}
+}
+
+var unmarshalSyntaxTests = []string{
+	"tru",
+	"fals",
+	"nul",
+	"123e",
+	`"hello`,
+	`[1,2,3`,
+	`{"key":1`,
+	`{"key":1,`,
+}
+
+func TestUnmarshalSyntax(t *testing.T) {
+	var x interface{}
+	for _, src := range unmarshalSyntaxTests {
+		err := Unmarshal([]byte(src), &x)
+		if _, ok := err.(*SyntaxError); !ok {
+			t.Errorf("expected syntax error for Unmarshal(%q): got %T", src, err)
+		}
+	}
+}
+
+// Test handling of unexported fields that should be ignored.
+// Issue 4660
+type unexportedFields struct {
+	Name string
+	m    map[string]interface{} `json:"-"`
+	m2   map[string]interface{} `json:"abcd"`
+}
+
+func TestUnmarshalUnexported(t *testing.T) {
+	input := `{"Name": "Bob", "m": {"x": 123}, "m2": {"y": 456}, "abcd": {"z": 789}}`
+	want := &unexportedFields{Name: "Bob"}
+
+	out := &unexportedFields{}
+	err := Unmarshal([]byte(input), out)
+	if err != nil {
+		t.Errorf("got error %v, expected nil", err)
+	}
+	if !reflect.DeepEqual(out, want) {
+		t.Errorf("got %q, want %q", out, want)
 	}
 }

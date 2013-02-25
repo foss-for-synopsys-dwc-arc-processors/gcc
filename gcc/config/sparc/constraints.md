@@ -1,5 +1,5 @@
 ;; Constraint definitions for SPARC.
-;; Copyright (C) 2008, 2010 Free Software Foundation, Inc.
+;; Copyright (C) 2008-2013 Free Software Foundation, Inc.
 ;;
 ;; This file is part of GCC.
 ;;
@@ -18,7 +18,7 @@
 ;; <http://www.gnu.org/licenses/>.
 
 ;;; Unused letters:
-;;;    AB                  U
+;;;     B
 ;;;    a        jkl    q  tuv xyz
 
 
@@ -57,6 +57,11 @@
       (match_test "const_all_ones_operand (op, mode)")))
 
 ;; Integer constant constraints
+
+(define_constraint "A"
+ "Signed 5-bit integer constant"
+ (and (match_code "const_int")
+      (match_test "SPARC_SIMM5_P (ival)")))
 
 (define_constraint "H"
  "Valid operand of double arithmetic operation"
@@ -129,6 +134,51 @@
  (and (match_test "TARGET_ARCH32")
       (match_code "mem")
       (match_test "memory_ok_for_ldd (op)")))
+
+;; This awkward register constraint is necessary because it is not
+;; possible to express the "must be even numbered register" condition
+;; using register classes.  The problem is that membership in a
+;; register class requires that all registers of a multi-regno
+;; register be included in the set.  It is add_to_hard_reg_set
+;; and in_hard_reg_set_p which populate and test regsets with these
+;; semantics.
+;;
+;; So this means that we would have to put both the even and odd
+;; register into the register class, which would not restrict things
+;; at all.
+;;
+;; Using a combination of GENERAL_REGS and HARD_REGNO_MODE_OK is not a
+;; full solution either.  In fact, even though IRA uses the macro
+;; HARD_REGNO_MODE_OK to calculate which registers are prohibited from
+;; use in certain modes, it still can allocate an odd hard register
+;; for DImode values.  This is due to how IRA populates the table
+;; ira_useful_class_mode_regs[][].  It suffers from the same problem
+;; as using a register class to describe this restriction.  Namely, it
+;; sets both the odd and even part of an even register pair in the
+;; regset.  Therefore IRA can and will allocate odd registers for
+;; DImode values on 32-bit.
+;;
+;; There are legitimate cases where DImode values can end up in odd
+;; hard registers, the most notable example is argument passing.
+;;
+;; What saves us is reload and the DImode splitters.  Both are
+;; necessary.  The odd register splitters cannot match if, for
+;; example, we have a non-offsetable MEM.  Reload will notice this
+;; case and reload the address into a single hard register.
+;;
+;; The real downfall of this awkward register constraint is that it does
+;; not evaluate to a true register class like a bonafide use of
+;; define_register_constraint would.  This currently means that we cannot
+;; use LRA on Sparc, since the constraint processing of LRA really depends
+;; upon whether an extra constraint is for registers or not.  It uses
+;; REG_CLASS_FROM_CONSTRAINT, and checks it against NO_REGS.
+(define_constraint "U"
+ "Pseudo-register or hard even-numbered integer register"
+ (and (match_test "TARGET_ARCH32")
+      (match_code "reg")
+      (ior (match_test "REGNO (op) < FIRST_PSEUDO_REGISTER")
+	   (not (match_test "reload_in_progress && reg_renumber [REGNO (op)] < 0")))
+      (match_test "register_ok_for_ldd (op)")))
 
 ;; Equivalent to 'T' but available in 64-bit mode
 (define_memory_constraint "W"

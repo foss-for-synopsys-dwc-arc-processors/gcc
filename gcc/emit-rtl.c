@@ -1,5 +1,5 @@
 /* Emit RTL for the GCC expander.
-   Copyright (C) 1987, 1988, 1992-2012 Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -42,7 +42,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "flags.h"
 #include "function.h"
 #include "expr.h"
-#include "vecprim.h"
 #include "regs.h"
 #include "hard-reg-set.h"
 #include "hashtab.h"
@@ -364,8 +363,8 @@ get_reg_attrs (tree decl, int offset)
 
 
 #if !HAVE_blockage
-/* Generate an empty ASM_INPUT, which is used to block attempts to schedule
-   across this insn. */
+/* Generate an empty ASM_INPUT, which is used to block attempts to schedule,
+   and to block register equivalences to be seen across this insn.  */
 
 rtx
 gen_blockage (void)
@@ -920,6 +919,18 @@ gen_reg_rtx (enum machine_mode mode)
   return val;
 }
 
+/* Return TRUE if REG is a PARM_DECL, FALSE otherwise.  */
+
+bool
+reg_is_parm_p (rtx reg)
+{
+  tree decl;
+
+  gcc_assert (REG_P (reg));
+  decl = REG_EXPR (reg);
+  return (decl && TREE_CODE (decl) == PARM_DECL);
+}
+
 /* Update NEW with the same attributes as REG, but with OFFSET added
    to the REG_OFFSET.  */
 
@@ -1249,7 +1260,7 @@ gen_lowpart_common (enum machine_mode mode, rtx x)
     }
   else if (GET_CODE (x) == SUBREG || REG_P (x)
 	   || GET_CODE (x) == CONCAT || GET_CODE (x) == CONST_VECTOR
-	   || CONST_DOUBLE_P (x) || CONST_INT_P (x))
+	   || CONST_DOUBLE_AS_FLOAT_P (x) || CONST_SCALAR_INT_P (x))
     return simplify_gen_subreg (mode, x, innermode, offset);
 
   /* Otherwise, we can't do this.  */
@@ -1679,11 +1690,7 @@ set_mem_attributes_minus_bitpos (rtx ref, tree t, int objectp,
     attrs.align = MAX (attrs.align, TYPE_ALIGN (type));
 
   /* If the size is known, we can set that.  */
-  if (TYPE_SIZE_UNIT (type) && host_integerp (TYPE_SIZE_UNIT (type), 1))
-    {
-      attrs.size_known_p = true;
-      attrs.size = tree_low_cst (TYPE_SIZE_UNIT (type), 1);
-    }
+  tree new_size = TYPE_SIZE_UNIT (type);
 
   /* If T is not a type, we may be able to deduce some more information about
      the expression.  */
@@ -1742,13 +1749,7 @@ set_mem_attributes_minus_bitpos (rtx ref, tree t, int objectp,
 	  attrs.offset_known_p = true;
 	  attrs.offset = 0;
 	  apply_bitpos = bitpos;
-	  if (DECL_SIZE_UNIT (t) && host_integerp (DECL_SIZE_UNIT (t), 1))
-	    {
-	      attrs.size_known_p = true;
-	      attrs.size = tree_low_cst (DECL_SIZE_UNIT (t), 1);
-	    }
-	  else
-	    attrs.size_known_p = false;
+	  new_size = DECL_SIZE_UNIT (t);
 	  attrs.align = DECL_ALIGN (t);
 	  align_computed = true;
 	}
@@ -1763,19 +1764,15 @@ set_mem_attributes_minus_bitpos (rtx ref, tree t, int objectp,
 	  align_computed = true;
 	}
 
-      /* If this is a field reference and not a bit-field, record it.  */
-      /* ??? There is some information that can be gleaned from bit-fields,
-	 such as the word offset in the structure that might be modified.
-	 But skip it for now.  */
-      else if (TREE_CODE (t) == COMPONENT_REF
-	       && ! DECL_BIT_FIELD (TREE_OPERAND (t, 1)))
+      /* If this is a field reference, record it.  */
+      else if (TREE_CODE (t) == COMPONENT_REF)
 	{
 	  attrs.expr = t;
 	  attrs.offset_known_p = true;
 	  attrs.offset = 0;
 	  apply_bitpos = bitpos;
-	  /* ??? Any reason the field size would be different than
-	     the size we got from the type?  */
+	  if (DECL_BIT_FIELD (TREE_OPERAND (t, 1)))
+	    new_size = DECL_SIZE_UNIT (TREE_OPERAND (t, 1));
 	}
 
       /* If this is an array reference, look for an outer field reference.  */
@@ -1854,12 +1851,23 @@ set_mem_attributes_minus_bitpos (rtx ref, tree t, int objectp,
 
       if (!align_computed)
 	{
-	  unsigned int obj_align = get_object_alignment (t);
+	  unsigned int obj_align;
+	  unsigned HOST_WIDE_INT obj_bitpos;
+	  get_object_alignment_1 (t, &obj_align, &obj_bitpos);
+	  obj_bitpos = (obj_bitpos - bitpos) & (obj_align - 1);
+	  if (obj_bitpos != 0)
+	    obj_align = (obj_bitpos & -obj_bitpos);
 	  attrs.align = MAX (attrs.align, obj_align);
 	}
     }
   else
     as = TYPE_ADDR_SPACE (type);
+
+  if (host_integerp (new_size, 1))
+    {
+      attrs.size_known_p = true;
+      attrs.size = tree_low_cst (new_size, 1);
+    }
 
   /* If we modified OFFSET based on T, then subtract the outstanding
      bit position offset.  Similarly, increase the size of the accessed
@@ -2061,23 +2069,38 @@ change_address (rtx memref, enum machine_mode mode, rtx addr)
    If ADJUST_OBJECT is zero, the underlying object associated with the
    memory reference is left unchanged and the caller is responsible for
    dealing with it.  Otherwise, if the new memory reference is outside
-   the underlying object, even partially, then the object is dropped.  */
+   the underlying object, even partially, then the object is dropped.
+   SIZE, if nonzero, is the size of an access in cases where MODE
+   has no inherent size.  */
 
 rtx
 adjust_address_1 (rtx memref, enum machine_mode mode, HOST_WIDE_INT offset,
-		  int validate, int adjust_address, int adjust_object)
+		  int validate, int adjust_address, int adjust_object,
+		  HOST_WIDE_INT size)
 {
   rtx addr = XEXP (memref, 0);
   rtx new_rtx;
   enum machine_mode address_mode;
   int pbits;
-  struct mem_attrs attrs, *defattrs;
+  struct mem_attrs attrs = *get_mem_attrs (memref), *defattrs;
   unsigned HOST_WIDE_INT max_align;
+#ifdef POINTERS_EXTEND_UNSIGNED
+  enum machine_mode pointer_mode
+    = targetm.addr_space.pointer_mode (attrs.addrspace);
+#endif
 
-  attrs = *get_mem_attrs (memref);
+  /* VOIDmode means no mode change for change_address_1.  */
+  if (mode == VOIDmode)
+    mode = GET_MODE (memref);
+
+  /* Take the size of non-BLKmode accesses from the mode.  */
+  defattrs = mode_mem_attrs[(int) mode];
+  if (defattrs->size_known_p)
+    size = defattrs->size;
 
   /* If there are no changes, just return the original memory reference.  */
   if (mode == GET_MODE (memref) && !offset
+      && (size == 0 || (attrs.size_known_p && attrs.size == size))
       && (!validate || memory_address_addr_space_p (mode, addr,
 						    attrs.addrspace)))
     return memref;
@@ -2109,6 +2132,18 @@ adjust_address_1 (rtx memref, enum machine_mode mode, HOST_WIDE_INT offset,
 	addr = gen_rtx_LO_SUM (address_mode, XEXP (addr, 0),
 			       plus_constant (address_mode,
 					      XEXP (addr, 1), offset));
+#ifdef POINTERS_EXTEND_UNSIGNED
+      /* If MEMREF is a ZERO_EXTEND from pointer_mode and the offset is valid
+	 in that mode, we merge it into the ZERO_EXTEND.  We take advantage of
+	 the fact that pointers are not allowed to overflow.  */
+      else if (POINTERS_EXTEND_UNSIGNED > 0
+	       && GET_CODE (addr) == ZERO_EXTEND
+	       && GET_MODE (XEXP (addr, 0)) == pointer_mode
+	       && trunc_int_for_mode (offset, pointer_mode) == offset)
+	addr = gen_rtx_ZERO_EXTEND (address_mode,
+				    plus_constant (pointer_mode,
+						   XEXP (addr, 0), offset));
+#endif
       else
 	addr = plus_constant (address_mode, addr, offset);
     }
@@ -2150,24 +2185,23 @@ adjust_address_1 (rtx memref, enum machine_mode mode, HOST_WIDE_INT offset,
       attrs.align = MIN (attrs.align, max_align);
     }
 
-  /* We can compute the size in a number of ways.  */
-  defattrs = mode_mem_attrs[(int) GET_MODE (new_rtx)];
-  if (defattrs->size_known_p)
+  if (size)
     {
       /* Drop the object if the new right end is not within its bounds.  */
-      if (adjust_object && (offset + defattrs->size) > attrs.size)
+      if (adjust_object && (offset + size) > attrs.size)
 	{
 	  attrs.expr = NULL_TREE;
 	  attrs.alias = 0;
 	}
       attrs.size_known_p = true;
-      attrs.size = defattrs->size;
+      attrs.size = size;
     }
   else if (attrs.size_known_p)
     {
+      gcc_assert (!adjust_object);
       attrs.size -= offset;
-      /* ??? The store_by_pieces machinery generates negative sizes.  */
-      gcc_assert (!(adjust_object && attrs.size < 0));
+      /* ??? The store_by_pieces machinery generates negative sizes,
+	 so don't assert for that here.  */
     }
 
   set_mem_attrs (new_rtx, &attrs);
@@ -2185,7 +2219,7 @@ adjust_automodify_address_1 (rtx memref, enum machine_mode mode, rtx addr,
 			     HOST_WIDE_INT offset, int validate)
 {
   memref = change_address_1 (memref, VOIDmode, addr, validate);
-  return adjust_address_1 (memref, mode, offset, validate, 0, 0);
+  return adjust_address_1 (memref, mode, offset, validate, 0, 0, 0);
 }
 
 /* Return a memory reference like MEMREF, but whose address is changed by
@@ -2267,7 +2301,7 @@ replace_equiv_address_nv (rtx memref, rtx addr)
 rtx
 widen_memory_access (rtx memref, enum machine_mode mode, HOST_WIDE_INT offset)
 {
-  rtx new_rtx = adjust_address_1 (memref, mode, offset, 1, 1, 0);
+  rtx new_rtx = adjust_address_1 (memref, mode, offset, 1, 1, 0, 0);
   struct mem_attrs attrs;
   unsigned int size = GET_MODE_SIZE (mode);
 
@@ -5937,7 +5971,7 @@ location_t epilogue_location;
 /* Hold current location information and last location information, so the
    datastructures are built lazily only when some instructions in given
    place are needed.  */
-static location_t curr_location, last_location;
+static location_t curr_location;
 
 /* Allocate insn location datastructure.  */
 void
@@ -5945,7 +5979,6 @@ insn_locations_init (void)
 {
   prologue_location = epilogue_location = 0;
   curr_location = UNKNOWN_LOCATION;
-  last_location = UNKNOWN_LOCATION;
 }
 
 /* At the end of emit stage, clear current location.  */
@@ -5998,7 +6031,7 @@ insn_file (const_rtx insn)
 bool
 need_atomic_barrier_p (enum memmodel model, bool pre)
 {
-  switch (model)
+  switch (model & MEMMODEL_MASK)
     {
     case MEMMODEL_RELAXED:
     case MEMMODEL_CONSUME:

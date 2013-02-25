@@ -24,6 +24,10 @@
 #include "interface.h"
 #include "go-alloc.h"
 
+#define _STRINGIFY2_(x) #x
+#define _STRINGIFY_(x) _STRINGIFY2_(x)
+#define GOSYM_PREFIX _STRINGIFY_(__USER_LABEL_PREFIX__)
+
 /* This file supports C files copied from the 6g runtime library.
    This is a version of the 6g runtime.h rewritten for gccgo's version
    of the code.  */
@@ -63,6 +67,7 @@ typedef struct	GCStats		GCStats;
 typedef struct	LFNode		LFNode;
 typedef struct	ParFor		ParFor;
 typedef struct	ParForThread	ParForThread;
+typedef struct	CgoMal		CgoMal;
 
 typedef	struct	__go_open_array		Slice;
 typedef	struct	String			String;
@@ -72,13 +77,16 @@ typedef	struct	__go_type_descriptor	Type;
 typedef	struct	__go_defer_stack	Defer;
 typedef	struct	__go_panic_stack	Panic;
 
+typedef struct	__go_ptr_type		PtrType;
 typedef struct	__go_func_type		FuncType;
 typedef struct	__go_map_type		MapType;
 
 typedef struct  Traceback	Traceback;
 
+typedef struct	Location	Location;
+
 /*
- * per-cpu declaration.
+ * Per-CPU declaration.
  */
 extern M*	runtime_m(void);
 extern G*	runtime_g(void);
@@ -113,6 +121,13 @@ enum
 {
 	PtrSize = sizeof(void*),
 };
+enum
+{
+	// Per-M stack segment cache size.
+	StackCacheSize = 32,
+	// Global <-> per-M stack segment cache transfer batch size.
+	StackCacheBatch = 16,
+};
 
 /*
  * structures
@@ -142,6 +157,16 @@ struct	GCStats
 	uint64	nosyield;
 	uint64	nsleep;
 };
+
+// A location in the program, used for backtraces.
+struct	Location
+{
+	uintptr	pc;
+	String	filename;
+	String	function;
+	intgo	lineno;
+};
+
 struct	G
 {
 	Defer*	defer;
@@ -159,12 +184,13 @@ struct	G
 	void*	param;		// passed parameter on wakeup
 	bool	fromgogo;	// reached from gogo
 	int16	status;
-	int32	goid;
+	int64	goid;
 	uint32	selgen;		// valid sudog pointer
 	const char*	waitreason;	// if status==Gwaiting
 	G*	schedlink;
 	bool	readyonstop;
 	bool	ispanic;
+	bool	issystem;
 	int8	raceignore; // ignore race detection events
 	M*	m;		// for debuggers, but offset not hard-coded
 	M*	lockedm;
@@ -172,13 +198,15 @@ struct	G
 	int32	sig;
 	int32	writenbuf;
 	byte*	writebuf;
+	// DeferChunk	*dchunk;
+	// DeferChunk	*dchunknext;
 	uintptr	sigcode0;
 	uintptr	sigcode1;
 	// uintptr	sigpc;
 	uintptr	gopc;	// pc of go statement that created this goroutine
 
 	int32	ncgo;
-	struct cgoalloc *cgoalloc;
+	CgoMal*	cgomal;
 
 	Traceback* traceback;
 
@@ -193,6 +221,7 @@ struct	M
 	G*	curg;		// current running goroutine
 	int32	id;
 	int32	mallocing;
+	int32	throwing;
 	int32	gcing;
 	int32	locks;
 	int32	nomemprof;
@@ -201,7 +230,7 @@ struct	M
 	int32	profilehz;
 	int32	helpgc;
 	uint32	fastrand;
-	uint64	ncgocall;
+	uint64	ncgocall;	// number of cgo calls in total
 	Note	havenextg;
 	G*	nextg;
 	M*	alllink;	// on allm
@@ -209,7 +238,7 @@ struct	M
 	MCache	*mcache;
 	G*	lockedg;
 	G*	idleg;
-	uintptr	createstack[32];	// Stack that created this thread.
+	Location createstack[32];	// Stack that created this thread.
 	M*	nextwaitm;	// next M waiting for lock
 	uintptr	waitsema;	// semaphore for parking on locks
 	uint32	waitsemacount;
@@ -316,6 +345,14 @@ struct ParFor
 	uint64 nsleep;
 };
 
+// Track memory allocated by code not written in Go during a cgo call,
+// so that the garbage collector can see them.
+struct CgoMal
+{
+	CgoMal	*next;
+	byte	*alloc;
+};
+
 /*
  * defined macros
  *    you need super-gopher-guru privilege
@@ -329,14 +366,15 @@ struct ParFor
 /*
  * external data
  */
-G*	runtime_allg;
-G*	runtime_lastg;
-M*	runtime_allm;
+extern	uintptr runtime_zerobase;
+extern	G*	runtime_allg;
+extern	G*	runtime_lastg;
+extern	M*	runtime_allm;
 extern	int32	runtime_gomaxprocs;
 extern	bool	runtime_singleproc;
 extern	uint32	runtime_panicking;
 extern	int32	runtime_gcwaiting;		// gc is waiting to run
-int32	runtime_ncpu;
+extern	int32	runtime_ncpu;
 
 /*
  * common functions and data
@@ -365,7 +403,8 @@ void	runtime_goroutineheader(G*);
 void	runtime_goroutinetrailer(G*);
 void	runtime_traceback();
 void	runtime_tracebackothers(G*);
-void	runtime_printtrace(uintptr*, int32);
+void	runtime_printtrace(Location*, int32, bool);
+String	runtime_gostring(const byte*);
 String	runtime_gostringnocopy(const byte*);
 void*	runtime_mstart(void*);
 G*	runtime_malg(int32, byte**, size_t*);
@@ -376,11 +415,11 @@ void	runtime_park(void(*)(Lock*), Lock*, const char*);
 void	runtime_tsleep(int64, const char*);
 M*	runtime_newm(void);
 void	runtime_goexit(void);
-void	runtime_entersyscall(void) __asm__("syscall.Entersyscall");
-void	runtime_exitsyscall(void) __asm__("syscall.Exitsyscall");
+void	runtime_entersyscall(void) __asm__ (GOSYM_PREFIX "syscall.Entersyscall");
+void	runtime_exitsyscall(void) __asm__ (GOSYM_PREFIX "syscall.Exitsyscall");
 void	siginit(void);
 bool	__go_sigsend(int32 sig);
-int32	runtime_callers(int32, uintptr*, int32);
+int32	runtime_callers(int32, Location*, int32);
 int64	runtime_nanotime(void);
 int64	runtime_cputicks(void);
 int64	runtime_tickspersecond(void);
@@ -442,7 +481,7 @@ void	runtime_futexwakeup(uint32*, uint32);
  * so they can be garbage collected if there are no other pointers to nodes.
  */
 void	runtime_lfstackpush(uint64 *head, LFNode *node)
-  asm("runtime.lfstackpush");
+  __asm__ (GOSYM_PREFIX "runtime.lfstackpush");
 LFNode*	runtime_lfstackpop(uint64 *head);
 
 /*
@@ -455,7 +494,7 @@ LFNode*	runtime_lfstackpop(uint64 *head);
  */
 ParFor*	runtime_parforalloc(uint32 nthrmax);
 void	runtime_parforsetup(ParFor *desc, uint32 nthr, uint32 n, void *ctx, bool wait, void (*body)(ParFor*, uint32));
-void	runtime_parfordo(ParFor *desc) asm("runtime.parfordo");
+void	runtime_parfordo(ParFor *desc) __asm__ (GOSYM_PREFIX "runtime.parfordo");
 
 /*
  * low level C-called
@@ -503,7 +542,7 @@ void	runtime_printcomplex(__complex double);
 struct __go_func_type;
 void reflect_call(const struct __go_func_type *, const void *, _Bool, _Bool,
 		  void **, void **)
-  asm ("reflect.call");
+  __asm__ (GOSYM_PREFIX "reflect.call");
 
 /* Functions.  */
 #define runtime_panic __go_panic
@@ -518,7 +557,7 @@ MCache*	runtime_allocmcache(void);
 void	free(void *v);
 #define runtime_cas(pval, old, new) __sync_bool_compare_and_swap (pval, old, new)
 #define runtime_casp(pval, old, new) __sync_bool_compare_and_swap (pval, old, new)
-#define runtime_cas64(pval, pold, new) __atomic_compare_exchange_n (pval, pold, new, 1, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED)
+#define runtime_cas64(pval, pold, new) __atomic_compare_exchange_n (pval, pold, new, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
 #define runtime_xadd(p, v) __sync_add_and_fetch (p, v)
 #define runtime_xadd64(p, v) __sync_add_and_fetch (p, v)
 #define runtime_xchg(p, v) __atomic_exchange_n (p, v, __ATOMIC_SEQ_CST)
@@ -551,11 +590,11 @@ void	runtime_usleep(uint32);
  * runtime c-called (but written in Go)
  */
 void	runtime_printany(Eface)
-     __asm__("runtime.Printany");
+     __asm__ (GOSYM_PREFIX "runtime.Printany");
 void	runtime_newTypeAssertionError(const String*, const String*, const String*, const String*, Eface*)
-     __asm__("runtime.NewTypeAssertionError");
+     __asm__ (GOSYM_PREFIX "runtime.NewTypeAssertionError");
 void	runtime_newErrorString(String, Eface*)
-     __asm__("runtime.NewErrorString");
+     __asm__ (GOSYM_PREFIX "runtime.NewErrorString");
 
 /*
  * wrapped for go users
@@ -566,10 +605,10 @@ void	runtime_semrelease(uint32 volatile *);
 int32	runtime_gomaxprocsfunc(int32 n);
 void	runtime_procyield(uint32);
 void	runtime_osyield(void);
-void	runtime_LockOSThread(void) __asm__("runtime.LockOSThread");
-void	runtime_UnlockOSThread(void) __asm__("runtime.UnlockOSThread");
+void	runtime_LockOSThread(void) __asm__ (GOSYM_PREFIX "runtime.LockOSThread");
+void	runtime_UnlockOSThread(void) __asm__ (GOSYM_PREFIX "runtime.UnlockOSThread");
 
-bool	runtime_showframe(const unsigned char*);
+bool	runtime_showframe(String, bool);
 
 uintptr	runtime_memlimit(void);
 
@@ -587,9 +626,6 @@ enum
 {
 	UseSpanType = 1,
 };
-
-void	runtime_time_scan(void (*)(byte*, uintptr));
-void	runtime_trampoline_scan(void (*)(byte *, uintptr));
 
 void	runtime_setsig(int32, bool, bool);
 #define runtime_setitimer setitimer

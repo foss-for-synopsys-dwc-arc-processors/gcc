@@ -1,7 +1,5 @@
 /* Definitions for c-common.c.
-   Copyright (C) 1987, 1993, 1994, 1995, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -486,7 +484,7 @@ typedef enum ref_operator {
 
 struct GTY(()) stmt_tree_s {
   /* A stack of statement lists being collected.  */
-  VEC(tree,gc) *x_cur_stmt_list;
+  vec<tree, va_gc> *x_cur_stmt_list;
 
   /* In C++, Nonzero if we should treat statements as full
      expressions.  In particular, this variable is non-zero if at the
@@ -512,20 +510,16 @@ struct GTY(()) c_language_function {
 
   /* Vector of locally defined typedefs, for
      -Wunused-local-typedefs.  */
-  VEC(tree,gc) *local_typedefs;
+  vec<tree, va_gc> *local_typedefs;
 };
 
 #define stmt_list_stack (current_stmt_tree ()->x_cur_stmt_list)
 
 /* When building a statement-tree, this is the current statement list
-   being collected.  We define it in this convoluted way, rather than
-   using VEC_last, because it must be an lvalue.  */
+   being collected.  */
+#define cur_stmt_list	(stmt_list_stack->last ())
 
-#define cur_stmt_list							\
-  (*(VEC_address (tree, stmt_list_stack)				\
-     + VEC_length (tree, stmt_list_stack) - 1))
-
-#define building_stmt_list_p() (!VEC_empty (tree, stmt_list_stack))
+#define building_stmt_list_p() (stmt_list_stack && !stmt_list_stack->is_empty())
 
 /* Language-specific hooks.  */
 
@@ -584,16 +578,6 @@ extern const char *pch_file;
    user's namespace.  */
 
 extern int flag_iso;
-
-/* Warn about #pragma directives that are not recognized.  */
-
-extern int warn_unknown_pragmas; /* Tri state variable.  */
-
-/* Warn about format/argument anomalies in calls to formatted I/O functions
-   (*printf, *scanf, strftime, strfmon, etc.).  */
-
-extern int warn_format;
-
 
 /* C/ObjC language option variables.  */
 
@@ -736,7 +720,6 @@ extern void check_function_arguments_recurse (void (*)
 					      unsigned HOST_WIDE_INT);
 extern bool check_builtin_function_arguments (tree, int, tree *);
 extern void check_function_format (tree, int, tree *);
-extern void set_Wformat (int);
 extern tree handle_format_attribute (tree *, tree, tree, int, bool *);
 extern tree handle_format_arg_attribute (tree *, tree, tree, int, bool *);
 extern bool attribute_takes_identifier_p (const_tree);
@@ -770,7 +753,7 @@ extern void constant_expression_warning (tree);
 extern void constant_expression_error (tree);
 extern bool strict_aliasing_warning (tree, tree, tree);
 extern void sizeof_pointer_memaccess_warning (location_t *, tree,
-					      VEC(tree, gc) *, tree *,
+					      vec<tree, va_gc> *, tree *,
 					      bool (*) (tree, tree));
 extern void warnings_for_convert_and_check (tree, tree, tree);
 extern tree convert_and_check (tree, tree);
@@ -910,10 +893,10 @@ extern void c_do_switch_warnings (splay_tree, location_t, tree, tree);
 
 extern tree build_function_call (location_t, tree, tree);
 
-extern tree build_function_call_vec (location_t, tree,
-    				     VEC(tree,gc) *, VEC(tree,gc) *);
+extern tree build_function_call_vec (location_t, tree, vec<tree, va_gc> *,
+				     vec<tree, va_gc> *);
 
-extern tree resolve_overloaded_builtin (location_t, tree, VEC(tree,gc) *);
+extern tree resolve_overloaded_builtin (location_t, tree, vec<tree, va_gc> *);
 
 extern tree finish_label_address_expr (tree, location_t);
 
@@ -1008,11 +991,11 @@ extern void set_underlying_type (tree);
 extern void record_locally_defined_typedef (tree);
 extern void maybe_record_typedef_use (tree);
 extern void maybe_warn_unused_local_typedefs (void);
-extern VEC(tree,gc) *make_tree_vector (void);
-extern void release_tree_vector (VEC(tree,gc) *);
-extern VEC(tree,gc) *make_tree_vector_single (tree);
-extern VEC(tree,gc) *make_tree_vector_from_list (tree);
-extern VEC(tree,gc) *make_tree_vector_copy (const VEC(tree,gc) *);
+extern vec<tree, va_gc> *make_tree_vector (void);
+extern void release_tree_vector (vec<tree, va_gc> *);
+extern vec<tree, va_gc> *make_tree_vector_single (tree);
+extern vec<tree, va_gc> *make_tree_vector_from_list (tree);
+extern vec<tree, va_gc> *make_tree_vector_copy (const vec<tree, va_gc> *);
 
 /* In c-gimplify.c  */
 extern void c_genericize (tree);
@@ -1104,11 +1087,18 @@ extern tree find_tm_attribute (tree);
 
 /* A suffix-identifier value doublet that represents user-defined literals
    for C++-0x.  */
+enum overflow_type {
+  OT_UNDERFLOW = -1,
+  OT_NONE,
+  OT_OVERFLOW
+};
+
 struct GTY(()) tree_userdef_literal {
   struct tree_base base;
   tree suffix_id;
   tree value;
   tree num_string;
+  enum overflow_type overflow;
 };
 
 #define USERDEF_LITERAL_SUFFIX_ID(NODE) \
@@ -1117,13 +1107,18 @@ struct GTY(()) tree_userdef_literal {
 #define USERDEF_LITERAL_VALUE(NODE) \
   (((struct tree_userdef_literal *)USERDEF_LITERAL_CHECK (NODE))->value)
 
+#define USERDEF_LITERAL_OVERFLOW(NODE) \
+  (((struct tree_userdef_literal *)USERDEF_LITERAL_CHECK (NODE))->overflow)
+
 #define USERDEF_LITERAL_NUM_STRING(NODE) \
   (((struct tree_userdef_literal *)USERDEF_LITERAL_CHECK (NODE))->num_string)
 
 #define USERDEF_LITERAL_TYPE(NODE) \
   (TREE_TYPE (USERDEF_LITERAL_VALUE (NODE)))
 
-extern tree build_userdef_literal (tree suffix_id, tree value, tree num_string);
+extern tree build_userdef_literal (tree suffix_id, tree value,
+				   enum overflow_type overflow,
+				   tree num_string);
 
 extern void convert_vector_to_pointer_for_subscript (location_t, tree*, tree);
 

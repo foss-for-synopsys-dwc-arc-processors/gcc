@@ -1,5 +1,5 @@
 /* Control flow graph analysis code for GNU compiler.
-   Copyright (C) 1987-2012 Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -24,7 +24,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "coretypes.h"
 #include "basic-block.h"
 #include "vec.h"
-#include "vecprim.h"
 #include "bitmap.h"
 #include "sbitmap.h"
 #include "timevar.h"
@@ -452,6 +451,7 @@ void
 connect_infinite_loops_to_exit (void)
 {
   basic_block unvisited_block = EXIT_BLOCK_PTR;
+  basic_block deadend_block;
   struct depth_first_search_dsS dfs_ds;
 
   /* Perform depth-first search in the reverse graph to find nodes
@@ -467,8 +467,9 @@ connect_infinite_loops_to_exit (void)
       if (!unvisited_block)
 	break;
 
-      make_edge (unvisited_block, EXIT_BLOCK_PTR, EDGE_FAKE);
-      flow_dfs_compute_reverse_add_bb (&dfs_ds, unvisited_block);
+      deadend_block = dfs_find_deadend (unvisited_block);
+      make_edge (deadend_block, EXIT_BLOCK_PTR, EDGE_FAKE);
+      flow_dfs_compute_reverse_add_bb (&dfs_ds, deadend_block);
     }
 
   flow_dfs_compute_reverse_finish (&dfs_ds);
@@ -958,7 +959,7 @@ flow_dfs_compute_reverse_execute (depth_first_search_ds data,
   /* Determine if there are unvisited basic blocks.  */
   FOR_BB_BETWEEN (bb, last_unvisited, NULL, prev_bb)
     if (!bitmap_bit_p (data->visited_blocks, bb->index))
-      return dfs_find_deadend (bb);
+      return bb;
 
   return NULL;
 }
@@ -1137,47 +1138,45 @@ compute_idf (bitmap def_blocks, bitmap_head *dfs)
 {
   bitmap_iterator bi;
   unsigned bb_index, i;
-  VEC(int,heap) *work_stack;
+  vec<int> work_stack;
   bitmap phi_insertion_points;
 
-  work_stack = VEC_alloc (int, heap, n_basic_blocks);
+  /* Each block can appear at most twice on the work-stack.  */
+  work_stack.create (2 * n_basic_blocks);
   phi_insertion_points = BITMAP_ALLOC (NULL);
 
   /* Seed the work list with all the blocks in DEF_BLOCKS.  We use
-     VEC_quick_push here for speed.  This is safe because we know that
+     vec::quick_push here for speed.  This is safe because we know that
      the number of definition blocks is no greater than the number of
      basic blocks, which is the initial capacity of WORK_STACK.  */
   EXECUTE_IF_SET_IN_BITMAP (def_blocks, 0, bb_index, bi)
-    VEC_quick_push (int, work_stack, bb_index);
+    work_stack.quick_push (bb_index);
 
   /* Pop a block off the worklist, add every block that appears in
      the original block's DF that we have not already processed to
      the worklist.  Iterate until the worklist is empty.   Blocks
      which are added to the worklist are potential sites for
      PHI nodes.  */
-  while (VEC_length (int, work_stack) > 0)
+  while (work_stack.length () > 0)
     {
-      bb_index = VEC_pop (int, work_stack);
+      bb_index = work_stack.pop ();
 
       /* Since the registration of NEW -> OLD name mappings is done
 	 separately from the call to update_ssa, when updating the SSA
 	 form, the basic blocks where new and/or old names are defined
 	 may have disappeared by CFG cleanup calls.  In this case,
 	 we may pull a non-existing block from the work stack.  */
-      gcc_assert (bb_index < (unsigned) last_basic_block);
+      gcc_checking_assert (bb_index < (unsigned) last_basic_block);
 
       EXECUTE_IF_AND_COMPL_IN_BITMAP (&dfs[bb_index], phi_insertion_points,
 	                              0, i, bi)
 	{
-	  /* Use a safe push because if there is a definition of VAR
-	     in every basic block, then WORK_STACK may eventually have
-	     more than N_BASIC_BLOCK entries.  */
-	  VEC_safe_push (int, heap, work_stack, i);
+	  work_stack.quick_push (i);
 	  bitmap_set_bit (phi_insertion_points, i);
 	}
     }
 
-  VEC_free (int, heap, work_stack);
+  work_stack.release ();
 
   return phi_insertion_points;
 }

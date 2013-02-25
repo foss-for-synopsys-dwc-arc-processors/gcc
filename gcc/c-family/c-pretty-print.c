@@ -1,6 +1,5 @@
 /* Subroutines common to both C and C++ pretty-printers.
-   Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 2002-2013 Free Software Foundation, Inc.
    Contributed by Gabriel Dos Reis <gdr@integrable-solutions.net>
 
 This file is part of GCC.
@@ -1662,7 +1661,7 @@ pp_c_expression_list (c_pretty_printer *pp, tree e)
 /* Print out V, which contains the elements of a constructor.  */
 
 void
-pp_c_constructor_elts (c_pretty_printer *pp, VEC(constructor_elt,gc) *v)
+pp_c_constructor_elts (c_pretty_printer *pp, vec<constructor_elt, va_gc> *v)
 {
   unsigned HOST_WIDE_INT ix;
   tree value;
@@ -1670,7 +1669,7 @@ pp_c_constructor_elts (c_pretty_printer *pp, VEC(constructor_elt,gc) *v)
   FOR_EACH_CONSTRUCTOR_VALUE (v, ix, value)
     {
       pp_expression (pp, value);
-      if (ix != VEC_length (constructor_elt, v) - 1)
+      if (ix != vec_safe_length (v) - 1)
 	pp_separate_with (pp, ',');
     }
 }

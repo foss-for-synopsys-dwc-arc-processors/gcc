@@ -27,6 +27,9 @@
 /* Define to 1 if you have the `atanl' function. */
 #undef HAVE_ATANL
 
+/* Define to 1 if you have the `at_quick_exit' function. */
+#undef HAVE_AT_QUICK_EXIT
+
 /* Define to 1 if the target assembler supports thread-local storage. */
 #undef HAVE_CC_TLS
 
@@ -303,6 +306,9 @@
 /* Define to 1 if you have the `qfpclass' function. */
 #undef HAVE_QFPCLASS
 
+/* Define to 1 if you have the `quick_exit' function. */
+#undef HAVE_QUICK_EXIT
+
 /* Define to 1 if you have the `setenv' function. */
 #undef HAVE_SETENV
 
@@ -326,6 +332,9 @@
 
 /* Define to 1 if you have the `sinl' function. */
 #undef HAVE_SINL
+
+/* Defined if sleep exists. */
+#undef HAVE_SLEEP
 
 /* Define to 1 if you have the `sqrtf' function. */
 #undef HAVE_SQRTF
@@ -436,6 +445,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Defined if usleep exists. */
+#undef HAVE_USLEEP
+
 /* Defined if vfwscanf exists. */
 #undef HAVE_VFWSCANF
 
@@ -453,6 +465,9 @@
 
 /* Define to 1 if you have the <wctype.h> header file. */
 #undef HAVE_WCTYPE_H
+
+/* Defined if Sleep exists. */
+#undef HAVE_WIN32_SLEEP
 
 /* Define if writev is available in <sys/uio.h>. */
 #undef HAVE_WRITEV

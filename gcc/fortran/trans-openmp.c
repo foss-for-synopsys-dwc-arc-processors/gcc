@@ -1,6 +1,5 @@
 /* OpenMP directive translation -- generate GCC trees from gfc_code.
-   Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2005-2013 Free Software Foundation, Inc.
    Contributed by Jakub Jelinek <jakub@redhat.com>
 
 This file is part of GCC.
@@ -1293,8 +1292,6 @@ typedef struct dovar_init_d {
   tree init;
 } dovar_init;
 
-DEF_VEC_O(dovar_init);
-DEF_VEC_ALLOC_O(dovar_init,heap);
 
 static tree
 gfc_trans_omp_do (gfc_code *code, stmtblock_t *pblock,
@@ -1307,7 +1304,7 @@ gfc_trans_omp_do (gfc_code *code, stmtblock_t *pblock,
   stmtblock_t body;
   gfc_omp_clauses *clauses = code->ext.omp_clauses;
   int i, collapse = clauses->collapse;
-  VEC(dovar_init,heap) *inits = NULL;
+  vec<dovar_init> inits = vNULL;
   dovar_init *di;
   unsigned ix;
 
@@ -1435,7 +1432,7 @@ gfc_trans_omp_do (gfc_code *code, stmtblock_t *pblock,
 	  tmp = fold_build2_loc (input_location, MULT_EXPR, type, count, step);
 	  tmp = fold_build2_loc (input_location, PLUS_EXPR, type, from, tmp);
 	  dovar_init e = {dovar, tmp};
-	  VEC_safe_push (dovar_init, heap, inits, e);
+	  inits.safe_push (e);
 	}
 
       if (!dovar_found)
@@ -1506,9 +1503,9 @@ gfc_trans_omp_do (gfc_code *code, stmtblock_t *pblock,
 
   gfc_start_block (&body);
 
-  FOR_EACH_VEC_ELT (dovar_init, inits, ix, di)
+  FOR_EACH_VEC_ELT (inits, ix, di)
     gfc_add_modify (&body, di->var, di->init);
-  VEC_free (dovar_init, heap, inits);
+  inits.release ();
 
   /* Cycle statement is implemented with a goto.  Exit statement must not be
      present for this loop.  */

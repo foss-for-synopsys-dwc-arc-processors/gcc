@@ -1,6 +1,5 @@
 /* Generic routines for manipulating PHIs
-   Copyright (C) 2003, 2005, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2003-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -43,10 +42,6 @@ along with GCC; see the file COPYING3.  If not see
    garbage collector.  Similar results have been seen on a wider variety
    of tests (such as the compiler itself).
 
-   We could also use a zone allocator for these objects since they have
-   a very well defined lifetime.  If someone wants to experiment with that
-   this is the place to try it.
-
    PHI nodes have different sizes, so we can't have a single list of all
    the PHI nodes as it would be too expensive to walk down that list to
    find a PHI of a suitable size.
@@ -72,7 +67,7 @@ along with GCC; see the file COPYING3.  If not see
    the -2 on all the calculations below.  */
 
 #define NUM_BUCKETS 10
-static GTY ((deletable (""))) VEC(gimple,gc) *free_phinodes[NUM_BUCKETS - 2];
+static GTY ((deletable (""))) vec<gimple, va_gc> *free_phinodes[NUM_BUCKETS - 2];
 static unsigned long free_phinode_count;
 
 static int ideal_phi_node_len (int);
@@ -108,13 +103,12 @@ allocate_phi_node (size_t len)
 
   /* If our free list has an element, then use it.  */
   if (bucket < NUM_BUCKETS - 2
-      && gimple_phi_capacity (VEC_index (gimple, free_phinodes[bucket], 0))
-	 >= len)
+      && gimple_phi_capacity ((*free_phinodes[bucket])[0]) >= len)
     {
       free_phinode_count--;
-      phi = VEC_pop (gimple, free_phinodes[bucket]);
-      if (VEC_empty (gimple, free_phinodes[bucket]))
-	VEC_free (gimple, gc, free_phinodes[bucket]);
+      phi = free_phinodes[bucket]->pop ();
+      if (free_phinodes[bucket]->is_empty ())
+	vec_free (free_phinodes[bucket]);
       if (GATHER_STATISTICS)
 	phi_nodes_reused++;
     }
@@ -229,7 +223,7 @@ release_phi_node (gimple phi)
 
   bucket = len > NUM_BUCKETS - 1 ? NUM_BUCKETS - 1 : len;
   bucket -= 2;
-  VEC_safe_push (gimple, gc, free_phinodes[bucket], phi);
+  vec_safe_push (free_phinodes[bucket], phi);
   free_phinode_count++;
 }
 
@@ -314,6 +308,7 @@ reserve_phi_args_for_new_edge (basic_block bb)
 	 redirects edges, and then fixes up PHI arguments later in
 	 batch.  */
       SET_PHI_ARG_DEF (stmt, len - 1, NULL_TREE);
+      gimple_phi_arg_set_location (stmt, len - 1, UNKNOWN_LOCATION);
 
       stmt->gimple_phi.nargs++;
     }

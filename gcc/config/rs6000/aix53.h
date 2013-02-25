@@ -1,6 +1,6 @@
 /* Definitions of target machine for GNU compiler,
    for IBM RS/6000 POWER running AIX V5.3.
-   Copyright (C) 2002-2012 Free Software Foundation, Inc.
+   Copyright (C) 2002-2013 Free Software Foundation, Inc.
    Contributed by David Edelsohn (edelsohn@gnu.org).
 
    This file is part of GCC.
@@ -62,6 +62,7 @@ do {									\
 %{mcpu=power6: -mpwr6} \
 %{mcpu=power6x: -mpwr6} \
 %{mcpu=power7: -mpwr7} \
+%{mcpu=power8: -mpwr8} \
 %{mcpu=powerpc: -mppc} \
 %{mcpu=rs64a: -mppc} \
 %{mcpu=603: -m603} \
@@ -127,6 +128,7 @@ do {									\
 #define LIB_SPEC "%{pg:-L%R/lib/profiled -L%R/usr/lib/profiled}\
    %{p:-L%R/lib/profiled -L%R/usr/lib/profiled}\
    %{!maix64:%{!shared:%{g*:-lg}}}\
+   %{fprofile-arcs|fprofile-generate*|coverage:-lpthreads}\
    %{mpe:-L%R/usr/lpp/ppe.poe/lib -lmpi -lvtd}\
    %{pthread:-lpthreads} -lc"
 

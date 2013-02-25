@@ -1,6 +1,5 @@
 ;; Predicate definitions for IA-32 and x86-64.
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-;; Free Software Foundation, Inc.
+;; Copyright (C) 2004-2013 Free Software Foundation, Inc.
 ;;
 ;; This file is part of GCC.
 ;;
@@ -1110,7 +1109,7 @@
                (match_operand 0 "comparison_operator")
                (match_operand 0 "ix86_trivial_fp_comparison_operator")))
 
-;; Same as above, but for swapped comparison used in fp_jcc_4_387.
+;; Same as above, but for swapped comparison used in *jcc<fp>_<int>_i387.
 (define_predicate "ix86_swapped_fp_comparison_operator"
   (match_operand 0 "comparison_operator")
 {
@@ -1231,10 +1230,8 @@
 
 ;; return true if OP is a vzeroupper operation.
 (define_predicate "vzeroupper_operation"
-  (match_code "unspec_volatile")
-{
-  return XINT (op, 1) == UNSPECV_VZEROUPPER;
-})
+  (and (match_code "unspec_volatile")
+       (match_test "XINT (op, 1) == UNSPECV_VZEROUPPER")))
 
 ;; Return true if OP is a parallel for a vbroadcast permute.
 

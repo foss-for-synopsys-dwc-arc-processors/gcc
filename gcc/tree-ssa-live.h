@@ -1,6 +1,5 @@
 /* Routines for liveness in SSA trees.
-   Copyright (C) 2003, 2004, 2005, 2007, 2008, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2003-2013 Free Software Foundation, Inc.
    Contributed by Andrew MacLeod  <amacleod@redhat.com>
 
 This file is part of GCC.
@@ -24,9 +23,6 @@ along with GCC; see the file COPYING3.  If not see
 #define _TREE_SSA_LIVE_H 1
 
 #include "partition.h"
-#include "vecprim.h"
-
-
 
 /* Used to create the variable mapping when we go out of SSA form.
 

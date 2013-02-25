@@ -1,8 +1,6 @@
 /* Handle the hair of processing (but not expanding) inline functions.
    Also manage function and variable name overloading.
-   Copyright (C) 1987, 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
    Contributed by Michael Tiemann (tiemann@cygnus.com)
 
 This file is part of GCC.
@@ -502,7 +500,8 @@ add_one_base_init (tree binfo, tree parm, bool move_p, tree inh,
       for (; parm; parm = DECL_CHAIN (parm))
 	{
 	  tree exp = convert_from_reference (parm);
-	  if (TREE_CODE (TREE_TYPE (parm)) != REFERENCE_TYPE)
+	  if (TREE_CODE (TREE_TYPE (parm)) != REFERENCE_TYPE
+	      || TYPE_REF_IS_RVALUE (TREE_TYPE (parm)))
 	    exp = move (exp);
 	  *p = build_tree_list (NULL_TREE, exp);
 	  p = &TREE_CHAIN (*p);
@@ -550,7 +549,7 @@ do_build_copy_constructor (tree fndecl)
       int i;
       tree binfo, base_binfo;
       tree init;
-      VEC(tree,gc) *vbases;
+      vec<tree, va_gc> *vbases;
 
       /* Initialize all the base-classes with the parameter converted
 	 to their type so that we get their copy constructor and not
@@ -558,7 +557,7 @@ do_build_copy_constructor (tree fndecl)
 	 deal with the binfo's directly as a direct base might be
 	 inaccessible due to ambiguity.  */
       for (vbases = CLASSTYPE_VBASECLASSES (current_class_type), i = 0;
-	   VEC_iterate (tree, vbases, i, binfo); i++)
+	   vec_safe_iterate (vbases, i, &binfo); i++)
 	{
 	  member_init_list = add_one_base_init (binfo, parm, move_p, inh,
 						member_init_list);
@@ -612,7 +611,9 @@ do_build_copy_constructor (tree fndecl)
 	    }
 
 	  init = build3 (COMPONENT_REF, expr_type, parm, field, NULL_TREE);
-	  if (move_p && TREE_CODE (expr_type) != REFERENCE_TYPE)
+	  if (move_p && TREE_CODE (expr_type) != REFERENCE_TYPE
+	      /* 'move' breaks bit-fields, and has no effect for scalars.  */
+	      && !scalarish_type_p (expr_type))
 	    init = move (init);
 	  init = build_tree_list (NULL_TREE, init);
 
@@ -655,7 +656,7 @@ do_build_copy_assign (tree fndecl)
 	   BINFO_BASE_ITERATE (binfo, i, base_binfo); i++)
 	{
 	  tree converted_parm;
-	  VEC(tree,gc) *parmvec;
+	  vec<tree, va_gc> *parmvec;
 
 	  /* We must convert PARM directly to the base class
 	     explicitly since the base class may be ambiguous.  */
@@ -726,7 +727,9 @@ do_build_copy_assign (tree fndecl)
 	  expr_type = cp_build_qualified_type (expr_type, quals);
 
 	  init = build3 (COMPONENT_REF, expr_type, init, field, NULL_TREE);
-	  if (move_p && TREE_CODE (expr_type) != REFERENCE_TYPE)
+	  if (move_p && TREE_CODE (expr_type) != REFERENCE_TYPE
+	      /* 'move' breaks bit-fields, and has no effect for scalars.  */
+	      && !scalarish_type_p (expr_type))
 	    init = move (init);
 
 	  if (DECL_NAME (field))
@@ -852,7 +855,7 @@ locate_fn_flags (tree type, tree name, tree argtype, int flags,
 		 tsubst_flags_t complain)
 {
   tree ob, fn, fns, binfo, rval;
-  VEC(tree,gc) *args;
+  vec<tree, va_gc> *args;
 
   if (TYPE_P (type))
     binfo = TYPE_BINFO (type);
@@ -875,13 +878,13 @@ locate_fn_flags (tree type, tree name, tree argtype, int flags,
 	      if (TREE_CODE (type) != REFERENCE_TYPE)
 		type = cp_build_reference_type (type, /*rval*/true);
 	      tree arg = build_stub_object (type);
-	      VEC_safe_push (tree, gc, args, arg);
+	      vec_safe_push (args, arg);
 	    }
 	}
       else
 	{
 	  tree arg = build_stub_object (argtype);
-	  VEC_quick_push (tree, args, arg);
+	  args->quick_push (arg);
 	}
     }
 
@@ -1157,7 +1160,7 @@ synthesized_method_walk (tree ctype, special_function_kind sfk, bool const_p,
 {
   tree binfo, base_binfo, scope, fnname, rval, argtype;
   bool move_p, copy_arg_p, assign_p, expected_trivial, check_vdtor;
-  VEC(tree,gc) *vbases;
+  vec<tree, va_gc> *vbases;
   int i, quals, flags;
   tsubst_flags_t complain;
   bool ctor_p;
@@ -1351,7 +1354,7 @@ synthesized_method_walk (tree ctype, special_function_kind sfk, bool const_p,
     {
       if (constexpr_p)
 	*constexpr_p = false;
-      FOR_EACH_VEC_ELT (tree, vbases, i, base_binfo)
+      FOR_EACH_VEC_ELT (*vbases, i, base_binfo)
 	{
 	  tree basetype = BINFO_TYPE (base_binfo);
 	  if (copy_arg_p)
@@ -1518,7 +1521,6 @@ implicitly_declare_fn (special_function_kind kind, tree type,
   tree name;
   HOST_WIDE_INT saved_processing_template_decl;
   bool deleted_p;
-  bool trivial_p;
   bool constexpr_p;
 
   /* Because we create declarations for implicitly declared functions
@@ -1597,12 +1599,13 @@ implicitly_declare_fn (special_function_kind kind, tree type,
   tree inherited_base = (inherited_ctor
 			 ? DECL_CONTEXT (inherited_ctor)
 			 : NULL_TREE);
+  bool trivial_p = false;
+
   if (inherited_ctor && TREE_CODE (inherited_ctor) == TEMPLATE_DECL)
     {
       /* For an inheriting constructor template, just copy these flags from
 	 the inherited constructor template for now.  */
       raises = TYPE_RAISES_EXCEPTIONS (TREE_TYPE (inherited_ctor));
-      trivial_p = false;
       deleted_p = DECL_DELETED_FN (DECL_TEMPLATE_RESULT (inherited_ctor));
       constexpr_p
 	= DECL_DECLARED_CONSTEXPR_P (DECL_TEMPLATE_RESULT (inherited_ctor));
@@ -1663,10 +1666,14 @@ implicitly_declare_fn (special_function_kind kind, tree type,
   else if (kind == sfk_inheriting_constructor)
     {
       tree *p = &DECL_ARGUMENTS (fn);
+      int index = 1;
       for (tree parm = inherited_parms; parm != void_list_node;
 	   parm = TREE_CHAIN (parm))
 	{
 	  *p = cp_build_parm_decl (NULL_TREE, TREE_VALUE (parm));
+	  retrofit_lang_decl (*p);
+	  DECL_PARM_LEVEL (*p) = 1;
+	  DECL_PARM_INDEX (*p) = index++;
 	  DECL_CONTEXT (*p) = fn;
 	  p = &DECL_CHAIN (*p);
 	}

@@ -1,5 +1,4 @@
-#  Copyright (C) 2003, 2004, 2007, 2008, 2009, 2010, 2011
-#  Free Software Foundation, Inc.
+#  Copyright (C) 2003-2013 Free Software Foundation, Inc.
 #  Contributed by Kelley Cook, June 2004.
 #  Original code from Neil Booth, May 2003.
 #
@@ -313,3 +312,35 @@ function search_var_name(name, opt_numbers, opts, flags, n_opts)
     }
     return ""
 }
+
+# Handle LangEnabledBy(ENABLED_BY_LANGS, ENABLEDBY_NAME, ENABLEDBY_POSARG,
+# ENABLEDBY_NEGARG). This function does not return anything.
+function lang_enabled_by(enabledby_langs, enabledby_name, enabledby_posarg, enabledby_negarg)
+{
+    n_enabledby_arg_langs = split(enabledby_langs, enabledby_arg_langs, " ");
+    enabledby_index = opt_numbers[enabledby_name];
+    if (enabledby_index == "") {
+        print "#error LangEnabledby: " enabledby_name 
+    } else {
+        if (enabledby_posarg != "" && enabledby_negarg != "") {
+            with_args = "," enabledby_posarg "," enabledby_negarg
+        } else if (enabledby_posarg == "" && enabledby_negarg == "") {
+            with_args = ""
+        } else {
+            print "#error LangEnabledBy("enabledby_langs","enabledby_name", " \
+                enabledby_posarg", " enabledby_negargs                  \
+                ") with three arguments, it should have either 2 or 4"
+        }
+        
+        for (j = 1; j <= n_enabledby_arg_langs; j++) {
+            lang_name = lang_sanitized_name(enabledby_arg_langs[j]);
+            lang_index = lang_numbers[enabledby_arg_langs[j]];
+            if (enables[lang_name,enabledby_name] == "") {
+                enabledby[lang_name,n_enabledby_lang[lang_index]] = enabledby_name;
+                n_enabledby_lang[lang_index]++;
+            }
+            enables[lang_name,enabledby_name] = enables[lang_name,enabledby_name] opts[i] with_args ";";
+        }
+    }
+}
+

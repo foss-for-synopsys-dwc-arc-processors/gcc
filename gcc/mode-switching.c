@@ -1,6 +1,5 @@
 /* CPU mode switching
-   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008,
-   2009, 2010, 2012  Free Software Foundation, Inc.
+   Copyright (C) 1998-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -242,7 +241,7 @@ create_pre_exit (int n_entities, int *entity_map, const int *num_modes)
 		int copy_start, copy_num;
 		int j;
 
-		if (INSN_P (return_copy))
+		if (NONDEBUG_INSN_P (return_copy))
 		  {
 		    /* When using SJLJ exceptions, the call to the
 		       unregister function is inserted between the
@@ -322,8 +321,15 @@ create_pre_exit (int n_entities, int *entity_map, const int *num_modes)
 			     && GET_CODE (SUBREG_REG (copy_reg)) == REG)
 		      copy_start = REGNO (SUBREG_REG (copy_reg));
 		    else
-		      break;
-		    if (copy_start >= FIRST_PSEUDO_REGISTER)
+		      {
+			/* When control reaches end of non-void function,
+			   there are no return copy insns at all.  This
+			   avoids an ice on that invalid function.  */
+			if (ret_start + nregs == ret_end)
+			  short_block = 1;
+			break;
+		      }
+		    if (!targetm.calls.function_value_regno_p (copy_start))
 		      {
 			last_insn = return_copy;
 			continue;

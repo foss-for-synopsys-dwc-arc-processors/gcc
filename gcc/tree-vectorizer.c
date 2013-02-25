@@ -1,6 +1,5 @@
 /* Vectorizer
-   Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2003-2013 Free Software Foundation, Inc.
    Contributed by Dorit Naishlos <dorit@il.ibm.com>
 
 This file is part of GCC.
@@ -72,7 +71,7 @@ along with GCC; see the file COPYING3.  If not see
 LOC vect_location;
 
 /* Vector mapping GIMPLE stmt to stmt_vec_info. */
-VEC(vec_void_p,heap) *stmt_vec_info_vec;
+vec<vec_void_p> stmt_vec_info_vec;
 
 
 /* Function vectorize_loops.
@@ -225,6 +224,8 @@ static unsigned int
 increase_alignment (void)
 {
   struct varpool_node *vnode;
+
+  vect_location = UNKNOWN_LOC;
 
   /* Increase the alignment of all global arrays for vectorization.  */
   FOR_EACH_DEFINED_VARIABLE (vnode)

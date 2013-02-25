@@ -1,8 +1,5 @@
 /* Subroutines used for MIPS code generation.
-   Copyright (C) 1989, 1990, 1991, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1989-2013 Free Software Foundation, Inc.
    Contributed by A. Lichnewsky, lich@inria.inria.fr.
    Changes by Michael Meissner, meissner@osf.org.
    64-bit r4000 support by Ian Lance Taylor, ian@cygnus.com, and
@@ -4012,12 +4009,8 @@ struct mips_multi_member {
 };
 typedef struct mips_multi_member mips_multi_member;
 
-/* Vector definitions for the above.  */
-DEF_VEC_O(mips_multi_member);
-DEF_VEC_ALLOC_O(mips_multi_member, heap);
-
 /* The instructions that make up the current multi-insn sequence.  */
-static VEC (mips_multi_member, heap) *mips_multi_members;
+static vec<mips_multi_member> mips_multi_members;
 
 /* How many instructions (as opposed to labels) are in the current
    multi-insn sequence.  */
@@ -4028,7 +4021,7 @@ static unsigned int mips_multi_num_insns;
 static void
 mips_multi_start (void)
 {
-  VEC_truncate (mips_multi_member, mips_multi_members, 0);
+  mips_multi_members.truncate (0);
   mips_multi_num_insns = 0;
 }
 
@@ -4038,7 +4031,7 @@ static struct mips_multi_member *
 mips_multi_add (void)
 {
   mips_multi_member empty;
-  return VEC_safe_push (mips_multi_member, heap, mips_multi_members, empty);
+  return mips_multi_members.safe_push (empty);
 }
 
 /* Add a normal insn with the given asm format to the current multi-insn
@@ -4081,7 +4074,7 @@ mips_multi_add_label (const char *label)
 static unsigned int
 mips_multi_last_index (void)
 {
-  return VEC_length (mips_multi_member, mips_multi_members) - 1;
+  return mips_multi_members.length () - 1;
 }
 
 /* Add a copy of an existing instruction to the current multi-insn
@@ -4093,8 +4086,7 @@ mips_multi_copy_insn (unsigned int i)
   struct mips_multi_member *member;
 
   member = mips_multi_add ();
-  memcpy (member, &VEC_index (mips_multi_member, mips_multi_members, i),
-	  sizeof (*member));
+  memcpy (member, &mips_multi_members[i], sizeof (*member));
   gcc_assert (!member->is_label_p);
 }
 
@@ -4105,7 +4097,7 @@ mips_multi_copy_insn (unsigned int i)
 static void
 mips_multi_set_operand (unsigned int i, unsigned int op, rtx x)
 {
-  VEC_index (mips_multi_member, mips_multi_members, i).operands[op] = x;
+  mips_multi_members[i].operands[op] = x;
 }
 
 /* Write out the asm code for the current multi-insn sequence.  */
@@ -4116,7 +4108,7 @@ mips_multi_write (void)
   struct mips_multi_member *member;
   unsigned int i;
 
-  FOR_EACH_VEC_ELT (mips_multi_member, mips_multi_members, i, member)
+  FOR_EACH_VEC_ELT (mips_multi_members, i, member)
     if (member->is_label_p)
       fprintf (asm_out_file, "%s\n", member->format);
     else
@@ -7101,6 +7093,7 @@ mips_block_move_straight (rtx dest, rtx src, HOST_WIDE_INT length)
       else
 	{
 	  rtx part = adjust_address (src, BLKmode, offset);
+	  set_mem_size (part, delta);
 	  if (!mips_expand_ext_as_unaligned_load (regs[i], part, bits, 0, 0))
 	    gcc_unreachable ();
 	}
@@ -7113,6 +7106,7 @@ mips_block_move_straight (rtx dest, rtx src, HOST_WIDE_INT length)
     else
       {
 	rtx part = adjust_address (dest, BLKmode, offset);
+	set_mem_size (part, delta);
 	if (!mips_expand_ins_as_unaligned_store (part, regs[i], bits, 0))
 	  gcc_unreachable ();
       }
@@ -7364,10 +7358,8 @@ mips_expand_atomic_qihi (union mips_gen_fn_ptrs generator,
 }
 
 /* Return true if it is possible to use left/right accesses for a
-   bitfield of WIDTH bits starting BITPOS bits into *OP.  When
-   returning true, update *OP, *LEFT and *RIGHT as follows:
-
-   *OP is a BLKmode reference to the whole field.
+   bitfield of WIDTH bits starting BITPOS bits into BLKmode memory OP.
+   When returning true, update *LEFT and *RIGHT as follows:
 
    *LEFT is a QImode reference to the first byte if big endian or
    the last byte if little endian.  This address can be used in the
@@ -7377,15 +7369,10 @@ mips_expand_atomic_qihi (union mips_gen_fn_ptrs generator,
    can be used in the patterning right-side instruction.  */
 
 static bool
-mips_get_unaligned_mem (rtx *op, HOST_WIDE_INT width, HOST_WIDE_INT bitpos,
+mips_get_unaligned_mem (rtx op, HOST_WIDE_INT width, HOST_WIDE_INT bitpos,
 			rtx *left, rtx *right)
 {
   rtx first, last;
-
-  /* Check that the operand really is a MEM.  Not all the extv and
-     extzv predicates are checked.  */
-  if (!MEM_P (*op))
-    return false;
 
   /* Check that the size is valid.  */
   if (width != 32 && (!TARGET_64BIT || width != 64))
@@ -7399,20 +7386,12 @@ mips_get_unaligned_mem (rtx *op, HOST_WIDE_INT width, HOST_WIDE_INT bitpos,
 
   /* Reject aligned bitfields: we want to use a normal load or store
      instead of a left/right pair.  */
-  if (MEM_ALIGN (*op) >= width)
+  if (MEM_ALIGN (op) >= width)
     return false;
 
-  /* Create a copy of *OP that refers to the whole field.  This also has
-     the effect of legitimizing *OP's address for BLKmode, possibly
-     simplifying it.  */
-  *op = copy_rtx (adjust_address (*op, BLKmode, 0));
-  set_mem_size (*op, width / BITS_PER_UNIT);
-
-  /* Get references to both ends of the field.  We deliberately don't
-     use the original QImode *OP for FIRST since the new BLKmode one
-     might have a simpler address.  */
-  first = adjust_address (*op, QImode, 0);
-  last = adjust_address (*op, QImode, width / BITS_PER_UNIT - 1);
+  /* Get references to both ends of the field.  */
+  first = adjust_address (op, QImode, 0);
+  last = adjust_address (op, QImode, width / BITS_PER_UNIT - 1);
 
   /* Allocate to LEFT and RIGHT according to endianness.  LEFT should
      correspond to the MSB and RIGHT to the LSB.  */
@@ -7440,14 +7419,6 @@ mips_expand_ext_as_unaligned_load (rtx dest, rtx src, HOST_WIDE_INT width,
   rtx dest1 = NULL_RTX;
 
   /* If TARGET_64BIT, the destination of a 32-bit "extz" or "extzv" will
-     be a paradoxical word_mode subreg.  This is the only case in which
-     we allow the destination to be larger than the source.  */
-  if (GET_CODE (dest) == SUBREG
-      && GET_MODE (dest) == DImode
-      && GET_MODE (SUBREG_REG (dest)) == SImode)
-    dest = SUBREG_REG (dest);
-
-  /* If TARGET_64BIT, the destination of a 32-bit "extz" or "extzv" will
      be a DImode, create a new temp and emit a zero extend at the end.  */
   if (GET_MODE (dest) == DImode
       && REG_P (dest)
@@ -7457,12 +7428,7 @@ mips_expand_ext_as_unaligned_load (rtx dest, rtx src, HOST_WIDE_INT width,
       dest = gen_reg_rtx (SImode);
     }
 
-  /* After the above adjustment, the destination must be the same
-     width as the source.  */
-  if (GET_MODE_BITSIZE (GET_MODE (dest)) != width)
-    return false;
-
-  if (!mips_get_unaligned_mem (&src, width, bitpos, &left, &right))
+  if (!mips_get_unaligned_mem (src, width, bitpos, &left, &right))
     return false;
 
   temp = gen_reg_rtx (GET_MODE (dest));
@@ -7504,7 +7470,7 @@ mips_expand_ins_as_unaligned_store (rtx dest, rtx src, HOST_WIDE_INT width,
   rtx left, right;
   enum machine_mode mode;
 
-  if (!mips_get_unaligned_mem (&dest, width, bitpos, &left, &right))
+  if (!mips_get_unaligned_mem (dest, width, bitpos, &left, &right))
     return false;
 
   mode = mode_for_size (width, MODE_INT, 0);
@@ -16347,7 +16313,7 @@ mips_set_mips16_mode (int mips16_p)
   if (mips16_p)
     {
       if (!mips16_globals)
-	mips16_globals = save_target_globals ();
+	mips16_globals = save_target_globals_default_opts ();
       else
 	restore_target_globals (mips16_globals);
     }
@@ -16773,7 +16739,7 @@ mips_option_override (void)
 
   for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
     {
-      mips_dbx_regno[i] = INVALID_REGNUM;
+      mips_dbx_regno[i] = IGNORED_DWARF_REGNUM;
       if (GP_REG_P (i) || FP_REG_P (i) || ALL_COP_REG_P (i))
 	mips_dwarf_regno[i] = i;
       else

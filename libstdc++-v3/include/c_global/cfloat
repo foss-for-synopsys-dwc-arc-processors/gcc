@@ -1,6 +1,6 @@
 // -*- C++ -*- forwarding header.
 
-// Copyright (C) 1997-2012 Free Software Foundation, Inc.
+// Copyright (C) 1997-2013 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -43,7 +43,7 @@
 #ifndef _GLIBCXX_CFLOAT
 #define _GLIBCXX_CFLOAT 1
 
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#if __cplusplus >= 201103L
 #  ifndef DECIMAL_DIG
 #    define DECIMAL_DIG __DECIMAL_DIG__
 #  endif

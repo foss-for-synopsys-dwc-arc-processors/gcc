@@ -1,6 +1,4 @@
-@c Copyright (C) 1988,1989,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,
-@c 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-@c Free Software Foundation, Inc.
+@c Copyright (C) 1988-2013 Free Software Foundation, Inc.
 @c This is part of the GCC manual.
 @c For copying conditions, see the file gcc.texi.
 
@@ -2834,15 +2832,13 @@ registers of @var{rclass} are needed for spill registers.
 
 The default version of this target hook returns @code{true} if @var{rclass}
 has exactly one register and @code{false} otherwise.  On most machines, this
-default should be used.  Only use this target hook to some other expression
-if pseudos allocated by @file{local-alloc.c} end up in memory because their
-hard registers were needed for spill registers.  If this target hook returns
-@code{false} for those classes, those pseudos will only be allocated by
-@file{global.c}, which knows how to reallocate the pseudo to another
-register.  If there would not be another register available for reallocation,
-you should not change the implementation of this target hook since
-the only effect of such implementation would be to slow down register
-allocation.
+default should be used.  For generally register-starved machines, such as
+i386, or machines with right register constraints, such as SH, this hook
+can be used to avoid excessive spilling.
+
+This hook is also used by some of the global intra-procedural code
+transformations to throtle code motion, to avoid increasing register
+pressure.
 @end deftypefn
 
 @deftypefn {Target Hook} {unsigned char} TARGET_CLASS_MAX_NREGS (reg_class_t @var{rclass}, enum machine_mode @var{mode})
@@ -4849,41 +4845,6 @@ used by the exception handling mechanism, and so should be considered live
 on entry to an exception edge.
 @end defmac
 
-@defmac DELAY_SLOTS_FOR_EPILOGUE
-Define this macro if the function epilogue contains delay slots to which
-instructions from the rest of the function can be ``moved''.  The
-definition should be a C expression whose value is an integer
-representing the number of delay slots there.
-@end defmac
-
-@defmac ELIGIBLE_FOR_EPILOGUE_DELAY (@var{insn}, @var{n})
-A C expression that returns 1 if @var{insn} can be placed in delay
-slot number @var{n} of the epilogue.
-
-The argument @var{n} is an integer which identifies the delay slot now
-being considered (since different slots may have different rules of
-eligibility).  It is never negative and is always less than the number
-of epilogue delay slots (what @code{DELAY_SLOTS_FOR_EPILOGUE} returns).
-If you reject a particular insn for a given delay slot, in principle, it
-may be reconsidered for a subsequent delay slot.  Also, other insns may
-(at least in principle) be considered for the so far unfilled delay
-slot.
-
-@findex epilogue_delay_list
-@findex crtl->epilogue_delay_list
-@findex final_scan_insn
-The insns accepted to fill the epilogue delay slots are put in an RTL
-list made with @code{insn_list} objects, stored in
-@code{crtl->epilogue_delay_list}.  The insn for the first
-delay slot comes first in the list.  Your definition of the macro
-@code{TARGET_ASM_FUNCTION_EPILOGUE} should fill the delay slots by
-outputting the insns in this list, usually by calling
-@code{final_scan_insn}.
-
-You need not define this macro if you did not define
-@code{DELAY_SLOTS_FOR_EPILOGUE}.
-@end defmac
-
 @deftypefn {Target Hook} void TARGET_ASM_OUTPUT_MI_THUNK (FILE *@var{file}, tree @var{thunk_fndecl}, HOST_WIDE_INT @var{delta}, HOST_WIDE_INT @var{vcall_offset}, tree @var{function})
 A function that outputs the assembler code for a thunk
 function, used to implement C++ virtual function calls with multiple
@@ -5689,6 +5650,13 @@ of @var{x}.
 The default version returns false for all constants.
 @end deftypefn
 
+@deftypefn {Target Hook} bool TARGET_USE_BLOCKS_FOR_DECL_P (const_tree @var{decl})
+This hook should return true if pool entries for @var{decl} should
+be placed in an @code{object_block} structure.
+
+The default version returns true for all decls.
+@end deftypefn
+
 @deftypefn {Target Hook} tree TARGET_BUILTIN_RECIPROCAL (unsigned @var{fn}, bool @var{md_fn}, bool @var{sqrt})
 This hook should return the DECL of a function that implements reciprocal of
 the builtin function with builtin function code @var{fn}, or
@@ -6054,25 +6022,27 @@ You should define this macro if and only if you define extra CC modes
 in @file{@var{machine}-modes.def}.
 @end defmac
 
-@defmac CANONICALIZE_COMPARISON (@var{code}, @var{op0}, @var{op1})
+@deftypefn {Target Hook} void TARGET_CANONICALIZE_COMPARISON (int *@var{code}, rtx *@var{op0}, rtx *@var{op1}, bool @var{op0_preserve_value}) (@var{code}, @var{op0}, @var{op1}, @var{op0_preserve_value})
 On some machines not all possible comparisons are defined, but you can
 convert an invalid comparison into a valid one.  For example, the Alpha
 does not have a @code{GT} comparison, but you can use an @code{LT}
 comparison instead and swap the order of the operands.
 
-On such machines, define this macro to be a C statement to do any
-required conversions.  @var{code} is the initial comparison code
-and @var{op0} and @var{op1} are the left and right operands of the
-comparison, respectively.  You should modify @var{code}, @var{op0}, and
-@var{op1} as required.
+On such machines, implement this hook to do any required conversions.
+@var{code} is the initial comparison code and @var{op0} and @var{op1}
+are the left and right operands of the comparison, respectively.  If
+@var{op0_preserve_value} is @code{true} the implementation is not
+allowed to change the value of @var{op0} since the value might be used
+in RTXs which aren't comparisons.  E.g. the implementation is not
+allowed to swap operands in that case.
 
 GCC will not assume that the comparison resulting from this macro is
 valid but will see if the resulting insn matches a pattern in the
 @file{md} file.
 
-You need not define this macro if it would never change the comparison
-code or operands.
-@end defmac
+You need not to implement this hook if it would never change the
+comparison code or operands.
+@end deftypefn
 
 @defmac REVERSIBLE_CC_MODE (@var{mode})
 A C expression whose value is one if it is always safe to reverse a
@@ -11356,6 +11326,12 @@ MIPS, where add-immediate takes a 16-bit signed value,
 @code{TARGET_CONST_ANCHOR} is set to @samp{0x8000}.  The default value
 is zero, which disables this optimization.
 @end deftypevr
+
+@deftypefn {Target Hook} {unsigned HOST_WIDE_INT} TARGET_ASAN_SHADOW_OFFSET (void)
+Return the offset bitwise ored into shifted address to get corresponding
+Address Sanitizer shadow memory address.  NULL if Address Sanitizer is not
+supported by the target.
+@end deftypefn
 
 @deftypefn {Target Hook} {unsigned HOST_WIDE_INT} TARGET_MEMMODEL_CHECK (unsigned HOST_WIDE_INT @var{val})
 Validate target specific memory model mask bits. When NULL no target specific

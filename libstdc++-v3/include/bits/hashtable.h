@@ -1,7 +1,6 @@
 // hashtable.h header -*- C++ -*-
 
-// Copyright (C) 2007, 2008, 2009, 2010, 2011, 2012
-// Free Software Foundation, Inc.
+// Copyright (C) 2007-2013 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -40,10 +39,15 @@ namespace std _GLIBCXX_VISIBILITY(default)
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _Tp, typename _Hash>
-    using __cache_default =  __not_<__and_<is_integral<_Tp>,
-					   is_empty<_Hash>,
-				  integral_constant<bool, !__is_final(_Hash)>,
-				 __detail::__is_noexcept_hash<_Tp, _Hash> >>;
+    using __cache_default
+      =  __not_<__and_<// Do not cache for fast hasher.
+		       __is_fast_hash<_Hash>,
+		       // Mandatory to make local_iterator default
+		       // constructible and assignable.
+		       is_default_constructible<_Hash>,
+		       is_copy_assignable<_Hash>,
+		       // Mandatory to have erase not throwing.
+		       __detail::__is_noexcept_hash<_Tp, _Hash>>>;
 
   /**
    *  Primary class template _Hashtable.
@@ -103,48 +107,48 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  - size_type       _M_bucket_count
    *  - size_type       _M_element_count
    *
-   *  with _Bucket being _Hash_node* and _Hash_node constaining:
+   *  with _Bucket being _Hash_node* and _Hash_node containing:
    *
    *  - _Hash_node*   _M_next
    *  - Tp            _M_value
-   *  - size_t        _M_code if cache_hash_code is true
+   *  - size_t        _M_hash_code if cache_hash_code is true
    *
-   *  In terms of Standard containers the hastable is like the aggregation of:
+   *  In terms of Standard containers the hashtable is like the aggregation of:
    *
    *  - std::forward_list<_Node> containing the elements
    *  - std::vector<std::forward_list<_Node>::iterator> representing the buckets
    *
-   *  The non-empty buckets contain the node before the first bucket
-   *  node. This design allow to implement something like a
+   *  The non-empty buckets contain the node before the first node in the
+   *  bucket. This design makes it possible to implement something like a
    *  std::forward_list::insert_after on container insertion and
    *  std::forward_list::erase_after on container erase
    *  calls. _M_before_begin is equivalent to
-   *  std::foward_list::before_begin. Empty buckets are containing
-   *  nullptr.  Note that one of the non-empty bucket contains
-   *  &_M_before_begin which is not a derefenrenceable node so the
-   *  node pointers in buckets shall never be derefenrenced, only its
+   *  std::forward_list::before_begin. Empty buckets contain
+   *  nullptr.  Note that one of the non-empty buckets contains
+   *  &_M_before_begin which is not a dereferenceable node so the
+   *  node pointer in a bucket shall never be dereferenced, only its
    *  next node can be.
    *
-   *  Walk through a bucket nodes require a check on the hash code to
-   *  see if the node is still in the bucket. Such a design impose a
+   *  Walking through a bucket's nodes requires a check on the hash code to
+   *  see if each node is still in the bucket. Such a design assumes a
    *  quite efficient hash functor and is one of the reasons it is
-   *  highly advise to set __cache_hash_code to true.
+   *  highly advisable to set __cache_hash_code to true.
    *
    *  The container iterators are simply built from nodes. This way
    *  incrementing the iterator is perfectly efficient independent of
    *  how many empty buckets there are in the container.
    *
-   *  On insert we compute element hash code and thanks to it find the
-   *  bucket index. If the element must be inserted on an empty bucket
+   *  On insert we compute the element's hash code and use it to find the
+   *  bucket index. If the element must be inserted in an empty bucket
    *  we add it at the beginning of the singly linked list and make the
    *  bucket point to _M_before_begin. The bucket that used to point to
    *  _M_before_begin, if any, is updated to point to its new before
    *  begin node.
    *
-   *  On erase, the simple iterator design impose to use the hash
+   *  On erase, the simple iterator design requires using the hash
    *  functor to get the index of the bucket to update. For this
-   *  reason, when __cache_hash_code is set to false, there is a static
-   *  assertion that the hash functor cannot throw.
+   *  reason, when __cache_hash_code is set to false the hash functor must
+   *  not throw and this is enforced by a static assertion.
    *
    *  Functionality is implemented by decomposition into base classes,
    *  where the derived _Hashtable class is used in _Map_base,
@@ -250,21 +254,32 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 		    " or qualify your hash functor with noexcept");
 
       // Following two static assertions are necessary to guarantee
-      // that swapping two hashtable instances won't invalidate
-      // associated local iterators.
+      // that local_iterator will be default constructible.
 
-      // When hash codes are cached local iterator only uses H2 which
-      // must then be empty.
-      static_assert(__if_hash_cached<is_empty<_H2>>::value,
+      // When hash codes are cached local iterator inherits from H2 functor
+      // which must then be default constructible.
+      static_assert(__if_hash_cached<is_default_constructible<_H2>>::value,
 		    "Functor used to map hash code to bucket index"
-		    " must be empty");
+		    " must be default constructible");
 
-      // When hash codes are not cached local iterator is going to use
-      // __hash_code_base above to compute node bucket index so it has
-      // to be empty.
-      static_assert(__if_hash_not_cached<is_empty<__hash_code_base>>::value,
-		   "Cache the hash code or make functors involved in hash code"
-		   " and bucket index computation empty");
+      // When hash codes are not cached local iterator inherits from
+      // __hash_code_base above to compute node bucket index so it has to be
+      // default constructible.
+      static_assert(__if_hash_not_cached<
+		    is_default_constructible<
+		      // We use _Hashtable_ebo_helper to access the protected
+		      // default constructor.
+		      __detail::_Hashtable_ebo_helper<0, __hash_code_base>>>::value,
+		    "Cache the hash code or make functors involved in hash code"
+		    " and bucket index computation default constructible");
+
+      // When hash codes are not cached local iterator inherits from
+      // __hash_code_base above to compute node bucket index so it has to be
+      // assignable.
+      static_assert(__if_hash_not_cached<
+		      is_copy_assignable<__hash_code_base>>::value,
+		    "Cache the hash code or make functors involved in hash code"
+		    " and bucket index computation copy assignable");
 
     public:
       template<typename _Keya, typename _Valuea, typename _Alloca,
@@ -371,7 +386,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       _Hashtable(_Hashtable&&);
 
-      // Use delegating construtors.
+      // Use delegating constructors.
       explicit
       _Hashtable(size_type __n = 10,
 		 const _H1& __hf = _H1(),
@@ -501,30 +516,37 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       local_iterator
       begin(size_type __n)
-      { return local_iterator(_M_bucket_begin(__n), __n, _M_bucket_count); }
+      {
+	return local_iterator(*this, _M_bucket_begin(__n),
+			      __n, _M_bucket_count);
+      }
 
       local_iterator
       end(size_type __n)
-      { return local_iterator(nullptr, __n, _M_bucket_count); }
+      { return local_iterator(*this, nullptr, __n, _M_bucket_count); }
 
       const_local_iterator
       begin(size_type __n) const
-      { return const_local_iterator(_M_bucket_begin(__n), __n,
-				    _M_bucket_count); }
+      {
+	return const_local_iterator(*this, _M_bucket_begin(__n),
+				    __n, _M_bucket_count);
+      }
 
       const_local_iterator
       end(size_type __n) const
-      { return const_local_iterator(nullptr, __n, _M_bucket_count); }
+      { return const_local_iterator(*this, nullptr, __n, _M_bucket_count); }
 
       // DR 691.
       const_local_iterator
       cbegin(size_type __n) const
-      { return const_local_iterator(_M_bucket_begin(__n), __n,
-				    _M_bucket_count); }
+      {
+	return const_local_iterator(*this, _M_bucket_begin(__n),
+				    __n, _M_bucket_count);
+      }
 
       const_local_iterator
       cend(size_type __n) const
-      { return const_local_iterator(nullptr, __n, _M_bucket_count); }
+      { return const_local_iterator(*this, nullptr, __n, _M_bucket_count); }
 
       float
       load_factor() const noexcept
@@ -806,11 +828,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _M_rehash_policy()
     {
       _M_bucket_count = _M_rehash_policy._M_next_bkt(__bucket_hint);
-
-      // We don't want the rehash policy to ask for the hashtable to
-      // shrink on the first insertion so we need to reset its
-      // previous resize level.
-      _M_rehash_policy._M_prev_resize = 0;
       _M_buckets = _M_allocate_buckets(_M_bucket_count);
     }
 
@@ -834,16 +851,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	_M_element_count(0),
 	_M_rehash_policy()
       {
+	auto __nb_elems = __detail::__distance_fw(__f, __l);
 	_M_bucket_count =
-	  _M_rehash_policy._M_bkt_for_elements(__detail::__distance_fw(__f,
-								       __l));
-	if (_M_bucket_count <= __bucket_hint)
-	  _M_bucket_count = _M_rehash_policy._M_next_bkt(__bucket_hint);
+	  _M_rehash_policy._M_next_bkt(
+	    std::max(_M_rehash_policy._M_bkt_for_elements(__nb_elems),
+		     __bucket_hint));
 
-	// We don't want the rehash policy to ask for the hashtable to
-	// shrink on the first insertion so we need to reset its
-	// previous resize level.
-	_M_rehash_policy._M_prev_resize = 0;
 	_M_buckets = _M_allocate_buckets(_M_bucket_count);
 	__try
 	  {
@@ -924,7 +937,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _M_element_count(__ht._M_element_count),
       _M_rehash_policy(__ht._M_rehash_policy)
     {
-      // Update, if necessary, bucket pointing to before begin that hasn't move.
+      // Update, if necessary, bucket pointing to before begin that hasn't moved.
       if (_M_begin())
 	_M_buckets[_M_bucket_index(_M_begin())] = &_M_before_begin();
       __ht._M_rehash_policy = _RehashPolicy();
@@ -990,6 +1003,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     __rehash_policy(const _RehashPolicy& __pol)
     {
       size_type __n_bkt = __pol._M_bkt_for_elements(_M_element_count);
+      __n_bkt = __pol._M_next_bkt(__n_bkt);
       if (__n_bkt != _M_bucket_count)
 	_M_rehash(__n_bkt, _M_rehash_policy._M_state());
       _M_rehash_policy = __pol;
@@ -1053,8 +1067,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	    ++__result;
 	  else if (__result)
 	    // All equivalent values are next to each other, if we
-	    // found a not equivalent value after an equivalent one it
-	    // means that we won't find anymore an equivalent value.
+	    // found a non-equivalent value after an equivalent one it
+	    // means that we won't find any more equivalent values.
 	    break;
 	  if (!__p->_M_nxt || _M_bucket_index(__p->_M_next()) != __n)
 	    break;
@@ -1150,7 +1164,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	{
 	  if (this->_M_equals(__k, __code, __p))
 	    return __prev_p;
-	  if (!(__p->_M_nxt) || _M_bucket_index(__p->_M_next()) != __n)
+	  if (!__p->_M_nxt || _M_bucket_index(__p->_M_next()) != __n)
 	    break;
 	  __prev_p = __p;
 	}
@@ -1176,7 +1190,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       else
 	{
 	  // The bucket is empty, the new node is inserted at the
-	  // beginning of the singly linked list and the bucket will
+	  // beginning of the singly-linked list and the bucket will
 	  // contain _M_before_begin pointer.
 	  __node->_M_nxt = _M_before_begin()._M_nxt;
 	  _M_before_begin()._M_nxt = __node;
@@ -1374,7 +1388,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	    // The inserted node has no equivalent in the
 	    // hashtable. We must insert the new node at the
 	    // beginning of the bucket to preserve equivalent
-	    // elements relative positions.
+	    // elements' relative positions.
 	    _M_insert_bucket_begin(__bkt, __node);
 	  ++_M_element_count;
 	  return iterator(__node);
@@ -1451,7 +1465,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       // Look for previous node to unlink it from the erased one, this
       // is why we need buckets to contain the before begin to make
-      // this research fast.
+      // this search fast.
       __node_base* __prev_n = _M_get_previous_node(__bkt, __n);
       return _M_erase(__bkt, __prev_n, __n);
     }
@@ -1641,19 +1655,15 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     {
       const __rehash_state& __saved_state = _M_rehash_policy._M_state();
       std::size_t __buckets
-	= _M_rehash_policy._M_bkt_for_elements(_M_element_count + 1);
-      if (__buckets <= __n)
-	__buckets = _M_rehash_policy._M_next_bkt(__n);
+	= std::max(_M_rehash_policy._M_bkt_for_elements(_M_element_count + 1),
+		   __n);
+      __buckets = _M_rehash_policy._M_next_bkt(__buckets);
 
       if (__buckets != _M_bucket_count)
-	{
-	  _M_rehash(__buckets, __saved_state);
-
-	  // We don't want the rehash policy to ask for the hashtable to shrink
-	  // on the next insertion so we need to reset its previous resize
-	  // level.
-	  _M_rehash_policy._M_prev_resize = 0;
-	}
+	_M_rehash(__buckets, __saved_state);
+      else
+	// No rehash, restore previous state to keep a consistent state.
+	_M_rehash_policy._M_reset(__saved_state);
     }
 
   template<typename _Key, typename _Value,
@@ -1691,7 +1701,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       __bucket_type* __new_buckets = _M_allocate_buckets(__n);
       __node_type* __p = _M_begin();
       _M_before_begin()._M_nxt = nullptr;
-      std::size_t __bbegin_bkt;
+      std::size_t __bbegin_bkt = 0;
       while (__p)
 	{
 	  __node_type* __next = __p->_M_next();
@@ -1732,8 +1742,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       __node_type* __p = _M_begin();
       _M_before_begin()._M_nxt = nullptr;
-      std::size_t __bbegin_bkt;
-      std::size_t __prev_bkt;
+      std::size_t __bbegin_bkt = 0;
+      std::size_t __prev_bkt = 0;
       __node_type* __prev_p = nullptr;
       bool __check_bucket = false;
 
@@ -1761,8 +1771,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	    {
 	      if (__check_bucket)
 		{
-		  // Check if we shall update the next bucket because of insertions
-		  // into __prev_bkt bucket.
+		  // Check if we shall update the next bucket because of
+		  // insertions into __prev_bkt bucket.
 		  if (__prev_p->_M_nxt)
 		    {
 		      std::size_t __next_bkt

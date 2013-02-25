@@ -5,6 +5,7 @@
 package net
 
 import (
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -114,5 +115,64 @@ func benchmarkTCP(b *testing.B, persistent, timeout bool) {
 	}
 	for i := 0; i < cap(sem); i++ {
 		sem <- true
+	}
+}
+
+var resolveTCPAddrTests = []struct {
+	net     string
+	litAddr string
+	addr    *TCPAddr
+	err     error
+}{
+	{"tcp", "127.0.0.1:0", &TCPAddr{IP: IPv4(127, 0, 0, 1), Port: 0}, nil},
+	{"tcp4", "127.0.0.1:65535", &TCPAddr{IP: IPv4(127, 0, 0, 1), Port: 65535}, nil},
+
+	{"tcp", "[::1]:1", &TCPAddr{IP: ParseIP("::1"), Port: 1}, nil},
+	{"tcp6", "[::1]:65534", &TCPAddr{IP: ParseIP("::1"), Port: 65534}, nil},
+
+	{"", "127.0.0.1:0", &TCPAddr{IP: IPv4(127, 0, 0, 1), Port: 0}, nil}, // Go 1.0 behavior
+	{"", "[::1]:0", &TCPAddr{IP: ParseIP("::1"), Port: 0}, nil},         // Go 1.0 behavior
+
+	{"http", "127.0.0.1:0", nil, UnknownNetworkError("http")},
+}
+
+func TestResolveTCPAddr(t *testing.T) {
+	for _, tt := range resolveTCPAddrTests {
+		addr, err := ResolveTCPAddr(tt.net, tt.litAddr)
+		if err != tt.err {
+			t.Fatalf("ResolveTCPAddr(%v, %v) failed: %v", tt.net, tt.litAddr, err)
+		}
+		if !reflect.DeepEqual(addr, tt.addr) {
+			t.Fatalf("got %#v; expected %#v", addr, tt.addr)
+		}
+	}
+}
+
+var tcpListenerNameTests = []struct {
+	net   string
+	laddr *TCPAddr
+}{
+	{"tcp4", &TCPAddr{IP: IPv4(127, 0, 0, 1)}},
+	{"tcp4", &TCPAddr{}},
+	{"tcp4", nil},
+}
+
+func TestTCPListenerName(t *testing.T) {
+	if testing.Short() || !*testExternal {
+		t.Skip("skipping test to avoid external network")
+	}
+
+	for _, tt := range tcpListenerNameTests {
+		ln, err := ListenTCP(tt.net, tt.laddr)
+		if err != nil {
+			t.Errorf("ListenTCP failed: %v", err)
+			return
+		}
+		defer ln.Close()
+		la := ln.Addr()
+		if a, ok := la.(*TCPAddr); !ok || a.Port == 0 {
+			t.Errorf("got %v; expected a proper address with non-zero port number", la)
+			return
+		}
 	}
 }

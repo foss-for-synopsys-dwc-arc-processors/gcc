@@ -1,7 +1,5 @@
 /* Process source files and output type information.
-   Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
-   2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2002-2013 Free Software Foundation, Inc.
 
    This file is part of GCC.
 
@@ -171,13 +169,15 @@ dbgprint_count_type_at (const char *fil, int lin, const char *msg, type_p t)
   int nb_types = 0, nb_scalar = 0, nb_string = 0;
   int nb_struct = 0, nb_union = 0, nb_array = 0, nb_pointer = 0;
   int nb_lang_struct = 0, nb_param_struct = 0;
-  int nb_user_struct = 0;
+  int nb_user_struct = 0, nb_undefined = 0;
   type_p p = NULL;
   for (p = t; p; p = p->next)
     {
       nb_types++;
       switch (p->kind)
 	{
+	case TYPE_UNDEFINED:
+	  nb_undefined++;
 	case TYPE_SCALAR:
 	  nb_scalar++;
 	  break;
@@ -205,7 +205,7 @@ dbgprint_count_type_at (const char *fil, int lin, const char *msg, type_p t)
 	case TYPE_PARAM_STRUCT:
 	  nb_param_struct++;
 	  break;
-	default:
+	case TYPE_NONE:
 	  gcc_unreachable ();
 	}
     }
@@ -222,6 +222,8 @@ dbgprint_count_type_at (const char *fil, int lin, const char *msg, type_p t)
 	     nb_lang_struct, nb_param_struct);
   if (nb_user_struct > 0)
     fprintf (stderr, "@@%%@@ %d user_structs\n", nb_user_struct);
+  if (nb_undefined > 0)
+    fprintf (stderr, "@@%%@@ %d undefined types\n", nb_undefined);
   fprintf (stderr, "\n");
 }
 #endif /* ENABLE_CHECKING */
@@ -553,7 +555,7 @@ do_scalar_typedef (const char *s, struct fileloc *pos)
 
 /* Define TYPE_NAME to be a user defined type at location POS.  */
 
-static type_p
+type_p
 create_user_defined_type (const char *type_name, struct fileloc *pos)
 {
   type_p ty = find_structure (type_name, TYPE_USER_STRUCT);
@@ -595,20 +597,58 @@ create_user_defined_type (const char *type_name, struct fileloc *pos)
 }
 
 
-/* Return the type previously defined for S.  Use POS to report errors.  */
+/* Given a typedef name S, return its associated type.  Return NULL if
+   S is not a registered type name.  */
 
-type_p
-resolve_typedef (const char *s, struct fileloc *pos)
+static type_p
+type_for_name (const char *s)
 {
   pair_p p;
   for (p = typedefs; p != NULL; p = p->next)
     if (strcmp (p->name, s) == 0)
       return p->type;
+  return NULL;
+}
 
-  /* If we did not find a typedef registered, assume this is a name
-     for a user-defined type which will need to provide its own
-     marking functions.  */
-  return create_user_defined_type (s, pos);
+
+/* Create an undefined type with name S and location POS.  Return the
+   newly created type.  */
+
+static type_p
+create_undefined_type (const char *s, struct fileloc *pos)
+{
+  type_p ty = find_structure (s, TYPE_UNDEFINED);
+  ty->u.s.line = *pos;
+  ty->u.s.bitmap = get_lang_bitmap (pos->file);
+  do_typedef (s, ty, pos);
+  return ty;
+}
+
+
+/* Return the type previously defined for S.  Use POS to report errors.  */
+
+type_p
+resolve_typedef (const char *s, struct fileloc *pos)
+{
+  bool is_template_instance = (strchr (s, '<') != NULL);
+  type_p p = type_for_name (s);
+
+  /* If we did not find a typedef registered, generate a TYPE_UNDEFINED
+     type for regular type identifiers.  If the type identifier S is a
+     template instantiation, however, we treat it as a user defined
+     type.
+
+     FIXME, this is actually a limitation in gengtype.  Supporting
+     template types and their instances would require keeping separate
+     track of the basic types definition and its instances.  This
+     essentially forces all template classes in GC to be marked
+     GTY((user)).  */
+  if (!p)
+    p = (is_template_instance)
+	? create_user_defined_type (s, pos)
+	: create_undefined_type (s, pos);
+
+  return p;
 }
 
 
@@ -707,7 +747,7 @@ find_structure (const char *name, enum typekind kind)
   type_p s;
   bool isunion = (kind == TYPE_UNION);
 
-  gcc_assert (union_or_struct_p (kind));
+  gcc_assert (kind == TYPE_UNDEFINED || union_or_struct_p (kind));
 
   for (s = structures; s != NULL; s = s->next)
     if (strcmp (name, s->u.s.tag) == 0 && UNION_P (s) == isunion)
@@ -1397,7 +1437,8 @@ adjust_field_type (type_p t, options_p opt)
 }
 
 
-static void set_gc_used_type (type_p, enum gc_used_enum, type_p *);
+static void set_gc_used_type (type_p, enum gc_used_enum, type_p *,
+			      bool = false);
 static void set_gc_used (pair_p);
 
 /* Handle OPT for set_gc_used_type.  */
@@ -1427,9 +1468,31 @@ process_gc_options (options_p opt, enum gc_used_enum level, int *maybe_undef,
 }
 
 
-/* Set the gc_used field of T to LEVEL, and handle the types it references.  */
+/* Set the gc_used field of T to LEVEL, and handle the types it references.
+
+   If ALLOWED_UNDEFINED_TYPES is true, types of kind TYPE_UNDEFINED
+   are set to GC_UNUSED.  Otherwise, an error is emitted for
+   TYPE_UNDEFINED types.  This is used to support user-defined
+   template types with non-type arguments.
+
+   For instance, when we parse a template type with enum arguments
+   (e.g. MyType<AnotherType, EnumValue>), the parser created two
+   artificial fields for 'MyType', one for 'AnotherType', the other
+   one for 'EnumValue'.
+
+   At the time that we parse this type we don't know that 'EnumValue'
+   is really an enum value, so the parser creates a TYPE_UNDEFINED
+   type for it.  Since 'EnumValue' is never resolved to a known
+   structure, it will stay with TYPE_UNDEFINED.
+
+   Since 'MyType' is a TYPE_USER_STRUCT, we can simply ignore
+   'EnumValue'.  Generating marking code for it would cause
+   compilation failures since the marking routines assumes that
+   'EnumValue' is a type.  */
+
 static void
-set_gc_used_type (type_p t, enum gc_used_enum level, type_p param[NUM_PARAM])
+set_gc_used_type (type_p t, enum gc_used_enum level, type_p param[NUM_PARAM],
+		  bool allow_undefined_types)
 {
   if (t->gc_used >= level)
     return;
@@ -1445,6 +1508,7 @@ set_gc_used_type (type_p t, enum gc_used_enum level, type_p param[NUM_PARAM])
 	pair_p f;
 	int dummy;
 	type_p dummy2;
+	bool allow_undefined_field_types = (t->kind == TYPE_USER_STRUCT);
 
 	process_gc_options (t->u.s.opt, level, &dummy, &dummy, &dummy, &dummy,
 			    &dummy2);
@@ -1472,10 +1536,20 @@ set_gc_used_type (type_p t, enum gc_used_enum level, type_p param[NUM_PARAM])
 	    else if (skip)
 	      ;			/* target type is not used through this field */
 	    else
-	      set_gc_used_type (f->type, GC_USED, pass_param ? param : NULL);
+	      set_gc_used_type (f->type, GC_USED, pass_param ? param : NULL,
+				allow_undefined_field_types);
 	  }
 	break;
       }
+
+    case TYPE_UNDEFINED:
+      if (level > GC_UNUSED)
+	{
+	  if (!allow_undefined_types)
+	    error_at_line (&t->u.s.line, "undefined type `%s'", t->u.s.tag);
+	  t->gc_used = GC_UNUSED;
+	}
+      break;
 
     case TYPE_POINTER:
       set_gc_used_type (t->u.p, GC_POINTED_TO, NULL);
@@ -1540,7 +1614,7 @@ static outf_p
 create_file (const char *name, const char *oname)
 {
   static const char *const hdr[] = {
-    "   Copyright (C) 2004, 2007, 2009, 2012 Free Software Foundation, Inc.\n",
+    "   Copyright (C) 2004-2013 Free Software Foundation, Inc.\n",
     "\n",
     "This file is part of GCC.\n",
     "\n",
@@ -2340,7 +2414,6 @@ static void write_local_func_for_structure
   (const_type_p orig_s, type_p s, type_p *param);
 static void write_local (outf_p output_header,
 			 type_p structures, type_p param_structs);
-static void write_enum_defn (type_p structures, type_p param_structs);
 static int contains_scalar_p (type_p t);
 static void put_mangled_filename (outf_p, const input_file *);
 static void finish_root_table (struct flist *flp, const char *pfx,
@@ -2397,7 +2470,7 @@ filter_type_name (const char *type_name)
       size_t i;
       char *s = xstrdup (type_name);
       for (i = 0; i < strlen (s); i++)
-	if (s[i] == '<' || s[i] == '>' || s[i] == ':')
+	if (s[i] == '<' || s[i] == '>' || s[i] == ':' || s[i] == ',')
 	  s[i] = '_';
       return s;
     }
@@ -2417,6 +2490,7 @@ output_mangled_typename (outf_p of, const_type_p t)
     switch (t->kind)
       {
       case TYPE_NONE:
+      case TYPE_UNDEFINED:
 	gcc_unreachable ();
 	break;
       case TYPE_POINTER:
@@ -3042,7 +3116,8 @@ walk_type (type_p t, struct walk_type_data *d)
       d->process_field (t, d);
       break;
 
-    default:
+    case TYPE_NONE:
+    case TYPE_UNDEFINED:
       gcc_unreachable ();
     }
 }
@@ -3059,6 +3134,7 @@ write_types_process_field (type_p f, const struct walk_type_data *d)
   switch (f->kind)
     {
     case TYPE_NONE:
+    case TYPE_UNDEFINED:
       gcc_unreachable ();
     case TYPE_POINTER:
       oprintf (d->of, "%*s%s (%s%s", d->indent, "",
@@ -3092,20 +3168,6 @@ write_types_process_field (type_p f, const struct walk_type_data *d)
 	    }
 	  else
 	    oprintf (d->of, ", gt_%sa_%s", wtd->param_prefix, d->prev_val[0]);
-
-	  if (f->u.p->kind == TYPE_PARAM_STRUCT
-	      && f->u.p->u.s.line.file != NULL)
-	    {
-	      oprintf (d->of, ", gt_e_");
-	      output_mangled_typename (d->of, f);
-	    }
-	  else if (union_or_struct_p (f) && f->u.p->u.s.line.file != NULL)
-	    {
-	      oprintf (d->of, ", gt_ggc_e_");
-	      output_mangled_typename (d->of, f);
-	    }
-	  else
-	    oprintf (d->of, ", gt_types_enum_last");
 	}
       oprintf (d->of, ");\n");
       if (d->reorder_fn && wtd->reorder_note_routine)
@@ -3148,25 +3210,6 @@ write_types_process_field (type_p f, const struct walk_type_data *d)
     case TYPE_ARRAY:
       gcc_unreachable ();
     }
-}
-
-/* A subroutine of write_func_for_structure.  Write the enum tag for S.  */
-
-static void
-output_type_enum (outf_p of, type_p s)
-{
-  if (s->kind == TYPE_PARAM_STRUCT && s->u.param_struct.line.file != NULL)
-    {
-      oprintf (of, ", gt_e_");
-      output_mangled_typename (of, s);
-    }
-  else if (union_or_struct_p (s) && s->u.s.line.file != NULL)
-    {
-      oprintf (of, ", gt_ggc_e_");
-      output_mangled_typename (of, s);
-    }
-  else
-    oprintf (of, ", gt_types_enum_last");
 }
 
 /* Return an output file that is suitable for definitions which can
@@ -3264,7 +3307,6 @@ write_marker_function_name (outf_p of, type_p s, const char *prefix)
   else
     gcc_unreachable ();
 }
-
 
 /* Write on OF a user-callable routine to act as an entry point for
    the marking routine for S, generated by write_func_for_structure.
@@ -3429,6 +3471,10 @@ write_func_for_structure (type_p orig_s, type_p s, type_p *param,
   oprintf (d.of, " *)x_p;\n");
   if (chain_next != NULL)
     {
+      /* TYPE_USER_STRUCTs should not occur here.  These structures
+	 are completely handled by user code.  */
+      gcc_assert (orig_s->kind != TYPE_USER_STRUCT);
+
       oprintf (d.of, "  ");
       write_type_decl (d.of, s);
       oprintf (d.of, " * xlimit = x;\n");
@@ -3440,7 +3486,6 @@ write_func_for_structure (type_p orig_s, type_p s, type_p *param,
 	{
 	  oprintf (d.of, ", x, gt_%s_", wtd->param_prefix);
 	  output_mangled_typename (d.of, orig_s);
-	  output_type_enum (d.of, orig_s);
 	}
       oprintf (d.of, "))\n");
     }
@@ -3454,7 +3499,6 @@ write_func_for_structure (type_p orig_s, type_p s, type_p *param,
 	{
 	  oprintf (d.of, ", xlimit, gt_%s_", wtd->param_prefix);
 	  output_mangled_typename (d.of, orig_s);
-	  output_type_enum (d.of, orig_s);
 	}
       oprintf (d.of, "))\n");
       if (chain_circular != NULL)
@@ -3488,7 +3532,6 @@ write_func_for_structure (type_p orig_s, type_p s, type_p *param,
 	    {
 	      oprintf (d.of, ", xprev, gt_%s_", wtd->param_prefix);
 	      output_mangled_typename (d.of, orig_s);
-	      output_type_enum (d.of, orig_s);
 	    }
 	  oprintf (d.of, ");\n");
 	  oprintf (d.of, "      }\n");
@@ -3500,7 +3543,6 @@ write_func_for_structure (type_p orig_s, type_p s, type_p *param,
 	    {
 	      oprintf (d.of, ", xlimit, gt_%s_", wtd->param_prefix);
 	      output_mangled_typename (d.of, orig_s);
-	      output_type_enum (d.of, orig_s);
 	    }
 	  oprintf (d.of, "));\n");
 	  if (mark_hook_name && !wtd->skip_hooks)
@@ -3760,7 +3802,9 @@ write_types_local_user_process_field (type_p f, const struct walk_type_data *d)
     case TYPE_SCALAR:
       break;
 
-    default:
+    case TYPE_ARRAY:
+    case TYPE_NONE:
+    case TYPE_UNDEFINED:
       gcc_unreachable ();
     }
 }
@@ -3843,7 +3887,9 @@ write_types_local_process_field (type_p f, const struct walk_type_data *d)
     case TYPE_SCALAR:
       break;
 
-    default:
+    case TYPE_ARRAY:
+    case TYPE_NONE:
+    case TYPE_UNDEFINED:
       gcc_unreachable ();
     }
 }
@@ -4007,50 +4053,6 @@ write_local (outf_p output_header, type_p structures, type_p param_structs)
 	       && strncmp (s->u.s.tag, "anonymous", strlen ("anonymous"))))))
 
 
-/* Write out the 'enum' definition for gt_types_enum.  */
-
-static void
-write_enum_defn (type_p structures, type_p param_structs)
-{
-  type_p s;
-  int nbstruct = 0;
-  int nbparamstruct = 0;
-
-  if (!header_file)
-    return;
-  oprintf (header_file, "\n/* Enumeration of types known.  */\n");
-  oprintf (header_file, "enum gt_types_enum {\n");
-  for (s = structures; s; s = s->next)
-    if (USED_BY_TYPED_GC_P (s))
-      {
-	nbstruct++;
-	DBGPRINTF ("write_enum_defn s @ %p nbstruct %d",
-		   (void*) s, nbstruct);
-	if (union_or_struct_p (s))
-	  DBGPRINTF ("write_enum_defn s %p #%d is unionorstruct tagged %s",
-		     (void*) s, nbstruct, s->u.s.tag);
-	oprintf (header_file, " gt_ggc_e_");
-	output_mangled_typename (header_file, s);
-	oprintf (header_file, ",\n");
-      }
-  for (s = param_structs; s; s = s->next)
-    if (s->gc_used == GC_POINTED_TO)
-      {
-	nbparamstruct++;
-	DBGPRINTF ("write_enum_defn s %p nbparamstruct %d",
-		   (void*) s, nbparamstruct);
-	oprintf (header_file, " gt_e_");
-	output_mangled_typename (header_file, s);
-	oprintf (header_file, ",\n");
-      }
-  oprintf (header_file, " gt_types_enum_last\n");
-  oprintf (header_file, "};\n");
-  if (verbosity_level >= 2)
-    printf ("%s handled %d GTY-ed structures & %d parameterized structures.\n",
-	    progname, nbstruct, nbparamstruct);
-
-}
-
 /* Might T contain any non-pointer elements?  */
 
 static int
@@ -4063,6 +4065,9 @@ contains_scalar_p (type_p t)
       return 0;
     case TYPE_ARRAY:
       return contains_scalar_p (t->u.a.p);
+    case TYPE_USER_STRUCT:
+      /* User-marked structures will typically contain pointers.  */
+      return 0;
     default:
       /* Could also check for structures that have no non-pointer
          fields, but there aren't enough of those to worry about.  */
@@ -4313,8 +4318,9 @@ write_root (outf_p f, pair_p v, type_p type, const char *name, int has_length,
       break;
 
     case TYPE_USER_STRUCT:
-      write_root (f, v, type->u.a.p, name, has_length, line, if_marked,
-		  emit_pch);
+      error_at_line (line, "`%s' must be a pointer type, because it is "
+	             "a GC root and its type is marked with GTY((user))",
+		     v->name);
       break;
 
     case TYPE_POINTER:
@@ -4384,7 +4390,11 @@ write_root (outf_p f, pair_p v, type_p type, const char *name, int has_length,
     case TYPE_SCALAR:
       break;
 
-    default:
+    case TYPE_NONE:
+    case TYPE_UNDEFINED:
+    case TYPE_UNION:
+    case TYPE_LANG_STRUCT:
+    case TYPE_PARAM_STRUCT:
       error_at_line (line, "global `%s' is unimplemented type", name);
     }
 }
@@ -4712,38 +4722,30 @@ variable_size_p (const type_p s)
 
 enum alloc_quantity
 { single, vector };
-enum alloc_zone
-{ any_zone, specific_zone };
 
 /* Writes one typed allocator definition into output F for type
    identifier TYPE_NAME with optional type specifier TYPE_SPECIFIER.
    The allocator name will contain ALLOCATOR_TYPE.  If VARIABLE_SIZE
    is true, the allocator will have an extra parameter specifying
    number of bytes to allocate.  If QUANTITY is set to VECTOR, a
-   vector allocator will be output, if ZONE is set to SPECIFIC_ZONE,
-   the allocator will be zone-specific.  */
+   vector allocator will be output.  */
 
 static void
 write_typed_alloc_def (outf_p f, 
                        bool variable_size, const char *type_specifier,
                        const char *type_name, const char *allocator_type,
-                       enum alloc_quantity quantity, enum alloc_zone zone)
+                       enum alloc_quantity quantity)
 {
   bool two_args = variable_size && (quantity == vector);
-  bool third_arg = ((zone == specific_zone)
-		    && (variable_size || (quantity == vector)));
   gcc_assert (f != NULL);
   const char *type_name_as_id = filter_type_name (type_name);
   oprintf (f, "#define ggc_alloc_%s%s", allocator_type, type_name_as_id);
-  oprintf (f, "(%s%s%s%s%s) ",
+  oprintf (f, "(%s%s%s) ",
 	   (variable_size ? "SIZE" : ""),
 	   (two_args ? ", " : ""),
-	   (quantity == vector) ? "n" : "",
-	   (third_arg ? ", " : ""), (zone == specific_zone) ? "z" : "");
+	   (quantity == vector) ? "n" : "");
   oprintf (f, "((%s%s *)", type_specifier, type_name);
   oprintf (f, "(ggc_internal_%salloc_stat (", allocator_type);
-  if (zone == specific_zone)
-    oprintf (f, "z, ");
   if (variable_size)
     oprintf (f, "SIZE");
   else
@@ -4761,12 +4763,11 @@ write_typed_alloc_def (outf_p f,
 static void
 write_typed_struct_alloc_def (outf_p f,
 			      const type_p s, const char *allocator_type,
-			      enum alloc_quantity quantity,
-			      enum alloc_zone zone)
+			      enum alloc_quantity quantity)
 {
   gcc_assert (union_or_struct_p (s));
   write_typed_alloc_def (f, variable_size_p (s), get_type_specifier (s),
-                         s->u.s.tag, allocator_type, quantity, zone);
+                         s->u.s.tag, allocator_type, quantity);
 }
 
 /* Writes a typed allocator definition into output F for a typedef P,
@@ -4775,11 +4776,10 @@ write_typed_struct_alloc_def (outf_p f,
 static void
 write_typed_typedef_alloc_def (outf_p f,
                                const pair_p p, const char *allocator_type,
-                               enum alloc_quantity quantity,
-                               enum alloc_zone zone)
+                               enum alloc_quantity quantity)
 {
   write_typed_alloc_def (f, variable_size_p (p->type), "", p->name,
-                         allocator_type, quantity, zone);
+                         allocator_type, quantity);
 }
 
 /* Writes typed allocator definitions into output F for the types in
@@ -4805,16 +4805,10 @@ write_typed_alloc_defns (outf_p f,
       if (nb_plugin_files > 0 
 	  && ((s->u.s.line.file == NULL) || !s->u.s.line.file->inpisplugin))
 	continue;
-      write_typed_struct_alloc_def (f, s, "", single, any_zone);
-      write_typed_struct_alloc_def (f, s, "cleared_", single, any_zone);
-      write_typed_struct_alloc_def (f, s, "vec_", vector, any_zone);
-      write_typed_struct_alloc_def (f, s, "cleared_vec_", vector, any_zone);
-      write_typed_struct_alloc_def (f, s, "zone_", single, specific_zone);
-      write_typed_struct_alloc_def (f, s, "zone_cleared_", single,
-				    specific_zone);
-      write_typed_struct_alloc_def (f, s, "zone_vec_", vector, specific_zone);
-      write_typed_struct_alloc_def (f, s, "zone_cleared_vec_", vector,
-				    specific_zone);
+      write_typed_struct_alloc_def (f, s, "", single);
+      write_typed_struct_alloc_def (f, s, "cleared_", single);
+      write_typed_struct_alloc_def (f, s, "vec_", vector);
+      write_typed_struct_alloc_def (f, s, "cleared_vec_", vector);
     }
 
   oprintf (f, "\n/* Allocators for known typedefs.  */\n");
@@ -4831,15 +4825,10 @@ write_typed_alloc_defns (outf_p f,
 	  if (!filoc || !filoc->file->inpisplugin)
 	    continue;
 	};
-      write_typed_typedef_alloc_def (f, p, "", single, any_zone);
-      write_typed_typedef_alloc_def (f, p, "cleared_", single, any_zone);
-      write_typed_typedef_alloc_def (f, p, "vec_", vector, any_zone);
-      write_typed_typedef_alloc_def (f, p, "cleared_vec_", vector, any_zone);
-      write_typed_typedef_alloc_def (f, p, "zone_", single, specific_zone);
-      write_typed_typedef_alloc_def (f, p, "zone_cleared_", single,
-				     specific_zone);
-      write_typed_typedef_alloc_def (f, p, "zone_cleared_vec_", vector,
-				     specific_zone);
+      write_typed_typedef_alloc_def (f, p, "", single);
+      write_typed_typedef_alloc_def (f, p, "cleared_", single);
+      write_typed_typedef_alloc_def (f, p, "vec_", vector);
+      write_typed_typedef_alloc_def (f, p, "cleared_vec_", vector);
     }
 }
 
@@ -4880,7 +4869,9 @@ output_typename (outf_p of, const_type_p t)
 	output_typename (of, t->u.param_struct.stru);
 	break;
       }
-    default:
+    case TYPE_NONE:
+    case TYPE_UNDEFINED:
+    case TYPE_ARRAY:
       gcc_unreachable ();
     }
 }
@@ -4896,10 +4887,7 @@ write_splay_tree_allocator_def (const_type_p s)
   output_typename (of, s);
   oprintf (of, " (int sz, void * nl)\n");
   oprintf (of, "{\n");
-  oprintf (of, "  return ggc_splay_alloc (");
-  oprintf (of, "gt_e_");
-  output_mangled_typename (of, s);
-  oprintf (of, ", sz, nl);\n");
+  oprintf (of, "  return ggc_splay_alloc (sz, nl);\n");
   oprintf (of, "}\n\n");
 }
 
@@ -4940,6 +4928,9 @@ dump_typekind (int indent, enum typekind kind)
       break;
     case TYPE_STRUCT:
       printf ("TYPE_STRUCT");
+      break;
+    case TYPE_UNDEFINED:
+      printf ("TYPE_UNDEFINED");
       break;
     case TYPE_USER_STRUCT:
       printf ("TYPE_USER_STRUCT");
@@ -5550,7 +5541,6 @@ main (int argc, char **argv)
 
   open_base_files ();
 
-  write_enum_defn (structures, param_structs);
   output_header = plugin_output ? plugin_output : header_file;
   write_typed_alloc_defns (output_header, structures, typedefs);
   DBGPRINT_COUNT_TYPE ("structures before write_types outputheader",

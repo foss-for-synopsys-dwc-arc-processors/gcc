@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // HTTP client implementation. See RFC 2616.
-// 
+//
 // This is the low-level Transport implementation of RoundTripper.
 // The high-level interface is in client.go.
 
@@ -28,10 +28,10 @@ import (
 )
 
 // DefaultTransport is the default implementation of Transport and is
-// used by DefaultClient.  It establishes a new network connection for
-// each call to Do and uses HTTP proxies as directed by the
-// $HTTP_PROXY and $NO_PROXY (or $http_proxy and $no_proxy)
-// environment variables.
+// used by DefaultClient. It establishes network connections as needed
+// and caches them for reuse by subsequent calls. It uses HTTP proxies
+// as directed by the $HTTP_PROXY and $NO_PROXY (or $http_proxy and
+// $no_proxy) environment variables.
 var DefaultTransport RoundTripper = &Transport{Proxy: ProxyFromEnvironment}
 
 // DefaultMaxIdleConnsPerHost is the default value of Transport's
@@ -70,7 +70,7 @@ type Transport struct {
 	DisableCompression bool
 
 	// MaxIdleConnsPerHost, if non-zero, controls the maximum idle
-	// (keep-alive) to keep to keep per-host.  If zero,
+	// (keep-alive) to keep per-host.  If zero,
 	// DefaultMaxIdleConnsPerHost is used.
 	MaxIdleConnsPerHost int
 }
@@ -90,7 +90,7 @@ func ProxyFromEnvironment(req *Request) (*url.URL, error) {
 		return nil, nil
 	}
 	proxyURL, err := url.Parse(proxy)
-	if err != nil || proxyURL.Scheme == "" {
+	if err != nil || !strings.HasPrefix(proxyURL.Scheme, "http") {
 		if u, err := url.Parse("http://" + proxy); err == nil {
 			proxyURL = u
 			err = nil
@@ -143,6 +143,9 @@ func (t *Transport) RoundTrip(req *Request) (resp *Response, err error) {
 			return nil, &badStringError{"unsupported protocol scheme", req.URL.Scheme}
 		}
 		return rt.RoundTrip(req)
+	}
+	if req.URL.Host == "" {
+		return nil, errors.New("http: no Host in request URL")
 	}
 	treq := &transportRequest{Request: req}
 	cm, err := t.connectMethodForRequest(treq)
@@ -447,7 +450,15 @@ func useProxy(addr string) bool {
 		if hasPort(p) {
 			p = p[:strings.LastIndex(p, ":")]
 		}
-		if addr == p || (p[0] == '.' && (strings.HasSuffix(addr, p) || addr == p[1:])) {
+		if addr == p {
+			return false
+		}
+		if p[0] == '.' && (strings.HasSuffix(addr, p) || addr == p[1:]) {
+			// no_proxy ".foo.com" matches "bar.foo.com" or "foo.com"
+			return false
+		}
+		if p[0] != '.' && strings.HasSuffix(addr, p) && addr[len(addr)-len(p)-1] == '.' {
+			// no_proxy "foo.com" matches "bar.foo.com"
 			return false
 		}
 	}
@@ -604,19 +615,23 @@ func (pc *persistConn) readLoop() {
 			alive = false
 		}
 
-		hasBody := resp != nil && resp.ContentLength != 0
+		hasBody := resp != nil && rc.req.Method != "HEAD" && resp.ContentLength != 0
 		var waitForBodyRead chan bool
 		if hasBody {
 			lastbody = resp.Body
 			waitForBodyRead = make(chan bool, 1)
-			resp.Body.(*bodyEOFSignal).fn = func() {
-				if alive && !pc.t.putIdleConn(pc) {
-					alive = false
+			resp.Body.(*bodyEOFSignal).fn = func(err error) {
+				alive1 := alive
+				if err != nil {
+					alive1 = false
 				}
-				if !alive || pc.isBroken() {
+				if alive1 && !pc.t.putIdleConn(pc) {
+					alive1 = false
+				}
+				if !alive1 || pc.isBroken() {
 					pc.close()
 				}
-				waitForBodyRead <- true
+				waitForBodyRead <- alive1
 			}
 		}
 
@@ -640,7 +655,7 @@ func (pc *persistConn) readLoop() {
 		// Wait for the just-returned response body to be fully consumed
 		// before we race and peek on the underlying bufio reader.
 		if waitForBodyRead != nil {
-			<-waitForBodyRead
+			alive = <-waitForBodyRead
 		}
 
 		if !alive {
@@ -706,7 +721,7 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 	// requested it.
 	requestedGzip := false
 	if !pc.t.DisableCompression && req.Header.Get("Accept-Encoding") == "" {
-		// Request gzip only, not deflate. Deflate is ambiguous and 
+		// Request gzip only, not deflate. Deflate is ambiguous and
 		// not as universally supported anyway.
 		// See: http://www.gzip.org/zlib/zlib_faq.html#faq38
 		requestedGzip = true
@@ -735,6 +750,7 @@ WaitResponse:
 		case err := <-writeErrCh:
 			if err != nil {
 				re = responseAndError{nil, err}
+				pc.close()
 				break WaitResponse
 			}
 		case <-pconnDeadCh:
@@ -805,48 +821,62 @@ func canonicalAddr(url *url.URL) string {
 	return addr
 }
 
-func responseIsKeepAlive(res *Response) bool {
-	// TODO: implement.  for now just always shutting down the connection.
-	return false
-}
-
 // bodyEOFSignal wraps a ReadCloser but runs fn (if non-nil) at most
-// once, right before the final Read() or Close() call returns, but after
-// EOF has been seen.
+// once, right before its final (error-producing) Read or Close call
+// returns.
 type bodyEOFSignal struct {
-	body     io.ReadCloser
-	fn       func()
-	isClosed bool
-	once     sync.Once
+	body   io.ReadCloser
+	mu     sync.Mutex  // guards closed, rerr and fn
+	closed bool        // whether Close has been called
+	rerr   error       // sticky Read error
+	fn     func(error) // error will be nil on Read io.EOF
 }
 
 func (es *bodyEOFSignal) Read(p []byte) (n int, err error) {
-	n, err = es.body.Read(p)
-	if es.isClosed && n > 0 {
-		panic("http: unexpected bodyEOFSignal Read after Close; see issue 1725")
+	es.mu.Lock()
+	closed, rerr := es.closed, es.rerr
+	es.mu.Unlock()
+	if closed {
+		return 0, errors.New("http: read on closed response body")
 	}
-	if err == io.EOF {
-		es.condfn()
+	if rerr != nil {
+		return 0, rerr
+	}
+
+	n, err = es.body.Read(p)
+	if err != nil {
+		es.mu.Lock()
+		defer es.mu.Unlock()
+		if es.rerr == nil {
+			es.rerr = err
+		}
+		es.condfn(err)
 	}
 	return
 }
 
-func (es *bodyEOFSignal) Close() (err error) {
-	if es.isClosed {
+func (es *bodyEOFSignal) Close() error {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+	if es.closed {
 		return nil
 	}
-	es.isClosed = true
-	err = es.body.Close()
-	if err == nil {
-		es.condfn()
-	}
-	return
+	es.closed = true
+	err := es.body.Close()
+	es.condfn(err)
+	return err
 }
 
-func (es *bodyEOFSignal) condfn() {
-	if es.fn != nil {
-		es.once.Do(es.fn)
+// caller must hold es.mu.
+func (es *bodyEOFSignal) condfn(err error) {
+	if es.fn == nil {
+		return
 	}
+	if err == io.EOF {
+		err = nil
+	}
+	es.fn(err)
+	es.fn = nil
 }
 
 type readFirstCloseBoth struct {

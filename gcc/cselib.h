@@ -1,7 +1,5 @@
 /* Common subexpression elimination for GNU compiler.
-   Copyright (C) 1987, 1988, 1989, 1992, 1993, 1994, 1995, 1996, 1997,
-   1998, 1999, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -78,6 +76,7 @@ extern void cselib_init (int);
 extern void cselib_clear_table (void);
 extern void cselib_finish (void);
 extern void cselib_process_insn (rtx);
+extern bool fp_setter_insn (rtx);
 extern enum machine_mode cselib_reg_set_mode (const_rtx);
 extern int rtx_equal_for_cselib_p (rtx, rtx);
 extern int references_value_p (const_rtx, int);

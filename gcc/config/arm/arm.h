@@ -1,7 +1,5 @@
 /* Definitions of target machine for GNU compiler, for ARM.
-   Copyright (C) 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1991-2013 Free Software Foundation, Inc.
    Contributed by Pieter `Tiggr' Schoenmakers (rcpieter@win.tue.nl)
    and Martin Simmons (@harleqn.co.uk).
    More major hacks by Richard Earnshaw (rearnsha@arm.com)
@@ -252,7 +250,6 @@ extern void (*arm_lang_output_object_attributes_hook)(void);
 #define TARGET_BACKTRACE	        (leaf_function_p () \
 				         ? TARGET_TPCS_LEAF_FRAME \
 				         : TARGET_TPCS_FRAME)
-#define TARGET_LDRD			(arm_arch5e && ARM_DOUBLEWORD_ALIGN)
 #define TARGET_AAPCS_BASED \
     (arm_abi != ARM_ABI_APCS && arm_abi != ARM_ABI_ATPCS)
 
@@ -268,6 +265,9 @@ extern void (*arm_lang_output_object_attributes_hook)(void);
 #define TARGET_THUMB2			(TARGET_THUMB && arm_arch_thumb2)
 /* Thumb-1 only.  */
 #define TARGET_THUMB1_ONLY		(TARGET_THUMB1 && !arm_arch_notm)
+
+#define TARGET_LDRD			(arm_arch5e && ARM_DOUBLEWORD_ALIGN \
+                                         && !TARGET_THUMB1)
 
 /* The following two macros concern the ability to execute coprocessor
    instructions for VFPv3 or NEON.  TARGET_VFP3/TARGET_VFPD32 are currently
@@ -295,6 +295,9 @@ extern void (*arm_lang_output_object_attributes_hook)(void);
 
 /* FPU supports fused-multiply-add operations.  */
 #define TARGET_FMA (TARGET_VFP && arm_fpu_desc->rev >= 4)
+
+/* FPU is ARMv8 compatible.  */
+#define TARGET_FPU_ARMV8 (TARGET_VFP && arm_fpu_desc->rev >= 8)
 
 /* FPU supports Crypto extensions.  */
 #define TARGET_CRYPTO (TARGET_VFP && arm_fpu_desc->crypto)
@@ -1725,7 +1728,8 @@ enum arm_auto_incmodes
    They give nonzero only if REGNO is a hard reg of the suitable class
    or a pseudo reg currently allocated to a suitable hard reg.
    Since they use reg_renumber, they are safe only once reg_renumber
-   has been allocated, which happens in local-alloc.c.  */
+   has been allocated, which happens in reginfo.c during register
+   allocation.  */
 #define TEST_REGNO(R, TEST, VALUE) \
   ((R TEST VALUE) || ((unsigned) reg_renumber[R] TEST VALUE))
 
@@ -2012,9 +2016,15 @@ enum arm_auto_incmodes
    || (X) == arg_pointer_rtx)
 
 /* Try to generate sequences that don't involve branches, we can then use
-   conditional instructions */
+   conditional instructions.  */
 #define BRANCH_COST(speed_p, predictable_p) \
   (current_tune->branch_cost (speed_p, predictable_p))
+
+/* False if short circuit operation is preferred.  */
+#define LOGICAL_OP_NON_SHORT_CIRCUIT				\
+  ((optimize_size)						\
+   ? (TARGET_THUMB ? false : true)				\
+   : (current_tune->logical_op_non_short_circuit[TARGET_ARM]))
 
 
 /* Position Independent Code.  */
@@ -2065,9 +2075,6 @@ extern int making_const_table;
   (((MODE) == CCFPmode || (MODE) == CCFPEmode) \
    ? reverse_condition_maybe_unordered (code) \
    : reverse_condition (code))
-
-#define CANONICALIZE_COMPARISON(CODE, OP0, OP1)				\
-  (CODE) = arm_canonicalize_comparison (CODE, &(OP0), &(OP1))
 
 /* The arm5 clz instruction returns 32.  */
 #define CLZ_DEFINED_VALUE_AT_ZERO(MODE, VALUE)  ((VALUE) = 32, 1)
@@ -2122,20 +2129,13 @@ extern int making_const_table;
 	asm_fprintf (STREAM, "\tpop {%r}\n", REGNO);	\
     } while (0)
 
-/* Jump table alignment is explicit in ASM_OUTPUT_CASE_LABEL.  */
-#define ADDR_VEC_ALIGN(JUMPTABLE) 0
+#define ADDR_VEC_ALIGN(JUMPTABLE)	\
+  ((TARGET_THUMB && GET_MODE (PATTERN (JUMPTABLE)) == SImode) ? 2 : 0)
 
-/* This is how to output a label which precedes a jumptable.  Since
-   Thumb instructions are 2 bytes, we may need explicit alignment here.  */
-#undef  ASM_OUTPUT_CASE_LABEL
-#define ASM_OUTPUT_CASE_LABEL(FILE, PREFIX, NUM, JUMPTABLE)		\
-  do									\
-    {									\
-      if (TARGET_THUMB && GET_MODE (PATTERN (JUMPTABLE)) == SImode)	\
-        ASM_OUTPUT_ALIGN (FILE, 2);					\
-      (*targetm.asm_out.internal_label) (FILE, PREFIX, NUM);		\
-    }									\
-  while (0)
+/* Alignment for case labels comes from ADDR_VEC_ALIGN; avoid the
+   default alignment from elfos.h.  */
+#undef ASM_OUTPUT_BEFORE_CASE_LABEL
+#define ASM_OUTPUT_BEFORE_CASE_LABEL(FILE, PREFIX, NUM, TABLE) /* Empty.  */
 
 /* Make sure subsequent insns are aligned after a TBB.  */
 #define ASM_OUTPUT_CASE_END(FILE, NUM, JUMPTABLE)	\

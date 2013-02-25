@@ -14,6 +14,7 @@ var ErrWriteToConnected = errors.New("use of WriteTo with pre-connected UDP")
 type UDPAddr struct {
 	IP   IP
 	Port int
+	Zone string // IPv6 scoped addressing zone
 }
 
 // Network returns the address's network name, "udp".
@@ -32,9 +33,16 @@ func (a *UDPAddr) String() string {
 // "udp4" or "udp6".  A literal IPv6 host address must be
 // enclosed in square brackets, as in "[::]:80".
 func ResolveUDPAddr(net, addr string) (*UDPAddr, error) {
-	ip, port, err := hostPortToIP(net, addr)
+	switch net {
+	case "udp", "udp4", "udp6":
+	case "": // a hint wildcard for Go 1.0 undocumented behavior
+		net = "udp"
+	default:
+		return nil, UnknownNetworkError(net)
+	}
+	a, err := resolveInternetAddr(net, addr, noDeadline)
 	if err != nil {
 		return nil, err
 	}
-	return &UDPAddr{ip, port}, nil
+	return a.(*UDPAddr), nil
 }

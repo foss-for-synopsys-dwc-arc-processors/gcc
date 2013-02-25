@@ -1,8 +1,6 @@
 ## Makefile for the include subdirectory of the GNU C++ Standard library.
 ##
-## Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-## 2011, 2012
-## Free Software Foundation, Inc.
+## Copyright (C) 2001-2013 Free Software Foundation, Inc.
 ##
 ## This file is part of the libstdc++ version 3 distribution.
 ## Process this file with automake to produce Makefile.in.
@@ -313,8 +311,7 @@ pb_headers2 = \
 	${pb_srcdir}/detail/cc_hash_table_map_/resize_fn_imps.hpp \
 	${pb_srcdir}/detail/cc_hash_table_map_/resize_no_store_hash_fn_imps.hpp \
 	${pb_srcdir}/detail/cc_hash_table_map_/resize_store_hash_fn_imps.hpp \
-	${pb_srcdir}/detail/cc_hash_table_map_/size_fn_imps.hpp \
-	${pb_srcdir}/detail/cc_hash_table_map_/standard_policies.hpp
+	${pb_srcdir}/detail/cc_hash_table_map_/size_fn_imps.hpp
 
 pb_headers3 = \
 	${pb_srcdir}/detail/cc_hash_table_map_/trace_fn_imps.hpp \
@@ -344,7 +341,6 @@ pb_headers3 = \
 	${pb_srcdir}/detail/gp_hash_table_map_/resize_fn_imps.hpp \
 	${pb_srcdir}/detail/gp_hash_table_map_/resize_no_store_hash_fn_imps.hpp \
 	${pb_srcdir}/detail/gp_hash_table_map_/resize_store_hash_fn_imps.hpp \
-	${pb_srcdir}/detail/gp_hash_table_map_/standard_policies.hpp \
 	${pb_srcdir}/detail/gp_hash_table_map_/trace_fn_imps.hpp \
 	${pb_srcdir}/detail/hash_fn/direct_mask_range_hashing_imp.hpp \
 	${pb_srcdir}/detail/hash_fn/direct_mod_range_hashing_imp.hpp \
@@ -705,6 +701,7 @@ endif
 debug_srcdir = ${glibcxx_srcdir}/include/debug
 debug_builddir = ./debug
 debug_headers = \
+	${debug_srcdir}/array \
 	${debug_srcdir}/bitset \
 	${debug_srcdir}/debug.h \
 	${debug_srcdir}/deque \
@@ -786,6 +783,7 @@ parallel_headers = \
 profile_srcdir = ${glibcxx_srcdir}/include/profile
 profile_builddir = ./profile
 profile_headers = \
+	${profile_srcdir}/array \
 	${profile_srcdir}/base.h \
 	${profile_srcdir}/unordered_map \
 	${profile_srcdir}/unordered_set \
@@ -1105,7 +1103,7 @@ ${host_builddir}/c++config.h: ${CONFIG_HEADER} \
 	visibility=`cat stamp-visibility` ;\
 	externtemplate=`cat stamp-extern-template` ;\
 	ldbl_compat='s,g,g,' ;\
-	grep "^[ 	]*#[ 	]*define[ 	][ 	]*_GLIBCXX_LONG_DOUBLE_COMPAT[ 	][ 	]*1[ 	]*$$" \
+	grep "^[	 ]*#[	 ]*define[	 ][	 ]*_GLIBCXX_LONG_DOUBLE_COMPAT[	 ][	 ]*1[	 ]*$$" \
 	${CONFIG_HEADER} > /dev/null 2>&1 \
 	&& ldbl_compat='s,^#undef _GLIBCXX_LONG_DOUBLE_COMPAT$$,#define _GLIBCXX_LONG_DOUBLE_COMPAT 1,' ;\
 	sed -e "s,define __GLIBCXX__,define __GLIBCXX__ $$date," \
@@ -1119,7 +1117,7 @@ ${host_builddir}/c++config.h: ${CONFIG_HEADER} \
 	    -e 's/VERSION/_GLIBCXX_VERSION/g' \
 	    -e 's/WORDS_/_GLIBCXX_WORDS_/g' \
 	    -e 's/ICONV_CONST/_GLIBCXX_ICONV_CONST/g' \
-	    -e '/[ 	]_GLIBCXX_LONG_DOUBLE_COMPAT[ 	]/d' \
+	    -e '/[	 ]_GLIBCXX_LONG_DOUBLE_COMPAT[	 ]/d' \
 	    < ${CONFIG_HEADER} >> $@ ;\
 	echo "" >> $@ ;\
 	echo "#endif // _GLIBCXX_CXX_CONFIG_H" >> $@

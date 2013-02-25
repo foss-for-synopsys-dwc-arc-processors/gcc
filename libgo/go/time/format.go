@@ -9,7 +9,7 @@ import "errors"
 // These are predefined layouts for use in Time.Format.
 // The standard time used in the layouts is:
 //	Mon Jan 2 15:04:05 MST 2006
-// which is Unix time 1136243045. Since MST is GMT-0700,
+// which is Unix time 1136239445. Since MST is GMT-0700,
 // the standard time can be thought of as
 //	01/02 03:04:05PM '06 -0700
 // To define your own format, write down what the standard time would look
@@ -323,7 +323,8 @@ func atoi(s string) (x int, err error) {
 		neg = true
 		s = s[1:]
 	}
-	x, rem, err := leadingInt(s)
+	q, rem, err := leadingInt(s)
+	x = int(q)
 	if err != nil || rem != "" {
 		return 0, atoiError
 	}
@@ -636,7 +637,8 @@ func skip(value, prefix string) (string, error) {
 //
 // Elements omitted from the value are assumed to be zero or, when
 // zero is impossible, one, so parsing "3:04pm" returns the time
-// corresponding to Jan 1, year 0, 15:04:00 UTC.
+// corresponding to Jan 1, year 0, 15:04:00 UTC (note that because the year is
+// 0, this time is before the zero Time).
 // Years must be in the range 0000..9999. The day of the week is checked
 // for syntax but it is otherwise ignored.
 func Parse(layout, value string) (Time, error) {
@@ -853,9 +855,15 @@ func Parse(layout, value string) (Time, error) {
 			zoneName = p
 
 		case stdFracSecond0:
-			ndigit := std >> stdArgShift
-			nsec, rangeErrString, err = parseNanoseconds(value, 1+ndigit)
-			value = value[1+ndigit:]
+			// stdFracSecond0 requires the exact number of digits as specified in
+			// the layout.
+			ndigit := 1 + (std >> stdArgShift)
+			if len(value) < ndigit {
+				err = errBad
+				break
+			}
+			nsec, rangeErrString, err = parseNanoseconds(value, ndigit)
+			value = value[ndigit:]
 
 		case stdFracSecond9:
 			if len(value) < 2 || value[0] != '.' || value[1] < '0' || '9' < value[1] {
@@ -933,8 +941,7 @@ func parseNanoseconds(value string, nbytes int) (ns int, rangeErrString string, 
 		err = errBad
 		return
 	}
-	ns, err = atoi(value[1:nbytes])
-	if err != nil {
+	if ns, err = atoi(value[1:nbytes]); err != nil {
 		return
 	}
 	if ns < 0 || 1e9 <= ns {
@@ -954,18 +961,18 @@ func parseNanoseconds(value string, nbytes int) (ns int, rangeErrString string, 
 var errLeadingInt = errors.New("time: bad [0-9]*") // never printed
 
 // leadingInt consumes the leading [0-9]* from s.
-func leadingInt(s string) (x int, rem string, err error) {
+func leadingInt(s string) (x int64, rem string, err error) {
 	i := 0
 	for ; i < len(s); i++ {
 		c := s[i]
 		if c < '0' || c > '9' {
 			break
 		}
-		if x >= (1<<31-10)/10 {
+		if x >= (1<<63-10)/10 {
 			// overflow
 			return 0, "", errLeadingInt
 		}
-		x = x*10 + int(c) - '0'
+		x = x*10 + int64(c) - '0'
 	}
 	return x, s[i:], nil
 }
@@ -1010,7 +1017,7 @@ func ParseDuration(s string) (Duration, error) {
 	for s != "" {
 		g := float64(0) // this element of the sequence
 
-		var x int
+		var x int64
 		var err error
 
 		// The next character must be [0-9.]

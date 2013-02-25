@@ -1,7 +1,5 @@
 /* Compilation switch flag definitions for GCC.
-   Copyright (C) 1987, 1988, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2002,
-   2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -88,9 +86,6 @@ extern struct target_flag_state *this_target_flag_state;
   (this_target_flag_state->x_align_functions_log)
 #define flag_excess_precision \
   (this_target_flag_state->x_flag_excess_precision)
-
-/* Nonzero if we dump in VCG format, not plain text.  */
-extern int dump_for_graph;
 
 /* Returns TRUE if generated code should match ABI version N or
    greater is in use.  */

@@ -1,5 +1,5 @@
 ;; Scheduling description for Niagara-4
-;;   Copyright (C) 2012 Free Software Foundation, Inc.
+;;   Copyright (C) 2012-2013 Free Software Foundation, Inc.
 ;;
 ;; This file is part of GCC.
 ;;
@@ -54,10 +54,10 @@
     (eq_attr "type" "store,fpstore"))
   "(n4_slot0 | n4_slot2) + n4_load_store")
 
-(define_insn_reservation "n4_cti" 2
+(define_insn_reservation "n4_cti" 1
   (and (eq_attr "cpu" "niagara4")
-    (eq_attr "type" "branch,call,sibcall,call_no_delay_slot,uncond_branch,return"))
-  "n4_slot1, nothing")
+    (eq_attr "type" "cbcond,uncond_cbcond,branch,call,sibcall,call_no_delay_slot,uncond_branch,return"))
+  "n4_slot1")
 
 (define_insn_reservation "n4_fp" 11
   (and (eq_attr "cpu" "niagara4")

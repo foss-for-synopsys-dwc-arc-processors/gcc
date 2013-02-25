@@ -1,5 +1,5 @@
 /* Language-dependent hooks for LTO.
-   Copyright 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 2009-2013 Free Software Foundation, Inc.
    Contributed by CodeSourcery, Inc.
 
 This file is part of GCC.
@@ -1061,11 +1061,11 @@ lto_getdecls (void)
 static void
 lto_write_globals (void)
 {
-  tree *vec = VEC_address (tree, lto_global_var_decls);
-  int len = VEC_length (tree, lto_global_var_decls);
+  tree *vec = lto_global_var_decls->address ();
+  int len = lto_global_var_decls->length ();
   wrapup_global_declarations (vec, len);
   emit_debug_global_declarations (vec, len);
-  VEC_free (tree, gc, lto_global_var_decls);
+  vec_free (lto_global_var_decls);
 }
 
 static tree
@@ -1156,9 +1156,6 @@ lto_init (void)
   /* We need to generate LTO if running in WPA mode.  */
   flag_generate_lto = flag_wpa;
 
-  /* Initialize libcpp line maps for gcc_assert to work.  */
-  linemap_add (line_table, LC_ENTER, 0, NULL, 0);
-
   /* Create the basic integer types.  */
   build_common_tree_nodes (flag_signed_char, /*short_double=*/false);
 
@@ -1235,7 +1232,7 @@ lto_init (void)
     lto_register_canonical_types (global_trees[i]);
 
   /* Initialize LTO-specific data structures.  */
-  lto_global_var_decls = VEC_alloc (tree, gc, 256);
+  vec_alloc (lto_global_var_decls, 256);
   in_lto_p = true;
 
   return true;

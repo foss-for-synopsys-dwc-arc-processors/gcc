@@ -161,7 +161,7 @@ func TestSetBasicAuth(t *testing.T) {
 }
 
 func TestMultipartRequest(t *testing.T) {
-	// Test that we can read the values and files of a 
+	// Test that we can read the values and files of a
 	// multipart request with FormValue and FormFile,
 	// and that ParseMultipartForm can be called multiple times.
 	req := newTestMultipartRequest(t)
@@ -225,6 +225,75 @@ func TestReadRequestErrors(t *testing.T) {
 		if err != tt.err {
 			t.Errorf("%d. got error = %v; want %v", i, err, tt.err)
 		}
+	}
+}
+
+func TestNewRequestHost(t *testing.T) {
+	req, err := NewRequest("GET", "http://localhost:1234/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if req.Host != "localhost:1234" {
+		t.Errorf("Host = %q; want localhost:1234", req.Host)
+	}
+}
+
+func TestNewRequestContentLength(t *testing.T) {
+	readByte := func(r io.Reader) io.Reader {
+		var b [1]byte
+		r.Read(b[:])
+		return r
+	}
+	tests := []struct {
+		r    io.Reader
+		want int64
+	}{
+		{bytes.NewReader([]byte("123")), 3},
+		{bytes.NewBuffer([]byte("1234")), 4},
+		{strings.NewReader("12345"), 5},
+		// Not detected:
+		{struct{ io.Reader }{strings.NewReader("xyz")}, 0},
+		{io.NewSectionReader(strings.NewReader("x"), 0, 6), 0},
+		{readByte(io.NewSectionReader(strings.NewReader("xy"), 0, 6)), 0},
+	}
+	for _, tt := range tests {
+		req, err := NewRequest("POST", "http://localhost/", tt.r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if req.ContentLength != tt.want {
+			t.Errorf("ContentLength(%#T) = %d; want %d", tt.r, req.ContentLength, tt.want)
+		}
+	}
+}
+
+type logWrites struct {
+	t   *testing.T
+	dst *[]string
+}
+
+func (l logWrites) WriteByte(c byte) error {
+	l.t.Fatalf("unexpected WriteByte call")
+	return nil
+}
+
+func (l logWrites) Write(p []byte) (n int, err error) {
+	*l.dst = append(*l.dst, string(p))
+	return len(p), nil
+}
+
+func TestRequestWriteBufferedWriter(t *testing.T) {
+	got := []string{}
+	req, _ := NewRequest("GET", "http://foo.com/", nil)
+	req.Write(logWrites{t, &got})
+	want := []string{
+		"GET / HTTP/1.1\r\n",
+		"Host: foo.com\r\n",
+		"User-Agent: Go http package\r\n",
+		"\r\n",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Writes = %q\n  Want = %q", got, want)
 	}
 }
 

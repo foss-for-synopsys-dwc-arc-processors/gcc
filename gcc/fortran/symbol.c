@@ -1,7 +1,5 @@
 /* Maintain binary trees of symbols.
-   Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
-   2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2000-2013 Free Software Foundation, Inc.
    Contributed by Andy Vaught
 
 This file is part of GCC.
@@ -1955,6 +1953,9 @@ gfc_use_derived (gfc_symbol *sym)
   if (!sym)
     return NULL;
 
+  if (sym->attr.unlimited_polymorphic)
+    return sym;
+
   if (sym->attr.generic)
     sym = gfc_find_dt_in_generic (sym);
 
@@ -2075,9 +2076,6 @@ free_components (gfc_component *p)
 
       gfc_free_array_spec (p->as);
       gfc_free_expr (p->initializer);
-
-      gfc_free_formal_arglist (p->formal);
-      gfc_free_namespace (p->formal_ns);
 
       free (p);
     }
@@ -2676,6 +2674,11 @@ gfc_find_sym_tree (const char *name, gfc_namespace *ns, int parent_flag,
       if (!parent_flag)
 	break;
 
+      /* Don't escape an interface block.  */
+      if (ns && !ns->has_import_set
+          && ns->proc_name && ns->proc_name->attr.if_source == IFSRC_IFBODY)
+	break;
+
       ns = ns->parent;
     }
   while (ns != NULL);
@@ -2834,17 +2837,14 @@ gfc_get_ha_sym_tree (const char *name, gfc_symtree **result)
       return i;
     }
 
-  if (gfc_current_ns->parent != NULL)
-    {
-      i = gfc_find_sym_tree (name, gfc_current_ns->parent, 1, &st);
-      if (i)
-	return i;
+  i = gfc_find_sym_tree (name, gfc_current_ns, 1, &st);
+  if (i)
+    return i;
 
-      if (st != NULL)
-	{
-	  *result = st;
-	  return 0;
-	}
+  if (st != NULL)
+    {
+      *result = st;
+      return 0;
     }
 
   return gfc_get_sym_tree (name, gfc_current_ns, result, false);
@@ -4126,64 +4126,6 @@ add_proc_interface (gfc_symbol *sym, ifsrc source, gfc_formal_arglist *formal)
    args based on the args of a given named interface.  */
 
 void
-gfc_copy_formal_args (gfc_symbol *dest, gfc_symbol *src, ifsrc if_src)
-{
-  gfc_formal_arglist *head = NULL;
-  gfc_formal_arglist *tail = NULL;
-  gfc_formal_arglist *formal_arg = NULL;
-  gfc_formal_arglist *curr_arg = NULL;
-  gfc_formal_arglist *formal_prev = NULL;
-  /* Save current namespace so we can change it for formal args.  */
-  gfc_namespace *parent_ns = gfc_current_ns;
-
-  /* Create a new namespace, which will be the formal ns (namespace
-     of the formal args).  */
-  gfc_current_ns = gfc_get_namespace (parent_ns, 0);
-  gfc_current_ns->proc_name = dest;
-  dest->formal_ns = gfc_current_ns;
-
-  for (curr_arg = src->formal; curr_arg; curr_arg = curr_arg->next)
-    {
-      formal_arg = gfc_get_formal_arglist ();
-      gfc_get_symbol (curr_arg->sym->name, gfc_current_ns, &(formal_arg->sym));
-
-      /* May need to copy more info for the symbol.  */
-      formal_arg->sym->attr = curr_arg->sym->attr;
-      formal_arg->sym->ts = curr_arg->sym->ts;
-      formal_arg->sym->as = gfc_copy_array_spec (curr_arg->sym->as);
-      gfc_copy_formal_args (formal_arg->sym, curr_arg->sym,
-			    curr_arg->sym->attr.if_source);
-
-      /* If this isn't the first arg, set up the next ptr.  For the
-        last arg built, the formal_arg->next will never get set to
-        anything other than NULL.  */
-      if (formal_prev != NULL)
-	formal_prev->next = formal_arg;
-      else
-	formal_arg->next = NULL;
-
-      formal_prev = formal_arg;
-
-      /* Add arg to list of formal args.  */
-      add_formal_arg (&head, &tail, formal_arg, formal_arg->sym);
-
-      /* Validate changes.  */
-      gfc_commit_symbol (formal_arg->sym);
-    }
-
-  /* Add the interface to the symbol.  */
-  add_proc_interface (dest, if_src, head);
-
-  /* Store the formal namespace information.  */
-  if (dest->formal != NULL)
-    /* The current ns should be that for the dest proc.  */
-    dest->formal_ns = gfc_current_ns;
-  /* Restore the current namespace to what it was on entry.  */
-  gfc_current_ns = parent_ns;
-}
-
-
-void
 gfc_copy_formal_args_intr (gfc_symbol *dest, gfc_intrinsic_sym *src)
 {
   gfc_formal_arglist *head = NULL;
@@ -4234,65 +4176,6 @@ gfc_copy_formal_args_intr (gfc_symbol *dest, gfc_intrinsic_sym *src)
 
   /* Add the interface to the symbol.  */
   add_proc_interface (dest, IFSRC_DECL, head);
-
-  /* Store the formal namespace information.  */
-  if (dest->formal != NULL)
-    /* The current ns should be that for the dest proc.  */
-    dest->formal_ns = gfc_current_ns;
-  /* Restore the current namespace to what it was on entry.  */
-  gfc_current_ns = parent_ns;
-}
-
-
-void
-gfc_copy_formal_args_ppc (gfc_component *dest, gfc_symbol *src, ifsrc if_src)
-{
-  gfc_formal_arglist *head = NULL;
-  gfc_formal_arglist *tail = NULL;
-  gfc_formal_arglist *formal_arg = NULL;
-  gfc_formal_arglist *curr_arg = NULL;
-  gfc_formal_arglist *formal_prev = NULL;
-  /* Save current namespace so we can change it for formal args.  */
-  gfc_namespace *parent_ns = gfc_current_ns;
-
-  /* Create a new namespace, which will be the formal ns (namespace
-     of the formal args).  */
-  gfc_current_ns = gfc_get_namespace (parent_ns, 0);
-  /* TODO: gfc_current_ns->proc_name = dest;*/
-
-  for (curr_arg = src->formal; curr_arg; curr_arg = curr_arg->next)
-    {
-      formal_arg = gfc_get_formal_arglist ();
-      gfc_get_symbol (curr_arg->sym->name, gfc_current_ns, &(formal_arg->sym));
-
-      /* May need to copy more info for the symbol.  */
-      formal_arg->sym->attr = curr_arg->sym->attr;
-      formal_arg->sym->ts = curr_arg->sym->ts;
-      formal_arg->sym->as = gfc_copy_array_spec (curr_arg->sym->as);
-      gfc_copy_formal_args (formal_arg->sym, curr_arg->sym,
-			    curr_arg->sym->attr.if_source);
-
-      /* If this isn't the first arg, set up the next ptr.  For the
-        last arg built, the formal_arg->next will never get set to
-        anything other than NULL.  */
-      if (formal_prev != NULL)
-	formal_prev->next = formal_arg;
-      else
-	formal_arg->next = NULL;
-
-      formal_prev = formal_arg;
-
-      /* Add arg to list of formal args.  */
-      add_formal_arg (&head, &tail, formal_arg, formal_arg->sym);
-
-      /* Validate changes.  */
-      gfc_commit_symbol (formal_arg->sym);
-    }
-
-  /* Add the interface to the symbol.  */
-  gfc_free_formal_arglist (dest->formal);
-  dest->formal = head;
-  dest->attr.if_source = if_src;
 
   /* Store the formal namespace information.  */
   if (dest->formal != NULL)
@@ -4905,6 +4788,11 @@ gfc_type_compatible (gfc_typespec *ts1, gfc_typespec *ts2)
   bool is_derived1 = (ts1->type == BT_DERIVED);
   bool is_derived2 = (ts2->type == BT_DERIVED);
 
+  if (is_class1
+      && ts1->u.derived->components
+      && ts1->u.derived->components->ts.u.derived->attr.unlimited_polymorphic)
+    return 1;
+
   if (!is_derived1 && !is_derived2 && !is_class1 && !is_class2)
     return (ts1->type == ts2->type);
 
@@ -4974,4 +4862,21 @@ gfc_find_dt_in_generic (gfc_symbol *sym)
       if (intr->sym->attr.flavor == FL_DERIVED)
         break;
   return intr ? intr->sym : NULL;
+}
+
+
+/* Get the dummy arguments from a procedure symbol. If it has been declared
+   via a PROCEDURE statement with a named interface, ts.interface will be set
+   and the arguments need to be taken from there.  */
+
+gfc_formal_arglist *
+gfc_sym_get_dummy_args (gfc_symbol *sym)
+{
+  gfc_formal_arglist *dummies;
+
+  dummies = sym->formal;
+  if (dummies == NULL && sym->ts.interface != NULL)
+    dummies = sym->ts.interface->formal;
+
+  return dummies;
 }

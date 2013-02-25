@@ -221,6 +221,8 @@ var cgoEnabled = map[string]bool{
 	"linux/arm":     true,
 	"netbsd/386":    true,
 	"netbsd/amd64":  true,
+	"openbsd/386":   true,
+	"openbsd/amd64": true,
 	"windows/386":   true,
 	"windows/amd64": true,
 }
@@ -423,6 +425,13 @@ func (ctxt *Context) Import(path string, srcDir string, mode ImportMode) (*Packa
 		if strings.HasPrefix(path, "/") {
 			return p, fmt.Errorf("import %q: cannot import absolute path", path)
 		}
+
+		// tried records the location of unsucsessful package lookups
+		var tried struct {
+			goroot string
+			gopath []string
+		}
+
 		// Determine directory from import path.
 		if ctxt.GOROOT != "" {
 			dir := ctxt.joinPath(ctxt.GOROOT, "src", "pkg", path)
@@ -434,6 +443,7 @@ func (ctxt *Context) Import(path string, srcDir string, mode ImportMode) (*Packa
 				p.Root = ctxt.GOROOT
 				goto Found
 			}
+			tried.goroot = dir
 		}
 		for _, root := range ctxt.gopath() {
 			dir := ctxt.joinPath(root, "src", path)
@@ -444,8 +454,28 @@ func (ctxt *Context) Import(path string, srcDir string, mode ImportMode) (*Packa
 				p.Root = root
 				goto Found
 			}
+			tried.gopath = append(tried.gopath, dir)
 		}
-		return p, fmt.Errorf("import %q: cannot find package", path)
+
+		// package was not found
+		var paths []string
+		if tried.goroot != "" {
+			paths = append(paths, fmt.Sprintf("\t%s (from $GOROOT)", tried.goroot))
+		} else {
+			paths = append(paths, "\t($GOROOT not set)")
+		}
+		var i int
+		var format = "\t%s (from $GOPATH)"
+		for ; i < len(tried.gopath); i++ {
+			if i > 0 {
+				format = "\t%s"
+			}
+			paths = append(paths, fmt.Sprintf(format, tried.gopath[i]))
+		}
+		if i == 0 {
+			paths = append(paths, "\t($GOPATH not set)")
+		}
+		return p, fmt.Errorf("cannot find package %q in any of:\n%s", path, strings.Join(paths, "\n"))
 	}
 
 Found:
@@ -897,6 +927,8 @@ func splitQuoted(s string) (r []string, err error) {
 //	$GOARCH
 //	cgo (if cgo is enabled)
 //	!cgo (if cgo is disabled)
+//	ctxt.Compiler
+//	!ctxt.Compiler
 //	tag (if tag is listed in ctxt.BuildTags)
 //	!tag (if tag is not listed in ctxt.BuildTags)
 //	a comma-separated list of any of these
@@ -928,7 +960,7 @@ func (ctxt *Context) match(name string) bool {
 	if ctxt.CgoEnabled && name == "cgo" {
 		return true
 	}
-	if name == ctxt.GOOS || name == ctxt.GOARCH {
+	if name == ctxt.GOOS || name == ctxt.GOARCH || name == ctxt.Compiler {
 		return true
 	}
 

@@ -1,6 +1,5 @@
 /* Global, SSA-based optimizations using mathematical identities.
-   Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2005-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -665,18 +664,18 @@ struct gimple_opt_pass pass_cse_reciprocals =
    statements in the vector.  */
 
 static bool
-maybe_record_sincos (VEC(gimple, heap) **stmts,
+maybe_record_sincos (vec<gimple> *stmts,
 		     basic_block *top_bb, gimple use_stmt)
 {
   basic_block use_bb = gimple_bb (use_stmt);
   if (*top_bb
       && (*top_bb == use_bb
 	  || dominated_by_p (CDI_DOMINATORS, use_bb, *top_bb)))
-    VEC_safe_push (gimple, heap, *stmts, use_stmt);
+    stmts->safe_push (use_stmt);
   else if (!*top_bb
 	   || dominated_by_p (CDI_DOMINATORS, *top_bb, use_bb))
     {
-      VEC_safe_push (gimple, heap, *stmts, use_stmt);
+      stmts->safe_push (use_stmt);
       *top_bb = use_bb;
     }
   else
@@ -701,7 +700,7 @@ execute_cse_sincos_1 (tree name)
   tree fndecl, res, type;
   gimple def_stmt, use_stmt, stmt;
   int seen_cos = 0, seen_sin = 0, seen_cexpi = 0;
-  VEC(gimple, heap) *stmts = NULL;
+  vec<gimple> stmts = vNULL;
   basic_block top_bb = NULL;
   int i;
   bool cfg_changed = false;
@@ -735,7 +734,7 @@ execute_cse_sincos_1 (tree name)
 
   if (seen_cos + seen_sin + seen_cexpi <= 1)
     {
-      VEC_free(gimple, heap, stmts);
+      stmts.release ();
       return false;
     }
 
@@ -764,7 +763,7 @@ execute_cse_sincos_1 (tree name)
   sincos_stats.inserted++;
 
   /* And adjust the recorded old call sites.  */
-  for (i = 0; VEC_iterate(gimple, stmts, i, use_stmt); ++i)
+  for (i = 0; stmts.iterate (i, &use_stmt); ++i)
     {
       tree rhs = NULL;
       fndecl = gimple_call_fndecl (use_stmt);
@@ -796,7 +795,7 @@ execute_cse_sincos_1 (tree name)
 	  cfg_changed = true;
     }
 
-  VEC_free(gimple, heap, stmts);
+  stmts.release ();
 
   return cfg_changed;
 }
@@ -1111,7 +1110,7 @@ gimple_expand_builtin_pow (gimple_stmt_iterator *gsi, location_t loc,
   HOST_WIDE_INT n;
   tree type, sqrtfn, cbrtfn, sqrt_arg0, sqrt_sqrt, result, cbrt_x, powi_cbrt_x;
   enum machine_mode mode;
-  bool hw_sqrt_exists;
+  bool hw_sqrt_exists, c_is_int, c2_is_int;
 
   /* If the exponent isn't a constant, there's nothing of interest
      to be done.  */
@@ -1123,8 +1122,9 @@ gimple_expand_builtin_pow (gimple_stmt_iterator *gsi, location_t loc,
   c = TREE_REAL_CST (arg1);
   n = real_to_integer (&c);
   real_from_integer (&cint, VOIDmode, n, n < 0 ? -1 : 0, 0);
+  c_is_int = real_identical (&c, &cint);
 
-  if (real_identical (&c, &cint)
+  if (c_is_int
       && ((n >= -1 && n <= 2)
 	  || (flag_unsafe_math_optimizations
 	      && optimize_insn_for_speed_p ()
@@ -1222,7 +1222,8 @@ gimple_expand_builtin_pow (gimple_stmt_iterator *gsi, location_t loc,
       return build_and_insert_call (gsi, loc, cbrtfn, sqrt_arg0);
     }
 
-  /* Optimize pow(x,c), where n = 2c for some nonzero integer n, into
+  /* Optimize pow(x,c), where n = 2c for some nonzero integer n
+     and c not an integer, into
 
        sqrt(x) * powi(x, n/2),                n > 0;
        1.0 / (sqrt(x) * powi(x, abs(n/2))),   n < 0.
@@ -1231,10 +1232,13 @@ gimple_expand_builtin_pow (gimple_stmt_iterator *gsi, location_t loc,
   real_arithmetic (&c2, MULT_EXPR, &c, &dconst2);
   n = real_to_integer (&c2);
   real_from_integer (&cint, VOIDmode, n, n < 0 ? -1 : 0, 0);
+  c2_is_int = real_identical (&c2, &cint);
 
   if (flag_unsafe_math_optimizations
       && sqrtfn
-      && real_identical (&c2, &cint))
+      && c2_is_int
+      && !c_is_int
+      && optimize_function_for_speed_p (cfun))
     {
       tree powi_x_ndiv2 = NULL_TREE;
 
@@ -1287,6 +1291,7 @@ gimple_expand_builtin_pow (gimple_stmt_iterator *gsi, location_t loc,
       && cbrtfn
       && (gimple_val_nonnegative_real_p (arg0) || !HONOR_NANS (mode))
       && real_identical (&c2, &c)
+      && !c2_is_int
       && optimize_function_for_speed_p (cfun)
       && powi_cost (n / 3) <= POWI_MAX_MULTS)
     {

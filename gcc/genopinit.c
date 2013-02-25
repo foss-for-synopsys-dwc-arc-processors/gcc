@@ -1,5 +1,5 @@
 /* Generate code to initialize optabs from machine description.
-   Copyright (C) 1993-2012 Free Software Foundation, Inc.
+   Copyright (C) 1993-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -144,10 +144,8 @@ typedef struct pattern_d
   unsigned int sort_num;
 } pattern;
 
-DEF_VEC_O(pattern);
-DEF_VEC_ALLOC_O(pattern, heap);
 
-static VEC(pattern, heap) *patterns;
+static vec<pattern> patterns;
 
 static bool
 match_pattern (pattern *p, const char *name, const char *pat)
@@ -265,7 +263,7 @@ gen_insn (rtx insn)
 	{
 	  p.op = optabs[pindex].op;
 	  p.sort_num = (p.op << 16) | (p.m2 << 8) | p.m1;
-	  VEC_safe_push (pattern, heap, patterns, p);
+	  patterns.safe_push (p);
 	  return;
 	}
     }
@@ -359,7 +357,7 @@ main (int argc, char **argv)
     }
 
   /* Sort the collected patterns.  */
-  qsort (VEC_address (pattern, patterns), VEC_length (pattern, patterns),
+  qsort (patterns.address (), patterns.length (),
 	 sizeof (pattern), pattern_cmp);
 
   /* Now that we've handled the "extra" patterns, eliminate them from
@@ -399,7 +397,7 @@ main (int argc, char **argv)
   fprintf (h_file, "#define NUM_NORMLIB_OPTABS  %u\n",
 	   last_kind[3] - last_kind[2]);
   fprintf (h_file, "#define NUM_OPTAB_PATTERNS  %u\n",
-	   (unsigned) VEC_length (pattern, patterns));
+	   (unsigned) patterns.length ());
 
   fprintf (s_file,
 	   "#include \"config.h\"\n"
@@ -420,13 +418,13 @@ main (int argc, char **argv)
 
   fprintf (s_file,
 	   "static const struct optab_pat pats[NUM_OPTAB_PATTERNS] = {\n");
-  for (i = 0; VEC_iterate (pattern, patterns, i, p); ++i)
+  for (i = 0; patterns.iterate (i, &p); ++i)
     fprintf (s_file, "  { %#08x, CODE_FOR_%s },\n", p->sort_num, p->name);
   fprintf (s_file, "};\n\n");
 
-  fprintf (s_file, "void\ninit_all_optabs (void)\n{\n");
-  fprintf (s_file, "  bool *ena = this_target_optabs->pat_enable;\n");
-  for (i = 0; VEC_iterate (pattern, patterns, i, p); ++i)
+  fprintf (s_file, "void\ninit_all_optabs (struct target_optabs *optabs)\n{\n");
+  fprintf (s_file, "  bool *ena = optabs->pat_enable;\n");
+  for (i = 0; patterns.iterate (i, &p); ++i)
     fprintf (s_file, "  ena[%u] = HAVE_%s;\n", i, p->name);
   fprintf (s_file, "}\n\n");
 
@@ -458,7 +456,7 @@ main (int argc, char **argv)
 	   "raw_optab_handler (unsigned scode)\n"
 	   "{\n"
 	   "  int i = lookup_handler (scode);\n"
-	   "  return (i >= 0 && this_target_optabs->pat_enable[i]\n"
+	   "  return (i >= 0 && this_fn_optabs->pat_enable[i]\n"
 	   "          ? pats[i].icode : CODE_FOR_nothing);\n"
 	   "}\n\n");
 
@@ -470,8 +468,8 @@ main (int argc, char **argv)
 	   "  int i = lookup_handler (scode);\n"
 	   "  if (i >= 0)\n"
 	   "    {\n"
-	   "      bool ret = this_target_optabs->pat_enable[i];\n"
-	   "      this_target_optabs->pat_enable[i] = set;\n"
+	   "      bool ret = this_fn_optabs->pat_enable[i];\n"
+	   "      this_fn_optabs->pat_enable[i] = set;\n"
 	   "      return ret;\n"
 	   "    }\n"
 	   "  else\n"

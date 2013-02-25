@@ -1,15 +1,12 @@
-2012-10-30  Arnaud Charlet  <charlet@adacore.com>
+2013-02-13  Kai Tietz  <ktietz@redhat.com>
 
-	* Makefile.in (osconstool): Revert previous change, still needed
-	after all. Add call to copy-s-oscons target.
+	PR target/52122
+	* Makefile.in (LN_S_RECURSIVE): New.
+	(adainclude, adalib): Use LN_S_RECURSIVE for copy.
 
-2012-10-30  Arnaud Charlet  <charlet@adacore.com>
+2013-01-14  Richard Sandiford  <rdsandiford@googlemail.com>
 
-	* Makefile.in (osconstool): Removed, no longer needed.
-
-2012-10-30  Arnaud Charlet  <charlet@adacore.com>
-
-	* Makefile.in (osconstool): Fix target.
+	Update copyright years.
 
 2012-06-11  Olivier Hainque  <hainque@adacore.com>
 
@@ -323,7 +320,7 @@
 
 	* New directory, new ChangeLog.
 
-Copyright 2003, 2004 Free Software Foundation, Inc.
+Copyright (C) 2003-2013 Free Software Foundation, Inc.
 
 This ChangeLog is free software; the Free Software Foundation gives
 unlimited permission to copy, distribute, and modify it.

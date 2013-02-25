@@ -1,6 +1,5 @@
 /* Allocation for dataflow support routines.
-   Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
-   2008, 2009, 2010, 2011 Free Software Foundation, Inc.
+   Copyright (C) 1999-2013 Free Software Foundation, Inc.
    Originally contributed by Michael P. Hayes
              (m.hayes@elec.canterbury.ac.nz, mhayes@redhat.com)
    Major rewrite contributed by Danny Berlin (dberlin@dberlin.org)
@@ -991,12 +990,12 @@ df_worklist_dataflow_doublequeue (struct dataflow *dataflow,
   bitmap worklist = BITMAP_ALLOC (&df_bitmap_obstack);
   int age = 0;
   bool changed;
-  VEC(int, heap) *last_visit_age = NULL;
+  vec<int> last_visit_age = vNULL;
   int prev_age;
   basic_block bb;
   int i;
 
-  VEC_safe_grow_cleared (int, heap, last_visit_age, n_blocks);
+  last_visit_age.safe_grow_cleared (n_blocks);
 
   /* Double-queueing. Worklist is for the current iteration,
      and pending is for the next. */
@@ -1018,7 +1017,7 @@ df_worklist_dataflow_doublequeue (struct dataflow *dataflow,
 	  bitmap_clear_bit (pending, index);
 	  bb_index = blocks_in_postorder[index];
 	  bb = BASIC_BLOCK (bb_index);
-	  prev_age = VEC_index (int, last_visit_age, index);
+	  prev_age = last_visit_age[index];
 	  if (dir == DF_FORWARD)
 	    changed = df_worklist_propagate_forward (dataflow, bb_index,
 						     bbindex_to_postorder,
@@ -1029,7 +1028,7 @@ df_worklist_dataflow_doublequeue (struct dataflow *dataflow,
 						      bbindex_to_postorder,
 						      pending, considered,
 						      prev_age);
-	  VEC_replace (int, last_visit_age, index, ++age);
+	  last_visit_age[index] = ++age;
 	  if (changed)
 	    bb->aux = (void *)(ptrdiff_t)age;
 	}
@@ -1040,7 +1039,7 @@ df_worklist_dataflow_doublequeue (struct dataflow *dataflow,
 
   BITMAP_FREE (worklist);
   BITMAP_FREE (pending);
-  VEC_free (int, heap, last_visit_age);
+  last_visit_age.release ();
 
   /* Dump statistics. */
   if (dump_file)

@@ -513,7 +513,7 @@ Again:
 		// First message, be extra suspicious:
 		// this might not be a TLS client.
 		// Bail out before reading a full 'body', if possible.
-		// The current max version is 3.1. 
+		// The current max version is 3.1.
 		// If the version is >= 16.0, it's probably not real.
 		// Similarly, a clientHello message encodes in
 		// well under a kilobyte.  If the length is >= 12 kB,
@@ -604,9 +604,11 @@ Again:
 // sendAlert sends a TLS alert message.
 // c.out.Mutex <= L.
 func (c *Conn) sendAlertLocked(err alert) error {
-	c.tmp[0] = alertLevelError
-	if err == alertNoRenegotiation {
+	switch err {
+	case alertNoRenegotiation, alertCloseNotify:
 		c.tmp[0] = alertLevelWarning
+	default:
+		c.tmp[0] = alertLevelError
 	}
 	c.tmp[1] = byte(err)
 	c.writeRecord(recordTypeAlert, c.tmp[0:2])
@@ -756,8 +758,28 @@ func (c *Conn) Write(b []byte) (int, error) {
 		return 0, alertInternalError
 	}
 
+	// SSL 3.0 and TLS 1.0 are susceptible to a chosen-plaintext
+	// attack when using block mode ciphers due to predictable IVs.
+	// This can be prevented by splitting each Application Data
+	// record into two records, effectively randomizing the IV.
+	//
+	// http://www.openssl.org/~bodo/tls-cbc.txt
+	// https://bugzilla.mozilla.org/show_bug.cgi?id=665814
+	// http://www.imperialviolet.org/2012/01/15/beastfollowup.html
+
+	var m int
+	if len(b) > 1 && c.vers <= versionTLS10 {
+		if _, ok := c.out.cipher.(cipher.BlockMode); ok {
+			n, err := c.writeRecord(recordTypeApplicationData, b[:1])
+			if err != nil {
+				return n, c.setError(err)
+			}
+			m, b = 1, b[1:]
+		}
+	}
+
 	n, err := c.writeRecord(recordTypeApplicationData, b)
-	return n, c.setError(err)
+	return n + m, c.setError(err)
 }
 
 // Read can be made to time out and return a net.Error with Timeout() == true

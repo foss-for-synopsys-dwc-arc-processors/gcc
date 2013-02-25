@@ -1,7 +1,5 @@
 /* Register Transfer Language (RTL) definitions for GCC
-   Copyright (C) 1987, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -27,7 +25,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "input.h"
 #include "real.h"
 #include "vec.h"
-#include "vecir.h"
 #include "fixed-value.h"
 #include "alias.h"
 #include "hashtab.h"
@@ -239,7 +236,7 @@ struct GTY(()) object_block {
 	 !SYMBOL_REF_ANCHOR_P (X)
 	 SYMBOL_REF_BLOCK (X) == [address of this structure]
 	 SYMBOL_REF_BLOCK_OFFSET (X) >= 0.  */
-  VEC(rtx,gc) *objects;
+  vec<rtx, va_gc> *objects;
 
   /* All the anchor SYMBOL_REFs used to address these objects, sorted
      in order of increasing offset, and then increasing TLS model.
@@ -249,7 +246,7 @@ struct GTY(()) object_block {
 	 SYMBOL_REF_ANCHOR_P (X)
 	 SYMBOL_REF_BLOCK (X) == [address of this structure]
 	 SYMBOL_REF_BLOCK_OFFSET (X) >= 0.  */
-  VEC(rtx,gc) *anchors;
+  vec<rtx, va_gc> *anchors;
 };
 
 /* RTL expression ("rtx").  */
@@ -431,6 +428,10 @@ struct GTY((variable_size)) rtvec_def {
 /* Predicate yielding true iff X is an rtx for a double-int.  */
 #define CONST_DOUBLE_AS_INT_P(X) \
   (GET_CODE (X) == CONST_DOUBLE && GET_MODE (X) == VOIDmode)
+
+/* Predicate yielding true iff X is an rtx for a integer const.  */
+#define CONST_SCALAR_INT_P(X) \
+  (CONST_INT_P (X) || CONST_DOUBLE_AS_INT_P (X))
 
 /* Predicate yielding true iff X is an rtx for a double-int.  */
 #define CONST_DOUBLE_AS_FLOAT_P(X) \
@@ -2436,6 +2437,9 @@ extern rtx gen_rtx_MEM (enum machine_mode, rtx);
 /* REGNUM never really appearing in the INSN stream.  */
 #define INVALID_REGNUM			(~(unsigned int) 0)
 
+/* REGNUM for which no debug information can be generated.  */
+#define IGNORED_DWARF_REGNUM            (INVALID_REGNUM - 1)
+
 extern rtx output_constant_def (tree, int);
 extern rtx lookup_constant_def (tree);
 
@@ -2572,14 +2576,6 @@ extern rtx make_compound_operation (rtx, enum rtx_code);
 /* In cfgcleanup.c  */
 extern void delete_dead_jumptables (void);
 
-/* In sched-vis.c.  */
-extern void debug_bb_n_slim (int);
-extern void debug_bb_slim (struct basic_block_def *);
-extern void print_value_slim (FILE *, const_rtx, int);
-extern void debug_rtl_slim (FILE *, const_rtx, const_rtx, int, int);
-extern void dump_insn_slim (FILE *f, const_rtx x);
-extern void debug_insn_slim (const_rtx x);
-
 /* In sched-rgn.c.  */
 extern void schedule_insns (void);
 
@@ -2601,6 +2597,18 @@ extern void print_simple_rtl (FILE *, const_rtx);
 extern int print_rtl_single (FILE *, const_rtx);
 extern int print_rtl_single_with_indent (FILE *, const_rtx, int);
 extern void print_inline_rtx (FILE *, const_rtx, int);
+
+/* Functions in sched-vis.c.  FIXME: Ideally these functions would
+   not be in sched-vis.c but in rtl.c, because they are not only used
+   by the scheduler anymore but for all "slim" RTL dumping.  */
+extern void dump_value_slim (FILE *, const_rtx, int);
+extern void dump_insn_slim (FILE *, const_rtx);
+extern void dump_rtl_slim (FILE *, const_rtx, const_rtx, int, int);
+extern void print_value (pretty_printer *, const_rtx, int);
+extern void print_pattern (pretty_printer *, const_rtx, int);
+extern void print_insn (pretty_printer *, const_rtx, int);
+extern void rtl_dump_bb_for_graph (pretty_printer *, basic_block);
+extern const char *str_pattern_slim (const_rtx);
 
 /* In function.c */
 extern void reposition_prologue_and_epilogue_notes (void);

@@ -1,7 +1,5 @@
 /* Handle exceptional things in C++.
-   Copyright (C) 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1989-2013 Free Software Foundation, Inc.
    Contributed by Michael Tiemann <tiemann@cygnus.com>
    Rewritten by Mike Stump <mrs@cygnus.com>, based upon an
    initial re-implementation courtesy Tad Hunt.
@@ -824,7 +822,7 @@ build_throw (tree exp)
       if (CLASS_TYPE_P (temp_type))
 	{
 	  int flags = LOOKUP_NORMAL | LOOKUP_ONLYCONVERTING;
-	  VEC(tree,gc) *exp_vec;
+	  vec<tree, va_gc> *exp_vec;
 
 	  /* Under C++0x [12.8/16 class.copy], a thrown lvalue is sometimes
 	     treated as an rvalue for the purposes of overload resolution
@@ -1176,9 +1174,7 @@ typedef struct GTY(()) pending_noexcept {
   tree fn;
   location_t loc;
 } pending_noexcept;
-DEF_VEC_O(pending_noexcept);
-DEF_VEC_ALLOC_O(pending_noexcept,gc);
-static GTY(()) VEC(pending_noexcept,gc) *pending_noexcept_checks;
+static GTY(()) vec<pending_noexcept, va_gc> *pending_noexcept_checks;
 
 /* FN is a FUNCTION_DECL that caused a noexcept-expr to be false.  Warn if
    it can't throw.  */
@@ -1204,7 +1200,7 @@ perform_deferred_noexcept_checks (void)
   int i;
   pending_noexcept *p;
   location_t saved_loc = input_location;
-  FOR_EACH_VEC_ELT (pending_noexcept, pending_noexcept_checks, i, p)
+  FOR_EACH_VEC_SAFE_ELT (pending_noexcept_checks, i, p)
     {
       input_location = p->loc;
       maybe_noexcept_warning (p->fn);
@@ -1248,7 +1244,7 @@ expr_noexcept_p (tree expr, tsubst_flags_t complain)
 	    {
 	      /* Not defined yet; check again at EOF.  */
 	      pending_noexcept p = {fn, input_location};
-	      VEC_safe_push (pending_noexcept, gc, pending_noexcept_checks, p);
+	      vec_safe_push (pending_noexcept_checks, p);
 	    }
 	  else
 	    maybe_noexcept_warning (fn);
@@ -1318,15 +1314,21 @@ build_noexcept_spec (tree expr, int complain)
 						LOOKUP_NORMAL);
       expr = cxx_constant_value (expr);
     }
-  if (expr == boolean_true_node)
-    return noexcept_true_spec;
-  else if (expr == boolean_false_node)
-    return noexcept_false_spec;
+  if (TREE_CODE (expr) == INTEGER_CST)
+    {
+      if (operand_equal_p (expr, boolean_true_node, 0))
+	return noexcept_true_spec;
+      else
+	{
+	  gcc_checking_assert (operand_equal_p (expr, boolean_false_node, 0));
+	  return noexcept_false_spec;
+	}
+    }
   else if (expr == error_mark_node)
     return error_mark_node;
   else
     {
-      gcc_assert (processing_template_decl || expr == error_mark_node
+      gcc_assert (processing_template_decl
 		  || TREE_CODE (expr) == DEFERRED_NOEXCEPT);
       return build_tree_list (expr, NULL_TREE);
     }

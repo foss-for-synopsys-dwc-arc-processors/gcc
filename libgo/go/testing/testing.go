@@ -10,11 +10,19 @@
 // [a-z]) and serves to identify the test routine.
 // These TestXxx routines should be declared within the package they are testing.
 //
+// Tests may be skipped if not applicable like this:
+//     func TestTimeConsuming(t *testing.T) {
+//         if testing.Short() {
+//             t.Skip("skipping test in short mode.")
+//         }
+//         ...
+//     }
+//
 // Functions of the form
 //     func BenchmarkXxx(*testing.B)
 // are considered benchmarks, and are executed by the "go test" command when
 // the -test.bench flag is provided. Benchmarks are run sequentially.
-// 
+//
 // For a description of the testing flags, see
 // http://golang.org/cmd/go/#Description_of_testing_flags.
 //
@@ -42,8 +50,8 @@
 //
 // The package also runs and verifies example code. Example functions may
 // include a concluding comment that begins with "Output:" and is compared with
-// the standard output of the function when the tests are run, as in these
-// examples of an example:
+// the standard output of the function when the tests are run. (The comparison
+// ignores leading and trailing space.) These are examples of an example:
 //
 //     func ExampleHello() {
 //             fmt.Println("hello")
@@ -185,6 +193,7 @@ type T struct {
 	common
 	name          string    // Name of test.
 	startParallel chan bool // Parallel tests will wait on this.
+	skipped       bool      // Test has been skipped.
 }
 
 // Fail marks the function as having failed but continues execution.
@@ -194,7 +203,7 @@ func (c *common) Fail() {
 	c.failed = true
 }
 
-// Failed returns whether the function has failed.
+// Failed reports whether the function has failed.
 func (c *common) Failed() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -267,7 +276,7 @@ func (c *common) Fatalf(format string, args ...interface{}) {
 	c.FailNow()
 }
 
-// Parallel signals that this test is to be run in parallel with (and only with) 
+// Parallel signals that this test is to be run in parallel with (and only with)
 // other parallel tests in this CPU group.
 func (t *T) Parallel() {
 	t.signal <- (*T)(nil) // Release main testing loop
@@ -285,7 +294,7 @@ func tRunner(t *T, test *InternalTest) {
 	t.start = time.Now()
 
 	// When this goroutine is done, either because test.F(t)
-	// returned normally or because a test failure triggered 
+	// returned normally or because a test failure triggered
 	// a call to runtime.Goexit, record the duration and send
 	// a signal saying that the test is done.
 	defer func() {
@@ -328,8 +337,44 @@ func (t *T) report() {
 	if t.Failed() {
 		fmt.Printf(format, "FAIL", t.name, tstr, t.output)
 	} else if *chatty {
-		fmt.Printf(format, "PASS", t.name, tstr, t.output)
+		if t.Skipped() {
+			fmt.Printf(format, "SKIP", t.name, tstr, t.output)
+		} else {
+			fmt.Printf(format, "PASS", t.name, tstr, t.output)
+		}
 	}
+}
+
+// Skip is equivalent to Log() followed by SkipNow().
+func (t *T) Skip(args ...interface{}) {
+	t.log(fmt.Sprintln(args...))
+	t.SkipNow()
+}
+
+// Skipf is equivalent to Logf() followed by SkipNow().
+func (t *T) Skipf(format string, args ...interface{}) {
+	t.log(fmt.Sprintf(format, args...))
+	t.SkipNow()
+}
+
+// SkipNow marks the function as having been skipped and stops its execution.
+// Execution will continue at the next test or benchmark. See also, t.FailNow.
+func (t *T) SkipNow() {
+	t.skip()
+	runtime.Goexit()
+}
+
+func (t *T) skip() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.skipped = true
+}
+
+// Skipped reports whether the function was skipped.
+func (t *T) Skipped() bool {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.skipped
 }
 
 func RunTests(matchString func(pat, str string) (bool, error), tests []InternalTest) (ok bool) {

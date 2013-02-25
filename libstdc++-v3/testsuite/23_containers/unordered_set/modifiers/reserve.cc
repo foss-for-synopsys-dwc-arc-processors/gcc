@@ -1,6 +1,6 @@
 // { dg-options "-std=gnu++0x" }
 
-// Copyright (C) 2012 Free Software Foundation, Inc.
+// Copyright (C) 2012-2013 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -40,8 +40,28 @@ void test01()
     }
 }
 
+void test02()
+{
+  const int N = 1000;
+
+  typedef std::unordered_set<int> Set;
+  Set s;
+  s.reserve(N);
+  s.reserve(N);
+
+  std::size_t bkts = s.bucket_count();
+  for (int i = 0; i != N; ++i)
+    {
+      s.insert(i);
+      // As long as we insert less than the reserved number of elements we
+      // shouldn't experiment any rehash.
+      VERIFY( s.bucket_count() == bkts );
+    }
+}
+
 int main()
 {
   test01();
+  test02();
   return 0;
 }

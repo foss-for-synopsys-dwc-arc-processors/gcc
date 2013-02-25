@@ -1,6 +1,5 @@
 /* Rtl-level induction variable analysis.
-   Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2004-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -2406,6 +2405,9 @@ iv_number_of_iterations (struct loop *loop, rtx insn, rtx condition,
       iv1.step = const0_rtx;
     }
 
+  iv0.step = lowpart_subreg (mode, iv0.step, comp_mode);
+  iv1.step = lowpart_subreg (mode, iv1.step, comp_mode);
+
   /* This is either infinite loop or the one that ends immediately, depending
      on initial values.  Unswitching should remove this kind of conditions.  */
   if (iv0.step == const0_rtx && iv1.step == const0_rtx)
@@ -2516,6 +2518,7 @@ iv_number_of_iterations (struct loop *loop, rtx insn, rtx condition,
 	step = simplify_gen_unary (NEG, comp_mode, iv1.step, comp_mode);
       else
 	step = iv0.step;
+      step = lowpart_subreg (mode, step, comp_mode);
       delta = simplify_gen_binary (MINUS, comp_mode, iv1.base, iv0.base);
       delta = lowpart_subreg (mode, delta, comp_mode);
       delta = simplify_gen_binary (UMOD, mode, delta, step);
@@ -2816,7 +2819,8 @@ iv_number_of_iterations (struct loop *loop, rtx insn, rtx condition,
   else
     {
       max = determine_max_iter (loop, desc, old_niter);
-      gcc_assert (max);
+      if (!max)
+	goto zero_iter_simplify;
       if (!desc->infinite
 	  && !desc->assumptions)
 	record_niter_bound (loop, double_int::from_uhwi (max),

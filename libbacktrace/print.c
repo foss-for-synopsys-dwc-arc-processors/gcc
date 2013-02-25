@@ -1,5 +1,5 @@
 /* print.c -- Print the current backtrace.
-   Copyright (C) 2012 Free Software Foundation, Inc.
+   Copyright (C) 2012-2013 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -69,12 +69,10 @@ static void
 error_callback (void *data, const char *msg, int errnum)
 {
   struct print_data *pdata = (struct print_data *) data;
-  const char *name;
 
-  name = pdata->state->filename;
-  if (name == NULL)
-    name = "/proc/self/exe";
-  fprintf (stderr, "%s: libbacktrace: %s", name, msg);
+  if (pdata->state->filename != NULL)
+    fprintf (stderr, "%s: ", pdata->state->filename);
+  fprintf (stderr, "libbacktrace: %s", msg);
   if (errnum > 0)
     fprintf (stderr, ": %s", strerror (errnum));
   fputc ('\n', stderr);

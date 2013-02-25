@@ -1,6 +1,5 @@
 /* Inlining decision heuristics.
-   Copyright (C) 2003, 2004, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 2003-2013 Free Software Foundation, Inc.
    Contributed by Jan Hubicka
 
 This file is part of GCC.
@@ -493,6 +492,22 @@ compute_inlined_call_time (struct cgraph_edge *edge,
   return time;
 }
 
+/* Return true if the speedup for inlining E is bigger than
+   PARAM_MAX_INLINE_MIN_SPEEDUP.  */
+
+static bool
+big_speedup_p (struct cgraph_edge *e)
+{
+  gcov_type time = compute_uninlined_call_time (inline_summary (e->callee),
+					  	e);
+  gcov_type inlined_time = compute_inlined_call_time (e,
+					              estimate_edge_time (e));
+  if (time - inlined_time
+      > RDIV (time * PARAM_VALUE (PARAM_INLINE_MIN_SPEEDUP), 100))
+    return true;
+  return false;
+}
+
 /* Return true if we are interested in inlining small function.
    When REPORT is true, report reason to dump file.  */
 
@@ -514,6 +529,7 @@ want_inline_small_function_p (struct cgraph_edge *e, bool report)
     {
       int growth = estimate_edge_growth (e);
       inline_hints hints = estimate_edge_hints (e);
+      bool big_speedup = big_speedup_p (e);
 
       if (growth <= 0)
 	;
@@ -521,8 +537,10 @@ want_inline_small_function_p (struct cgraph_edge *e, bool report)
 	 hints suggests that inlining given function is very profitable.  */
       else if (DECL_DECLARED_INLINE_P (callee->symbol.decl)
 	       && growth >= MAX_INLINE_INSNS_SINGLE
+	       && !big_speedup
 	       && !(hints & (INLINE_HINT_indirect_call
 			     | INLINE_HINT_loop_iterations
+			     | INLINE_HINT_array_index
 			     | INLINE_HINT_loop_stride)))
 	{
           e->inline_failed = CIF_MAX_INLINE_INSNS_SINGLE_LIMIT;
@@ -574,8 +592,10 @@ want_inline_small_function_p (struct cgraph_edge *e, bool report)
 	 Upgrade it to MAX_INLINE_INSNS_SINGLE when hints suggests that
 	 inlining given function is very profitable.  */
       else if (!DECL_DECLARED_INLINE_P (callee->symbol.decl)
+	       && !big_speedup
 	       && growth >= ((hints & (INLINE_HINT_indirect_call
 				       | INLINE_HINT_loop_iterations
+			               | INLINE_HINT_array_index
 				       | INLINE_HINT_loop_stride))
 			     ? MAX (MAX_INLINE_INSNS_AUTO,
 				    MAX_INLINE_INSNS_SINGLE)
@@ -829,13 +849,17 @@ edge_badness (struct cgraph_edge *edge, bool dump)
 
   if (dump)
     {
-      fprintf (dump_file, "    Badness calculation for %s -> %s\n",
+      fprintf (dump_file, "    Badness calculation for %s/%i -> %s/%i\n",
 	       xstrdup (cgraph_node_name (edge->caller)),
-	       xstrdup (cgraph_node_name (callee)));
+	       edge->caller->uid,
+	       xstrdup (cgraph_node_name (callee)),
+	       edge->callee->uid);
       fprintf (dump_file, "      size growth %i, time %i ",
 	       growth,
 	       edge_time);
       dump_inline_hints (dump_file, hints);
+      if (big_speedup_p (edge))
+	fprintf (dump_file, " big_speedup");
       fprintf (dump_file, "\n");
     }
 
@@ -894,10 +918,11 @@ edge_badness (struct cgraph_edge *edge, bool dump)
     {
       badness = (relative_time_benefit (callee_info, edge, edge_time)
 		 * (INT_MIN / 16 / RELATIVE_TIME_BENEFIT_RANGE));
-      badness /= (growth * MAX (1, callee_info->growth));
+      badness /= (MIN (65536/2, growth) * MIN (65536/2, MAX (1, callee_info->growth)));
       gcc_checking_assert (badness <=0 && badness >= INT_MIN / 16);
       if ((hints & (INLINE_HINT_indirect_call
 		    | INLINE_HINT_loop_iterations
+	            | INLINE_HINT_array_index
 		    | INLINE_HINT_loop_stride))
 	  || callee_info->growth <= 0)
 	badness *= 8;
@@ -1197,7 +1222,7 @@ lookup_recursive_calls (struct cgraph_node *node, struct cgraph_node *where,
 
 static bool
 recursive_inlining (struct cgraph_edge *edge,
-		    VEC (cgraph_edge_p, heap) **new_edges)
+		    vec<cgraph_edge_p> *new_edges)
 {
   int limit = PARAM_VALUE (PARAM_MAX_INLINE_INSNS_RECURSIVE_AUTO);
   fibheap_t heap;
@@ -1287,7 +1312,7 @@ recursive_inlining (struct cgraph_edge *edge,
 	  /* We need original clone to copy around.  */
 	  master_clone = cgraph_clone_node (node, node->symbol.decl,
 					    node->count, CGRAPH_FREQ_BASE,
-					    false, NULL, true);
+					    false, vNULL, true);
 	  for (e = master_clone->callees; e; e = e->next_callee)
 	    if (!e->inline_failed)
 	      clone_inlined_nodes (e, true, false, NULL);
@@ -1347,11 +1372,11 @@ compute_max_insns (int insns)
 /* Compute badness of all edges in NEW_EDGES and add them to the HEAP.  */
 
 static void
-add_new_edges_to_heap (fibheap_t heap, VEC (cgraph_edge_p, heap) *new_edges)
+add_new_edges_to_heap (fibheap_t heap, vec<cgraph_edge_p> new_edges)
 {
-  while (VEC_length (cgraph_edge_p, new_edges) > 0)
+  while (new_edges.length () > 0)
     {
-      struct cgraph_edge *edge = VEC_pop (cgraph_edge_p, new_edges);
+      struct cgraph_edge *edge = new_edges.pop ();
 
       gcc_assert (!edge->aux);
       if (edge->inline_failed
@@ -1376,12 +1401,12 @@ inline_small_functions (void)
   fibheap_t edge_heap = fibheap_new ();
   bitmap updated_nodes = BITMAP_ALLOC (NULL);
   int min_size, max_size;
-  VEC (cgraph_edge_p, heap) *new_indirect_edges = NULL;
+  vec<cgraph_edge_p> new_indirect_edges = vNULL;
   int initial_size = 0;
   struct cgraph_node **order = XCNEWVEC (struct cgraph_node *, cgraph_n_nodes);
 
   if (flag_indirect_inlining)
-    new_indirect_edges = VEC_alloc (cgraph_edge_p, heap, 8);
+    new_indirect_edges.create (8);
 
   /* Compute overall unit size and other global parameters used by badness
      metrics.  */
@@ -1628,8 +1653,7 @@ inline_small_functions (void)
     }
 
   free_growth_caches ();
-  if (new_indirect_edges)
-    VEC_free (cgraph_edge_p, heap, new_indirect_edges);
+  new_indirect_edges.release ();
   fibheap_delete (edge_heap);
   if (dump_file)
     fprintf (dump_file,
@@ -1768,7 +1792,7 @@ ipa_inline (void)
     }
 
   inline_small_functions ();
-  symtab_remove_unreachable_nodes (true, dump_file);
+  symtab_remove_unreachable_nodes (false, dump_file);
   free (order);
 
   /* Inline functions with a property that after inlining into all callers the
@@ -1968,7 +1992,7 @@ early_inliner (void)
      it.  This may confuse ourself when early inliner decide to inline call to
      function clone, because function clones don't have parameter list in
      ipa-prop matching their signature.  */
-  if (ipa_node_params_vector)
+  if (ipa_node_params_vector.exists ())
     return 0;
 
 #ifdef ENABLE_CHECKING

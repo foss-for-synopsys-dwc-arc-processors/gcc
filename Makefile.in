@@ -235,7 +235,7 @@ POSTSTAGE1_CXX_EXPORT = \
 @if target-libstdc++-v3-bootstrap
 # Override the above if we're bootstrapping C++.
 POSTSTAGE1_CXX_EXPORT = \
-	CXX="$(STAGE_CC_WRAPPER) $$r/$(HOST_SUBDIR)/prev-gcc/g++$(exeext) \
+	CXX="$(STAGE_CC_WRAPPER) $$r/$(HOST_SUBDIR)/prev-gcc/xg++$(exeext) \
 	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/bin/ -nostdinc++ \
 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs \
@@ -364,7 +364,7 @@ BUILD_PREFIX_1 = @BUILD_PREFIX_1@
 # here so that they can be overridden by Makefile fragments.
 BOOT_CFLAGS= -g -O2
 BOOT_LDFLAGS=
-BOOT_ADAFLAGS=-gnatpg -gnata
+BOOT_ADAFLAGS= -gnatpg
 
 AWK = @AWK@
 SED = @SED@
@@ -575,7 +575,7 @@ all:
 
 # This is the list of directories that may be needed in RPATH_ENVVAR
 # so that programs built for the target machine work.
-TARGET_LIB_PATH = $(TARGET_LIB_PATH_libstdc++-v3)$(TARGET_LIB_PATH_libmudflap)$(TARGET_LIB_PATH_libssp)$(TARGET_LIB_PATH_libgomp)$(TARGET_LIB_PATH_libitm)$(TARGET_LIB_PATH_libatomic)$(HOST_LIB_PATH_gcc)
+TARGET_LIB_PATH = $(TARGET_LIB_PATH_libstdc++-v3)$(TARGET_LIB_PATH_libmudflap)$(TARGET_LIB_PATH_libsanitizer)$(TARGET_LIB_PATH_libssp)$(TARGET_LIB_PATH_libgomp)$(TARGET_LIB_PATH_libitm)$(TARGET_LIB_PATH_libatomic)$(HOST_LIB_PATH_gcc)
 
 @if target-libstdc++-v3
 TARGET_LIB_PATH_libstdc++-v3 = $$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs:
@@ -584,6 +584,10 @@ TARGET_LIB_PATH_libstdc++-v3 = $$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs:
 @if target-libmudflap
 TARGET_LIB_PATH_libmudflap = $$r/$(TARGET_SUBDIR)/libmudflap/.libs:
 @endif target-libmudflap
+
+@if target-libsanitizer
+TARGET_LIB_PATH_libsanitizer = $$r/$(TARGET_SUBDIR)/libsanitizer/.libs:
+@endif target-libsanitizer
 
 @if target-libssp
 TARGET_LIB_PATH_libssp = $$r/$(TARGET_SUBDIR)/libssp/.libs:
@@ -920,6 +924,7 @@ configure-host:  \
 configure-target:  \
     maybe-configure-target-libstdc++-v3 \
     maybe-configure-target-libmudflap \
+    maybe-configure-target-libsanitizer \
     maybe-configure-target-libssp \
     maybe-configure-target-newlib \
     maybe-configure-target-libgcc \
@@ -1068,6 +1073,9 @@ all-host: maybe-all-lto-plugin
 all-target: maybe-all-target-libstdc++-v3
 @endif target-libstdc++-v3-no-bootstrap
 all-target: maybe-all-target-libmudflap
+@if target-libsanitizer-no-bootstrap
+all-target: maybe-all-target-libsanitizer
+@endif target-libsanitizer-no-bootstrap
 all-target: maybe-all-target-libssp
 all-target: maybe-all-target-newlib
 @if target-libgcc-no-bootstrap
@@ -1158,6 +1166,7 @@ info-host: maybe-info-lto-plugin
 
 info-target: maybe-info-target-libstdc++-v3
 info-target: maybe-info-target-libmudflap
+info-target: maybe-info-target-libsanitizer
 info-target: maybe-info-target-libssp
 info-target: maybe-info-target-newlib
 info-target: maybe-info-target-libgcc
@@ -1239,6 +1248,7 @@ dvi-host: maybe-dvi-lto-plugin
 
 dvi-target: maybe-dvi-target-libstdc++-v3
 dvi-target: maybe-dvi-target-libmudflap
+dvi-target: maybe-dvi-target-libsanitizer
 dvi-target: maybe-dvi-target-libssp
 dvi-target: maybe-dvi-target-newlib
 dvi-target: maybe-dvi-target-libgcc
@@ -1320,6 +1330,7 @@ pdf-host: maybe-pdf-lto-plugin
 
 pdf-target: maybe-pdf-target-libstdc++-v3
 pdf-target: maybe-pdf-target-libmudflap
+pdf-target: maybe-pdf-target-libsanitizer
 pdf-target: maybe-pdf-target-libssp
 pdf-target: maybe-pdf-target-newlib
 pdf-target: maybe-pdf-target-libgcc
@@ -1401,6 +1412,7 @@ html-host: maybe-html-lto-plugin
 
 html-target: maybe-html-target-libstdc++-v3
 html-target: maybe-html-target-libmudflap
+html-target: maybe-html-target-libsanitizer
 html-target: maybe-html-target-libssp
 html-target: maybe-html-target-newlib
 html-target: maybe-html-target-libgcc
@@ -1482,6 +1494,7 @@ TAGS-host: maybe-TAGS-lto-plugin
 
 TAGS-target: maybe-TAGS-target-libstdc++-v3
 TAGS-target: maybe-TAGS-target-libmudflap
+TAGS-target: maybe-TAGS-target-libsanitizer
 TAGS-target: maybe-TAGS-target-libssp
 TAGS-target: maybe-TAGS-target-newlib
 TAGS-target: maybe-TAGS-target-libgcc
@@ -1563,6 +1576,7 @@ install-info-host: maybe-install-info-lto-plugin
 
 install-info-target: maybe-install-info-target-libstdc++-v3
 install-info-target: maybe-install-info-target-libmudflap
+install-info-target: maybe-install-info-target-libsanitizer
 install-info-target: maybe-install-info-target-libssp
 install-info-target: maybe-install-info-target-newlib
 install-info-target: maybe-install-info-target-libgcc
@@ -1644,6 +1658,7 @@ install-pdf-host: maybe-install-pdf-lto-plugin
 
 install-pdf-target: maybe-install-pdf-target-libstdc++-v3
 install-pdf-target: maybe-install-pdf-target-libmudflap
+install-pdf-target: maybe-install-pdf-target-libsanitizer
 install-pdf-target: maybe-install-pdf-target-libssp
 install-pdf-target: maybe-install-pdf-target-newlib
 install-pdf-target: maybe-install-pdf-target-libgcc
@@ -1725,6 +1740,7 @@ install-html-host: maybe-install-html-lto-plugin
 
 install-html-target: maybe-install-html-target-libstdc++-v3
 install-html-target: maybe-install-html-target-libmudflap
+install-html-target: maybe-install-html-target-libsanitizer
 install-html-target: maybe-install-html-target-libssp
 install-html-target: maybe-install-html-target-newlib
 install-html-target: maybe-install-html-target-libgcc
@@ -1806,6 +1822,7 @@ installcheck-host: maybe-installcheck-lto-plugin
 
 installcheck-target: maybe-installcheck-target-libstdc++-v3
 installcheck-target: maybe-installcheck-target-libmudflap
+installcheck-target: maybe-installcheck-target-libsanitizer
 installcheck-target: maybe-installcheck-target-libssp
 installcheck-target: maybe-installcheck-target-newlib
 installcheck-target: maybe-installcheck-target-libgcc
@@ -1887,6 +1904,7 @@ mostlyclean-host: maybe-mostlyclean-lto-plugin
 
 mostlyclean-target: maybe-mostlyclean-target-libstdc++-v3
 mostlyclean-target: maybe-mostlyclean-target-libmudflap
+mostlyclean-target: maybe-mostlyclean-target-libsanitizer
 mostlyclean-target: maybe-mostlyclean-target-libssp
 mostlyclean-target: maybe-mostlyclean-target-newlib
 mostlyclean-target: maybe-mostlyclean-target-libgcc
@@ -1968,6 +1986,7 @@ clean-host: maybe-clean-lto-plugin
 
 clean-target: maybe-clean-target-libstdc++-v3
 clean-target: maybe-clean-target-libmudflap
+clean-target: maybe-clean-target-libsanitizer
 clean-target: maybe-clean-target-libssp
 clean-target: maybe-clean-target-newlib
 clean-target: maybe-clean-target-libgcc
@@ -2049,6 +2068,7 @@ distclean-host: maybe-distclean-lto-plugin
 
 distclean-target: maybe-distclean-target-libstdc++-v3
 distclean-target: maybe-distclean-target-libmudflap
+distclean-target: maybe-distclean-target-libsanitizer
 distclean-target: maybe-distclean-target-libssp
 distclean-target: maybe-distclean-target-newlib
 distclean-target: maybe-distclean-target-libgcc
@@ -2130,6 +2150,7 @@ maintainer-clean-host: maybe-maintainer-clean-lto-plugin
 
 maintainer-clean-target: maybe-maintainer-clean-target-libstdc++-v3
 maintainer-clean-target: maybe-maintainer-clean-target-libmudflap
+maintainer-clean-target: maybe-maintainer-clean-target-libsanitizer
 maintainer-clean-target: maybe-maintainer-clean-target-libssp
 maintainer-clean-target: maybe-maintainer-clean-target-newlib
 maintainer-clean-target: maybe-maintainer-clean-target-libgcc
@@ -2266,6 +2287,7 @@ check-host:  \
 check-target:  \
     maybe-check-target-libstdc++-v3 \
     maybe-check-target-libmudflap \
+    maybe-check-target-libsanitizer \
     maybe-check-target-libssp \
     maybe-check-target-newlib \
     maybe-check-target-libgcc \
@@ -2420,6 +2442,7 @@ install-host:  \
 install-target:  \
     maybe-install-target-libstdc++-v3 \
     maybe-install-target-libmudflap \
+    maybe-install-target-libsanitizer \
     maybe-install-target-libssp \
     maybe-install-target-newlib \
     maybe-install-target-libgcc \
@@ -2521,6 +2544,7 @@ install-strip-host:  \
 install-strip-target:  \
     maybe-install-strip-target-libstdc++-v3 \
     maybe-install-strip-target-libmudflap \
+    maybe-install-strip-target-libsanitizer \
     maybe-install-strip-target-libssp \
     maybe-install-strip-target-newlib \
     maybe-install-strip-target-libgcc \
@@ -32154,6 +32178,980 @@ maintainer-clean-target-libmudflap:
 
 
 
+.PHONY: configure-target-libsanitizer maybe-configure-target-libsanitizer
+maybe-configure-target-libsanitizer:
+@if gcc-bootstrap
+configure-target-libsanitizer: stage_current
+@endif gcc-bootstrap
+@if target-libsanitizer
+maybe-configure-target-libsanitizer: configure-target-libsanitizer
+configure-target-libsanitizer: 
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	echo "Checking multilib configuration for libsanitizer..."; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libsanitizer/multilib.tmp 2> /dev/null ; \
+	if test -r $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	  if cmp -s $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/multilib.tmp; \
+	  else \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/Makefile; \
+	    mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	  fi; \
+	else \
+	  mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	fi; \
+	test ! -f $(TARGET_SUBDIR)/libsanitizer/Makefile || exit 0; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	$(RAW_CXX_TARGET_EXPORTS)  \
+	echo Configuring in $(TARGET_SUBDIR)/libsanitizer; \
+	cd "$(TARGET_SUBDIR)/libsanitizer" || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(TARGET_SUBDIR)/libsanitizer/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	srcdiroption="--srcdir=$${topdir}/libsanitizer"; \
+	libsrcdir="$$s/libsanitizer"; \
+	rm -f no-such-file || : ; \
+	CONFIG_SITE=no-such-file $(SHELL) $${libsrcdir}/configure \
+	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+	  --target=${target_alias} $${srcdiroption}  \
+	  || exit 1
+@endif target-libsanitizer
+
+
+
+.PHONY: configure-stage1-target-libsanitizer maybe-configure-stage1-target-libsanitizer
+maybe-configure-stage1-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-configure-stage1-target-libsanitizer: configure-stage1-target-libsanitizer
+configure-stage1-target-libsanitizer:
+	@[ $(current_stage) = stage1 ] || $(MAKE) stage1-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE1_TFLAGS)"; \
+	echo "Checking multilib configuration for libsanitizer..."; \
+	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libsanitizer/multilib.tmp 2> /dev/null ; \
+	if test -r $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	  if cmp -s $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/multilib.tmp; \
+	  else \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/Makefile; \
+	    mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	  fi; \
+	else \
+	  mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	fi; \
+	test ! -f $(TARGET_SUBDIR)/libsanitizer/Makefile || exit 0; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
+	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
+	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
+	echo Configuring stage 1 in $(TARGET_SUBDIR)/libsanitizer ; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	cd $(TARGET_SUBDIR)/libsanitizer || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(TARGET_SUBDIR)/libsanitizer/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	srcdiroption="--srcdir=$${topdir}/libsanitizer"; \
+	libsrcdir="$$s/libsanitizer"; \
+	$(SHELL) $${libsrcdir}/configure \
+	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+	  --target=${target_alias} $${srcdiroption} \
+	  $(STAGE1_CONFIGURE_FLAGS)
+@endif target-libsanitizer-bootstrap
+
+.PHONY: configure-stage2-target-libsanitizer maybe-configure-stage2-target-libsanitizer
+maybe-configure-stage2-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-configure-stage2-target-libsanitizer: configure-stage2-target-libsanitizer
+configure-stage2-target-libsanitizer:
+	@[ $(current_stage) = stage2 ] || $(MAKE) stage2-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE2_TFLAGS)"; \
+	echo "Checking multilib configuration for libsanitizer..."; \
+	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libsanitizer/multilib.tmp 2> /dev/null ; \
+	if test -r $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	  if cmp -s $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/multilib.tmp; \
+	  else \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/Makefile; \
+	    mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	  fi; \
+	else \
+	  mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	fi; \
+	test ! -f $(TARGET_SUBDIR)/libsanitizer/Makefile || exit 0; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	 \
+	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
+	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
+	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
+	echo Configuring stage 2 in $(TARGET_SUBDIR)/libsanitizer ; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	cd $(TARGET_SUBDIR)/libsanitizer || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(TARGET_SUBDIR)/libsanitizer/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	srcdiroption="--srcdir=$${topdir}/libsanitizer"; \
+	libsrcdir="$$s/libsanitizer"; \
+	$(SHELL) $${libsrcdir}/configure \
+	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+	  --target=${target_alias} $${srcdiroption} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGE2_CONFIGURE_FLAGS)
+@endif target-libsanitizer-bootstrap
+
+.PHONY: configure-stage3-target-libsanitizer maybe-configure-stage3-target-libsanitizer
+maybe-configure-stage3-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-configure-stage3-target-libsanitizer: configure-stage3-target-libsanitizer
+configure-stage3-target-libsanitizer:
+	@[ $(current_stage) = stage3 ] || $(MAKE) stage3-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE3_TFLAGS)"; \
+	echo "Checking multilib configuration for libsanitizer..."; \
+	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libsanitizer/multilib.tmp 2> /dev/null ; \
+	if test -r $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	  if cmp -s $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/multilib.tmp; \
+	  else \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/Makefile; \
+	    mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	  fi; \
+	else \
+	  mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	fi; \
+	test ! -f $(TARGET_SUBDIR)/libsanitizer/Makefile || exit 0; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	 \
+	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
+	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
+	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
+	echo Configuring stage 3 in $(TARGET_SUBDIR)/libsanitizer ; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	cd $(TARGET_SUBDIR)/libsanitizer || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(TARGET_SUBDIR)/libsanitizer/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	srcdiroption="--srcdir=$${topdir}/libsanitizer"; \
+	libsrcdir="$$s/libsanitizer"; \
+	$(SHELL) $${libsrcdir}/configure \
+	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+	  --target=${target_alias} $${srcdiroption} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGE3_CONFIGURE_FLAGS)
+@endif target-libsanitizer-bootstrap
+
+.PHONY: configure-stage4-target-libsanitizer maybe-configure-stage4-target-libsanitizer
+maybe-configure-stage4-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-configure-stage4-target-libsanitizer: configure-stage4-target-libsanitizer
+configure-stage4-target-libsanitizer:
+	@[ $(current_stage) = stage4 ] || $(MAKE) stage4-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE4_TFLAGS)"; \
+	echo "Checking multilib configuration for libsanitizer..."; \
+	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libsanitizer/multilib.tmp 2> /dev/null ; \
+	if test -r $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	  if cmp -s $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/multilib.tmp; \
+	  else \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/Makefile; \
+	    mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	  fi; \
+	else \
+	  mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	fi; \
+	test ! -f $(TARGET_SUBDIR)/libsanitizer/Makefile || exit 0; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	 \
+	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
+	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
+	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
+	echo Configuring stage 4 in $(TARGET_SUBDIR)/libsanitizer ; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	cd $(TARGET_SUBDIR)/libsanitizer || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(TARGET_SUBDIR)/libsanitizer/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	srcdiroption="--srcdir=$${topdir}/libsanitizer"; \
+	libsrcdir="$$s/libsanitizer"; \
+	$(SHELL) $${libsrcdir}/configure \
+	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+	  --target=${target_alias} $${srcdiroption} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGE4_CONFIGURE_FLAGS)
+@endif target-libsanitizer-bootstrap
+
+.PHONY: configure-stageprofile-target-libsanitizer maybe-configure-stageprofile-target-libsanitizer
+maybe-configure-stageprofile-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-configure-stageprofile-target-libsanitizer: configure-stageprofile-target-libsanitizer
+configure-stageprofile-target-libsanitizer:
+	@[ $(current_stage) = stageprofile ] || $(MAKE) stageprofile-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEprofile_TFLAGS)"; \
+	echo "Checking multilib configuration for libsanitizer..."; \
+	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libsanitizer/multilib.tmp 2> /dev/null ; \
+	if test -r $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	  if cmp -s $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/multilib.tmp; \
+	  else \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/Makefile; \
+	    mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	  fi; \
+	else \
+	  mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	fi; \
+	test ! -f $(TARGET_SUBDIR)/libsanitizer/Makefile || exit 0; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	 \
+	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
+	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
+	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
+	echo Configuring stage profile in $(TARGET_SUBDIR)/libsanitizer ; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	cd $(TARGET_SUBDIR)/libsanitizer || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(TARGET_SUBDIR)/libsanitizer/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	srcdiroption="--srcdir=$${topdir}/libsanitizer"; \
+	libsrcdir="$$s/libsanitizer"; \
+	$(SHELL) $${libsrcdir}/configure \
+	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+	  --target=${target_alias} $${srcdiroption} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGEprofile_CONFIGURE_FLAGS)
+@endif target-libsanitizer-bootstrap
+
+.PHONY: configure-stagefeedback-target-libsanitizer maybe-configure-stagefeedback-target-libsanitizer
+maybe-configure-stagefeedback-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-configure-stagefeedback-target-libsanitizer: configure-stagefeedback-target-libsanitizer
+configure-stagefeedback-target-libsanitizer:
+	@[ $(current_stage) = stagefeedback ] || $(MAKE) stagefeedback-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEfeedback_TFLAGS)"; \
+	echo "Checking multilib configuration for libsanitizer..."; \
+	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libsanitizer/multilib.tmp 2> /dev/null ; \
+	if test -r $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	  if cmp -s $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; then \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/multilib.tmp; \
+	  else \
+	    rm -f $(TARGET_SUBDIR)/libsanitizer/Makefile; \
+	    mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	  fi; \
+	else \
+	  mv $(TARGET_SUBDIR)/libsanitizer/multilib.tmp $(TARGET_SUBDIR)/libsanitizer/multilib.out; \
+	fi; \
+	test ! -f $(TARGET_SUBDIR)/libsanitizer/Makefile || exit 0; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	 \
+	CFLAGS="$(CFLAGS_FOR_TARGET)"; export CFLAGS; \
+	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
+	LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)"; export LIBCFLAGS;  \
+	echo Configuring stage feedback in $(TARGET_SUBDIR)/libsanitizer ; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libsanitizer ; \
+	cd $(TARGET_SUBDIR)/libsanitizer || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(TARGET_SUBDIR)/libsanitizer/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	srcdiroption="--srcdir=$${topdir}/libsanitizer"; \
+	libsrcdir="$$s/libsanitizer"; \
+	$(SHELL) $${libsrcdir}/configure \
+	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+	  --target=${target_alias} $${srcdiroption} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGEfeedback_CONFIGURE_FLAGS)
+@endif target-libsanitizer-bootstrap
+
+
+
+
+
+.PHONY: all-target-libsanitizer maybe-all-target-libsanitizer
+maybe-all-target-libsanitizer:
+@if gcc-bootstrap
+all-target-libsanitizer: stage_current
+@endif gcc-bootstrap
+@if target-libsanitizer
+TARGET-target-libsanitizer=all
+maybe-all-target-libsanitizer: all-target-libsanitizer
+all-target-libsanitizer: configure-target-libsanitizer
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS)  \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) $(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   \
+		$(TARGET-target-libsanitizer))
+@endif target-libsanitizer
+
+
+
+.PHONY: all-stage1-target-libsanitizer maybe-all-stage1-target-libsanitizer
+.PHONY: clean-stage1-target-libsanitizer maybe-clean-stage1-target-libsanitizer
+maybe-all-stage1-target-libsanitizer:
+maybe-clean-stage1-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-all-stage1-target-libsanitizer: all-stage1-target-libsanitizer
+all-stage1: all-stage1-target-libsanitizer
+TARGET-stage1-target-libsanitizer = $(TARGET-target-libsanitizer)
+all-stage1-target-libsanitizer: configure-stage1-target-libsanitizer
+	@[ $(current_stage) = stage1 ] || $(MAKE) stage1-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE1_TFLAGS)"; \
+	$(RAW_CXX_TARGET_EXPORTS)  \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'  \
+		  \
+		TFLAGS="$(STAGE1_TFLAGS)" \
+		$(TARGET-stage1-target-libsanitizer)
+
+maybe-clean-stage1-target-libsanitizer: clean-stage1-target-libsanitizer
+clean-stage1: clean-stage1-target-libsanitizer
+clean-stage1-target-libsanitizer:
+	@if [ $(current_stage) = stage1 ]; then \
+	  [ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0; \
+	else \
+	  [ -f $(TARGET_SUBDIR)/stage1-libsanitizer/Makefile ] || exit 0; \
+	  $(MAKE) stage1-start; \
+	fi; \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'  \
+	  clean
+@endif target-libsanitizer-bootstrap
+
+
+.PHONY: all-stage2-target-libsanitizer maybe-all-stage2-target-libsanitizer
+.PHONY: clean-stage2-target-libsanitizer maybe-clean-stage2-target-libsanitizer
+maybe-all-stage2-target-libsanitizer:
+maybe-clean-stage2-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-all-stage2-target-libsanitizer: all-stage2-target-libsanitizer
+all-stage2: all-stage2-target-libsanitizer
+TARGET-stage2-target-libsanitizer = $(TARGET-target-libsanitizer)
+all-stage2-target-libsanitizer: configure-stage2-target-libsanitizer
+	@[ $(current_stage) = stage2 ] || $(MAKE) stage2-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE2_TFLAGS)"; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	  \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   \
+		TFLAGS="$(STAGE2_TFLAGS)" \
+		$(TARGET-stage2-target-libsanitizer)
+
+maybe-clean-stage2-target-libsanitizer: clean-stage2-target-libsanitizer
+clean-stage2: clean-stage2-target-libsanitizer
+clean-stage2-target-libsanitizer:
+	@if [ $(current_stage) = stage2 ]; then \
+	  [ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0; \
+	else \
+	  [ -f $(TARGET_SUBDIR)/stage2-libsanitizer/Makefile ] || exit 0; \
+	  $(MAKE) stage2-start; \
+	fi; \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   clean
+@endif target-libsanitizer-bootstrap
+
+
+.PHONY: all-stage3-target-libsanitizer maybe-all-stage3-target-libsanitizer
+.PHONY: clean-stage3-target-libsanitizer maybe-clean-stage3-target-libsanitizer
+maybe-all-stage3-target-libsanitizer:
+maybe-clean-stage3-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-all-stage3-target-libsanitizer: all-stage3-target-libsanitizer
+all-stage3: all-stage3-target-libsanitizer
+TARGET-stage3-target-libsanitizer = $(TARGET-target-libsanitizer)
+all-stage3-target-libsanitizer: configure-stage3-target-libsanitizer
+	@[ $(current_stage) = stage3 ] || $(MAKE) stage3-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE3_TFLAGS)"; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	  \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   \
+		TFLAGS="$(STAGE3_TFLAGS)" \
+		$(TARGET-stage3-target-libsanitizer)
+
+maybe-clean-stage3-target-libsanitizer: clean-stage3-target-libsanitizer
+clean-stage3: clean-stage3-target-libsanitizer
+clean-stage3-target-libsanitizer:
+	@if [ $(current_stage) = stage3 ]; then \
+	  [ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0; \
+	else \
+	  [ -f $(TARGET_SUBDIR)/stage3-libsanitizer/Makefile ] || exit 0; \
+	  $(MAKE) stage3-start; \
+	fi; \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   clean
+@endif target-libsanitizer-bootstrap
+
+
+.PHONY: all-stage4-target-libsanitizer maybe-all-stage4-target-libsanitizer
+.PHONY: clean-stage4-target-libsanitizer maybe-clean-stage4-target-libsanitizer
+maybe-all-stage4-target-libsanitizer:
+maybe-clean-stage4-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-all-stage4-target-libsanitizer: all-stage4-target-libsanitizer
+all-stage4: all-stage4-target-libsanitizer
+TARGET-stage4-target-libsanitizer = $(TARGET-target-libsanitizer)
+all-stage4-target-libsanitizer: configure-stage4-target-libsanitizer
+	@[ $(current_stage) = stage4 ] || $(MAKE) stage4-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE4_TFLAGS)"; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	  \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   \
+		TFLAGS="$(STAGE4_TFLAGS)" \
+		$(TARGET-stage4-target-libsanitizer)
+
+maybe-clean-stage4-target-libsanitizer: clean-stage4-target-libsanitizer
+clean-stage4: clean-stage4-target-libsanitizer
+clean-stage4-target-libsanitizer:
+	@if [ $(current_stage) = stage4 ]; then \
+	  [ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0; \
+	else \
+	  [ -f $(TARGET_SUBDIR)/stage4-libsanitizer/Makefile ] || exit 0; \
+	  $(MAKE) stage4-start; \
+	fi; \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   clean
+@endif target-libsanitizer-bootstrap
+
+
+.PHONY: all-stageprofile-target-libsanitizer maybe-all-stageprofile-target-libsanitizer
+.PHONY: clean-stageprofile-target-libsanitizer maybe-clean-stageprofile-target-libsanitizer
+maybe-all-stageprofile-target-libsanitizer:
+maybe-clean-stageprofile-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-all-stageprofile-target-libsanitizer: all-stageprofile-target-libsanitizer
+all-stageprofile: all-stageprofile-target-libsanitizer
+TARGET-stageprofile-target-libsanitizer = $(TARGET-target-libsanitizer)
+all-stageprofile-target-libsanitizer: configure-stageprofile-target-libsanitizer
+	@[ $(current_stage) = stageprofile ] || $(MAKE) stageprofile-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEprofile_TFLAGS)"; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	  \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   \
+		TFLAGS="$(STAGEprofile_TFLAGS)" \
+		$(TARGET-stageprofile-target-libsanitizer)
+
+maybe-clean-stageprofile-target-libsanitizer: clean-stageprofile-target-libsanitizer
+clean-stageprofile: clean-stageprofile-target-libsanitizer
+clean-stageprofile-target-libsanitizer:
+	@if [ $(current_stage) = stageprofile ]; then \
+	  [ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0; \
+	else \
+	  [ -f $(TARGET_SUBDIR)/stageprofile-libsanitizer/Makefile ] || exit 0; \
+	  $(MAKE) stageprofile-start; \
+	fi; \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   clean
+@endif target-libsanitizer-bootstrap
+
+
+.PHONY: all-stagefeedback-target-libsanitizer maybe-all-stagefeedback-target-libsanitizer
+.PHONY: clean-stagefeedback-target-libsanitizer maybe-clean-stagefeedback-target-libsanitizer
+maybe-all-stagefeedback-target-libsanitizer:
+maybe-clean-stagefeedback-target-libsanitizer:
+@if target-libsanitizer-bootstrap
+maybe-all-stagefeedback-target-libsanitizer: all-stagefeedback-target-libsanitizer
+all-stagefeedback: all-stagefeedback-target-libsanitizer
+TARGET-stagefeedback-target-libsanitizer = $(TARGET-target-libsanitizer)
+all-stagefeedback-target-libsanitizer: configure-stagefeedback-target-libsanitizer
+	@[ $(current_stage) = stagefeedback ] || $(MAKE) stagefeedback-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEfeedback_TFLAGS)"; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	  \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS="$(LIBCFLAGS_FOR_TARGET)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   \
+		TFLAGS="$(STAGEfeedback_TFLAGS)" \
+		$(TARGET-stagefeedback-target-libsanitizer)
+
+maybe-clean-stagefeedback-target-libsanitizer: clean-stagefeedback-target-libsanitizer
+clean-stagefeedback: clean-stagefeedback-target-libsanitizer
+clean-stagefeedback-target-libsanitizer:
+	@if [ $(current_stage) = stagefeedback ]; then \
+	  [ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0; \
+	else \
+	  [ -f $(TARGET_SUBDIR)/stagefeedback-libsanitizer/Makefile ] || exit 0; \
+	  $(MAKE) stagefeedback-start; \
+	fi; \
+	cd $(TARGET_SUBDIR)/libsanitizer && \
+	$(MAKE) $(EXTRA_TARGET_FLAGS) 'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   clean
+@endif target-libsanitizer-bootstrap
+
+
+
+
+
+
+.PHONY: check-target-libsanitizer maybe-check-target-libsanitizer
+maybe-check-target-libsanitizer:
+@if target-libsanitizer
+maybe-check-target-libsanitizer: check-target-libsanitizer
+
+check-target-libsanitizer:
+	@: $(MAKE); $(unstage)
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  'CXX=$$(RAW_CXX_FOR_TARGET)' 'CXX_FOR_TARGET=$$(RAW_CXX_FOR_TARGET)'   check)
+
+@endif target-libsanitizer
+
+.PHONY: install-target-libsanitizer maybe-install-target-libsanitizer
+maybe-install-target-libsanitizer:
+@if target-libsanitizer
+maybe-install-target-libsanitizer: install-target-libsanitizer
+
+install-target-libsanitizer: installdirs
+	@: $(MAKE); $(unstage)
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install)
+
+@endif target-libsanitizer
+
+.PHONY: install-strip-target-libsanitizer maybe-install-strip-target-libsanitizer
+maybe-install-strip-target-libsanitizer:
+@if target-libsanitizer
+maybe-install-strip-target-libsanitizer: install-strip-target-libsanitizer
+
+install-strip-target-libsanitizer: installdirs
+	@: $(MAKE); $(unstage)
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install-strip)
+
+@endif target-libsanitizer
+
+# Other targets (info, dvi, pdf, etc.)
+
+.PHONY: maybe-info-target-libsanitizer info-target-libsanitizer
+maybe-info-target-libsanitizer:
+@if target-libsanitizer
+maybe-info-target-libsanitizer: info-target-libsanitizer
+
+info-target-libsanitizer: \
+    configure-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing info in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           info) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-dvi-target-libsanitizer dvi-target-libsanitizer
+maybe-dvi-target-libsanitizer:
+@if target-libsanitizer
+maybe-dvi-target-libsanitizer: dvi-target-libsanitizer
+
+dvi-target-libsanitizer: \
+    configure-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing dvi in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           dvi) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-pdf-target-libsanitizer pdf-target-libsanitizer
+maybe-pdf-target-libsanitizer:
+@if target-libsanitizer
+maybe-pdf-target-libsanitizer: pdf-target-libsanitizer
+
+pdf-target-libsanitizer: \
+    configure-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing pdf in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           pdf) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-html-target-libsanitizer html-target-libsanitizer
+maybe-html-target-libsanitizer:
+@if target-libsanitizer
+maybe-html-target-libsanitizer: html-target-libsanitizer
+
+html-target-libsanitizer: \
+    configure-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing html in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           html) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-TAGS-target-libsanitizer TAGS-target-libsanitizer
+maybe-TAGS-target-libsanitizer:
+@if target-libsanitizer
+maybe-TAGS-target-libsanitizer: TAGS-target-libsanitizer
+
+TAGS-target-libsanitizer: \
+    configure-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing TAGS in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           TAGS) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-install-info-target-libsanitizer install-info-target-libsanitizer
+maybe-install-info-target-libsanitizer:
+@if target-libsanitizer
+maybe-install-info-target-libsanitizer: install-info-target-libsanitizer
+
+install-info-target-libsanitizer: \
+    configure-target-libsanitizer \
+    info-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing install-info in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           install-info) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-install-pdf-target-libsanitizer install-pdf-target-libsanitizer
+maybe-install-pdf-target-libsanitizer:
+@if target-libsanitizer
+maybe-install-pdf-target-libsanitizer: install-pdf-target-libsanitizer
+
+install-pdf-target-libsanitizer: \
+    configure-target-libsanitizer \
+    pdf-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing install-pdf in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           install-pdf) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-install-html-target-libsanitizer install-html-target-libsanitizer
+maybe-install-html-target-libsanitizer:
+@if target-libsanitizer
+maybe-install-html-target-libsanitizer: install-html-target-libsanitizer
+
+install-html-target-libsanitizer: \
+    configure-target-libsanitizer \
+    html-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing install-html in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           install-html) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-installcheck-target-libsanitizer installcheck-target-libsanitizer
+maybe-installcheck-target-libsanitizer:
+@if target-libsanitizer
+maybe-installcheck-target-libsanitizer: installcheck-target-libsanitizer
+
+installcheck-target-libsanitizer: \
+    configure-target-libsanitizer 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing installcheck in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           installcheck) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-mostlyclean-target-libsanitizer mostlyclean-target-libsanitizer
+maybe-mostlyclean-target-libsanitizer:
+@if target-libsanitizer
+maybe-mostlyclean-target-libsanitizer: mostlyclean-target-libsanitizer
+
+mostlyclean-target-libsanitizer: 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing mostlyclean in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           mostlyclean) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-clean-target-libsanitizer clean-target-libsanitizer
+maybe-clean-target-libsanitizer:
+@if target-libsanitizer
+maybe-clean-target-libsanitizer: clean-target-libsanitizer
+
+clean-target-libsanitizer: 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing clean in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           clean) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-distclean-target-libsanitizer distclean-target-libsanitizer
+maybe-distclean-target-libsanitizer:
+@if target-libsanitizer
+maybe-distclean-target-libsanitizer: distclean-target-libsanitizer
+
+distclean-target-libsanitizer: 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing distclean in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           distclean) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+.PHONY: maybe-maintainer-clean-target-libsanitizer maintainer-clean-target-libsanitizer
+maybe-maintainer-clean-target-libsanitizer:
+@if target-libsanitizer
+maybe-maintainer-clean-target-libsanitizer: maintainer-clean-target-libsanitizer
+
+maintainer-clean-target-libsanitizer: 
+	@: $(MAKE); $(unstage)
+	@[ -f $(TARGET_SUBDIR)/libsanitizer/Makefile ] || exit 0 ; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(RAW_CXX_TARGET_EXPORTS) \
+	echo "Doing maintainer-clean in $(TARGET_SUBDIR)/libsanitizer" ; \
+	for flag in $(EXTRA_TARGET_FLAGS); do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	(cd $(TARGET_SUBDIR)/libsanitizer && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	           maintainer-clean) \
+	  || exit 1
+
+@endif target-libsanitizer
+
+
+
+
+
 .PHONY: configure-target-libssp maybe-configure-target-libssp
 maybe-configure-target-libssp:
 @if gcc-bootstrap
@@ -44390,6 +45388,12 @@ configure-stage4-target-libstdc++-v3: maybe-all-stage4-gcc
 configure-stageprofile-target-libstdc++-v3: maybe-all-stageprofile-gcc
 configure-stagefeedback-target-libstdc++-v3: maybe-all-stagefeedback-gcc
 configure-target-libmudflap: stage_last
+configure-stage1-target-libsanitizer: maybe-all-stage1-gcc
+configure-stage2-target-libsanitizer: maybe-all-stage2-gcc
+configure-stage3-target-libsanitizer: maybe-all-stage3-gcc
+configure-stage4-target-libsanitizer: maybe-all-stage4-gcc
+configure-stageprofile-target-libsanitizer: maybe-all-stageprofile-gcc
+configure-stagefeedback-target-libsanitizer: maybe-all-stagefeedback-gcc
 configure-target-libssp: stage_last
 configure-target-newlib: stage_last
 configure-stage1-target-libgcc: maybe-all-stage1-gcc
@@ -44425,6 +45429,7 @@ configure-target-libatomic: stage_last
 @if gcc-no-bootstrap
 configure-target-libstdc++-v3: maybe-all-gcc
 configure-target-libmudflap: maybe-all-gcc
+configure-target-libsanitizer: maybe-all-gcc
 configure-target-libssp: maybe-all-gcc
 configure-target-newlib: maybe-all-gcc
 configure-target-libgcc: maybe-all-gcc
@@ -44480,6 +45485,14 @@ configure-stage3-gcc: maybe-configure-stage3-intl
 configure-stage4-gcc: maybe-configure-stage4-intl
 configure-stageprofile-gcc: maybe-configure-stageprofile-intl
 configure-stagefeedback-gcc: maybe-configure-stagefeedback-intl
+configure-gcc: maybe-all-gmp
+
+configure-stage1-gcc: maybe-all-stage1-gmp
+configure-stage2-gcc: maybe-all-stage2-gmp
+configure-stage3-gcc: maybe-all-stage3-gmp
+configure-stage4-gcc: maybe-all-stage4-gmp
+configure-stageprofile-gcc: maybe-all-stageprofile-gmp
+configure-stagefeedback-gcc: maybe-all-stagefeedback-gmp
 configure-gcc: maybe-all-lto-plugin
 
 configure-stage1-gcc: maybe-all-stage1-lto-plugin
@@ -44536,14 +45549,6 @@ all-stage3-gcc: all-stage3-libiberty
 all-stage4-gcc: all-stage4-libiberty
 all-stageprofile-gcc: all-stageprofile-libiberty
 all-stagefeedback-gcc: all-stagefeedback-libiberty
-all-gcc: maybe-all-gmp
-
-all-stage1-gcc: maybe-all-stage1-gmp
-all-stage2-gcc: maybe-all-stage2-gmp
-all-stage3-gcc: maybe-all-stage3-gmp
-all-stage4-gcc: maybe-all-stage4-gmp
-all-stageprofile-gcc: maybe-all-stageprofile-gmp
-all-stagefeedback-gcc: maybe-all-stagefeedback-gmp
 all-gcc: maybe-all-intl
 
 all-stage1-gcc: maybe-all-stage1-intl
@@ -44905,6 +45910,14 @@ all-stage3-binutils: maybe-all-stage3-intl
 all-stage4-binutils: maybe-all-stage4-intl
 all-stageprofile-binutils: maybe-all-stageprofile-intl
 all-stagefeedback-binutils: maybe-all-stagefeedback-intl
+all-binutils: maybe-all-gas
+
+all-stage1-binutils: maybe-all-stage1-gas
+all-stage2-binutils: maybe-all-stage2-gas
+all-stage3-binutils: maybe-all-stage3-gas
+all-stage4-binutils: maybe-all-stage4-gas
+all-stageprofile-binutils: maybe-all-stageprofile-gas
+all-stagefeedback-binutils: maybe-all-stagefeedback-gas
 install-binutils: maybe-install-opcodes
 install-strip-binutils: maybe-install-strip-opcodes
 install-opcodes: maybe-install-bfd
@@ -44954,6 +45967,7 @@ all-gprof: maybe-all-libiberty
 all-gprof: maybe-all-bfd
 all-gprof: maybe-all-opcodes
 all-gprof: maybe-all-intl
+all-gprof: maybe-all-gas
 configure-ld: maybe-configure-intl
 
 configure-stage1-ld: maybe-configure-stage1-intl
@@ -45010,6 +46024,14 @@ all-stage3-ld: maybe-all-stage3-intl
 all-stage4-ld: maybe-all-stage4-intl
 all-stageprofile-ld: maybe-all-stageprofile-intl
 all-stagefeedback-ld: maybe-all-stagefeedback-intl
+all-ld: maybe-all-gas
+
+all-stage1-ld: maybe-all-stage1-gas
+all-stage2-ld: maybe-all-stage2-gas
+all-stage3-ld: maybe-all-stage3-gas
+all-stage4-ld: maybe-all-stage4-gas
+all-stageprofile-ld: maybe-all-stageprofile-gas
+all-stagefeedback-ld: maybe-all-stagefeedback-gas
 install-ld: maybe-install-gold
 install-strip-ld: maybe-install-strip-gold
 configure-gold: maybe-configure-intl
@@ -45052,6 +46074,14 @@ all-stage3-gold: maybe-all-build-bison
 all-stage4-gold: maybe-all-build-bison
 all-stageprofile-gold: maybe-all-build-bison
 all-stagefeedback-gold: maybe-all-build-bison
+all-gold: maybe-all-gas
+
+all-stage1-gold: maybe-all-stage1-gas
+all-stage2-gold: maybe-all-stage2-gas
+all-stage3-gold: maybe-all-stage3-gas
+all-stage4-gold: maybe-all-stage4-gas
+all-stageprofile-gold: maybe-all-stageprofile-gas
+all-stagefeedback-gold: maybe-all-stagefeedback-gas
 check-gold: maybe-all-binutils
 
 check-stage1-gold: maybe-all-stage1-binutils
@@ -45149,6 +46179,7 @@ configure-target-libgo: maybe-configure-target-libffi
 configure-target-libgo: maybe-all-target-libstdc++-v3
 all-target-libgo: maybe-all-target-libbacktrace
 all-target-libgo: maybe-all-target-libffi
+all-target-libgo: maybe-all-target-libatomic
 configure-target-libjava: maybe-configure-target-zlib
 configure-target-libjava: maybe-configure-target-boehm-gc
 configure-target-libjava: maybe-configure-target-libffi
@@ -45166,6 +46197,14 @@ configure-stage3-target-libstdc++-v3: maybe-configure-stage3-target-libgomp
 configure-stage4-target-libstdc++-v3: maybe-configure-stage4-target-libgomp
 configure-stageprofile-target-libstdc++-v3: maybe-configure-stageprofile-target-libgomp
 configure-stagefeedback-target-libstdc++-v3: maybe-configure-stagefeedback-target-libgomp
+configure-target-libsanitizer: maybe-all-target-libstdc++-v3
+
+configure-stage1-target-libsanitizer: maybe-all-stage1-target-libstdc++-v3
+configure-stage2-target-libsanitizer: maybe-all-stage2-target-libstdc++-v3
+configure-stage3-target-libsanitizer: maybe-all-stage3-target-libstdc++-v3
+configure-stage4-target-libsanitizer: maybe-all-stage4-target-libstdc++-v3
+configure-stageprofile-target-libsanitizer: maybe-all-stageprofile-target-libstdc++-v3
+configure-stagefeedback-target-libsanitizer: maybe-all-stagefeedback-target-libstdc++-v3
 all-target-libstdc++-v3: maybe-configure-target-libgomp
 
 all-stage1-target-libstdc++-v3: maybe-configure-stage1-target-libgomp
@@ -45174,6 +46213,15 @@ all-stage3-target-libstdc++-v3: maybe-configure-stage3-target-libgomp
 all-stage4-target-libstdc++-v3: maybe-configure-stage4-target-libgomp
 all-stageprofile-target-libstdc++-v3: maybe-configure-stageprofile-target-libgomp
 all-stagefeedback-target-libstdc++-v3: maybe-configure-stagefeedback-target-libgomp
+install-target-libgo: maybe-install-target-libatomic
+install-target-libgfortran: maybe-install-target-libquadmath
+install-target-libgfortran: maybe-install-target-libgcc
+install-target-libsanitizer: maybe-install-target-libstdc++-v3
+install-target-libsanitizer: maybe-install-target-libgcc
+install-target-libjava: maybe-install-target-libgcc
+install-target-libitm: maybe-install-target-libgcc
+install-target-libobjc: maybe-install-target-libgcc
+install-target-libstdc++-v3: maybe-install-target-libgcc
 all-target-libgloss: maybe-all-target-newlib
 all-target-winsup: maybe-all-target-libtermcap
 configure-target-newlib: maybe-all-binutils
@@ -45193,6 +46241,12 @@ configure-stage3-target-libstdc++-v3: maybe-all-stage3-target-libgcc
 configure-stage4-target-libstdc++-v3: maybe-all-stage4-target-libgcc
 configure-stageprofile-target-libstdc++-v3: maybe-all-stageprofile-target-libgcc
 configure-stagefeedback-target-libstdc++-v3: maybe-all-stagefeedback-target-libgcc
+configure-stage1-target-libsanitizer: maybe-all-stage1-target-libgcc
+configure-stage2-target-libsanitizer: maybe-all-stage2-target-libgcc
+configure-stage3-target-libsanitizer: maybe-all-stage3-target-libgcc
+configure-stage4-target-libsanitizer: maybe-all-stage4-target-libgcc
+configure-stageprofile-target-libsanitizer: maybe-all-stageprofile-target-libgcc
+configure-stagefeedback-target-libsanitizer: maybe-all-stagefeedback-target-libgcc
 configure-stage1-target-libgomp: maybe-all-stage1-target-libgcc
 configure-stage2-target-libgomp: maybe-all-stage2-target-libgcc
 configure-stage3-target-libgomp: maybe-all-stage3-target-libgcc
@@ -45204,6 +46258,7 @@ configure-stagefeedback-target-libgomp: maybe-all-stagefeedback-target-libgcc
 @if gcc-no-bootstrap
 configure-target-libstdc++-v3: maybe-all-target-libgcc
 configure-target-libmudflap: maybe-all-target-libgcc
+configure-target-libsanitizer: maybe-all-target-libgcc
 configure-target-libssp: maybe-all-target-libgcc
 configure-target-newlib: maybe-all-target-libgcc
 configure-target-libbacktrace: maybe-all-target-libgcc
@@ -45229,6 +46284,8 @@ configure-target-libatomic: maybe-all-target-libgcc
 configure-target-libstdc++-v3: maybe-all-target-newlib maybe-all-target-libgloss
 
 configure-target-libmudflap: maybe-all-target-newlib maybe-all-target-libgloss
+
+configure-target-libsanitizer: maybe-all-target-newlib maybe-all-target-libgloss
 
 configure-target-libssp: maybe-all-target-newlib maybe-all-target-libgloss
 

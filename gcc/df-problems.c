@@ -1,6 +1,5 @@
 /* Standard problems for dataflow support routines.
-   Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
-   2008, 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 1999-2013 Free Software Foundation, Inc.
    Originally contributed by Michael P. Hayes
              (m.hayes@elec.canterbury.ac.nz, mhayes@redhat.com)
    Major rewrite contributed by Danny Berlin (dberlin@dberlin.org)
@@ -43,7 +42,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "df.h"
 #include "except.h"
 #include "dce.h"
-#include "vecprim.h"
 #include "valtrack.h"
 #include "dumpfile.h"
 
@@ -931,13 +929,18 @@ df_lr_bb_local_compute (unsigned int bb_index)
 static void
 df_lr_local_compute (bitmap all_blocks ATTRIBUTE_UNUSED)
 {
-  unsigned int bb_index;
+  unsigned int bb_index, i;
   bitmap_iterator bi;
 
   bitmap_clear (&df->hardware_regs_used);
 
   /* The all-important stack pointer must always be live.  */
   bitmap_set_bit (&df->hardware_regs_used, STACK_POINTER_REGNUM);
+
+  /* Global regs are always live, too.  */
+  for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
+    if (global_regs[i])
+      bitmap_set_bit (&df->hardware_regs_used, i);
 
   /* Before reload, there are a few registers that must be forced
      live everywhere -- which might not already be the case for
@@ -3854,6 +3857,8 @@ can_move_insns_across (rtx from, rtx to, rtx across_from, rtx across_to,
 	}
       if (NONDEBUG_INSN_P (insn))
 	{
+	  if (volatile_insn_p (PATTERN (insn)))
+	    return false;
 	  memrefs_in_across |= for_each_rtx (&PATTERN (insn), find_memory,
 					     NULL);
 	  note_stores (PATTERN (insn), find_memory_stores,
@@ -3913,7 +3918,9 @@ can_move_insns_across (rtx from, rtx to, rtx across_from, rtx across_to,
       if (NONDEBUG_INSN_P (insn))
 	{
 	  if (may_trap_or_fault_p (PATTERN (insn))
-	      && (trapping_insns_in_across || other_branch_live != NULL))
+	      && (trapping_insns_in_across
+		  || other_branch_live != NULL
+		  || volatile_insn_p (PATTERN (insn))))
 	    break;
 
 	  /* We cannot move memory stores past each other, or move memory

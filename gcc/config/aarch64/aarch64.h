@@ -1,5 +1,5 @@
 /* Machine description for AArch64 architecture.
-   Copyright (C) 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 2009-2013 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GCC.
@@ -768,16 +768,6 @@ do {									     \
 #define ASM_APP_ON	"\t" ASM_COMMENT_START " Start of user assembly\n"
 #define ASM_APP_OFF	"\t" ASM_COMMENT_START " End of user assembly\n"
 
-#define ASM_FPRINTF_EXTENSIONS(FILE, ARGS, P)		\
-  case '@':						\
-    fputs (ASM_COMMENT_START, FILE);			\
-    break;						\
-							\
-  case 'r':						\
-    fputs (REGISTER_PREFIX, FILE);			\
-    fputs (reg_names[va_arg (ARGS, int)], FILE);	\
-    break;
-
 #define CONSTANT_POOL_BEFORE_FUNCTION 0
 
 /* This definition should be relocated to aarch64-elf-raw.h.  This macro
@@ -788,14 +778,6 @@ do {									     \
 #define CLEAR_INSN_CACHE(beg, end)				\
   extern void  __aarch64_sync_cache_range (void *, void *);	\
   __aarch64_sync_cache_range (beg, end)
-
-/* This should be integrated with the equivalent in the 32 bit
-   world.  */
-enum aarch64_builtins
-{
-  AARCH64_BUILTIN_MIN,
-  AARCH64_SIMD_BUILTIN_BASE
-};
 
 /*  VFP registers may only be accessed in the mode they
    were set.  */

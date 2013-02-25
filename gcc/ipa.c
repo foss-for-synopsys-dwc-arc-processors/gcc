@@ -1,6 +1,5 @@
 /* Basic IPA optimizations and utilities.
-   Copyright (C) 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 2003-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -242,8 +241,7 @@ symtab_remove_unreachable_nodes (bool before_inlining_p, FILE *file)
 	&& (!cgraph_can_remove_if_no_direct_calls_and_refs_p (node)
 	    /* Keep around virtual functions for possible devirtualization.  */
 	    || (before_inlining_p
-		&& DECL_VIRTUAL_P (node->symbol.decl)
-		&& (DECL_COMDAT (node->symbol.decl) || DECL_EXTERNAL (node->symbol.decl)))))
+		&& DECL_VIRTUAL_P (node->symbol.decl))))
       {
         gcc_assert (!node->global.inlined_to);
 	pointer_set_insert (reachable, node);
@@ -447,7 +445,7 @@ symtab_remove_unreachable_nodes (bool before_inlining_p, FILE *file)
 #endif
 
   /* If we removed something, perhaps profile could be improved.  */
-  if (changed && optimize && inline_edge_summary_vec)
+  if (changed && optimize && inline_edge_summary_vec.exists ())
     FOR_EACH_DEFINED_FUNCTION (node)
       cgraph_propagate_frequency (node);
 
@@ -735,16 +733,16 @@ function_and_variable_visibility (bool whole_program)
   alias_pair *p;
 
   /* Discover aliased nodes.  */
-  FOR_EACH_VEC_ELT (alias_pair, alias_pairs, i, p)
+  FOR_EACH_VEC_SAFE_ELT (alias_pairs, i, p)
     {
       if (dump_file)
-       fprintf (dump_file, "Alias %s->%s",
-		IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (p->decl)),
-		IDENTIFIER_POINTER (p->target));
+      fprintf (dump_file, "Alias %s->%s",
+	       IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (p->decl)),
+	       IDENTIFIER_POINTER (p->target));
 		
       if ((node = cgraph_node_for_asm (p->target)) != NULL
-	  && !DECL_EXTERNAL (node->symbol.decl))
-        {
+	   && !DECL_EXTERNAL (node->symbol.decl))
+	{
 	  if (!node->analyzed)
 	    continue;
 	  cgraph_mark_force_output_node (node);
@@ -752,18 +750,18 @@ function_and_variable_visibility (bool whole_program)
 	  if (dump_file)
 	    fprintf (dump_file, "  node %s/%i",
 		     cgraph_node_name (node), node->uid);
-        }
+	}
       else if ((vnode = varpool_node_for_asm (p->target)) != NULL
 	       && !DECL_EXTERNAL (vnode->symbol.decl))
-        {
+	{
 	  vnode->symbol.force_output = 1;
 	  pointer_set_insert (aliased_vnodes, vnode);
 	  if (dump_file)
 	    fprintf (dump_file, "  varpool node %s",
 		     varpool_node_name (vnode));
-        }
+	}
       if (dump_file)
-       fprintf (dump_file, "\n");
+	fprintf (dump_file, "\n");
     }
 
   FOR_EACH_FUNCTION (node)
@@ -1215,9 +1213,9 @@ cgraph_build_static_cdtor (char which, tree body, int priority)
 }
 
 /* A vector of FUNCTION_DECLs declared as static constructors.  */
-static VEC(tree, heap) *static_ctors;
+static vec<tree> static_ctors;
 /* A vector of FUNCTION_DECLs declared as static destructors.  */
-static VEC(tree, heap) *static_dtors;
+static vec<tree> static_dtors;
 
 /* When target does not have ctors and dtors, we call all constructor
    and destructor by special initialization/destruction function
@@ -1230,9 +1228,9 @@ static void
 record_cdtor_fn (struct cgraph_node *node)
 {
   if (DECL_STATIC_CONSTRUCTOR (node->symbol.decl))
-    VEC_safe_push (tree, heap, static_ctors, node->symbol.decl);
+    static_ctors.safe_push (node->symbol.decl);
   if (DECL_STATIC_DESTRUCTOR (node->symbol.decl))
-    VEC_safe_push (tree, heap, static_dtors, node->symbol.decl);
+    static_dtors.safe_push (node->symbol.decl);
   node = cgraph_get_node (node->symbol.decl);
   DECL_DISREGARD_INLINE_LIMITS (node->symbol.decl) = 1;
 }
@@ -1243,10 +1241,10 @@ record_cdtor_fn (struct cgraph_node *node)
    they are destructors.  */
 
 static void
-build_cdtor (bool ctor_p, VEC (tree, heap) *cdtors)
+build_cdtor (bool ctor_p, vec<tree> cdtors)
 {
   size_t i,j;
-  size_t len = VEC_length (tree, cdtors);
+  size_t len = cdtors.length ();
 
   i = 0;
   while (i < len)
@@ -1261,7 +1259,7 @@ build_cdtor (bool ctor_p, VEC (tree, heap) *cdtors)
       do
 	{
 	  priority_type p;
-	  fn = VEC_index (tree, cdtors, j);
+	  fn = cdtors[j];
 	  p = ctor_p ? DECL_INIT_PRIORITY (fn) : DECL_FINI_PRIORITY (fn);
 	  if (j == i)
 	    priority = p;
@@ -1283,7 +1281,7 @@ build_cdtor (bool ctor_p, VEC (tree, heap) *cdtors)
       for (;i < j; i++)
 	{
 	  tree call;
-	  fn = VEC_index (tree, cdtors, i);
+	  fn = cdtors[i];
 	  call = build_call_expr (fn, 0);
 	  if (ctor_p)
 	    DECL_STATIC_CONSTRUCTOR (fn) = 0;
@@ -1362,17 +1360,17 @@ compare_dtor (const void *p1, const void *p2)
 static void
 build_cdtor_fns (void)
 {
-  if (!VEC_empty (tree, static_ctors))
+  if (!static_ctors.is_empty ())
     {
       gcc_assert (!targetm.have_ctors_dtors || in_lto_p);
-      VEC_qsort (tree, static_ctors, compare_ctor);
+      static_ctors.qsort (compare_ctor);
       build_cdtor (/*ctor_p=*/true, static_ctors);
     }
 
-  if (!VEC_empty (tree, static_dtors))
+  if (!static_dtors.is_empty ())
     {
       gcc_assert (!targetm.have_ctors_dtors || in_lto_p);
-      VEC_qsort (tree, static_dtors, compare_dtor);
+      static_dtors.qsort (compare_dtor);
       build_cdtor (/*ctor_p=*/false, static_dtors);
     }
 }
@@ -1392,8 +1390,8 @@ ipa_cdtor_merge (void)
 	|| DECL_STATIC_DESTRUCTOR (node->symbol.decl))
        record_cdtor_fn (node);
   build_cdtor_fns ();
-  VEC_free (tree, heap, static_ctors);
-  VEC_free (tree, heap, static_dtors);
+  static_ctors.release ();
+  static_dtors.release ();
   return 0;
 }
 

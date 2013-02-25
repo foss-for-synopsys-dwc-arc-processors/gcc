@@ -1,6 +1,5 @@
 /* Process source files and output type information.
-   Copyright (C) 2002, 2003, 2004, 2007, 2008, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2002-2013 Free Software Foundation, Inc.
 
    This file is part of GCC.
 
@@ -134,6 +133,9 @@ extern pair_p variables;
 
 enum typekind {
   TYPE_NONE=0,          /* Never used, so zeroed memory is invalid.  */
+  TYPE_UNDEFINED,	/* We have not yet seen a definition for this type.
+			   If a type is still undefined when generating code,
+			   an error will be generated.  */
   TYPE_SCALAR,          /* Scalar types like char.  */
   TYPE_STRING,          /* The string type.  */
   TYPE_STRUCT,          /* Type for GTY-ed structs.  */
@@ -423,6 +425,7 @@ extern type_p resolve_typedef (const char *s, struct fileloc *pos);
 extern type_p new_structure (const char *name, enum typekind kind,
 			     struct fileloc *pos, pair_p fields,
 			     options_p o);
+type_p create_user_defined_type (const char *, struct fileloc *);
 extern type_p find_structure (const char *s, enum typekind kind);
 extern type_p create_scalar_type (const char *name);
 extern type_p create_pointer (type_p t);
@@ -457,7 +460,6 @@ enum gty_token
   UNION,
   STRUCT,
   ENUM,
-  VEC_TOKEN,
   ELLIPSIS,
   PTR_ALIAS,
   NESTED_PTR,

@@ -1,6 +1,5 @@
 /*  -*- Mode: Asm -*-  */
-;;    Copyright (C) 2012
-;;    Free Software Foundation, Inc.
+;;    Copyright (C) 2012-2013 Free Software Foundation, Inc.
 ;;    Contributed by Sean D'Epagnier  (sean@depagnier.com)
 ;;                   Georg-Johann Lay (avr@gjlay.de)
 
@@ -43,8 +42,8 @@ DEFUN __fractqqsf
     ;; Move in place for SA -> SF conversion
     clr     r22
     mov     r23, r24
-    lsl     r23
     ;; Sign-extend
+    lsl     r24
     sbc     r24, r24
     mov     r25, r24
     XJMP    __fractsasf
@@ -67,9 +66,8 @@ ENDF __fractuqqsf
 DEFUN __fracthqsf
     ;; Move in place for SA -> SF conversion
     wmov    22, 24
-    lsl     r22
-    rol     r23
     ;; Sign-extend
+    lsl     r25
     sbc     r24, r24
     mov     r25, r24
     XJMP    __fractsasf
@@ -140,11 +138,13 @@ ENDF __fractusqsf
 #if defined (L_fractsasf)
 DEFUN __fractsasf
     XCALL   __floatsisf
-    ;; Divide non-zero results by 2^16 to move the
+    ;; Divide non-zero results by 2^15 to move the
     ;; decimal point into place
-    cpse    r25, __zero_reg__
-    subi    r25, exp_hi (16)
-    ret
+    tst     r25
+    breq    0f
+    subi    r24, exp_lo (15)
+    sbci    r25, exp_hi (15)
+0:  ret
 ENDF __fractsasf
 #endif  /* L_fractsasf */
 
@@ -162,7 +162,7 @@ ENDF __fractusasf
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Conversions from float
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       
+
 #if defined (L_fractsfqq)
 DEFUN __fractsfqq
     ;; Multiply with 2^{24+7} to get a QQ result in r25
@@ -186,8 +186,9 @@ ENDF __fractsfuqq
 
 #if defined (L_fractsfha)
 DEFUN __fractsfha
-    ;; Multiply with 2^24 to get a HA result in r25:r24
-    subi    r25, exp_hi (-24)
+    ;; Multiply with 2^{16+7} to get a HA result in r25:r24
+    subi    r24, exp_lo (-23)
+    sbci    r25, exp_hi (-23)
     XJMP    __fixsfsi
 ENDF __fractsfha
 #endif  /* L_fractsfha */
@@ -201,8 +202,7 @@ ENDF __fractsfuha
 #endif  /* L_fractsfuha */
 
 #if defined (L_fractsfhq)
-DEFUN __fractsfsq
-ENDF  __fractsfsq
+FALIAS __fractsfsq
 
 DEFUN __fractsfhq
     ;; Multiply with 2^{16+15} to get a HQ result in r25:r24
@@ -214,8 +214,7 @@ ENDF __fractsfhq
 #endif  /* L_fractsfhq */
 
 #if defined (L_fractsfuhq)
-DEFUN __fractsfusq
-ENDF  __fractsfusq
+FALIAS __fractsfusq
 
 DEFUN __fractsfuhq
     ;; Multiply with 2^{16+16} to get a UHQ result in r25:r24
@@ -227,8 +226,9 @@ ENDF __fractsfuhq
 
 #if defined (L_fractsfsa)
 DEFUN __fractsfsa
-    ;; Multiply with 2^16 to get a SA result in r25:r22
-    subi    r25, exp_hi (-16)
+    ;; Multiply with 2^15 to get a SA result in r25:r22
+    subi    r24, exp_lo (-15)
+    sbci    r25, exp_hi (-15)
     XJMP    __fixsfsi
 ENDF __fractsfsa
 #endif  /* L_fractsfsa */
@@ -325,6 +325,9 @@ ENDF __muluhq3
 ;;; Rounding:  -0.5 LSB  <=  error  <=  0.5 LSB
 DEFUN   __mulha3
     XCALL   __mulhisi3
+    lsl     r22
+    rol     r23
+    rol     r24
     XJMP    __muluha3_round
 ENDF __mulha3
 #endif  /* L_mulha3 */
@@ -359,6 +362,9 @@ ENDF __muluha3_round
     Fixed  Multiplication  16.16 x 16.16
 *******************************************************/
 
+;; Bits outside the result (below LSB), used in the signed version
+#define GUARD __tmp_reg__
+
 #if defined (__AVR_HAVE_MUL__)
 
 ;; Multiplier
@@ -381,9 +387,16 @@ ENDF __muluha3_round
 
 #if defined (L_mulusa3)
 ;;; (C3:C0) = (A3:A0) * (B3:B0)
-;;; Clobbers: __tmp_reg__
-;;; Rounding:  -0.5 LSB  <  error  <=  0.5 LSB
-DEFUN   __mulusa3
+DEFUN __mulusa3
+    set
+    ;; Fallthru
+ENDF  __mulusa3
+
+;;; Round for last digit iff T = 1
+;;; Return guard bits in GUARD (__tmp_reg__).
+;;; Rounding, T = 0:  -1.0 LSB  <  error  <=  0   LSB
+;;; Rounding, T = 1:  -0.5 LSB  <  error  <=  0.5 LSB
+DEFUN __mulusa3_round
     ;; Some of the MUL instructions have LSBs outside the result.
     ;; Don't ignore these LSBs in order to tame rounding error.
     ;; Use C2/C3 for these LSBs.
@@ -394,11 +407,14 @@ DEFUN   __mulusa3
 
     mul A1, B0  $  add  C3, r0  $  adc C0, r1
     mul A0, B1  $  add  C3, r0  $  adc C0, r1  $  rol C1
-    
-    ;; Round
+
+    ;; Round if T = 1.  Store guarding bits outside the result for rounding
+    ;; and left-shift by the signed version (function below).
+    brtc 0f
     sbrc C3, 7
     adiw C0, 1
-    
+0:  push C3
+
     ;; The following MULs don't have LSBs outside the result.
     ;; C2/C3 is the high part.
 
@@ -412,33 +428,50 @@ DEFUN   __mulusa3
     mul  A2, B1  $  add C1, r0  $  adc C2, r1  $  sbci C3, 0
     mul  A3, B0  $  add C1, r0  $  adc C2, r1  $  sbci C3, 0
     neg  C3
-    
+
     mul  A1, B3  $  add C2, r0  $  adc C3, r1
     mul  A2, B2  $  add C2, r0  $  adc C3, r1
     mul  A3, B1  $  add C2, r0  $  adc C3, r1
-    
+
     mul  A2, B3  $  add C3, r0
     mul  A3, B2  $  add C3, r0
 
+    ;; Guard bits used in the signed version below.
+    pop  GUARD
     clr  __zero_reg__
     ret
-ENDF __mulusa3
+ENDF __mulusa3_round
 #endif /* L_mulusa3 */
 
 #if defined (L_mulsa3)
 ;;; (C3:C0) = (A3:A0) * (B3:B0)
-;;; Clobbers: __tmp_reg__
+;;; Clobbers: __tmp_reg__, T
 ;;; Rounding:  -0.5 LSB  <=  error  <=  0.5 LSB
 DEFUN __mulsa3
-    XCALL   __mulusa3
+    clt
+    XCALL   __mulusa3_round
+    ;; A posteriori sign extension of the operands
     tst     B3
-    brpl    1f
+    brpl 1f
     sub     C2, A0
     sbc     C3, A1
 1:  sbrs    A3, 7
-    ret
+    rjmp 2f
     sub     C2, B0
     sbc     C3, B1
+2:
+    ;;  Shift 1 bit left to adjust for 15 fractional bits
+    lsl     GUARD
+    rol     C0
+    rol     C1
+    rol     C2
+    rol     C3
+    ;; Round last digit
+    lsl     GUARD
+    adc     C0, __zero_reg__
+    adc     C1, __zero_reg__
+    adc     C2, __zero_reg__
+    adc     C3, __zero_reg__
     ret
 ENDF __mulsa3
 #endif /* L_mulsa3 */
@@ -492,27 +525,56 @@ ENDF __mulsa3
 DEFUN   __mulsa3
     push    B0
     push    B1
-    bst     B3, 7
-    XCALL   __mulusa3
-    ;; A survived in  31:30:27:26
-    rcall 1f
-    pop     AA1
-    pop     AA0
-    bst     AA3, 7
-1:  brtc  9f
-    ;; 1-extend A/B
+    push    B3
+    clt
+    XCALL   __mulusa3_round
+    pop     r30
+    ;; sign-extend B
+    bst     r30, 7
+    brtc 1f
+    ;; A1, A0 survived in  R27:R26
     sub     C2, AA0
     sbc     C3, AA1
-9:  ret
+1:
+    pop     AA1  ;; B1
+    pop     AA0  ;; B0
+
+    ;; sign-extend A.  A3 survived in  R31
+    bst     AA3, 7
+    brtc 2f
+    sub     C2, AA0
+    sbc     C3, AA1
+2:
+    ;;  Shift 1 bit left to adjust for 15 fractional bits
+    lsl     GUARD
+    rol     C0
+    rol     C1
+    rol     C2
+    rol     C3
+    ;; Round last digit
+    lsl     GUARD
+    adc     C0, __zero_reg__
+    adc     C1, __zero_reg__
+    adc     C2, __zero_reg__
+    adc     C3, __zero_reg__
+    ret
 ENDF __mulsa3
 #endif  /* L_mulsa3 */
 
 #if defined (L_mulusa3)
 ;;; (R25:R22)  *=  (R21:R18)
-;;; Clobbers: ABI, called by optabs and __mulsua
+;;; Clobbers: ABI, called by optabs
 ;;; Rounding:  -1 LSB  <=  error  <=  1 LSB
-;;; Does not clobber T and A[] survives in 26, 27, 30, 31
-DEFUN   __mulusa3
+DEFUN __mulusa3
+    set
+    ;; Fallthru
+ENDF  __mulusa3
+
+;;; A[] survives in 26, 27, 30, 31
+;;; Also used by __mulsa3 with T = 0
+;;; Round if T = 1
+;;; Return Guard bits in GUARD (__tmp_reg__), used by signed version.
+DEFUN __mulusa3_round
     push    CC2
     push    CC3
     ; clear result
@@ -560,21 +622,26 @@ DEFUN   __mulusa3
     sbci    B0, 0
     brne 5b
 
-    ;; Move result into place and round
+    ;; Save guard bits and set carry for rounding
+    push    B3
     lsl     B3
+    ;; Move result into place
     wmov    C2, CC2
     wmov    C0, CC0
     clr     __zero_reg__
+    brtc 6f
+    ;; Round iff T = 1
     adc     C0, __zero_reg__
     adc     C1, __zero_reg__
     adc     C2, __zero_reg__
     adc     C3, __zero_reg__
-    
+6:
+    pop     GUARD
     ;; Epilogue
     pop     CC3
     pop     CC2
     ret
-ENDF __mulusa3
+ENDF __mulusa3_round
 #endif  /* L_mulusa3 */
 
 #undef A0
@@ -600,6 +667,212 @@ ENDF __mulusa3
 
 #endif /* __AVR_HAVE_MUL__ */
 
+#undef GUARD
+
+/***********************************************************
+    Fixed  unsigned saturated Multiplication  8.8 x 8.8
+***********************************************************/
+
+#define C0  22
+#define C1  C0+1
+#define C2  C0+2
+#define C3  C0+3
+#define SS __tmp_reg__
+
+#if defined (L_usmuluha3)
+DEFUN __usmuluha3
+    ;; Widening multiply
+#ifdef __AVR_HAVE_MUL__
+    ;; Adjust interface
+    movw    R26, R22
+    movw    R18, R24
+#endif /* HAVE MUL */
+    XCALL   __umulhisi3
+    tst     C3
+    brne .Lmax
+    ;; Round, target is in C1..C2
+    lsl     C0
+    adc     C1, __zero_reg__
+    adc     C2, __zero_reg__
+    brcs .Lmax
+    ;; Move result into place
+    mov     C3, C2
+    mov     C2, C1
+    ret
+.Lmax:
+    ;; Saturate
+    ldi     C2, 0xff
+    ldi     C3, 0xff
+    ret
+ENDF  __usmuluha3
+#endif /* L_usmuluha3 */
+
+/***********************************************************
+    Fixed signed saturated Multiplication  s8.7 x s8.7
+***********************************************************/
+
+#if defined (L_ssmulha3)
+DEFUN __ssmulha3
+    ;; Widening multiply
+#ifdef __AVR_HAVE_MUL__
+    ;; Adjust interface
+    movw    R26, R22
+    movw    R18, R24
+#endif /* HAVE MUL */
+    XCALL   __mulhisi3
+    ;; Adjust decimal point
+    lsl     C0
+    rol     C1
+    rol     C2
+    brvs .LsatC3.3
+    ;; The 9 MSBs must be the same
+    rol     C3
+    sbc     SS, SS
+    cp      C3, SS
+    brne .LsatSS
+    ;; Round
+    lsl     C0
+    adc     C1, __zero_reg__
+    adc     C2, __zero_reg__
+    brvs .Lmax
+    ;; Move result into place
+    mov    C3, C2
+    mov    C2, C1
+    ret
+.Lmax:
+    ;; Load 0x7fff
+    clr     C3
+.LsatC3.3:
+    ;; C3 <  0 -->  0x8000
+    ;; C3 >= 0 -->  0x7fff
+    mov     SS, C3
+.LsatSS:
+    ;; Load min / max value:
+    ;; SS = -1  -->  0x8000
+    ;; SS =  0  -->  0x7fff
+    ldi     C3, 0x7f
+    ldi     C2, 0xff
+    sbrc    SS, 7
+    adiw    C2, 1
+    ret
+ENDF  __ssmulha3
+#endif /* L_ssmulha3 */
+
+#undef C0
+#undef C1
+#undef C2
+#undef C3
+#undef SS
+
+/***********************************************************
+    Fixed  unsigned saturated Multiplication  16.16 x 16.16
+***********************************************************/
+
+#define C0  18
+#define C1  C0+1
+#define C2  C0+2
+#define C3  C0+3
+#define C4  C0+4
+#define C5  C0+5
+#define C6  C0+6
+#define C7  C0+7
+#define SS __tmp_reg__
+
+#if defined (L_usmulusa3)
+;; R22[4] = R22[4] *{ssat} R18[4]
+;; Ordinary ABI function
+DEFUN __usmulusa3
+    ;; Widening multiply
+    XCALL   __umulsidi3
+    or      C7, C6
+    brne .Lmax
+    ;; Round, target is in C2..C5
+    lsl     C1
+    adc     C2, __zero_reg__
+    adc     C3, __zero_reg__
+    adc     C4, __zero_reg__
+    adc     C5, __zero_reg__
+    brcs .Lmax
+    ;; Move result into place
+    wmov    C6, C4
+    wmov    C4, C2
+    ret
+.Lmax:
+    ;; Saturate
+    ldi     C7, 0xff
+    ldi     C6, 0xff
+    wmov    C4, C6
+    ret
+ENDF  __usmulusa3
+#endif /* L_usmulusa3 */
+
+/***********************************************************
+    Fixed signed saturated Multiplication  s16.15 x s16.15
+***********************************************************/
+
+#if defined (L_ssmulsa3)
+;; R22[4] = R22[4] *{ssat} R18[4]
+;; Ordinary ABI function
+DEFUN __ssmulsa3
+    ;; Widening multiply
+    XCALL   __mulsidi3
+    ;; Adjust decimal point
+    lsl     C1
+    rol     C2
+    rol     C3
+    rol     C4
+    rol     C5
+    brvs .LsatC7.7
+    ;; The 17 MSBs must be the same
+    rol     C6
+    rol     C7
+    sbc     SS, SS
+    cp      C6, SS
+    cpc     C7, SS
+    brne .LsatSS
+    ;; Round
+    lsl     C1
+    adc     C2, __zero_reg__
+    adc     C3, __zero_reg__
+    adc     C4, __zero_reg__
+    adc     C5, __zero_reg__
+    brvs .Lmax
+    ;; Move result into place
+    wmov    C6, C4
+    wmov    C4, C2
+    ret
+
+.Lmax:
+    ;; Load 0x7fffffff
+    clr     C7
+.LsatC7.7:
+    ;; C7 <  0 -->  0x80000000
+    ;; C7 >= 0 -->  0x7fffffff
+    lsl     C7
+    sbc     SS, SS
+.LsatSS:
+    ;; Load min / max value:
+    ;; SS = -1  -->  0x80000000
+    ;; SS =  0  -->  0x7fffffff
+    com     SS
+    mov     C4, SS
+    mov     C5, C4
+    wmov    C6, C4
+    subi    C7, 0x80
+    ret
+ENDF  __ssmulsa3
+#endif /* L_ssmulsa3 */
+
+#undef C0
+#undef C1
+#undef C2
+#undef C3
+#undef C4
+#undef C5
+#undef C6
+#undef C7
+#undef SS
+
 /*******************************************************
       Fractional Division 8 / 8
 *******************************************************/
@@ -607,30 +880,38 @@ ENDF __mulusa3
 #define r_divd  r25     /* dividend */
 #define r_quo   r24     /* quotient */
 #define r_div   r22     /* divisor */
+#define r_sign  __tmp_reg__
 
 #if defined (L_divqq3)
 DEFUN   __divqq3
-    mov     r0, r_divd
-    eor     r0, r_div
+    mov     r_sign, r_divd
+    eor     r_sign, r_div
     sbrc    r_div, 7
     neg     r_div
     sbrc    r_divd, 7
     neg     r_divd
-    cp      r_divd, r_div
-    breq    __divqq3_minus1  ; if equal return -1
-    XCALL   __udivuqq3
+    XCALL   __divqq_helper
     lsr     r_quo
-    sbrc    r0, 7   ; negate result if needed
+    sbrc    r_sign, 7   ; negate result if needed
     neg     r_quo
     ret
-__divqq3_minus1:
-    ldi     r_quo, 0x80
-    ret
 ENDF __divqq3
-#endif  /* defined (L_divqq3) */
+#endif  /* L_divqq3 */
 
 #if defined (L_udivuqq3)
 DEFUN   __udivuqq3
+    cp      r_divd, r_div
+    brsh    0f
+    XJMP __divqq_helper
+    ;; Result is out of [0, 1)  ==>  Return 1 - eps.
+0:  ldi     r_quo, 0xff
+    ret
+ENDF __udivuqq3
+#endif  /* L_udivuqq3 */
+
+
+#if defined (L_divqq_helper)
+DEFUN   __divqq_helper
     clr     r_quo           ; clear quotient
     inc     __zero_reg__    ; init loop counter, used per shift
 __udivuqq3_loop:
@@ -649,12 +930,13 @@ __udivuqq3_cont:
     com     r_quo           ; complement result
                             ; because C flag was complemented in loop
     ret
-ENDF __udivuqq3
-#endif  /* defined (L_udivuqq3) */
+ENDF __divqq_helper
+#endif  /* L_divqq_helper */
 
 #undef  r_divd
 #undef  r_quo
 #undef  r_div
+#undef  r_sign
 
 
 /*******************************************************
@@ -746,6 +1028,8 @@ DEFUN   __divha3
     NEG2    r_divdL
 2:
     XCALL   __udivuha3
+    lsr     r_quoH  ; adjust to 7 fractional bits
+    ror     r_quoL
     sbrs    r0, 7   ; negate result if needed
     ret
     NEG2    r_quoL
@@ -806,6 +1090,10 @@ DEFUN   __divsa3
     NEG4    r_arg1L
 2:
     XCALL   __udivusa3
+    lsr     r_quoHH ; adjust to 15 fractional bits
+    ror     r_quoHL
+    ror     r_quoH
+    ror     r_quoL
     sbrs    r0, 7   ; negate result if needed
     ret
     ;; negate r_quoL
@@ -872,6 +1160,28 @@ ENDF __udivusa3
 #undef  r_divHL
 #undef  r_divHH
 #undef  r_cnt
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Saturation, 1 Byte
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; First Argument and Return Register
+#define A0  24
+
+#if defined (L_ssabs_1)
+DEFUN __ssabs_1
+    sbrs    A0, 7
+    ret
+    neg     A0
+    sbrc    A0,7
+    dec     A0
+    ret
+ENDF __ssabs_1
+#endif /* L_ssabs_1 */
+
+#undef A0
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1024,8 +1334,8 @@ DEFUN __usadd_8
     XCALL   __adddi3
     brcs 0f
     ret
-	;; A[] = 0xffffffff
-0:  XJMP    __sbc_8
+0:  ;; A[] = 0xffffffff
+    XJMP    __sbc_8
 ENDF __usadd_8
 #endif /* L_usadd_8 */
 
@@ -1038,8 +1348,8 @@ DEFUN __ussub_8
     XCALL   __subdi3
     brcs 0f
     ret
-	;; A[] = 0
-0:  XJMP    __clr_8
+0:  ;; A[] = 0
+    XJMP    __clr_8
 ENDF __ussub_8
 #endif /* L_ussub_8 */
 
@@ -1049,9 +1359,9 @@ FALIAS __ssaddda3
 FALIAS __ssadddq3
 
 DEFUN __ssadd_8
-    ;; A = (B >= 0) ? INT64_MAX : INT64_MIN
     XCALL   __adddi3
     brvc 0f
+    ;; A = (B >= 0) ? INT64_MAX : INT64_MIN
     cpi     B7, 0x80
     XCALL   __sbc_8
     subi    A7, 0x80
@@ -1067,7 +1377,7 @@ FALIAS __sssubdq3
 DEFUN __sssub_8
     XCALL   __subdi3
     brvc 0f
-	;; A = (B < 0) ? INT64_MAX : INT64_MIN
+    ;; A = (B < 0) ? INT64_MAX : INT64_MIN
     ldi     A7, 0x7f
     cp      A7, B7
     XCALL   __sbc_8
@@ -1092,3 +1402,509 @@ ENDF __sssub_8
 #undef B5
 #undef B6
 #undef B7
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Rounding Helpers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#ifdef L_mask1
+
+#define AA 24
+#define CC 25
+
+;; R25 = 1 << (R24 & 7)
+;; CC  = 1 << (AA  & 7)
+;; Clobbers: None
+DEFUN __mask1
+    ;; CC = 2 ^ AA.1
+    ldi     CC, 1 << 2
+    sbrs    AA, 1
+    ldi     CC, 1 << 0
+    ;; CC *= 2 ^ AA.0
+    sbrc    AA, 0
+    lsl     CC
+    ;; CC *= 2 ^ AA.2
+    sbrc    AA, 2
+    swap    CC
+    ret
+ENDF __mask1
+
+#undef AA
+#undef CC
+#endif /* L_mask1 */
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The rounding point. Any bits smaller than
+;; 2^{-RP} will be cleared.
+#define RP R24
+
+#define A0 22
+#define A1 A0 + 1
+
+#define C0 24
+#define C1 C0 + 1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Rounding, 1 Byte
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#ifdef L_roundqq3
+
+;; R24 = round (R22, R24)
+;; Clobbers: R22, __tmp_reg__
+DEFUN  __roundqq3
+    mov     __tmp_reg__, C1
+    subi    RP, __QQ_FBIT__ - 1
+    neg     RP
+    ;; R25 = 1 << RP  (Total offset is FBIT-1 - RP)
+    XCALL   __mask1
+    mov     C0, C1
+    ;; Add-Saturate 2^{-RP-1}
+    add     A0, C0
+    brvc 0f
+    ldi     A0, 0x7f
+0:  ;; Mask out bits beyond RP
+    lsl     C0
+    neg     C0
+    and     C0, A0
+    mov     C1, __tmp_reg__
+    ret
+ENDF  __roundqq3
+#endif /* L_roundqq3 */
+
+#ifdef L_rounduqq3
+
+;; R24 = round (R22, R24)
+;; Clobbers: R22, __tmp_reg__
+DEFUN  __rounduqq3
+    mov     __tmp_reg__, C1
+    subi    RP, __UQQ_FBIT__ - 1
+    neg     RP
+    ;; R25 = 1 << RP  (Total offset is FBIT-1 - RP)
+    XCALL   __mask1
+    mov     C0, C1
+    ;; Add-Saturate 2^{-RP-1}
+    add     A0, C0
+    brcc 0f
+    ldi     A0, 0xff
+0:  ;; Mask out bits beyond RP
+    lsl     C0
+    neg     C0
+    and     C0, A0
+    mov     C1, __tmp_reg__
+    ret
+ENDF  __rounduqq3
+#endif /* L_rounduqq3 */
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Rounding, 2 Bytes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#ifdef L_addmask_2
+
+;; [ R25:R24 =  1 << (R24 & 15)
+;;   R23:R22 += 1 << (R24 & 15) ]
+;; SREG is set according to the addition
+DEFUN __addmask_2
+    ;; R25 = 1 << (R24 & 7)
+    XCALL   __mask1
+    cpi     RP, 1 << 3
+    sbc     C0, C0
+    ;; Swap C0 and C1 if RP.3 was set
+    and     C0, C1
+    eor     C1, C0
+    ;; Finally, add the power-of-two:  A[] += C[]
+    add     A0, C0
+    adc     A1, C1
+    ret
+ENDF  __addmask_2
+#endif /* L_addmask_2 */
+
+#ifdef L_round_s2
+
+;; R25:R24 = round (R23:R22, R24)
+;; Clobbers: R23, R22
+DEFUN  __roundhq3
+    subi    RP, __HQ_FBIT__ - __HA_FBIT__
+ENDF   __roundhq3
+DEFUN  __roundha3
+    subi    RP, __HA_FBIT__ - 1
+    neg     RP
+    ;; [ R25:R24  = 1 << (FBIT-1 - RP)
+    ;;   R23:R22 += 1 << (FBIT-1 - RP) ]
+    XCALL   __addmask_2
+    XJMP    __round_s2_const
+ENDF  __roundha3
+
+#endif /* L_round_s2 */
+
+#ifdef L_round_u2
+
+;; R25:R24 = round (R23:R22, R24)
+;; Clobbers: R23, R22
+DEFUN  __rounduhq3
+    subi    RP, __UHQ_FBIT__ - __UHA_FBIT__
+ENDF   __rounduhq3
+DEFUN  __rounduha3
+    subi    RP, __UHA_FBIT__ - 1
+    neg     RP
+    ;; [ R25:R24  = 1 << (FBIT-1 - RP)
+    ;;   R23:R22 += 1 << (FBIT-1 - RP) ]
+    XCALL   __addmask_2
+    XJMP    __round_u2_const 
+ENDF  __rounduha3
+
+#endif /* L_round_u2 */
+
+
+#ifdef L_round_2_const
+
+;; Helpers for 2 byte wide rounding
+
+DEFUN  __round_s2_const
+    brvc 2f
+    ldi     A1, 0x7f
+    rjmp 1f
+    ;; FALLTHRU (Barrier)
+ENDF  __round_s2_const
+
+DEFUN __round_u2_const
+    brcc 2f
+    ldi     A1, 0xff
+1:
+    ldi     A0, 0xff
+2:
+    ;; Saturation is performed now.
+    ;; Currently, we have C[] = 2^{-RP-1}
+    ;; C[] = 2^{-RP}
+    lsl     C0
+    rol     C1
+    ;;      
+    NEG2    C0
+    ;; Clear the bits beyond the rounding point.
+    and     C0, A0
+    and     C1, A1
+    ret
+ENDF  __round_u2_const
+
+#endif /* L_round_2_const */
+
+#undef A0
+#undef A1
+#undef C0
+#undef C1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Rounding, 4 Bytes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#define A0 18
+#define A1 A0 + 1
+#define A2 A0 + 2
+#define A3 A0 + 3
+
+#define C0 22
+#define C1 C0 + 1
+#define C2 C0 + 2
+#define C3 C0 + 3
+
+#ifdef L_addmask_4
+
+;; [ R25:R22 =  1 << (R24 & 31)
+;;   R21:R18 += 1 << (R24 & 31) ]
+;; SREG is set according to the addition
+DEFUN __addmask_4
+    ;; R25 = 1 << (R24 & 7)
+    XCALL   __mask1
+    cpi     RP, 1 << 4
+    sbc     C0, C0
+    sbc     C1, C1
+    ;; Swap C2 with C3 if RP.3 is not set
+    cpi     RP, 1 << 3
+    sbc     C2, C2
+    and     C2, C3
+    eor     C3, C2
+    ;; Swap C3:C2 with C1:C0 if RP.4 is not set
+    and     C0, C2  $  eor     C2, C0
+    and     C1, C3  $  eor     C3, C1
+    ;; Finally, add the power-of-two:  A[] += C[]
+    add     A0, C0
+    adc     A1, C1
+    adc     A2, C2
+    adc     A3, C3
+    ret
+ENDF  __addmask_4
+#endif /* L_addmask_4 */
+
+#ifdef L_round_s4
+
+;; R25:R22 = round (R21:R18, R24)
+;; Clobbers: R18...R21
+DEFUN  __roundsq3
+    subi    RP, __SQ_FBIT__ - __SA_FBIT__
+ENDF   __roundsq3
+DEFUN  __roundsa3
+    subi    RP, __SA_FBIT__ - 1
+    neg     RP
+    ;; [ R25:R22  = 1 << (FBIT-1 - RP)
+    ;;   R21:R18 += 1 << (FBIT-1 - RP) ]
+    XCALL   __addmask_4
+    XJMP    __round_s4_const
+ENDF  __roundsa3
+
+#endif /* L_round_s4 */
+
+#ifdef L_round_u4
+
+;; R25:R22 = round (R21:R18, R24)
+;; Clobbers: R18...R21
+DEFUN  __roundusq3
+    subi    RP, __USQ_FBIT__ - __USA_FBIT__
+ENDF   __roundusq3
+DEFUN  __roundusa3
+    subi    RP, __USA_FBIT__ - 1
+    neg     RP
+    ;; [ R25:R22  = 1 << (FBIT-1 - RP)
+    ;;   R21:R18 += 1 << (FBIT-1 - RP) ]
+    XCALL   __addmask_4
+    XJMP    __round_u4_const 
+ENDF  __roundusa3
+
+#endif /* L_round_u4 */
+
+
+#ifdef L_round_4_const
+
+;; Helpers for 4 byte wide rounding
+
+DEFUN  __round_s4_const
+    brvc 2f
+    ldi     A3, 0x7f
+    rjmp 1f
+    ;; FALLTHRU (Barrier)
+ENDF  __round_s4_const
+
+DEFUN __round_u4_const
+    brcc 2f
+    ldi     A3, 0xff
+1:
+    ldi     A2, 0xff
+    ldi     A1, 0xff
+    ldi     A0, 0xff
+2:
+    ;; Saturation is performed now.
+    ;; Currently, we have C[] = 2^{-RP-1}
+    ;; C[] = 2^{-RP}
+    lsl     C0
+    rol     C1
+    rol     C2
+    rol     C3
+    XCALL   __negsi2
+    ;; Clear the bits beyond the rounding point.
+    and     C0, A0
+    and     C1, A1
+    and     C2, A2
+    and     C3, A3
+    ret
+ENDF  __round_u4_const
+
+#endif /* L_round_4_const */
+
+#undef A0
+#undef A1
+#undef A2
+#undef A3
+#undef C0
+#undef C1
+#undef C2
+#undef C3
+
+#undef RP
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Rounding, 8 Bytes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#define RP     16
+#define FBITm1 31
+
+#define C0 18
+#define C1 C0 + 1
+#define C2 C0 + 2
+#define C3 C0 + 3
+#define C4 C0 + 4
+#define C5 C0 + 5
+#define C6 C0 + 6
+#define C7 C0 + 7
+
+#define A0 16
+#define A1 17
+#define A2 26
+#define A3 27
+#define A4 28
+#define A5 29
+#define A6 30
+#define A7 31
+
+
+#ifdef L_rounddq3
+;; R25:R18 = round (R25:R18, R16)
+;; Clobbers: ABI
+DEFUN  __rounddq3
+    ldi     FBITm1, __DQ_FBIT__ - 1
+    clt
+    XJMP    __round_x8
+ENDF  __rounddq3
+#endif /* L_rounddq3 */
+
+#ifdef L_roundudq3
+;; R25:R18 = round (R25:R18, R16)
+;; Clobbers: ABI
+DEFUN  __roundudq3
+    ldi     FBITm1, __UDQ_FBIT__ - 1
+    set
+    XJMP    __round_x8
+ENDF  __roundudq3
+#endif /* L_roundudq3 */
+
+#ifdef L_roundda3
+;; R25:R18 = round (R25:R18, R16)
+;; Clobbers: ABI
+DEFUN  __roundda3
+    ldi     FBITm1, __DA_FBIT__ - 1
+    clt
+    XJMP    __round_x8
+ENDF  __roundda3
+#endif /* L_roundda3 */
+
+#ifdef L_rounduda3
+;; R25:R18 = round (R25:R18, R16)
+;; Clobbers: ABI
+DEFUN  __rounduda3
+    ldi     FBITm1, __UDA_FBIT__ - 1
+    set
+    XJMP    __round_x8
+ENDF  __rounduda3
+#endif /* L_rounduda3 */
+
+#ifdef L_roundta3
+;; R25:R18 = round (R25:R18, R16)
+;; Clobbers: ABI
+DEFUN  __roundta3
+    ldi     FBITm1, __TA_FBIT__ - 1
+    clt
+    XJMP    __round_x8
+ENDF  __roundta3
+#endif /* L_roundta3 */
+
+#ifdef L_rounduta3
+;; R25:R18 = round (R25:R18, R16)
+;; Clobbers: ABI
+DEFUN  __rounduta3
+    ldi     FBITm1, __UTA_FBIT__ - 1
+    set
+    XJMP    __round_x8
+ENDF  __rounduta3
+#endif /* L_rounduta3 */
+
+
+#ifdef L_round_x8
+DEFUN __round_x8
+    push r16
+    push r17
+    push r28
+    push r29
+    ;; Compute log2 of addend from rounding point
+    sub     RP, FBITm1
+    neg     RP
+    ;; Move input to work register A[]
+    push    C0
+    mov     A1, C1
+    wmov    A2, C2
+    wmov    A4, C4
+    wmov    A6, C6
+    ;; C[] = 1 << (FBIT-1 - RP)
+    XCALL   __clr_8
+    inc     C0
+    XCALL   __ashldi3
+    pop     A0
+    ;; A[] += C[]
+    add     A0, C0
+    adc     A1, C1
+    adc     A2, C2
+    adc     A3, C3
+    adc     A4, C4
+    adc     A5, C5
+    adc     A6, C6
+    adc     A7, C7
+    brts    1f
+    ;; Signed
+    brvc    3f
+    ;; Signed overflow: A[] = 0x7f...
+    brvs    2f
+1:  ;; Unsigned
+    brcc    3f
+    ;; Unsigned overflow: A[] = 0xff...
+2:  ldi     A7, 0xff
+    ldi     A6, 0xff
+    wmov    A0, A6
+    wmov    A2, A6
+    wmov    A4, A6
+    bld     A7, 7
+3:
+    ;;  C[] = -C[] - C[]
+    push    A0
+    ldi     r16, 1
+    XCALL   __ashldi3
+    pop     A0
+    XCALL   __negdi2
+    ;; Clear the bits beyond the rounding point.
+    and     C0, A0
+    and     C1, A1
+    and     C2, A2
+    and     C3, A3
+    and     C4, A4
+    and     C5, A5
+    and     C6, A6
+    and     C7, A7
+    ;; Epilogue
+    pop r29
+    pop r28
+    pop r17
+    pop r16
+    ret
+ENDF  __round_x8
+
+#endif /* L_round_x8 */
+
+#undef A0
+#undef A1
+#undef A2
+#undef A3
+#undef A4
+#undef A5
+#undef A6
+#undef A7
+
+#undef C0
+#undef C1
+#undef C2
+#undef C3
+#undef C4
+#undef C5
+#undef C6
+#undef C7
+
+#undef RP
+#undef FBITm1
+
+
+;; Supply implementations / symbols for the bit-banging functions
+;; __builtin_avr_bitsfx and __builtin_avr_fxbits
+#ifdef L_ret
+DEFUN __ret
+    ret
+ENDF  __ret
+#endif /* L_ret */

@@ -1,7 +1,5 @@
 ;; Machine description for SPARC chip for GCC
-;;  Copyright (C) 1987, 1988, 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-;;  1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-;;  2011 Free Software Foundation, Inc.
+;;  Copyright (C) 1987-2013 Free Software Foundation, Inc.
 ;;  Contributed by Michael Tiemann (tiemann@cygnus.com)
 ;;  64-bit SPARC-V9 support by Michael Tiemann, Jim Wilson, and Doug Evans,
 ;;  at Cygnus Support.
@@ -257,6 +255,7 @@
   "ialu,compare,shift,
    load,sload,store,
    uncond_branch,branch,call,sibcall,call_no_delay_slot,return,
+   cbcond,uncond_cbcond,
    imul,idiv,
    fpload,fpstore,
    fp,fpmove,
@@ -274,6 +273,12 @@
 (define_attr "empty_delay_slot" "false,true"
   (symbol_ref "(empty_delay_slot (insn)
 		? EMPTY_DELAY_SLOT_TRUE : EMPTY_DELAY_SLOT_FALSE)"))
+
+;; True if we are making use of compare-and-branch instructions.
+;; True if we should emit a nop after a cbcond instruction
+(define_attr "emit_cbcond_nop" "false,true"
+  (symbol_ref "(emit_cbcond_nop (insn)
+                ? EMIT_CBCOND_NOP_TRUE : EMIT_CBCOND_NOP_FALSE)"))
 
 (define_attr "branch_type" "none,icc,fcc,reg"
   (const_string "none"))
@@ -377,6 +382,30 @@
 	       (if_then_else (eq_attr "empty_delay_slot" "true")
 		 (const_int 4)
 		 (const_int 3))))
+         (eq_attr "type" "cbcond")
+	   (if_then_else (lt (pc) (match_dup 3))
+	     (if_then_else (lt (minus (match_dup 3) (pc)) (const_int 500))
+               (if_then_else (eq_attr "emit_cbcond_nop" "true")
+                 (const_int 2)
+                 (const_int 1))
+               (const_int 4))
+	     (if_then_else (lt (minus (pc) (match_dup 3)) (const_int 500))
+               (if_then_else (eq_attr "emit_cbcond_nop" "true")
+                 (const_int 2)
+                 (const_int 1))
+               (const_int 4)))
+         (eq_attr "type" "uncond_cbcond")
+	   (if_then_else (lt (pc) (match_dup 0))
+	     (if_then_else (lt (minus (match_dup 0) (pc)) (const_int 500))
+               (if_then_else (eq_attr "emit_cbcond_nop" "true")
+                 (const_int 2)
+                 (const_int 1))
+               (const_int 1))
+	     (if_then_else (lt (minus (pc) (match_dup 0)) (const_int 500))
+               (if_then_else (eq_attr "emit_cbcond_nop" "true")
+                 (const_int 2)
+                 (const_int 1))
+               (const_int 1)))
 	 ] (const_int 1)))
 
 ;; FP precision.
@@ -397,7 +426,7 @@
 		? TLS_CALL_DELAY_TRUE : TLS_CALL_DELAY_FALSE)"))
 
 (define_attr "in_call_delay" "false,true"
-  (cond [(eq_attr "type" "uncond_branch,branch,call,sibcall,call_no_delay_slot,multi")
+  (cond [(eq_attr "type" "uncond_branch,branch,cbcond,uncond_cbcond,call,sibcall,call_no_delay_slot,multi")
 		(const_string "false")
 	 (eq_attr "type" "load,fpload,store,fpstore")
 		(if_then_else (eq_attr "length" "1")
@@ -431,19 +460,19 @@
 ;; because it prevents us from moving back the final store of inner loops.
 
 (define_attr "in_branch_delay" "false,true"
-  (if_then_else (and (eq_attr "type" "!uncond_branch,branch,call,sibcall,call_no_delay_slot,multi")
+  (if_then_else (and (eq_attr "type" "!uncond_branch,branch,cbcond,uncond_cbcond,call,sibcall,call_no_delay_slot,multi")
 		     (eq_attr "length" "1"))
 		(const_string "true")
 		(const_string "false")))
 
 (define_attr "in_uncond_branch_delay" "false,true"
-  (if_then_else (and (eq_attr "type" "!uncond_branch,branch,call,sibcall,call_no_delay_slot,multi")
+  (if_then_else (and (eq_attr "type" "!uncond_branch,branch,cbcond,uncond_cbcond,call,sibcall,call_no_delay_slot,multi")
 		     (eq_attr "length" "1"))
 		(const_string "true")
 		(const_string "false")))
 
 (define_attr "in_annul_branch_delay" "false,true"
-  (if_then_else (and (eq_attr "type" "!uncond_branch,branch,call,sibcall,call_no_delay_slot,multi")
+  (if_then_else (and (eq_attr "type" "!uncond_branch,branch,cbcond,uncond_cbcond,call,sibcall,call_no_delay_slot,multi")
 		     (eq_attr "length" "1"))
 		(const_string "true")
 		(const_string "false")))
@@ -1313,6 +1342,32 @@
 ;; SPARC V9-specific jump insns.  None of these are guaranteed to be
 ;; in the architecture.
 
+(define_insn "*cbcond_sp32"
+  [(set (pc)
+        (if_then_else (match_operator 0 "noov_compare_operator"
+                       [(match_operand:SI 1 "register_operand" "r")
+                        (match_operand:SI 2 "arith5_operand" "rA")])
+                      (label_ref (match_operand 3 "" ""))
+                      (pc)))]
+  "TARGET_CBCOND"
+{
+  return output_cbcond (operands[0], operands[3], insn);
+}
+  [(set_attr "type" "cbcond")])
+
+(define_insn "*cbcond_sp64"
+  [(set (pc)
+        (if_then_else (match_operator 0 "noov_compare_operator"
+                       [(match_operand:DI 1 "register_operand" "r")
+                        (match_operand:DI 2 "arith5_operand" "rA")])
+                      (label_ref (match_operand 3 "" ""))
+                      (pc)))]
+  "TARGET_ARCH64 && TARGET_CBCOND"
+{
+  return output_cbcond (operands[0], operands[3], insn);
+}
+  [(set_attr "type" "cbcond")])
+
 ;; There are no 32 bit brreg insns.
 
 ;; XXX
@@ -1595,9 +1650,9 @@
 
 (define_insn "*movdi_insn_sp32"
   [(set (match_operand:DI 0 "nonimmediate_operand"
-					"=T,o,T,r,o,r,r,r,?T,?*f,?*f,?o,?*e,?*e,  r,?*f,?*e,?W,b,b")
+					"=T,o,T,U,o,r,r,r,?T,?*f,?*f,?o,?*e,?*e,  r,?*f,?*e,?W,b,b")
         (match_operand:DI 1 "input_operand"
-					" J,J,r,T,r,o,i,r,*f,  T,  o,*f, *e, *e,?*f,  r,  W,*e,J,P"))]
+					" J,J,U,T,r,o,i,r,*f,  T,  o,*f, *e, *e,?*f,  r,  W,*e,J,P"))]
   "! TARGET_ARCH64
    && (register_operand (operands[0], DImode)
        || register_or_zero_operand (operands[1], DImode))"
@@ -2302,8 +2357,8 @@
 })
 
 (define_insn "*movdf_insn_sp32"
-  [(set (match_operand:DF 0 "nonimmediate_operand" "=b,b,e,e,*r, f,  e,T,W,r,T,  f,  *r,  o,o")
-	(match_operand:DF 1 "input_operand"         "G,C,e,e, f,*r,W#F,G,e,T,r,o#F,*roF,*rG,f"))]
+  [(set (match_operand:DF 0 "nonimmediate_operand" "=b,b,e,e,*r, f,  e,T,W,U,T,  f,  *r,  o,o")
+	(match_operand:DF 1 "input_operand"         "G,C,e,e, f,*r,W#F,G,e,T,U,o#F,*roF,*rG,f"))]
   "! TARGET_ARCH64
    && (register_operand (operands[0], DFmode)
        || register_or_zero_or_all_ones_operand (operands[1], DFmode))"
@@ -2541,8 +2596,8 @@
 })
 
 (define_insn "*movtf_insn_sp32"
-  [(set (match_operand:TF 0 "nonimmediate_operand" "=b, e,o, o,r,  r")
-	(match_operand:TF 1 "input_operand"        " G,oe,e,rG,o,roG"))]
+  [(set (match_operand:TF 0 "nonimmediate_operand" "=b, e,o,  o,U,  r")
+	(match_operand:TF 1 "input_operand"        " G,oe,e,rGU,o,roG"))]
   "! TARGET_ARCH64
    && (register_operand (operands[0], TFmode)
        || register_or_zero_operand (operands[1], TFmode))"
@@ -6076,11 +6131,21 @@
 
 ;; Unconditional and other jump instructions.
 
-(define_insn "jump"
+(define_expand "jump"
   [(set (pc) (label_ref (match_operand 0 "" "")))]
-  ""
-  "* return output_ubranch (operands[0], 0, insn);"
+  "")
+
+(define_insn "*jump_ubranch"
+  [(set (pc) (label_ref (match_operand 0 "" "")))]
+  "! TARGET_CBCOND"
+  "* return output_ubranch (operands[0], insn);"
   [(set_attr "type" "uncond_branch")])
+
+(define_insn "*jump_cbcond"
+  [(set (pc) (label_ref (match_operand 0 "" "")))]
+  "TARGET_CBCOND"
+  "* return output_ubranch (operands[0], insn);"
+  [(set_attr "type" "uncond_cbcond")])
 
 (define_expand "tablejump"
   [(parallel [(set (pc) (match_operand 0 "register_operand" "r"))
@@ -7690,7 +7755,7 @@
 				     (match_operand 3 "tld_symbolic_operand" "")]
 				    UNSPEC_TLSLDO)
 			 (match_operand:SI 1 "register_operand" "r")))
-	(match_operand:QI 0 "register_operand" "=r"))]
+	(match_operand:QI 0 "register_operand" "r"))]
   "TARGET_TLS && TARGET_ARCH32"
   "stb\t%0, [%1 + %2], %%tldo_add(%3)"
   [(set_attr "type" "store")])
@@ -7700,7 +7765,7 @@
 				     (match_operand 3 "tld_symbolic_operand" "")]
 				    UNSPEC_TLSLDO)
 			 (match_operand:DI 1 "register_operand" "r")))
-	(match_operand:QI 0 "register_operand" "=r"))]
+	(match_operand:QI 0 "register_operand" "r"))]
   "TARGET_TLS && TARGET_ARCH64"
   "stb\t%0, [%1 + %2], %%tldo_add(%3)"
   [(set_attr "type" "store")])
@@ -7710,7 +7775,7 @@
 				     (match_operand 3 "tld_symbolic_operand" "")]
 				    UNSPEC_TLSLDO)
 			 (match_operand:SI 1 "register_operand" "r")))
-	(match_operand:HI 0 "register_operand" "=r"))]
+	(match_operand:HI 0 "register_operand" "r"))]
   "TARGET_TLS && TARGET_ARCH32"
   "sth\t%0, [%1 + %2], %%tldo_add(%3)"
   [(set_attr "type" "store")])
@@ -7720,7 +7785,7 @@
 				     (match_operand 3 "tld_symbolic_operand" "")]
 				    UNSPEC_TLSLDO)
 			 (match_operand:DI 1 "register_operand" "r")))
-	(match_operand:HI 0 "register_operand" "=r"))]
+	(match_operand:HI 0 "register_operand" "r"))]
   "TARGET_TLS && TARGET_ARCH64"
   "sth\t%0, [%1 + %2], %%tldo_add(%3)"
   [(set_attr "type" "store")])
@@ -7730,7 +7795,7 @@
 				     (match_operand 3 "tld_symbolic_operand" "")]
 				    UNSPEC_TLSLDO)
 			 (match_operand:SI 1 "register_operand" "r")))
-	(match_operand:SI 0 "register_operand" "=r"))]
+	(match_operand:SI 0 "register_operand" "r"))]
   "TARGET_TLS && TARGET_ARCH32"
   "st\t%0, [%1 + %2], %%tldo_add(%3)"
   [(set_attr "type" "store")])
@@ -7740,7 +7805,7 @@
 				     (match_operand 3 "tld_symbolic_operand" "")]
 				    UNSPEC_TLSLDO)
 			 (match_operand:DI 1 "register_operand" "r")))
-	(match_operand:SI 0 "register_operand" "=r"))]
+	(match_operand:SI 0 "register_operand" "r"))]
   "TARGET_TLS && TARGET_ARCH64"
   "stw\t%0, [%1 + %2], %%tldo_add(%3)"
   [(set_attr "type" "store")])
@@ -7750,7 +7815,7 @@
 				     (match_operand 3 "tld_symbolic_operand" "")]
 				    UNSPEC_TLSLDO)
 			 (match_operand:DI 1 "register_operand" "r")))
-	(match_operand:DI 0 "register_operand" "=r"))]
+	(match_operand:DI 0 "register_operand" "r"))]
   "TARGET_TLS && TARGET_ARCH64"
   "stx\t%0, [%1 + %2], %%tldo_add(%3)"
   [(set_attr "type" "store")])
@@ -7911,8 +7976,8 @@
    (set_attr "cpu_feature" "vis,vis,vis,*,*,*,*,*,vis3,vis3,*")])
 
 (define_insn "*mov<VM64:mode>_insn_sp32"
-  [(set (match_operand:VM64 0 "nonimmediate_operand" "=e,e,e,*r, f,e,m,m,r,T, o,*r")
-	(match_operand:VM64 1 "input_operand"         "Y,C,e, f,*r,m,e,Y,T,r,*r,*r"))]
+  [(set (match_operand:VM64 0 "nonimmediate_operand" "=e,e,e,*r, f,e,m,m,U,T, o,*r")
+	(match_operand:VM64 1 "input_operand"         "Y,C,e, f,*r,m,e,Y,T,U,*r,*r"))]
   "TARGET_VIS
    && ! TARGET_ARCH64
    && (register_operand (operands[0], <VM64:MODE>mode)

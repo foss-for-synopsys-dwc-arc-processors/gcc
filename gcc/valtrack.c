@@ -1,6 +1,6 @@
 /* Infrastructure for tracking user variable locations and values
    throughout compilation.
-   Copyright (C) 2010, 2011, 2012  Free Software Foundation, Inc.
+   Copyright (C) 2010-2013 Free Software Foundation, Inc.
    Contributed by Alexandre Oliva <aoliva@redhat.com>.
 
 This file is part of GCC.
@@ -28,6 +28,24 @@ along with GCC; see the file COPYING3.  If not see
 #include "function.h"
 #include "regs.h"
 #include "emit-rtl.h"
+
+/* gen_lowpart_no_emit hook implementation for DEBUG_INSNs.  In DEBUG_INSNs,
+   all lowpart SUBREGs are valid, despite what the machine requires for
+   instructions.  */
+
+static rtx
+gen_lowpart_for_debug (enum machine_mode mode, rtx x)
+{
+  rtx result = gen_lowpart_if_possible (mode, x);
+  if (result)
+    return result;
+
+  if (GET_MODE (x) != VOIDmode)
+    return gen_rtx_raw_SUBREG (mode, x,
+			       subreg_lowpart_offset (mode, GET_MODE (x)));
+
+  return NULL_RTX;
+}
 
 /* Replace auto-increment addressing modes with explicit operations to access
    the same addresses without modifying the corresponding registers.  */
@@ -158,6 +176,7 @@ propagate_for_debug (rtx insn, rtx last, rtx dest, rtx src,
 		     basic_block this_basic_block)
 {
   rtx next, loc, end = NEXT_INSN (BB_END (this_basic_block));
+  rtx (*saved_rtl_hook_no_emit) (enum machine_mode, rtx);
 
   struct rtx_subst_pair p;
   p.to = src;
@@ -165,6 +184,8 @@ propagate_for_debug (rtx insn, rtx last, rtx dest, rtx src,
 
   next = NEXT_INSN (insn);
   last = NEXT_INSN (last);
+  saved_rtl_hook_no_emit = rtl_hooks.gen_lowpart_no_emit;
+  rtl_hooks.gen_lowpart_no_emit = gen_lowpart_for_debug;
   while (next != last && next != end)
     {
       insn = next;
@@ -179,6 +200,7 @@ propagate_for_debug (rtx insn, rtx last, rtx dest, rtx src,
 	  df_insn_rescan (insn);
 	}
     }
+  rtl_hooks.gen_lowpart_no_emit = saved_rtl_hook_no_emit;
 }
 
 /* Initialize DEBUG to an empty list, and clear USED, if given.  */

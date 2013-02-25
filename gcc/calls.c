@@ -1,7 +1,5 @@
 /* Convert function calls to rtl insns, for GNU C compiler.
-   Copyright (C) 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 1989-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -1696,7 +1694,7 @@ static struct
      based on crtl->args.internal_arg_pointer.  The element is NULL_RTX if the
      pseudo isn't based on it, a CONST_INT offset if the pseudo is based on it
      with fixed offset, or PC if this is with variable or unknown offset.  */
-  VEC(rtx, heap) *cache;
+  vec<rtx> cache;
 } internal_arg_pointer_exp_state;
 
 static rtx internal_arg_pointer_based_exp (rtx, bool);
@@ -1725,21 +1723,17 @@ internal_arg_pointer_based_exp_scan (void)
 	  rtx val = NULL_RTX;
 	  unsigned int idx = REGNO (SET_DEST (set)) - FIRST_PSEUDO_REGISTER;
 	  /* Punt on pseudos set multiple times.  */
-	  if (idx < VEC_length (rtx, internal_arg_pointer_exp_state.cache)
-	      && (VEC_index (rtx, internal_arg_pointer_exp_state.cache, idx)
+	  if (idx < internal_arg_pointer_exp_state.cache.length ()
+	      && (internal_arg_pointer_exp_state.cache[idx]
 		  != NULL_RTX))
 	    val = pc_rtx;
 	  else
 	    val = internal_arg_pointer_based_exp (SET_SRC (set), false);
 	  if (val != NULL_RTX)
 	    {
-	      if (idx
-		  >= VEC_length (rtx, internal_arg_pointer_exp_state.cache))
-		VEC_safe_grow_cleared (rtx, heap,
-				       internal_arg_pointer_exp_state.cache,
-				       idx + 1);
-	      VEC_replace (rtx, internal_arg_pointer_exp_state.cache,
-			   idx, val);
+	      if (idx >= internal_arg_pointer_exp_state.cache.length ())
+		internal_arg_pointer_exp_state.cache.safe_grow_cleared(idx + 1);
+	      internal_arg_pointer_exp_state.cache[idx] = val;
 	    }
 	}
       if (NEXT_INSN (insn) == NULL_RTX)
@@ -1799,8 +1793,8 @@ internal_arg_pointer_based_exp (rtx rtl, bool toplevel)
   if (REG_P (rtl))
     {
       unsigned int idx = REGNO (rtl) - FIRST_PSEUDO_REGISTER;
-      if (idx < VEC_length (rtx, internal_arg_pointer_exp_state.cache))
-	return VEC_index (rtx, internal_arg_pointer_exp_state.cache, idx);
+      if (idx < internal_arg_pointer_exp_state.cache.length ())
+	return internal_arg_pointer_exp_state.cache[idx];
 
       return NULL_RTX;
     }
@@ -3140,7 +3134,9 @@ expand_call (tree exp, rtx target, int ignore)
 	  int arg_nr = return_flags & ERF_RETURN_ARG_MASK;
 	  if (PUSH_ARGS_REVERSED)
 	    arg_nr = num_actuals - arg_nr - 1;
-	  if (args[arg_nr].reg
+	  if (arg_nr >= 0
+	      && arg_nr < num_actuals
+	      && args[arg_nr].reg
 	      && valreg
 	      && REG_P (valreg)
 	      && GET_MODE (args[arg_nr].reg) == GET_MODE (valreg))
@@ -3443,7 +3439,7 @@ expand_call (tree exp, rtx target, int ignore)
 
 	  sbitmap_free (stored_args_map);
 	  internal_arg_pointer_exp_state.scan_start = NULL_RTX;
-	  VEC_free (rtx, heap, internal_arg_pointer_exp_state.cache);
+	  internal_arg_pointer_exp_state.cache.release ();
 	}
       else
 	{
@@ -4200,13 +4196,11 @@ emit_library_call_value_1 (int retval, rtx orgfun, rtx value,
      that it should complain if nonvolatile values are live.  For
      functions that cannot return, inform flow that control does not
      fall through.  */
-
   if (flags & ECF_NORETURN)
     {
       /* The barrier note must be emitted
 	 immediately after the CALL_INSN.  Some ports emit more than
 	 just a CALL_INSN above, so we must search for it here.  */
-
       rtx last = get_last_insn ();
       while (!CALL_P (last))
 	{
@@ -4216,6 +4210,21 @@ emit_library_call_value_1 (int retval, rtx orgfun, rtx value,
 	}
 
       emit_barrier_after (last);
+    }
+
+  /* Consider that "regular" libcalls, i.e. all of them except for LCT_THROW
+     and LCT_RETURNS_TWICE, cannot perform non-local gotos.  */
+  if (flags & ECF_NOTHROW)
+    {
+      rtx last = get_last_insn ();
+      while (!CALL_P (last))
+	{
+	  last = PREV_INSN (last);
+	  /* There was no CALL_INSN?  */
+	  gcc_assert (last != before_call);
+	}
+
+      make_reg_eh_region_note_nothrow_nononlocal (last);
     }
 
   /* Now restore inhibit_defer_pop to its actual original value.  */

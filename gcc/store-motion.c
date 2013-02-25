@@ -1,6 +1,5 @@
 /* Store motion via Lazy Code Motion on the reverse CFG.
-   Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006, 2007, 2008, 2009, 2010 Free Software Foundation, Inc.
+   Copyright (C) 1997-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -54,7 +53,7 @@ along with GCC; see the file COPYING3.  If not see
      invalidate REG_EQUAL/REG_EQUIV notes for?).
    - pattern_regs in st_expr should be a regset (on its own obstack).
    - antic_stores and avail_stores should be VECs instead of lists.
-   - store_motion_mems should be a VEC instead of a list.
+   - store_motion_mems should be a vec instead of a list.
    - there should be an alloc pool for struct st_expr objects.
    - investigate whether it is helpful to make the address of an st_expr
      a cselib VALUE.

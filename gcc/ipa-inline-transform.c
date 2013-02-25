@@ -1,6 +1,5 @@
 /* Callgraph transformations to handle inlining
-   Copyright (C) 2003, 2004, 2007, 2008, 2009, 2010, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 2003-2013 Free Software Foundation, Inc.
    Contributed by Jan Hubicka
 
 This file is part of GCC.
@@ -93,9 +92,7 @@ can_remove_node_now_p_1 (struct cgraph_node *node)
 	     those only after all devirtualizable virtual calls are processed.
 	     Lacking may edges in callgraph we just preserve them post
 	     inlining.  */
-	  && (!DECL_VIRTUAL_P (node->symbol.decl)
-	      || (!DECL_COMDAT (node->symbol.decl)
-		  && !DECL_EXTERNAL (node->symbol.decl)))
+	  && !DECL_VIRTUAL_P (node->symbol.decl)
 	  /* During early inlining some unanalyzed cgraph nodes might be in the
 	     callgraph and they might reffer the function in question.  */
 	  && !cgraph_new_nodes);
@@ -171,7 +168,7 @@ clone_inlined_nodes (struct cgraph_edge *e, bool duplicate,
 	  struct cgraph_node *n;
 	  n = cgraph_clone_node (e->callee, e->callee->symbol.decl,
 				 e->count, e->frequency,
-				 update_original, NULL, true);
+				 update_original, vNULL, true);
 	  cgraph_redirect_edge_callee (e, n);
 	}
     }
@@ -202,7 +199,7 @@ clone_inlined_nodes (struct cgraph_edge *e, bool duplicate,
 
 bool
 inline_call (struct cgraph_edge *e, bool update_original,
-	     VEC (cgraph_edge_p, heap) **new_edges,
+	     vec<cgraph_edge_p> *new_edges,
 	     int *overall_size, bool update_overall_summary)
 {
   int old_size = 0, new_size = 0;
@@ -211,8 +208,7 @@ inline_call (struct cgraph_edge *e, bool update_original,
   struct cgraph_node *callee = cgraph_function_or_thunk_node (e->callee, NULL);
   bool new_edges_found = false;
 
-  /* FIXME: re-enable once ipa-cp problem is fixed.  */
-#if 0
+#ifdef ENABLE_CHECKING
   int estimated_growth = estimate_edge_growth (e);
   bool predicated = inline_edge_summary (e)->predicate != NULL;
 #endif
@@ -260,8 +256,8 @@ inline_call (struct cgraph_edge *e, bool update_original,
   if (update_overall_summary)
    inline_update_overall_summary (to);
   new_size = inline_summary (to)->size;
-  /* FIXME: re-enable once ipa-cp problem is fixed.  */
-#if 0
+
+#ifdef ENABLE_CHECKING
   /* Verify that estimated growth match real growth.  Allow off-by-one
      error due to INLINE_SIZE_SCALE roudoff errors.  */
   gcc_assert (!update_overall_summary || !overall_size
@@ -270,7 +266,7 @@ inline_call (struct cgraph_edge *e, bool update_original,
 		 wrong, we should remove them from callgraph.  */
 	      || predicated);
 #endif
-   
+
   /* Account the change of overall unit size; external functions will be
      removed and are thus not accounted.  */
   if (overall_size
@@ -351,7 +347,8 @@ save_inline_function_body (struct cgraph_node *node)
 
   /* Copy the OLD_VERSION_NODE function tree to the new version.  */
   tree_function_versioning (node->symbol.decl, first_clone->symbol.decl,
-			    NULL, true, NULL, false, NULL, NULL);
+			    NULL, true, NULL, false,
+			    NULL, NULL);
 
   /* The function will be short lived and removed after we inline all the clones,
      but make it internal so we won't confuse ourself.  */
@@ -359,9 +356,7 @@ save_inline_function_body (struct cgraph_node *node)
   DECL_COMDAT_GROUP (first_clone->symbol.decl) = NULL_TREE;
   TREE_PUBLIC (first_clone->symbol.decl) = 0;
   DECL_COMDAT (first_clone->symbol.decl) = 0;
-  VEC_free (ipa_opt_pass, heap,
-            first_clone->ipa_transforms_to_apply);
-  first_clone->ipa_transforms_to_apply = NULL;
+  first_clone->ipa_transforms_to_apply.release ();
 
   /* When doing recursive inlining, the clone may become unnecessary.
      This is possible i.e. in the case when the recursive function is proved to be

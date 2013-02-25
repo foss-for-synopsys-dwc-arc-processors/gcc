@@ -643,7 +643,7 @@ func TestSetBytes(t *testing.T) {
 
 func checkBytes(b []byte) bool {
 	b2 := new(Int).SetBytes(b).Bytes()
-	return bytes.Compare(b, b2) == 0
+	return bytes.Equal(b, b2)
 }
 
 func TestBytes(t *testing.T) {
@@ -767,8 +767,10 @@ var expTests = []struct {
 	x, y, m string
 	out     string
 }{
+	{"5", "-7", "", "1"},
+	{"-5", "-7", "", "1"},
 	{"5", "0", "", "1"},
-	{"-5", "0", "", "-1"},
+	{"-5", "0", "", "1"},
 	{"5", "1", "", "5"},
 	{"-5", "1", "", "-5"},
 	{"-2", "3", "2", "0"},
@@ -779,6 +781,7 @@ var expTests = []struct {
 	{"0x8000000000000000", "3", "6719", "5447"},
 	{"0x8000000000000000", "1000", "6719", "1603"},
 	{"0x8000000000000000", "1000000", "6719", "3199"},
+	{"0x8000000000000000", "-1000000", "6719", "1"},
 	{
 		"2938462938472983472983659726349017249287491026512746239764525612965293865296239471239874193284792387498274256129746192347",
 		"298472983472983471903246121093472394872319615612417471234712061",
@@ -807,12 +810,22 @@ func TestExp(t *testing.T) {
 			continue
 		}
 
-		z := y.Exp(x, y, m)
-		if !isNormalized(z) {
-			t.Errorf("#%d: %v is not normalized", i, *z)
+		z1 := new(Int).Exp(x, y, m)
+		if !isNormalized(z1) {
+			t.Errorf("#%d: %v is not normalized", i, *z1)
 		}
-		if z.Cmp(out) != 0 {
-			t.Errorf("#%d: got %s want %s", i, z, out)
+		if z1.Cmp(out) != 0 {
+			t.Errorf("#%d: got %s want %s", i, z1, out)
+		}
+
+		if m == nil {
+			// the result should be the same as for m == 0;
+			// specifically, there should be no div-zero panic
+			m = &Int{abs: nat{}} // m != nil && len(m.abs) == 0
+			z2 := new(Int).Exp(x, y, m)
+			if z2.Cmp(z1) != 0 {
+				t.Errorf("#%d: got %s want %s", i, z1, z2)
+			}
 		}
 	}
 }
@@ -1118,6 +1131,36 @@ func TestInt64(t *testing.T) {
 
 		if out != testVal {
 			t.Errorf("#%d got %d want %d", i, out, testVal)
+		}
+	}
+}
+
+var uint64Tests = []uint64{
+	0,
+	1,
+	4294967295,
+	4294967296,
+	8589934591,
+	8589934592,
+	9223372036854775807,
+	9223372036854775808,
+	18446744073709551615, // 1<<64 - 1
+}
+
+func TestUint64(t *testing.T) {
+	in := new(Int)
+	for i, testVal := range uint64Tests {
+		in.SetUint64(testVal)
+		out := in.Uint64()
+
+		if out != testVal {
+			t.Errorf("#%d got %d want %d", i, out, testVal)
+		}
+
+		str := fmt.Sprint(testVal)
+		strOut := in.String()
+		if strOut != str {
+			t.Errorf("#%d.String got %s want %s", i, strOut, str)
 		}
 	}
 }

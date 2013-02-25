@@ -1,6 +1,5 @@
 /* DDG - Data Dependence Graph implementation.
-   Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2004-2013 Free Software Foundation, Inc.
    Contributed by Ayal Zaks and Mustafa Hagog <zaks,mustafa@il.ibm.com>
 
 This file is part of GCC.
@@ -753,7 +752,7 @@ print_ddg (FILE *file, ddg_ptr g)
 }
 
 /* Print the given DDG in VCG format.  */
-void
+DEBUG_FUNCTION void
 vcg_print_ddg (FILE *file, ddg_ptr g)
 {
   int src_cuid;

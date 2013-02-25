@@ -1,9 +1,6 @@
 /* Instruction scheduling pass.  This file computes dependencies between
    instructions.
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1992-2013 Free Software Foundation, Inc.
    Contributed by Michael Tiemann (tiemann@cygnus.com) Enhanced by,
    and currently maintained by, Jim Wilson (wilson@cygnus.com)
 
@@ -58,7 +55,8 @@ along with GCC; see the file COPYING3.  If not see
 struct sched_deps_info_def *sched_deps_info;
 
 /* The data is specific to the Haifa scheduler.  */
-VEC(haifa_deps_insn_data_def, heap) *h_d_i_d = NULL;
+vec<haifa_deps_insn_data_def>
+    h_d_i_d = vNULL;
 
 /* Return the major type present in the DS.  */
 enum reg_note
@@ -2709,6 +2707,25 @@ sched_analyze_2 (struct deps_desc *deps, rtx x, rtx insn)
     case PREFETCH:
       if (PREFETCH_SCHEDULE_BARRIER_P (x))
 	reg_pending_barrier = TRUE_BARRIER;
+      /* Prefetch insn contains addresses only.  So if the prefetch
+	 address has no registers, there will be no dependencies on
+	 the prefetch insn.  This is wrong with result code
+	 correctness point of view as such prefetch can be moved below
+	 a jump insn which usually generates MOVE_BARRIER preventing
+	 to move insns containing registers or memories through the
+	 barrier.  It is also wrong with generated code performance
+	 point of view as prefetch withouth dependecies will have a
+	 tendency to be issued later instead of earlier.  It is hard
+	 to generate accurate dependencies for prefetch insns as
+	 prefetch has only the start address but it is better to have
+	 something than nothing.  */
+      if (!deps->readonly)
+	{
+	  rtx x = gen_rtx_MEM (Pmode, XEXP (PATTERN (insn), 0));
+	  if (sched_deps_info->use_cselib)
+	    cselib_lookup_from_insn (x, Pmode, true, VOIDmode, insn);
+	  add_insn_mem_dependence (deps, true, insn, x);
+	}
       break;
 
     case UNSPEC_VOLATILE:
@@ -3300,9 +3317,9 @@ sched_analyze_insn (struct deps_desc *deps, rtx x, rtx insn)
             SET_REGNO_REG_SET (&deps->reg_last_in_use, i);
           }
 
-      /* Flush pending lists on jumps, but not on speculative checks.  */
-      if (JUMP_P (insn) && !(sel_sched_p ()
-                             && sel_insn_is_speculation_check (insn)))
+      /* Don't flush pending lists on speculative checks for
+	 selective scheduling.  */
+      if (!sel_sched_p () || !sel_insn_is_speculation_check (insn))
 	flush_pending_lists (deps, insn, true, true);
 
       reg_pending_barrier = NOT_A_BARRIER;
@@ -3932,12 +3949,9 @@ remove_from_deps (struct deps_desc *deps, rtx insn)
 static void
 init_deps_data_vector (void)
 {
-  int reserve = (sched_max_luid + 1
-                 - VEC_length (haifa_deps_insn_data_def, h_d_i_d));
-  if (reserve > 0
-      && ! VEC_space (haifa_deps_insn_data_def, h_d_i_d, reserve))
-    VEC_safe_grow_cleared (haifa_deps_insn_data_def, heap, h_d_i_d,
-                           3 * sched_max_luid / 2);
+  int reserve = (sched_max_luid + 1 - h_d_i_d.length ());
+  if (reserve > 0 && ! h_d_i_d.space (reserve))
+    h_d_i_d.safe_grow_cleared (3 * sched_max_luid / 2);
 }
 
 /* If it is profitable to use them, initialize or extend (depending on
@@ -4024,7 +4038,7 @@ sched_deps_finish (void)
   free_alloc_pool_if_empty (&dl_pool);
   gcc_assert (dn_pool == NULL && dl_pool == NULL);
 
-  VEC_free (haifa_deps_insn_data_def, heap, h_d_i_d);
+  h_d_i_d.release ();
   cache_size = 0;
 
   if (true_dependency_cache)
@@ -4700,16 +4714,14 @@ find_inc (struct mem_inc_info *mii, bool backwards)
 	  if (backwards)
 	    {
 	      FOR_EACH_DEP (mii->inc_insn, SD_LIST_BACK, sd_it, dep)
-		if (modified_in_p (mii->inc_input, DEP_PRO (dep)))
-		  add_dependence_1 (mii->mem_insn, DEP_PRO (dep),
-				    REG_DEP_TRUE);
+		add_dependence_1 (mii->mem_insn, DEP_PRO (dep),
+				  REG_DEP_TRUE);
 	    }
 	  else
 	    {
 	      FOR_EACH_DEP (mii->inc_insn, SD_LIST_FORW, sd_it, dep)
-		if (modified_in_p (mii->inc_input, DEP_CON (dep)))
-		  add_dependence_1 (DEP_CON (dep), mii->mem_insn,
-				    REG_DEP_ANTI);
+		add_dependence_1 (DEP_CON (dep), mii->mem_insn,
+				  REG_DEP_ANTI);
 	    }
 	  return true;
 	}

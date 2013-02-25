@@ -1,8 +1,6 @@
 /* Get common system includes and various definitions and declarations based
    on autoconf macros.
-   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008,
-   2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1998-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -227,6 +225,9 @@ extern int errno;
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
+
+/* Undef vec_free from AIX stdlib.h header which conflicts with vec.h.  */
+#undef vec_free
 
 /* If we don't have an overriding definition, set SUCCESS_EXIT_CODE and
    FATAL_EXIT_CODE to EXIT_SUCCESS and EXIT_FAILURE respectively,
@@ -635,6 +636,11 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #include <dlfcn.h>
 #endif
 
+/* Do not introduce a gmp.h dependency on the build system.  */
+#ifndef GENERATOR_FILE
+#include <gmp.h>
+#endif
+
 /* Get libiberty declarations.  */
 #include "libiberty.h"
 
@@ -899,7 +905,8 @@ extern void fancy_abort (const char *, int, const char *) ATTRIBUTE_NORETURN;
 	UNALIGNED_LONG_ASM_OP UNALIGNED_DOUBLE_INT_ASM_OP		   \
 	USE_COMMON_FOR_ONE_ONLY IFCVT_EXTRA_FIELDS IFCVT_INIT_EXTRA_FIELDS \
 	CASE_USE_BIT_TESTS FIXUNS_TRUNC_LIKE_FIX_TRUNC                     \
-        GO_IF_MODE_DEPENDENT_ADDRESS
+        GO_IF_MODE_DEPENDENT_ADDRESS DELAY_SLOTS_FOR_EPILOGUE              \
+        ELIGIBLE_FOR_EPILOGUE_DELAY
 
 /* Hooks that are no longer used.  */
  #pragma GCC poison LANG_HOOKS_FUNCTION_MARK LANG_HOOKS_FUNCTION_FREE	\

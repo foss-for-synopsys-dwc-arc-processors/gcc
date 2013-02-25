@@ -1,6 +1,5 @@
 /* Definitions for code generation pass of GNU compiler.
-   Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-   2010, 2012  Free Software Foundation, Inc.
+   Copyright (C) 2001-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -77,6 +76,7 @@ struct target_optabs {
 };
 
 extern struct target_optabs default_target_optabs;
+extern struct target_optabs *this_fn_optabs;
 #if SWITCHABLE_TARGET
 extern struct target_optabs *this_target_optabs;
 #else
@@ -322,6 +322,38 @@ trapv_binoptab_p (optab binoptab)
 extern rtx optab_libfunc (optab optab, enum machine_mode mode);
 extern rtx convert_optab_libfunc (convert_optab optab, enum machine_mode mode1,
 			          enum machine_mode mode2);
+
+/* Describes an instruction that inserts or extracts a bitfield.  */
+struct extraction_insn
+{
+  /* The code of the instruction.  */
+  enum insn_code icode;
+
+  /* The mode that the structure operand should have.  This is byte_mode
+     when using the legacy insv, extv and extzv patterns to access memory.  */
+  enum machine_mode struct_mode;
+
+  /* The mode of the field to be inserted or extracted, and by extension
+     the mode of the insertion or extraction itself.  */
+  enum machine_mode field_mode;
+
+  /* The mode of the field's bit position.  This is only important
+     when the position is variable rather than constant.  */
+  enum machine_mode pos_mode;
+};
+
+/* Enumerates the possible extraction_insn operations.  */
+enum extraction_pattern { EP_insv, EP_extv, EP_extzv };
+
+extern bool get_best_reg_extraction_insn (extraction_insn *,
+					  enum extraction_pattern,
+					  unsigned HOST_WIDE_INT,
+					  enum machine_mode);
+
+extern bool get_best_mem_extraction_insn (extraction_insn *,
+					  enum extraction_pattern,
+					  HOST_WIDE_INT, HOST_WIDE_INT,
+					  enum machine_mode);
 
 extern bool insn_operand_matches (enum insn_code icode, unsigned int opno,
 				  rtx operand);

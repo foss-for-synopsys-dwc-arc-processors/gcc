@@ -1,6 +1,5 @@
 /* Integrated Register Allocator (IRA) intercommunication header file.
-   Copyright (C) 2006, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2006-2013 Free Software Foundation, Inc.
    Contributed by Vladimir Makarov <vmakarov@redhat.com>.
 
 This file is part of GCC.
@@ -48,9 +47,6 @@ along with GCC; see the file COPYING3.  If not see
    ? REG_FREQ_MAX : (freq * REG_FREQ_MAX / BB_FREQ_MAX)			   \
    ? (freq * REG_FREQ_MAX / BB_FREQ_MAX) : 1)
 
-/* All natural loops.  */
-extern struct loops ira_loops;
-
 /* A modified value of flag `-fira-verbose' used internally.  */
 extern int internal_flag_ira_verbose;
 
@@ -65,12 +61,6 @@ typedef struct ira_allocno_copy *ira_copy_t;
 typedef struct ira_object *ira_object_t;
 
 /* Definition of vector of allocnos and copies.  */
-DEF_VEC_P(ira_allocno_t);
-DEF_VEC_ALLOC_P(ira_allocno_t, heap);
-DEF_VEC_P(ira_object_t);
-DEF_VEC_ALLOC_P(ira_object_t, heap);
-DEF_VEC_P(ira_copy_t);
-DEF_VEC_ALLOC_P(ira_copy_t, heap);
 
 /* Typedef for pointer to the subsequent structure.  */
 typedef struct ira_loop_tree_node *ira_loop_tree_node_t;

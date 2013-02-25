@@ -1,5 +1,5 @@
 /* Subroutines for the gcc driver.
-   Copyright (C) 2007-2012 Free Software Foundation, Inc.
+   Copyright (C) 2007-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -354,6 +354,7 @@ static const struct asm_name asm_names[] = {
   { "power6",	"-mpwr6" },
   { "power6x",	"-mpwr6" },
   { "power7",	"-mpwr7" },
+  { "power8",	"-mpwr8" },
   { "powerpc",	"-mppc" },
   { "rs64a",	"-mppc" },
   { "603",	"-m603" },
@@ -379,6 +380,7 @@ static const struct asm_name asm_names[] = {
   { "power6",	"%(asm_cpu_power6) -maltivec" },
   { "power6x",	"%(asm_cpu_power6) -maltivec" },
   { "power7",	"%(asm_cpu_power7)" },
+  { "power8",	"%(asm_cpu_power8)" },
   { "powerpc",	"-mppc" },
   { "rs64a",	"-mppc64" },
   { "401",	"-mppc" },

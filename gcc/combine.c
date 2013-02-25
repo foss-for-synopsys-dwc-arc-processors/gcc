@@ -1,7 +1,5 @@
 /* Optimize by combining instructions for GNU compiler.
-   Copyright (C) 1987, 1988, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -252,10 +250,8 @@ typedef struct reg_stat_struct {
   ENUM_BITFIELD(machine_mode)	truncated_to_mode : 8;
 } reg_stat_type;
 
-DEF_VEC_O(reg_stat_type);
-DEF_VEC_ALLOC_O(reg_stat_type,heap);
 
-static VEC(reg_stat_type,heap) *reg_stat;
+static vec<reg_stat_type> reg_stat;
 
 /* Record the luid of the last insn that invalidated memory
    (anything that writes memory, and subroutine calls, but not pushes).  */
@@ -496,6 +492,17 @@ static rtx gen_lowpart_or_truncate (enum machine_mode, rtx);
 static const struct rtl_hooks combine_rtl_hooks = RTL_HOOKS_INITIALIZER;
 
 
+/* Convenience wrapper for the canonicalize_comparison target hook.
+   Target hooks cannot use enum rtx_code.  */
+static inline void
+target_canonicalize_comparison (enum rtx_code *code, rtx *op0, rtx *op1,
+				bool op0_preserve_value)
+{
+  int code_int = (int)*code;
+  targetm.canonicalize_comparison (&code_int, op0, op1, op0_preserve_value);
+  *code = (enum rtx_code)code_int;
+}
+
 /* Try to split PATTERN found in INSN.  This returns NULL_RTX if
    PATTERN can not be split.  Otherwise, it returns an insn sequence.
    This is a wrapper around split_insns which ensures that the
@@ -510,8 +517,8 @@ combine_split_insns (rtx pattern, rtx insn)
 
   ret = split_insns (pattern, insn);
   nregs = max_reg_num ();
-  if (nregs > VEC_length (reg_stat_type, reg_stat))
-    VEC_safe_grow_cleared (reg_stat_type, heap, reg_stat, nregs);
+  if (nregs > reg_stat.length ())
+    reg_stat.safe_grow_cleared (nregs);
   return ret;
 }
 
@@ -1121,7 +1128,7 @@ combine_instructions (rtx f, unsigned int nregs)
 
   rtl_hooks = combine_rtl_hooks;
 
-  VEC_safe_grow_cleared (reg_stat_type, heap, reg_stat, nregs);
+  reg_stat.safe_grow_cleared (nregs);
 
   init_recog_no_volatile ();
 
@@ -1446,7 +1453,7 @@ combine_instructions (rtx f, unsigned int nregs)
   obstack_free (&insn_link_obstack, NULL);
   free (uid_log_links);
   free (uid_insn_cost);
-  VEC_free (reg_stat_type, heap, reg_stat);
+  reg_stat.release ();
 
   {
     struct undo *undo, *next;
@@ -1480,7 +1487,7 @@ init_reg_last (void)
   unsigned int i;
   reg_stat_type *p;
 
-  FOR_EACH_VEC_ELT (reg_stat_type, reg_stat, i, p)
+  FOR_EACH_VEC_ELT (reg_stat, i, p)
     memset (p, 0, offsetof (reg_stat_type, sign_bit_copies));
 }
 
@@ -1587,7 +1594,7 @@ set_nonzero_bits_and_sign_copies (rtx x, const_rtx set, void *data)
            (DF_LR_IN (ENTRY_BLOCK_PTR->next_bb), REGNO (x))
       && HWI_COMPUTABLE_MODE_P (GET_MODE (x)))
     {
-      reg_stat_type *rsp = &VEC_index (reg_stat_type, reg_stat, REGNO (x));
+      reg_stat_type *rsp = &reg_stat[REGNO (x)];
 
       if (set == 0 || GET_CODE (set) == CLOBBER)
 	{
@@ -2619,16 +2626,19 @@ try_combine (rtx i3, rtx i2, rtx i1, rtx i0, int *new_direct_jump_p,
      constant.  */
   if (i1 == 0
       && (temp = single_set (i2)) != 0
-      && (CONST_INT_P (SET_SRC (temp))
-	  || CONST_DOUBLE_AS_INT_P (SET_SRC (temp)))
+      && CONST_SCALAR_INT_P (SET_SRC (temp))
       && GET_CODE (PATTERN (i3)) == SET
-      && (CONST_INT_P (SET_SRC (PATTERN (i3)))
-	  || CONST_DOUBLE_AS_INT_P (SET_SRC (PATTERN (i3))))
+      && CONST_SCALAR_INT_P (SET_SRC (PATTERN (i3)))
       && reg_subword_p (SET_DEST (PATTERN (i3)), SET_DEST (temp)))
     {
       rtx dest = SET_DEST (PATTERN (i3));
       int offset = -1;
       int width = 0;
+      
+      /* There are not explicit tests to make sure that this is not a
+	 float, but there is code here that would not be correct if it
+	 was.  */
+      gcc_assert (GET_MODE_CLASS (GET_MODE (SET_SRC (temp))) != MODE_FLOAT);
 
       if (GET_CODE (dest) == ZERO_EXTRACT)
 	{
@@ -2943,9 +2953,7 @@ try_combine (rtx i3, rtx i2, rtx i1, rtx i0, int *new_direct_jump_p,
 	  compare_code = orig_compare_code = GET_CODE (*cc_use_loc);
 	  compare_code = simplify_compare_const (compare_code,
 						 op0, &op1);
-#ifdef CANONICALIZE_COMPARISON
-	  CANONICALIZE_COMPARISON (compare_code, op0, op1);
-#endif
+	  target_canonicalize_comparison (&compare_code, &op0, &op1, 1);
 	}
 
       /* Do the rest only if op1 is const0_rtx, which may be the
@@ -3634,22 +3642,18 @@ try_combine (rtx i3, rtx i2, rtx i1, rtx i0, int *new_direct_jump_p,
 	   && GET_CODE (SET_DEST (XVECEXP (newpat, 0, 1))) != STRICT_LOW_PART
 	   && ! (temp = SET_DEST (XVECEXP (newpat, 0, 1)),
 		 (REG_P (temp)
-		  && VEC_index (reg_stat_type, reg_stat,
-				REGNO (temp)).nonzero_bits != 0
+		  && reg_stat[REGNO (temp)].nonzero_bits != 0
 		  && GET_MODE_PRECISION (GET_MODE (temp)) < BITS_PER_WORD
 		  && GET_MODE_PRECISION (GET_MODE (temp)) < HOST_BITS_PER_INT
-		  && (VEC_index (reg_stat_type, reg_stat,
-				 REGNO (temp)).nonzero_bits
+		  && (reg_stat[REGNO (temp)].nonzero_bits
 		      != GET_MODE_MASK (word_mode))))
 	   && ! (GET_CODE (SET_DEST (XVECEXP (newpat, 0, 1))) == SUBREG
 		 && (temp = SUBREG_REG (SET_DEST (XVECEXP (newpat, 0, 1))),
 		     (REG_P (temp)
-		      && VEC_index (reg_stat_type, reg_stat,
-				    REGNO (temp)).nonzero_bits != 0
+		      && reg_stat[REGNO (temp)].nonzero_bits != 0
 		      && GET_MODE_PRECISION (GET_MODE (temp)) < BITS_PER_WORD
 		      && GET_MODE_PRECISION (GET_MODE (temp)) < HOST_BITS_PER_INT
-		      && (VEC_index (reg_stat_type, reg_stat,
-				     REGNO (temp)).nonzero_bits
+		      && (reg_stat[REGNO (temp)].nonzero_bits
 			  != GET_MODE_MASK (word_mode)))))
 	   && ! reg_overlap_mentioned_p (SET_DEST (XVECEXP (newpat, 0, 1)),
 					 SET_SRC (XVECEXP (newpat, 0, 1)))
@@ -5104,8 +5108,7 @@ subst (rtx x, rtx from, rtx to, int in_dest, int in_cond, int unique_copy)
 	      if (GET_CODE (new_rtx) == CLOBBER && XEXP (new_rtx, 0) == const0_rtx)
 		return new_rtx;
 
-	      if (GET_CODE (x) == SUBREG
-		  && (CONST_INT_P (new_rtx) || CONST_DOUBLE_AS_INT_P (new_rtx)))
+	      if (GET_CODE (x) == SUBREG && CONST_SCALAR_INT_P (new_rtx))
 		{
 		  enum machine_mode mode = GET_MODE (x);
 
@@ -7026,6 +7029,8 @@ make_extraction (enum machine_mode mode, rtx inner, HOST_WIDE_INT pos,
       if (new_rtx != 0)
 	return gen_rtx_ASHIFT (mode, new_rtx, XEXP (inner, 1));
     }
+  else if (GET_CODE (inner) == TRUNCATE)
+    inner = XEXP (inner, 0);
 
   inner_mode = GET_MODE (inner);
 
@@ -7134,7 +7139,7 @@ make_extraction (enum machine_mode mode, rtx inner, HOST_WIDE_INT pos,
       if (mode == tmode)
 	return new_rtx;
 
-      if (CONST_INT_P (new_rtx) || CONST_DOUBLE_AS_INT_P (new_rtx))
+      if (CONST_SCALAR_INT_P (new_rtx))
 	return simplify_unary_operation (unsignedp ? ZERO_EXTEND : SIGN_EXTEND,
 					 mode, new_rtx, tmode);
 
@@ -7181,29 +7186,24 @@ make_extraction (enum machine_mode mode, rtx inner, HOST_WIDE_INT pos,
 	  || (pos_rtx != 0 && len != 1)))
     return 0;
 
-  /* Get the mode to use should INNER not be a MEM, the mode for the position,
-     and the mode for the result.  */
-  if (in_dest && mode_for_extraction (EP_insv, -1) != MAX_MACHINE_MODE)
-    {
-      wanted_inner_reg_mode = mode_for_extraction (EP_insv, 0);
-      pos_mode = mode_for_extraction (EP_insv, 2);
-      extraction_mode = mode_for_extraction (EP_insv, 3);
-    }
+  enum extraction_pattern pattern = (in_dest ? EP_insv
+				     : unsignedp ? EP_extzv : EP_extv);
 
-  if (! in_dest && unsignedp
-      && mode_for_extraction (EP_extzv, -1) != MAX_MACHINE_MODE)
-    {
-      wanted_inner_reg_mode = mode_for_extraction (EP_extzv, 1);
-      pos_mode = mode_for_extraction (EP_extzv, 3);
-      extraction_mode = mode_for_extraction (EP_extzv, 0);
-    }
+  /* If INNER is not from memory, we want it to have the mode of a register
+     extraction pattern's structure operand, or word_mode if there is no
+     such pattern.  The same applies to extraction_mode and pos_mode
+     and their respective operands.
 
-  if (! in_dest && ! unsignedp
-      && mode_for_extraction (EP_extv, -1) != MAX_MACHINE_MODE)
+     For memory, assume that the desired extraction_mode and pos_mode
+     are the same as for a register operation, since at present we don't
+     have named patterns for aligned memory structures.  */
+  struct extraction_insn insn;
+  if (get_best_reg_extraction_insn (&insn, pattern,
+				    GET_MODE_BITSIZE (inner_mode), mode))
     {
-      wanted_inner_reg_mode = mode_for_extraction (EP_extv, 1);
-      pos_mode = mode_for_extraction (EP_extv, 3);
-      extraction_mode = mode_for_extraction (EP_extv, 0);
+      wanted_inner_reg_mode = insn.struct_mode;
+      pos_mode = insn.pos_mode;
+      extraction_mode = insn.field_mode;
     }
 
   /* Never narrow an object, since that might not be safe.  */
@@ -7212,9 +7212,6 @@ make_extraction (enum machine_mode mode, rtx inner, HOST_WIDE_INT pos,
       && GET_MODE_SIZE (extraction_mode) < GET_MODE_SIZE (mode))
     extraction_mode = mode;
 
-  /* If this is not from memory, the desired mode is the preferred mode
-     for an extraction pattern's first input operand, or word_mode if there
-     is none.  */
   if (!MEM_P (inner))
     wanted_inner_mode = wanted_inner_reg_mode;
   else
@@ -9411,7 +9408,7 @@ reg_nonzero_bits_for_combine (const_rtx x, enum machine_mode mode,
      value.  Otherwise, use the previously-computed global nonzero bits
      for this register.  */
 
-  rsp = &VEC_index (reg_stat_type, reg_stat, REGNO (x));
+  rsp = &reg_stat[REGNO (x)];
   if (rsp->last_set_value != 0
       && (rsp->last_set_mode == mode
 	  || (GET_MODE_CLASS (rsp->last_set_mode) == MODE_INT
@@ -9480,7 +9477,7 @@ reg_num_sign_bit_copies_for_combine (const_rtx x, enum machine_mode mode,
   rtx tem;
   reg_stat_type *rsp;
 
-  rsp = &VEC_index (reg_stat_type, reg_stat, REGNO (x));
+  rsp = &reg_stat[REGNO (x)];
   if (rsp->last_set_value != 0
       && rsp->last_set_mode == mode
       && ((rsp->last_set_label >= label_tick_ebb_start
@@ -10658,8 +10655,7 @@ gen_lowpart_for_combine (enum machine_mode omode, rtx x)
   /* We can only support MODE being wider than a word if X is a
      constant integer or has a mode the same size.  */
   if (GET_MODE_SIZE (omode) > UNITS_PER_WORD
-      && ! ((CONST_INT_P (x) || CONST_DOUBLE_AS_INT_P (x))
-	    || isize == osize))
+      && ! (CONST_SCALAR_INT_P (x) || isize == osize))
     goto fail;
 
   /* X might be a paradoxical (subreg (mem)).  In that case, gen_lowpart
@@ -11970,11 +11966,9 @@ simplify_comparison (enum rtx_code code, rtx *pop0, rtx *pop1)
 	    }
 	}
 
-#ifdef CANONICALIZE_COMPARISON
   /* If this machine only supports a subset of valid comparisons, see if we
      can convert an unsupported one into a supported one.  */
-  CANONICALIZE_COMPARISON (code, op0, op1);
-#endif
+  target_canonicalize_comparison (&code, &op0, &op1, 0);
 
   *pop0 = op0;
   *pop1 = op1;
@@ -12045,7 +12039,7 @@ update_table_tick (rtx x)
 
       for (r = regno; r < endregno; r++)
 	{
-	  reg_stat_type *rsp = &VEC_index (reg_stat_type, reg_stat, r);
+	  reg_stat_type *rsp = &reg_stat[r];
 	  rsp->last_set_table_tick = label_tick;
 	}
 
@@ -12147,7 +12141,7 @@ record_value_for_reg (rtx reg, rtx insn, rtx value)
      register.  */
   for (i = regno; i < endregno; i++)
     {
-      rsp = &VEC_index (reg_stat_type, reg_stat, i);
+      rsp = &reg_stat[i];
 
       if (insn)
 	rsp->last_set = insn;
@@ -12173,7 +12167,7 @@ record_value_for_reg (rtx reg, rtx insn, rtx value)
 
   for (i = regno; i < endregno; i++)
     {
-      rsp = &VEC_index (reg_stat_type, reg_stat, i);
+      rsp = &reg_stat[i];
       rsp->last_set_label = label_tick;
       if (!insn
 	  || (value && rsp->last_set_table_tick >= label_tick_ebb_start))
@@ -12185,7 +12179,7 @@ record_value_for_reg (rtx reg, rtx insn, rtx value)
   /* The value being assigned might refer to X (like in "x++;").  In that
      case, we must replace it with (clobber (const_int 0)) to prevent
      infinite loops.  */
-  rsp = &VEC_index (reg_stat_type, reg_stat, regno);
+  rsp = &reg_stat[regno];
   if (value && !get_last_value_validate (&value, insn, label_tick, 0))
     {
       value = copy_rtx (value);
@@ -12283,7 +12277,7 @@ record_dead_and_set_regs (rtx insn)
 	    {
 	      reg_stat_type *rsp;
 
-	      rsp = &VEC_index (reg_stat_type, reg_stat, i);
+	      rsp = &reg_stat[i];
 	      rsp->last_death = insn;
 	    }
 	}
@@ -12298,7 +12292,7 @@ record_dead_and_set_regs (rtx insn)
 	{
 	  reg_stat_type *rsp;
 
-	  rsp = &VEC_index (reg_stat_type, reg_stat, i);
+	  rsp = &reg_stat[i];
 	  rsp->last_set_invalid = 1;
 	  rsp->last_set = insn;
 	  rsp->last_set_value = 0;
@@ -12356,7 +12350,7 @@ record_promoted_value (rtx insn, rtx subreg)
 	  continue;
 	}
 
-      rsp = &VEC_index (reg_stat_type, reg_stat, regno);
+      rsp = &reg_stat[regno];
       if (rsp->last_set == insn)
 	{
 	  if (SUBREG_PROMOTED_UNSIGNED_P (subreg) > 0)
@@ -12381,7 +12375,7 @@ record_promoted_value (rtx insn, rtx subreg)
 static bool
 reg_truncated_to_mode (enum machine_mode mode, const_rtx x)
 {
-  reg_stat_type *rsp = &VEC_index (reg_stat_type, reg_stat, REGNO (x));
+  reg_stat_type *rsp = &reg_stat[REGNO (x)];
   enum machine_mode truncated = rsp->truncated_to_mode;
 
   if (truncated == 0
@@ -12426,7 +12420,7 @@ record_truncated_value (rtx *p, void *data ATTRIBUTE_UNUSED)
   else
     return 0;
 
-  rsp = &VEC_index (reg_stat_type, reg_stat, REGNO (x));
+  rsp = &reg_stat[REGNO (x)];
   if (rsp->truncated_to_mode == 0
       || rsp->truncation_label < label_tick_ebb_start
       || (GET_MODE_SIZE (truncated_mode)
@@ -12505,7 +12499,7 @@ get_last_value_validate (rtx *loc, rtx insn, int tick, int replace)
 
       for (j = regno; j < endregno; j++)
 	{
-	  reg_stat_type *rsp = &VEC_index (reg_stat_type, reg_stat, j);
+	  reg_stat_type *rsp = &reg_stat[j];
 	  if (rsp->last_set_invalid
 	      /* If this is a pseudo-register that was only set once and not
 		 live at the beginning of the function, it is always valid.  */
@@ -12609,7 +12603,7 @@ get_last_value (const_rtx x)
     return 0;
 
   regno = REGNO (x);
-  rsp = &VEC_index (reg_stat_type, reg_stat, regno);
+  rsp = &reg_stat[regno];
   value = rsp->last_set_value;
 
   /* If we don't have a value, or if it isn't for this basic block and
@@ -12673,7 +12667,7 @@ use_crosses_set_p (const_rtx x, int from_luid)
 #endif
       for (; regno < endreg; regno++)
 	{
-	  reg_stat_type *rsp = &VEC_index (reg_stat_type, reg_stat, regno);
+	  reg_stat_type *rsp = &reg_stat[regno];
 	  if (rsp->last_set
 	      && rsp->last_set_label == label_tick
 	      && DF_INSN_LUID (rsp->last_set) > from_luid)
@@ -12919,7 +12913,7 @@ move_deaths (rtx x, rtx maybe_kill_insn, int from_luid, rtx to_insn,
   if (code == REG)
     {
       unsigned int regno = REGNO (x);
-      rtx where_dead = VEC_index (reg_stat_type, reg_stat, regno).last_death;
+      rtx where_dead = reg_stat[regno].last_death;
 
       /* Don't move the register if it gets killed in between from and to.  */
       if (maybe_kill_insn && reg_set_p (x, maybe_kill_insn)
@@ -13534,7 +13528,7 @@ distribute_notes (rtx notes, rtx from_insn, rtx i3, rtx i2, rtx elim_i2,
 	  if (place && REG_NOTE_KIND (note) == REG_DEAD)
 	    {
 	      unsigned int regno = REGNO (XEXP (note, 0));
-	      reg_stat_type *rsp = &VEC_index (reg_stat_type, reg_stat, regno);
+	      reg_stat_type *rsp = &reg_stat[regno];
 
 	      if (dead_or_set_p (place, XEXP (note, 0))
 		  || reg_bitfield_target_p (XEXP (note, 0), PATTERN (place)))

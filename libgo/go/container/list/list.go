@@ -108,6 +108,8 @@ func (l *List) insertValue(v interface{}, at *Element) *Element {
 func (l *List) remove(e *Element) *Element {
 	e.prev.next = e.next
 	e.next.prev = e.prev
+	e.next = nil // avoid memory leaks
+	e.prev = nil // avoid memory leaks
 	e.list = nil
 	l.len--
 	return e
@@ -176,7 +178,7 @@ func (l *List) MoveToBack(e *Element) {
 	l.insert(l.remove(e), l.root.prev)
 }
 
-// PuchBackList inserts a copy of an other list at the back of list l.
+// PushBackList inserts a copy of an other list at the back of list l.
 // The lists l and other may be the same.
 func (l *List) PushBackList(other *List) {
 	l.lazyInit()

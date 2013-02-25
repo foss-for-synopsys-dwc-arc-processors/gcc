@@ -15,8 +15,7 @@ import (
 
 func TestShutdown(t *testing.T) {
 	if runtime.GOOS == "plan9" {
-		t.Logf("skipping test on %q", runtime.GOOS)
-		return
+		t.Skipf("skipping test on %q", runtime.GOOS)
 	}
 	ln, err := Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -63,8 +62,7 @@ func TestShutdown(t *testing.T) {
 func TestShutdownUnix(t *testing.T) {
 	switch runtime.GOOS {
 	case "windows", "plan9":
-		t.Logf("skipping test on %q", runtime.GOOS)
-		return
+		t.Skipf("skipping test on %q", runtime.GOOS)
 	}
 	f, err := ioutil.TempFile("", "go_net_unixtest")
 	if err != nil {
@@ -145,8 +143,7 @@ func TestTCPListenClose(t *testing.T) {
 func TestUDPListenClose(t *testing.T) {
 	switch runtime.GOOS {
 	case "plan9":
-		t.Logf("skipping test on %q", runtime.GOOS)
-		return
+		t.Skipf("skipping test on %q", runtime.GOOS)
 	}
 	ln, err := ListenPacket("udp", "127.0.0.1:0")
 	if err != nil {
@@ -172,5 +169,44 @@ func TestUDPListenClose(t *testing.T) {
 	case <-done:
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for UDP close")
+	}
+}
+
+func TestTCPClose(t *testing.T) {
+	l, err := Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+
+	read := func(r io.Reader) error {
+		var m [1]byte
+		_, err := r.Read(m[:])
+		return err
+	}
+
+	go func() {
+		c, err := Dial("tcp", l.Addr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		go read(c)
+
+		time.Sleep(10 * time.Millisecond)
+		c.Close()
+	}()
+
+	c, err := l.Accept()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+
+	for err == nil {
+		err = read(c)
+	}
+	if err != nil && err != io.EOF {
+		t.Fatal(err)
 	}
 }

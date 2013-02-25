@@ -8,8 +8,6 @@
 
 #include <algorithm>
 
-#include <gmp.h>
-
 #include "toplev.h"
 #include "intl.h"
 #include "tree.h"
@@ -80,10 +78,11 @@ Expression::do_traverse(Traverse*)
 // expression is being discarded.  By default, we give an error.
 // Expressions with side effects override.
 
-void
+bool
 Expression::do_discarding_value()
 {
   this->unused_value_error();
+  return false;
 }
 
 // This virtual function is called to export expressions.  This will
@@ -100,7 +99,7 @@ Expression::do_export(Export*) const
 void
 Expression::unused_value_error()
 {
-  error_at(this->location(), "value computed is not used");
+  this->report_error(_("value computed is not used"));
 }
 
 // Note that this expression is an error.  This is called by children
@@ -180,24 +179,25 @@ Expression::convert_for_assignment(Translate_context* context, Type* lhs_type,
       // Assigning nil to an open array.
       go_assert(TREE_CODE(lhs_type_tree) == RECORD_TYPE);
 
-      VEC(constructor_elt,gc)* init = VEC_alloc(constructor_elt, gc, 3);
+      vec<constructor_elt, va_gc> *init;
+      vec_alloc(init, 3);
 
       constructor_elt empty = {NULL, NULL};
-      constructor_elt* elt = VEC_quick_push(constructor_elt, init, empty);
+      constructor_elt* elt = init->quick_push(empty);
       tree field = TYPE_FIELDS(lhs_type_tree);
       go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
 			"__values") == 0);
       elt->index = field;
       elt->value = fold_convert(TREE_TYPE(field), null_pointer_node);
 
-      elt = VEC_quick_push(constructor_elt, init, empty);
+      elt = init->quick_push(empty);
       field = DECL_CHAIN(field);
       go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
 			"__count") == 0);
       elt->index = field;
       elt->value = fold_convert(TREE_TYPE(field), integer_zero_node);
 
-      elt = VEC_quick_push(constructor_elt, init, empty);
+      elt = init->quick_push(empty);
       field = DECL_CHAIN(field);
       go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
 			"__capacity") == 0);
@@ -320,10 +320,11 @@ Expression::convert_type_to_interface(Translate_context* context,
 
   // Start building a constructor for the value we will return.
 
-  VEC(constructor_elt,gc)* init = VEC_alloc(constructor_elt, gc, 2);
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc(init, 2);
 
   constructor_elt empty = {NULL, NULL};
-  constructor_elt* elt = VEC_quick_push(constructor_elt, init, empty);
+  constructor_elt* elt = init->quick_push(empty);
   tree field = TYPE_FIELDS(lhs_type_tree);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),
 		    (lhs_is_empty ? "__type_descriptor" : "__methods")) == 0);
@@ -331,7 +332,7 @@ Expression::convert_type_to_interface(Translate_context* context,
   elt->value = fold_convert_loc(location.gcc_location(), TREE_TYPE(field),
                                 first_field_value);
 
-  elt = VEC_quick_push(constructor_elt, init, empty);
+  elt = init->quick_push(empty);
   field = DECL_CHAIN(field);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__object") == 0);
   elt->index = field;
@@ -445,10 +446,11 @@ Expression::convert_interface_to_interface(Translate_context* context,
 
   // The result is going to be a two element constructor.
 
-  VEC(constructor_elt,gc)* init = VEC_alloc(constructor_elt, gc, 2);
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc (init, 2);
 
   constructor_elt empty = {NULL, NULL};
-  constructor_elt* elt = VEC_quick_push(constructor_elt, init, empty);
+  constructor_elt* elt = init->quick_push(empty);
   tree field = TYPE_FIELDS(lhs_type_tree);
   elt->index = field;
 
@@ -511,7 +513,7 @@ Expression::convert_interface_to_interface(Translate_context* context,
 
   // The second field is simply the object pointer.
 
-  elt = VEC_quick_push(constructor_elt, init, empty);
+  elt = init->quick_push(empty);
   field = DECL_CHAIN(field);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__object") == 0);
   elt->index = field;
@@ -783,9 +785,9 @@ class Error_expression : public Expression
     return true;
   }
 
-  void
+  bool
   do_discarding_value()
-  { }
+  { return true; }
 
   Type*
   do_type()
@@ -1146,9 +1148,9 @@ class Sink_expression : public Expression
   { }
 
  protected:
-  void
+  bool
   do_discarding_value()
-  { }
+  { return true; }
 
   Type*
   do_type();
@@ -5323,13 +5325,16 @@ Binary_expression::do_numeric_constant_value(Numeric_constant* nc) const
 
 // Note that the value is being discarded.
 
-void
+bool
 Binary_expression::do_discarding_value()
 {
   if (this->op_ == OPERATOR_OROR || this->op_ == OPERATOR_ANDAND)
-    this->right_->discarding_value();
+    return this->right_->discarding_value();
   else
-    this->unused_value_error();
+    {
+      this->unused_value_error();
+      return false;
+    }
 }
 
 // Get type.
@@ -5456,13 +5461,10 @@ Binary_expression::do_determine_type(const Type_context* context)
       // Give a useful error if that happened.
       if (tleft->is_abstract()
 	  && subcontext.type != NULL
-	  && (this->left_->type()->integer_type() == NULL
-	      || (subcontext.type->integer_type() == NULL
-		  && subcontext.type->float_type() == NULL
-		  && subcontext.type->complex_type() == NULL
-		  && subcontext.type->interface_type() == NULL)))
+	  && !subcontext.may_be_abstract
+	  && subcontext.type->integer_type() == NULL)
 	this->report_error(("invalid context-determined non-integer type "
-			    "for shift operand"));
+			    "for left operand of shift"));
 
       // The context for the right hand operand is the same as for the
       // left hand operand, except for a shift operator.
@@ -5603,6 +5605,11 @@ Binary_expression::do_check_types(Gogo*)
       || this->op_ == OPERATOR_GT
       || this->op_ == OPERATOR_GE)
     {
+      if (left_type->is_nil_type() && right_type->is_nil_type())
+	{
+	  this->report_error(_("invalid comparison of nil with nil"));
+	  return;
+	}
       if (!Type::are_assignable(left_type, right_type, NULL)
 	  && !Type::are_assignable(right_type, left_type, NULL))
 	{
@@ -6533,7 +6540,7 @@ class Builtin_call_expression : public Call_expression
   bool
   do_numeric_constant_value(Numeric_constant*) const;
 
-  void
+  bool
   do_discarding_value();
 
   Type*
@@ -6611,7 +6618,7 @@ class Builtin_call_expression : public Call_expression
   lower_make();
 
   bool
-  check_int_value(Expression*);
+  check_int_value(Expression*, bool is_length);
 
   // A pointer back to the general IR structure.  This avoids a global
   // variable, or passing it around everywhere.
@@ -6885,11 +6892,8 @@ Builtin_call_expression::lower_make()
   else
     {
       len_arg = *parg;
-      if (!this->check_int_value(len_arg))
-	{
-	  this->report_error(_("bad size for make"));
-	  return Expression::make_error(this->location());
-	}
+      if (!this->check_int_value(len_arg, true))
+	return Expression::make_error(this->location());
       if (len_arg->type()->integer_type() != NULL
 	  && len_arg->type()->integer_type()->bits() > uintptr_bits)
 	have_big_args = true;
@@ -6900,11 +6904,23 @@ Builtin_call_expression::lower_make()
   if (is_slice && parg != args->end())
     {
       cap_arg = *parg;
-      if (!this->check_int_value(cap_arg))
+      if (!this->check_int_value(cap_arg, false))
+	return Expression::make_error(this->location());
+
+      Numeric_constant nclen;
+      Numeric_constant nccap;
+      unsigned long vlen;
+      unsigned long vcap;
+      if (len_arg->numeric_constant_value(&nclen)
+	  && cap_arg->numeric_constant_value(&nccap)
+	  && nclen.to_unsigned_long(&vlen) == Numeric_constant::NC_UL_VALID
+	  && nccap.to_unsigned_long(&vcap) == Numeric_constant::NC_UL_VALID
+	  && vlen > vcap)
 	{
-	  this->report_error(_("bad capacity when making slice"));
+	  this->report_error(_("len larger than cap"));
 	  return Expression::make_error(this->location());
 	}
+
       if (cap_arg->type()->integer_type() != NULL
 	  && cap_arg->type()->integer_type()->bits() > uintptr_bits)
 	have_big_args = true;
@@ -6961,20 +6977,36 @@ Builtin_call_expression::lower_make()
 // function.
 
 bool
-Builtin_call_expression::check_int_value(Expression* e)
+Builtin_call_expression::check_int_value(Expression* e, bool is_length)
 {
+  Numeric_constant nc;
+  if (e->numeric_constant_value(&nc))
+    {
+      unsigned long v;
+      switch (nc.to_unsigned_long(&v))
+	{
+	case Numeric_constant::NC_UL_VALID:
+	  return true;
+	case Numeric_constant::NC_UL_NOTINT:
+	  error_at(e->location(), "non-integer %s argument to make",
+		   is_length ? "len" : "cap");
+	  return false;
+	case Numeric_constant::NC_UL_NEGATIVE:
+	  error_at(e->location(), "negative %s argument to make",
+		   is_length ? "len" : "cap");
+	  return false;
+	case Numeric_constant::NC_UL_BIG:
+	  // We don't want to give a compile-time error for a 64-bit
+	  // value on a 32-bit target.
+	  return true;
+	}
+    }
+
   if (e->type()->integer_type() != NULL)
     return true;
 
-  // Check for a floating point constant with integer value.
-  Numeric_constant nc;
-  mpz_t ival;
-  if (e->numeric_constant_value(&nc) && nc.to_int(&ival))
-    {
-      mpz_clear(ival);
-      return true;
-    }
-
+  error_at(e->location(), "non-integer %s argument to make",
+	   is_length ? "len" : "cap");
   return false;
 }
 
@@ -7335,7 +7367,7 @@ Builtin_call_expression::do_numeric_constant_value(Numeric_constant* nc) const
 // discarding the value of an ordinary function call, but we do for
 // builtin functions, purely for consistency with the gc compiler.
 
-void
+bool
 Builtin_call_expression::do_discarding_value()
 {
   switch (this->code_)
@@ -7356,7 +7388,7 @@ Builtin_call_expression::do_discarding_value()
     case BUILTIN_OFFSETOF:
     case BUILTIN_SIZEOF:
       this->unused_value_error();
-      break;
+      return false;
 
     case BUILTIN_CLOSE:
     case BUILTIN_COPY:
@@ -7365,7 +7397,7 @@ Builtin_call_expression::do_discarding_value()
     case BUILTIN_PRINT:
     case BUILTIN_PRINTLN:
     case BUILTIN_RECOVER:
-      break;
+      return true;
     }
 }
 
@@ -8507,6 +8539,16 @@ Call_expression::do_lower(Gogo* gogo, Named_object* function,
     return Expression::make_cast(this->fn_->type(), this->args_->front(),
 				 loc);
 
+  // Because do_type will return an error type and thus prevent future
+  // errors, check for that case now to ensure that the error gets
+  // reported.
+  if (this->get_function_type() == NULL)
+    {
+      if (!this->fn_->type()->is_error())
+	this->report_error(_("expected function"));
+      return Expression::make_error(loc);
+    }
+
   // Recognize a call to a builtin function.
   Func_expression* fne = this->fn_->func_expression();
   if (fne != NULL
@@ -9196,6 +9238,9 @@ Call_expression::do_get_tree(Translate_context* context)
 	}
     }
 
+  if (func == NULL)
+    fn = save_expr(fn);
+
   tree ret = build_call_array(excess_type != NULL_TREE ? excess_type : rettype,
 			      fn, nargs, args);
   delete[] args;
@@ -9228,6 +9273,24 @@ Call_expression::do_get_tree(Translate_context* context)
 
   if (this->results_ != NULL)
     ret = this->set_results(context, ret);
+
+  // We can't unwind the stack past a call to nil, so we need to
+  // insert an explicit check so that the panic can be recovered.
+  if (func == NULL)
+    {
+      tree compare = fold_build2_loc(location.gcc_location(), EQ_EXPR,
+				     boolean_type_node, fn,
+				     fold_convert_loc(location.gcc_location(),
+						      TREE_TYPE(fn),
+						      null_pointer_node));
+      tree crash = build3_loc(location.gcc_location(), COND_EXPR,
+			      void_type_node, compare,
+			      gogo->runtime_error(RUNTIME_ERROR_NIL_DEREFERENCE,
+						  location),
+			      NULL_TREE);
+      ret = fold_build2_loc(location.gcc_location(), COMPOUND_EXPR,
+			    TREE_TYPE(ret), crash, ret);
+    }
 
   this->tree_ = ret;
 
@@ -9737,8 +9800,10 @@ Array_index_expression::do_check_types(Gogo*)
 		     && lvalnc.to_int(&lval));
   Numeric_constant inc;
   mpz_t ival;
+  bool ival_valid = false;
   if (this->start_->numeric_constant_value(&inc) && inc.to_int(&ival))
     {
+      ival_valid = true;
       if (mpz_sgn(ival) < 0
 	  || mpz_sizeinbase(ival, 2) >= int_bits
 	  || (lval_valid
@@ -9749,7 +9814,6 @@ Array_index_expression::do_check_types(Gogo*)
 	  error_at(this->start_->location(), "array index out of bounds");
 	  this->set_is_error();
 	}
-      mpz_clear(ival);
     }
   if (this->end_ != NULL && !this->end_->is_nil_expression())
     {
@@ -9764,9 +9828,13 @@ Array_index_expression::do_check_types(Gogo*)
 	      error_at(this->end_->location(), "array index out of bounds");
 	      this->set_is_error();
 	    }
+	  else if (ival_valid && mpz_cmp(ival, eval) > 0)
+	    this->report_error(_("inverted slice range"));
 	  mpz_clear(eval);
 	}
     }
+  if (ival_valid)
+    mpz_clear(ival);
   if (lval_valid)
     mpz_clear(lval);
 
@@ -9976,23 +10044,24 @@ Array_index_expression::do_get_tree(Translate_context* context)
   tree struct_tree = type_to_tree(this->type()->get_backend(gogo));
   go_assert(TREE_CODE(struct_tree) == RECORD_TYPE);
 
-  VEC(constructor_elt,gc)* init = VEC_alloc(constructor_elt, gc, 3);
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc (init, 3);
 
   constructor_elt empty = {NULL, NULL};
-  constructor_elt* elt = VEC_quick_push(constructor_elt, init, empty);
+  constructor_elt* elt = init->quick_push(empty);
   tree field = TYPE_FIELDS(struct_tree);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__values") == 0);
   elt->index = field;
   elt->value = value_pointer;
 
-  elt = VEC_quick_push(constructor_elt, init, empty);
+  elt = init->quick_push(empty);
   field = DECL_CHAIN(field);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__count") == 0);
   elt->index = field;
   elt->value = fold_convert_loc(loc.gcc_location(), TREE_TYPE(field),
                                 result_length_tree);
 
-  elt = VEC_quick_push(constructor_elt, init, empty);
+  elt = init->quick_push(empty);
   field = DECL_CHAIN(field);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__capacity") == 0);
   elt->index = field;
@@ -10146,15 +10215,16 @@ String_index_expression::do_check_types(Gogo*)
 
   Numeric_constant inc;
   mpz_t ival;
+  bool ival_valid = false;
   if (this->start_->numeric_constant_value(&inc) && inc.to_int(&ival))
     {
+      ival_valid = true;
       if (mpz_sgn(ival) < 0
 	  || (sval_valid && mpz_cmp_ui(ival, sval.length()) >= 0))
 	{
 	  error_at(this->start_->location(), "string index out of bounds");
 	  this->set_is_error();
 	}
-      mpz_clear(ival);
     }
   if (this->end_ != NULL && !this->end_->is_nil_expression())
     {
@@ -10168,9 +10238,13 @@ String_index_expression::do_check_types(Gogo*)
 	      error_at(this->end_->location(), "string index out of bounds");
 	      this->set_is_error();
 	    }
+	  else if (ival_valid && mpz_cmp(ival, eval) > 0)
+	    this->report_error(_("inverted slice range"));
 	  mpz_clear(eval);
 	}
     }
+  if (ival_valid)
+    mpz_clear(ival);
 }
 
 // Get a tree for a string index.
@@ -10535,6 +10609,103 @@ Expression::make_map_index(Expression* map, Expression* index,
 }
 
 // Class Field_reference_expression.
+
+// Lower a field reference expression.  There is nothing to lower, but
+// this is where we generate the tracking information for fields with
+// the magic go:"track" tag.
+
+Expression*
+Field_reference_expression::do_lower(Gogo* gogo, Named_object* function,
+				     Statement_inserter* inserter, int)
+{
+  Struct_type* struct_type = this->expr_->type()->struct_type();
+  if (struct_type == NULL)
+    {
+      // Error will be reported elsewhere.
+      return this;
+    }
+  const Struct_field* field = struct_type->field(this->field_index_);
+  if (field == NULL)
+    return this;
+  if (!field->has_tag())
+    return this;
+  if (field->tag().find("go:\"track\"") == std::string::npos)
+    return this;
+
+  // We have found a reference to a tracked field.  Build a call to
+  // the runtime function __go_fieldtrack with a string that describes
+  // the field.  FIXME: We should only call this once per referenced
+  // field per function, not once for each reference to the field.
+
+  if (this->called_fieldtrack_)
+    return this;
+  this->called_fieldtrack_ = true;
+
+  Location loc = this->location();
+
+  std::string s = "fieldtrack \"";
+  Named_type* nt = this->expr_->type()->named_type();
+  if (nt == NULL || nt->named_object()->package() == NULL)
+    s.append(gogo->pkgpath());
+  else
+    s.append(nt->named_object()->package()->pkgpath());
+  s.push_back('.');
+  if (nt != NULL)
+    s.append(Gogo::unpack_hidden_name(nt->name()));
+  s.push_back('.');
+  s.append(field->field_name());
+  s.push_back('"');
+
+  // We can't use a string here, because internally a string holds a
+  // pointer to the actual bytes; when the linker garbage collects the
+  // string, it won't garbage collect the bytes.  So we use a
+  // [...]byte.
+
+  mpz_t val;
+  mpz_init_set_ui(val, s.length());
+  Expression* length_expr = Expression::make_integer(&val, NULL, loc);
+  mpz_clear(val);
+
+  Type* byte_type = gogo->lookup_global("byte")->type_value();
+  Type* array_type = Type::make_array_type(byte_type, length_expr);
+
+  Expression_list* bytes = new Expression_list();
+  for (std::string::const_iterator p = s.begin(); p != s.end(); p++)
+    {
+      mpz_init_set_ui(val, *p);
+      Expression* byte = Expression::make_integer(&val, NULL, loc);
+      mpz_clear(val);
+      bytes->push_back(byte);
+    }
+
+  Expression* e = Expression::make_composite_literal(array_type, 0, false,
+						     bytes, loc);
+
+  Variable* var = new Variable(array_type, e, true, false, false, loc);
+
+  static int count;
+  char buf[50];
+  snprintf(buf, sizeof buf, "fieldtrack.%d", count);
+  ++count;
+
+  Named_object* no = gogo->add_variable(buf, var);
+  e = Expression::make_var_reference(no, loc);
+  e = Expression::make_unary(OPERATOR_AND, e, loc);
+
+  Expression* call = Runtime::make_call(Runtime::FIELDTRACK, loc, 1, e);
+  inserter->insert(Statement::make_statement(call, false));
+
+  // Put this function, and the global variable we just created, into
+  // unique sections.  This will permit the linker to garbage collect
+  // them if they are not referenced.  The effect is that the only
+  // strings, indicating field references, that will wind up in the
+  // executable will be those for functions that are actually needed.
+  if (function != NULL)
+    function->func_value()->set_in_unique_section();
+  var->set_in_unique_section();
+
+  return this;
+}
 
 // Return the type of a field reference.
 
@@ -11345,8 +11516,8 @@ Struct_construction_expression::do_get_tree(Translate_context* context)
 
   bool is_constant = true;
   const Struct_field_list* fields = this->type_->struct_type()->fields();
-  VEC(constructor_elt,gc)* elts = VEC_alloc(constructor_elt, gc,
-					    fields->size());
+  vec<constructor_elt, va_gc> *elts;
+  vec_alloc (elts, fields->size());
   Struct_field_list::const_iterator pf = fields->begin();
   Expression_list::const_iterator pv = this->vals_->begin();
   for (tree field = TYPE_FIELDS(type_tree);
@@ -11378,7 +11549,7 @@ Struct_construction_expression::do_get_tree(Translate_context* context)
 	return error_mark_node;
 
       constructor_elt empty = {NULL, NULL};
-      constructor_elt* elt = VEC_quick_push(constructor_elt, elts, empty);
+      constructor_elt* elt = elts->quick_push(empty);
       elt->index = field;
       elt->value = val;
       if (!TREE_CONSTANT(val))
@@ -11588,10 +11759,8 @@ tree
 Array_construction_expression::get_constructor_tree(Translate_context* context,
 						    tree type_tree)
 {
-  VEC(constructor_elt,gc)* values = VEC_alloc(constructor_elt, gc,
-					      (this->vals_ == NULL
-					       ? 0
-					       : this->vals_->size()));
+  vec<constructor_elt, va_gc> *values;
+  vec_alloc (values, (this->vals_ == NULL ? 0 : this->vals_->size()));
   Type* element_type = this->type_->array_type()->element_type();
   bool is_constant = true;
   if (this->vals_ != NULL)
@@ -11607,7 +11776,7 @@ Array_construction_expression::get_constructor_tree(Translate_context* context,
 	  if (this->indexes_ != NULL)
 	    go_assert(pi != this->indexes_->end());
 	  constructor_elt empty = {NULL, NULL};
-	  constructor_elt* elt = VEC_quick_push(constructor_elt, values, empty);
+	  constructor_elt* elt = values->quick_push(empty);
 
 	  if (this->indexes_ == NULL)
 	    elt->index = size_int(i);
@@ -11816,9 +11985,10 @@ Open_array_construction_expression::do_get_tree(Translate_context* context)
 					       build_index_type(max));
       if (constructor_type == error_mark_node)
 	return error_mark_node;
-      VEC(constructor_elt,gc)* vec = VEC_alloc(constructor_elt, gc, 1);
+      vec<constructor_elt, va_gc> *vec;
+      vec_alloc(vec, 1);
       constructor_elt empty = {NULL, NULL};
-      constructor_elt* elt = VEC_quick_push(constructor_elt, vec, empty);
+      constructor_elt* elt = vec->quick_push(empty);
       elt->index = size_int(0);
       Gogo* gogo = context->gogo();
       Btype* btype = element_type->get_backend(gogo);
@@ -11909,22 +12079,23 @@ Open_array_construction_expression::do_get_tree(Translate_context* context)
     return error_mark_node;
   go_assert(TREE_CODE(type_tree) == RECORD_TYPE);
 
-  VEC(constructor_elt,gc)* init = VEC_alloc(constructor_elt, gc, 3);
+  vec<constructor_elt, va_gc> *init;
+  vec_alloc(init, 3);
 
   constructor_elt empty = {NULL, NULL};
-  constructor_elt* elt = VEC_quick_push(constructor_elt, init, empty);
+  constructor_elt* elt = init->quick_push(empty);
   tree field = TYPE_FIELDS(type_tree);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__values") == 0);
   elt->index = field;
   elt->value = fold_convert(TREE_TYPE(field), space);
 
-  elt = VEC_quick_push(constructor_elt, init, empty);
+  elt = init->quick_push(empty);
   field = DECL_CHAIN(field);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)), "__count") == 0);
   elt->index = field;
   elt->value = fold_convert(TREE_TYPE(field), length_tree);
 
-  elt = VEC_quick_push(constructor_elt, init, empty);
+  elt = init->quick_push(empty);
   field = DECL_CHAIN(field);
   go_assert(strcmp(IDENTIFIER_POINTER(DECL_NAME(field)),"__capacity") == 0);
   elt->index = field;
@@ -12117,8 +12288,8 @@ Map_construction_expression::do_get_tree(Translate_context* context)
     }
   else
     {
-      VEC(constructor_elt,gc)* values = VEC_alloc(constructor_elt, gc,
-						  this->vals_->size() / 2);
+      vec<constructor_elt, va_gc> *values;
+      vec_alloc(values, this->vals_->size() / 2);
 
       for (Expression_list::const_iterator pv = this->vals_->begin();
 	   pv != this->vals_->end();
@@ -12126,10 +12297,11 @@ Map_construction_expression::do_get_tree(Translate_context* context)
 	{
 	  bool one_is_constant = true;
 
-	  VEC(constructor_elt,gc)* one = VEC_alloc(constructor_elt, gc, 2);
+	  vec<constructor_elt, va_gc> *one;
+	  vec_alloc(one, 2);
 
 	  constructor_elt empty = {NULL, NULL};
-	  constructor_elt* elt = VEC_quick_push(constructor_elt, one, empty);
+	  constructor_elt* elt = one->quick_push(empty);
 	  elt->index = key_field;
 	  tree val_tree = (*pv)->get_tree(context);
 	  elt->value = Expression::convert_for_assignment(context, key_type,
@@ -12142,7 +12314,7 @@ Map_construction_expression::do_get_tree(Translate_context* context)
 
 	  ++pv;
 
-	  elt = VEC_quick_push(constructor_elt, one, empty);
+	  elt = one->quick_push(empty);
 	  elt->index = val_field;
 	  val_tree = (*pv)->get_tree(context);
 	  elt->value = Expression::convert_for_assignment(context, val_type,
@@ -12153,7 +12325,7 @@ Map_construction_expression::do_get_tree(Translate_context* context)
 	  if (!TREE_CONSTANT(elt->value))
 	    one_is_constant = false;
 
-	  elt = VEC_quick_push(constructor_elt, values, empty);
+	  elt = values->quick_push(empty);
 	  elt->index = size_int(i);
 	  elt->value = build_constructor(struct_type, one);
 	  if (one_is_constant)
@@ -14088,7 +14260,7 @@ Numeric_constant::check_int_type(Integer_type* type, bool issue_error,
 
 bool
 Numeric_constant::check_float_type(Float_type* type, bool issue_error,
-				   Location location) const
+				   Location location)
 {
   mpfr_t val;
   switch (this->classification_)
@@ -14141,6 +14313,29 @@ Numeric_constant::check_float_type(Float_type* type, bool issue_error,
 	}
 
       ret = exp <= max_exp;
+
+      if (ret)
+	{
+	  // Round the constant to the desired type.
+	  mpfr_t t;
+	  mpfr_init(t);
+	  switch (type->bits())
+	    {
+	    case 32:
+	      mpfr_set_prec(t, 24);
+	      break;
+	    case 64:
+	      mpfr_set_prec(t, 53);
+	      break;
+	    default:
+	      go_unreachable();
+	    }
+	  mpfr_set(t, val, GMP_RNDN);
+	  mpfr_set(val, t, GMP_RNDN);
+	  mpfr_clear(t);
+
+	  this->set_float(type, val);
+	}
     }
 
   mpfr_clear(val);
@@ -14155,7 +14350,7 @@ Numeric_constant::check_float_type(Float_type* type, bool issue_error,
 
 bool
 Numeric_constant::check_complex_type(Complex_type* type, bool issue_error,
-				     Location location) const
+				     Location location)
 {
   if (type->is_abstract())
     return true;
@@ -14174,46 +14369,77 @@ Numeric_constant::check_complex_type(Complex_type* type, bool issue_error,
     }
 
   mpfr_t real;
+  mpfr_t imag;
   switch (this->classification_)
     {
     case NC_INT:
     case NC_RUNE:
       mpfr_init_set_z(real, this->u_.int_val, GMP_RNDN);
+      mpfr_init_set_ui(imag, 0, GMP_RNDN);
       break;
 
     case NC_FLOAT:
       mpfr_init_set(real, this->u_.float_val, GMP_RNDN);
+      mpfr_init_set_ui(imag, 0, GMP_RNDN);
       break;
 
     case NC_COMPLEX:
-      if (!mpfr_nan_p(this->u_.complex_val.imag)
-	  && !mpfr_inf_p(this->u_.complex_val.imag)
-	  && !mpfr_zero_p(this->u_.complex_val.imag))
-	{
-	  if (mpfr_get_exp(this->u_.complex_val.imag) > max_exp)
-	    {
-	      if (issue_error)
-		error_at(location, "complex imaginary part overflow");
-	      return false;
-	    }
-	}
       mpfr_init_set(real, this->u_.complex_val.real, GMP_RNDN);
+      mpfr_init_set(imag, this->u_.complex_val.imag, GMP_RNDN);
       break;
 
     default:
       go_unreachable();
     }
 
-  bool ret;
-  if (mpfr_nan_p(real) || mpfr_inf_p(real) || mpfr_zero_p(real))
-    ret = true;
-  else
-    ret = mpfr_get_exp(real) <= max_exp;
+  bool ret = true;
+  if (!mpfr_nan_p(real)
+      && !mpfr_inf_p(real)
+      && !mpfr_zero_p(real)
+      && mpfr_get_exp(real) > max_exp)
+    {
+      if (issue_error)
+	error_at(location, "complex real part overflow");
+      ret = false;
+    }
+
+  if (!mpfr_nan_p(imag)
+      && !mpfr_inf_p(imag)
+      && !mpfr_zero_p(imag)
+      && mpfr_get_exp(imag) > max_exp)
+    {
+      if (issue_error)
+	error_at(location, "complex imaginary part overflow");
+      ret = false;
+    }
+
+  if (ret)
+    {
+      // Round the constant to the desired type.
+      mpfr_t t;
+      mpfr_init(t);
+      switch (type->bits())
+	{
+	case 64:
+	  mpfr_set_prec(t, 24);
+	  break;
+	case 128:
+	  mpfr_set_prec(t, 53);
+	  break;
+	default:
+	  go_unreachable();
+	}
+      mpfr_set(t, real, GMP_RNDN);
+      mpfr_set(real, t, GMP_RNDN);
+      mpfr_set(t, imag, GMP_RNDN);
+      mpfr_set(imag, t, GMP_RNDN);
+      mpfr_clear(t);
+
+      this->set_complex(type, real, imag);
+    }
 
   mpfr_clear(real);
-
-  if (!ret && issue_error)
-    error_at(location, "complex real part overflow");
+  mpfr_clear(imag);
 
   return ret;
 }

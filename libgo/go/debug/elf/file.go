@@ -272,7 +272,8 @@ func NewFile(r io.ReaderAt) (*File, error) {
 		shnum = int(hdr.Shnum)
 		shstrndx = int(hdr.Shstrndx)
 	}
-	if shstrndx < 0 || shstrndx >= shnum {
+
+	if shnum > 0 && shoff > 0 && (shstrndx < 0 || shstrndx >= shnum) {
 		return nil, &FormatError{0, "invalid ELF shstrndx", shstrndx}
 	}
 
@@ -367,6 +368,10 @@ func NewFile(r io.ReaderAt) (*File, error) {
 		f.Sections[i] = s
 	}
 
+	if len(f.Sections) == 0 {
+		return f, nil
+	}
+
 	// Load section header string table.
 	shstrtab, err := f.Sections[shstrndx].Data()
 	if err != nil {
@@ -417,10 +422,6 @@ func (f *File) getSymbols32(typ SectionType) ([]Symbol, []byte, error) {
 		return nil, nil, errors.New("cannot load string table section")
 	}
 
-	// The first entry is all zeros.
-	var skip [Sym32Size]byte
-	symtab.Read(skip[0:])
-
 	symbols := make([]Symbol, symtab.Len()/Sym32Size)
 
 	i := 0
@@ -459,10 +460,6 @@ func (f *File) getSymbols64(typ SectionType) ([]Symbol, []byte, error) {
 	if err != nil {
 		return nil, nil, errors.New("cannot load string table section")
 	}
-
-	// The first entry is all zeros.
-	var skip [Sym64Size]byte
-	symtab.Read(skip[0:])
 
 	symbols := make([]Symbol, symtab.Len()/Sym64Size)
 
@@ -708,8 +705,8 @@ func (f *File) gnuVersionInit(str []byte) {
 // gnuVersion adds Library and Version information to sym,
 // which came from offset i of the symbol table.
 func (f *File) gnuVersion(i int, sym *ImportedSymbol) {
-	// Each entry is two bytes; skip undef entry at beginning.
-	i = (i + 1) * 2
+	// Each entry is two bytes.
+	i = i * 2
 	if i >= len(f.gnuVersym) {
 		return
 	}

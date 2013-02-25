@@ -178,17 +178,23 @@ dnl
 AC_DEFUN([GLIBCXX_CHECK_ASSEMBLER_HWCAP], [
   test -z "$HWCAP_FLAGS" && HWCAP_FLAGS=''
 
-  ac_save_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS -Wa,-nH"
+  # Restrict the test to Solaris, other assemblers (e.g. AIX as) have -nH
+  # with a different meaning.
+  case ${target_os} in
+    solaris2*)
+      ac_save_CFLAGS="$CFLAGS"
+      CFLAGS="$CFLAGS -Wa,-nH"
 
-  AC_MSG_CHECKING([for as that supports -Wa,-nH])
-  AC_TRY_COMPILE([], [return 0;], [ac_hwcap_flags=yes],[ac_hwcap_flags=no])
-  if test "$ac_hwcap_flags" = "yes"; then
-    HWCAP_FLAGS="-Wa,-nH $HWCAP_FLAGS"
-  fi
-  AC_MSG_RESULT($ac_hwcap_flags)
+      AC_MSG_CHECKING([for as that supports -Wa,-nH])
+      AC_TRY_COMPILE([], [return 0;], [ac_hwcap_flags=yes],[ac_hwcap_flags=no])
+      if test "$ac_hwcap_flags" = "yes"; then
+	HWCAP_FLAGS="-Wa,-nH $HWCAP_FLAGS"
+      fi
+      AC_MSG_RESULT($ac_hwcap_flags)
 
-  CFLAGS="$ac_save_CFLAGS"
+      CFLAGS="$ac_save_CFLAGS"
+      ;;
+  esac
 
   AC_SUBST(HWCAP_FLAGS)
 ])
@@ -685,6 +691,10 @@ if test x"$glibcxx_stylesheets" = x"yes"; then
   if test -d /usr/share/xml/docbook/stylesheet/docbook-xsl-ns; then
     glibcxx_local_stylesheets=yes
     XSL_STYLE_DIR=/usr/share/xml/docbook/stylesheet/docbook-xsl-ns
+  fi
+  if test -d /usr/share/xml/docbook/stylesheet/nwalsh5/current; then
+    glibcxx_local_stylesheets=yes
+    XSL_STYLE_DIR=/usr/share/xml/docbook/stylesheet/nwalsh5/current
   fi
 fi
 AC_MSG_RESULT($glibcxx_local_stylesheets)
@@ -1277,6 +1287,35 @@ AC_DEFUN([GLIBCXX_ENABLE_LIBSTDCXX_TIME], [
   if test x"$ac_has_nanosleep" = x"yes"; then
     AC_DEFINE(_GLIBCXX_USE_NANOSLEEP, 1,
       [ Defined if nanosleep is available. ])
+  else
+      AC_MSG_CHECKING([for sleep])
+      AC_TRY_COMPILE([#include <unistd.h>],
+                     [sleep(1)],
+                     [ac_has_sleep=yes],[ac_has_sleep=no])
+      if test x"$ac_has_sleep" = x"yes"; then
+        AC_DEFINE(HAVE_SLEEP,1, [Defined if sleep exists.])
+      fi
+      AC_MSG_RESULT($ac_has_sleep)
+      AC_MSG_CHECKING([for usleep])
+      AC_TRY_COMPILE([#include <unistd.h>],
+                     [sleep(1);
+                      usleep(100);],
+                     [ac_has_usleep=yes],[ac_has_usleep=no])
+      if test x"$ac_has_usleep" = x"yes"; then
+        AC_DEFINE(HAVE_USLEEP,1, [Defined if usleep exists.])
+      fi
+      AC_MSG_RESULT($ac_has_usleep)
+  fi
+
+  if test x"$ac_has_nanosleep$ac_has_sleep" = x"nono"; then
+      AC_MSG_CHECKING([for Sleep])
+      AC_TRY_COMPILE([#include <windows.h>],
+                     [Sleep(1)],
+                     [ac_has_win32_sleep=yes],[ac_has_win32_sleep=no])
+      if test x"$ac_has_win32_sleep" = x"yes"; then
+        AC_DEFINE(HAVE_WIN32_SLEEP,1, [Defined if Sleep exists.])
+      fi
+      AC_MSG_RESULT($ac_has_win32_sleep)
   fi
 
   AC_SUBST(GLIBCXX_LIBS)
@@ -3199,7 +3238,7 @@ changequote([,])dnl
 fi
 
 # For libtool versioning info, format is CURRENT:REVISION:AGE
-libtool_VERSION=6:17:0
+libtool_VERSION=6:18:0
 
 # Everything parsed; figure out what files and settings to use.
 case $enable_symvers in

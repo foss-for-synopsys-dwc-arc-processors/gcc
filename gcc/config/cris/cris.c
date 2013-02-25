@@ -1,6 +1,5 @@
 /* Definitions for GCC.  Part of the machine description for CRIS.
-   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
-   2008, 2009, 2010, 2011  Free Software Foundation, Inc.
+   Copyright (C) 1998-2013 Free Software Foundation, Inc.
    Contributed by Axis Communications.  Written by Hans-Peter Nilsson.
 
 This file is part of GCC.
@@ -2698,6 +2697,9 @@ cris_asm_output_mi_thunk (FILE *stream,
 			  HOST_WIDE_INT vcall_offset ATTRIBUTE_UNUSED,
 			  tree funcdecl)
 {
+  /* Make sure unwind info is emitted for the thunk if needed.  */
+  final_start_function (emit_barrier (), stream, 1);
+
   if (delta > 0)
     fprintf (stream, "\tadd%s " HOST_WIDE_INT_PRINT_DEC ",$%s\n",
 	     ADDITIVE_SIZE_MODIFIER (delta), delta,
@@ -2735,6 +2737,8 @@ cris_asm_output_mi_thunk (FILE *stream,
       if (TARGET_V32)
 	fprintf (stream, "\tnop\n");
     }
+
+  final_end_function ();
 }
 
 /* Boilerplate emitted at start of file.

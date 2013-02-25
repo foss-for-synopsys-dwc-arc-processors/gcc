@@ -1,6 +1,5 @@
 # GCC target-specific configuration file.
-# Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
-# 2008, 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+# Copyright (C) 1997-2013 Free Software Foundation, Inc.
 
 #This file is part of GCC.
 
@@ -424,7 +423,7 @@ powerpc*-*-*)
 	extra_headers="ppc-asm.h altivec.h spe.h ppu_intrinsics.h paired.h spu2vmx.h vec_types.h si2vmx.h"
 	need_64bit_hwint=yes
 	case x$with_cpu in
-	    xpowerpc64|xdefault64|x6[23]0|x970|xG5|xpower[34567]|xpower6x|xrs64a|xcell|xa2|xe500mc64|xe5500|Xe6500)
+	    xpowerpc64|xdefault64|x6[23]0|x970|xG5|xpower[345678]|xpower6x|xrs64a|xcell|xa2|xe500mc64|xe5500|Xe6500)
 		cpu_is_64bit=yes
 		;;
 	esac
@@ -739,6 +738,9 @@ case ${target} in
   use_gcc_stdint=wrap
   tm_defines="$tm_defines DEFAULT_LIBC=LIBC_UCLIBC SINGLE_LIBC"
   ;;
+*-*-rdos*)
+  use_gcc_stdint=wrap
+  ;;
 *-*-solaris2*)
   # i?86-*-solaris2* needs to insert headers between cpu default and
   # Solaris 2 specific ones.
@@ -831,6 +833,7 @@ aarch64*-*-linux*)
 	;;
 alpha*-*-linux*)
 	tm_file="elfos.h ${tm_file} alpha/elf.h alpha/linux.h alpha/linux-elf.h glibc-stdint.h"
+	tmake_file="${tmake_file} alpha/t-linux"
 	extra_options="${extra_options} alpha/elf.opt"
 	;;
 alpha*-*-freebsd*)
@@ -930,6 +933,10 @@ arm*-*-uclinux*eabi*)		# ARM ucLinux
 	default_use_cxa_atexit=yes
 	;;
 arm*-*-eabi* | arm*-*-symbianelf* | arm*-*-rtems*)
+	case ${target} in
+	arm*eb-*-eabi*)
+	  tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=1"
+	esac
 	# The BPABI long long divmod functions return a 128-bit value in
 	# registers r0-r3.  Correctly modeling that requires the use of
 	# TImode.
@@ -1080,6 +1087,7 @@ hppa*64*-*-linux*)
 	tm_file="pa/pa64-start.h ${tm_file} dbxelf.h elfos.h gnu-user.h linux.h \
 		 glibc-stdint.h pa/pa-linux.h pa/pa64-regs.h pa/pa-64.h \
 		 pa/pa64-linux.h"
+	tmake_file="${tmake_file} pa/t-linux"
 	gas=yes gnu_ld=yes
 	need_64bit_hwint=yes
 	;;
@@ -1087,6 +1095,7 @@ hppa*-*-linux*)
 	target_cpu_default="MASK_PA_11|MASK_NO_SPACE_REGS"
 	tm_file="${tm_file} dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h pa/pa-linux.h \
 		 pa/pa32-regs.h pa/pa32-linux.h"
+	tmake_file="${tmake_file} pa/t-linux"
 	;;
 hppa*-*-openbsd*)
 	target_cpu_default="MASK_PA_11"
@@ -1235,6 +1244,13 @@ i[34567]86-*-elf*)
 x86_64-*-elf*)
 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h"
 	;;
+i[34567]86-*-rdos*)
+    tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h newlib-stdint.h i386/i386elf.h i386/rdos.h"
+    ;;
+x86_64-*-rdos*)
+    tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h i386/rdos.h i386/rdos64.h"
+    tmake_file="i386/t-i386elf t-svr4"
+    ;;
 i[34567]86-*-freebsd*)
 	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h ${fbsd_tm_file} i386/freebsd.h"
 	;;
@@ -1302,7 +1318,7 @@ i[34567]86-*-linux* | i[34567]86-*-kfreebsd*-gnu | i[34567]86-*-knetbsd*-gnu | i
 			TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's/^,//'`
 			need_64bit_isa=yes
 			case X"${with_cpu}" in
-			Xgeneric|Xatom|Xcore2|Xcorei7|Xcorei7-avx|Xnocona|Xx86-64|Xbdver2|Xbdver1|Xbtver2|Xbtver1|Xamdfam10|Xbarcelona|Xk8|Xopteron|Xathlon64|Xathlon-fx|Xathlon64-sse3|Xk8-sse3|Xopteron-sse3)
+			Xgeneric|Xatom|Xcore2|Xcorei7|Xcorei7-avx|Xnocona|Xx86-64|Xbdver3|Xbdver2|Xbdver1|Xbtver2|Xbtver1|Xamdfam10|Xbarcelona|Xk8|Xopteron|Xathlon64|Xathlon-fx|Xathlon64-sse3|Xk8-sse3|Xopteron-sse3)			
 				;;
 			X)
 				if test x$with_cpu_64 = x; then
@@ -1311,7 +1327,7 @@ i[34567]86-*-linux* | i[34567]86-*-kfreebsd*-gnu | i[34567]86-*-knetbsd*-gnu | i
 				;;
 			*)
 				echo "Unsupported CPU used in --with-cpu=$with_cpu, supported values:" 1>&2
-				echo "generic atom core2 corei7 corei7-avx nocona x86-64 bdver2 bdver1 btver2 btver1 amdfam10 barcelona k8 opteron athlon64 athlon-fx athlon64-sse3 k8-sse3 opteron-sse3" 1>&2
+				echo "generic atom core2 corei7 corei7-avx nocona x86-64 bdver3 bdver2 bdver1 btver2 btver1 amdfam10 barcelona k8 opteron athlon64 athlon-fx athlon64-sse3 k8-sse3 opteron-sse3" 1>&2
 				exit 1
 				;;
 			esac
@@ -1423,7 +1439,7 @@ i[34567]86-*-solaris2* | x86_64-*-solaris2.1[0-9]*)
 		tmake_file="$tmake_file i386/t-sol2-64"
 		need_64bit_isa=yes
 		case X"${with_cpu}" in
-		Xgeneric|Xatom|Xcore2|Xcorei7|Xcorei7-avx|Xnocona|Xx86-64|Xbdver2|Xbdver1|Xbtver2|Xbtver1|Xamdfam10|Xbarcelona|Xk8|Xopteron|Xathlon64|Xathlon-fx|Xathlon64-sse3|Xk8-sse3|Xopteron-sse3)
+		Xgeneric|Xatom|Xcore2|Xcorei7|Xcorei7-avx|Xnocona|Xx86-64|Xbdver3|Xbdver2|Xbdver1|Xbtver2|Xbtver1|Xamdfam10|Xbarcelona|Xk8|Xopteron|Xathlon64|Xathlon-fx|Xathlon64-sse3|Xk8-sse3|Xopteron-sse3)
 			;;
 		X)
 			if test x$with_cpu_64 = x; then
@@ -1432,7 +1448,7 @@ i[34567]86-*-solaris2* | x86_64-*-solaris2.1[0-9]*)
 			;;
 		*)
 			echo "Unsupported CPU used in --with-cpu=$with_cpu, supported values:" 1>&2
-			echo "generic atom core2 corei7 corei7-avx nocona x86-64 bdver2 bdver1 btver2 btver1 amdfam10 barcelona k8 opteron athlon64 athlon-fx athlon64-sse3 k8-sse3 opteron-sse3" 1>&2
+			echo "generic atom core2 corei7 corei7-avx nocona x86-64 bdver3 bdver2 bdver1 btver2 btver1 amdfam10 barcelona k8 opteron athlon64 athlon-fx athlon64-sse3 k8-sse3 opteron-sse3" 1>&2
 			exit 1
 			;;
 		esac
@@ -1489,7 +1505,7 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
 			if test x$enable_targets = xall; then
 				tm_defines="${tm_defines} TARGET_BI_ARCH=1"
 				case X"${with_cpu}" in
-				Xgeneric|Xatom|Xcore2|Xcorei7|Xcorei7-avx|Xnocona|Xx86-64|Xbdver2|Xbdver1|Xbtver2|Xbtver1|Xamdfam10|Xbarcelona|Xk8|Xopteron|Xathlon64|Xathlon-fx|Xathlon64-sse3|Xk8-sse3|Xopteron-sse3)
+				Xgeneric|Xatom|Xcore2|Xcorei7|Xcorei7-avx|Xnocona|Xx86-64|Xbdver3|Xbdver2|Xbdver1|Xbtver2|Xbtver1|Xamdfam10|Xbarcelona|Xk8|Xopteron|Xathlon64|Xathlon-fx|Xathlon64-sse3|Xk8-sse3|Xopteron-sse3)
 					;;
 				X)
 					if test x$with_cpu_64 = x; then
@@ -1498,7 +1514,7 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
 					;;
 				*)
 					echo "Unsupported CPU used in --with-cpu=$with_cpu, supported values:" 1>&2
-					echo "generic atom core2 corei7 Xcorei7-avx nocona x86-64 bdver2 bdver1 btver2 btver1 amdfam10 barcelona k8 opteron athlon64 athlon-fx athlon64-sse3 k8-sse3 opteron-sse3" 1>&2
+					echo "generic atom core2 corei7 Xcorei7-avx nocona x86-64 bdver3 bdver2 bdver1 btver2 btver1 amdfam10 barcelona k8 opteron athlon64 athlon-fx athlon64-sse3 k8-sse3 opteron-sse3" 1>&2
 					exit 1
 					;;
 				esac
@@ -1583,7 +1599,7 @@ ia64*-*-freebsd*)
 	;;
 ia64*-*-linux*)
 	tm_file="${tm_file} dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ia64/sysv4.h ia64/linux.h"
-	tmake_file="${tmake_file} ia64/t-ia64 t-libunwind"
+	tmake_file="${tmake_file} ia64/t-ia64 ia64/t-linux t-libunwind"
 	target_cpu_default="MASK_GNU_AS|MASK_GNU_LD"
 	;;
 ia64*-*-hpux*)
@@ -1758,9 +1774,20 @@ mep-*-*)
 	use_gcc_stdint=wrap
 	;;
 microblaze*-linux*)
+	case $target in
+		microblazeel-*)
+			tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=0"
+			;;
+		microblaze-*)
+			tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=4321"
+			;;
+	esac
 	tm_file="${tm_file} dbxelf.h gnu-user.h linux.h microblaze/linux.h"
+	tm_file="${tm_file} glibc-stdint.h"
 	c_target_objs="${c_target_objs} microblaze-c.o"
 	cxx_target_objs="${cxx_target_objs} microblaze-c.o"
+	tmake_file="${tmake_file} microblaze/t-microblaze"
+	tmake_file="${tmake_file} microblaze/t-microblaze-linux"
 	;;
 microblaze*-*-rtems*)
 	tm_file="${tm_file} dbxelf.h"
@@ -1770,11 +1797,19 @@ microblaze*-*-rtems*)
 	tmake_file="${tmake_file} microblaze/t-microblaze"
 	tmake_file="${tmake_file} t-rtems microblaze/t-rtems"
         ;;
-microblaze*-*-*)
-        tm_file="${tm_file} dbxelf.h"
+microblaze*-*-elf)
+	case $target in
+		microblazeel-*)
+			tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=0"
+			;;
+		microblaze-*)
+			tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=4321"
+			;;
+	esac
+	tm_file="${tm_file} dbxelf.h newlib-stdint.h"
 	c_target_objs="${c_target_objs} microblaze-c.o"
 	cxx_target_objs="${cxx_target_objs} microblaze-c.o"
-        tmake_file="${tmake_file} microblaze/t-microblaze"
+	tmake_file="${tmake_file} microblaze/t-microblaze"
         ;;
 mips*-*-netbsd*)			# NetBSD/mips, either endian.
 	target_cpu_default="MASK_ABICALLS"
@@ -2090,6 +2125,7 @@ powerpc-*-linux* | powerpc64-*-linux*)
 		;;
 	    *)
 		tm_file="${tm_file} rs6000/linux.h glibc-stdint.h"
+		tmake_file="$tmake_file rs6000/t-linux"
 		;;
 	esac
 	case ${target} in
@@ -2455,6 +2491,7 @@ sparc-*-linux*)
 		tmake_file="${tmake_file} sparc/t-linux64"
 	else
 		tm_file="${tm_file} sparc/linux.h"
+		tmake_file="${tmake_file} sparc/t-linux"
 	fi
 	;;
 sparc-*-netbsdelf*)
@@ -2571,6 +2608,9 @@ v850-*-rtems*)
 	;;
 v850*-*-*)
 	case ${target} in
+	v850e3v5-*-*)
+		target_cpu_default="TARGET_CPU_v850e3v5"
+		;;
 	v850e2v3-*-*)
 		target_cpu_default="TARGET_CPU_v850e2v3"
 		;;
@@ -2739,6 +2779,10 @@ case ${target} in
     ;;
   i686-*-* | i786-*-*)
     case ${target_noncanonical} in
+      bdver3-*)
+        arch=bdver3
+        cpu=bdver3
+        ;;
       bdver2-*)
         arch=bdver2
         cpu=bdver2
@@ -2840,6 +2884,10 @@ case ${target} in
     ;;
   x86_64-*-*)
     case ${target_noncanonical} in
+      bdver3-*)
+        arch=bdver3
+        cpu=bdver3
+        ;;
       bdver2-*)
         arch=bdver2
         cpu=bdver2
@@ -3388,8 +3436,8 @@ case "${target}" in
 				;;
 			"" | x86-64 | generic | native \
 			| k8 | k8-sse3 | athlon64 | athlon64-sse3 | opteron \
-			| opteron-sse3 | athlon-fx | bdver2 | bdver1 | btver2 | btver1 \
-			| amdfam10 | barcelona | nocona | core2 | corei7 \
+			| opteron-sse3 | athlon-fx | bdver3 | bdver2 | bdver1 | btver2 \
+			| btver1 | amdfam10 | barcelona | nocona | core2 | corei7 \
 			| corei7-avx | core-avx-i | core-avx2 | atom)
 				# OK
 				;;
@@ -3504,7 +3552,7 @@ case "${target}" in
 				eval "with_$which=405"
 				;;
 			"" | common \
-			| power | power[234567] | power6x | powerpc | powerpc64 \
+			| power | power[2345678] | power6x | powerpc | powerpc64 \
 			| rios | rios1 | rios2 | rsc | rsc1 | rs64a \
 			| 401 | 403 | 405 | 405fp | 440 | 440fp | 464 | 464fp \
 			| 476 | 476fp | 505 | 601 | 602 | 603 | 603e | ec603e \
@@ -3634,7 +3682,7 @@ case "${target}" in
 	v850*-*-*)
 		supported_defaults=cpu
 		case ${with_cpu} in
-		"" | v850e | v850e1 | v850e2 | v850es | v850e2v3)
+		"" | v850e | v850e1 | v850e2 | v850es | v850e2v3 | v850e3v5)
 			# OK
 			;;
 		*)
@@ -3684,9 +3732,14 @@ case ${target} in
 
 	i[34567]86-*-darwin* | x86_64-*-darwin*)
 		;;
-	i[34567]86-*-linux* | x86_64-*-linux* | \
-	  i[34567]86-*-kfreebsd*-gnu | x86_64-*-kfreebsd*-gnu | \
-	  i[34567]86-*-gnu*)
+	i[34567]86-*-linux* | x86_64-*-linux*)
+		tmake_file="$tmake_file i386/t-linux"
+		;;
+	i[34567]86-*-kfreebsd*-gnu | x86_64-*-kfreebsd*-gnu)
+		tmake_file="$tmake_file i386/t-kfreebsd"
+		;;
+	i[34567]86-*-gnu*)
+		tmake_file="$tmake_file i386/t-gnu"
 		;;
 	i[34567]86-*-solaris2* | x86_64-*-solaris2.1[0-9]*)
 		;;
@@ -3756,7 +3809,7 @@ case ${target} in
 		case "x$with_cpu" in
 		x)
 			;;
-		xv850e | xv850e1 | xv850e2 | xv850e2v3)
+		xv850e | xv850e1 | xv850e2 | xv850e2v3 | xv850e3v5)
 			target_cpu_default2="TARGET_CPU_$with_cpu"
 			;;
 		xv850es)

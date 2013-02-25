@@ -57,7 +57,7 @@ var logger = log.New(os.Stderr, "", log.Lshortfile)
 // 1E0A;1E0A;0044 0307;1E0A;0044 0307; # (Ḋ; Ḋ; D◌̇; Ḋ; D◌̇; ) LATIN CAPITAL LETTER D WITH DOT ABOVE
 // 1E0C;1E0C;0044 0323;1E0C;0044 0323; # (Ḍ; Ḍ; D◌̣; Ḍ; D◌̣; ) LATIN CAPITAL LETTER D WITH DOT BELOW
 //
-// Each test has 5 columns (c1, c2, c3, c4, c5), where 
+// Each test has 5 columns (c1, c2, c3, c4, c5), where
 // (c1, c2, c3, c4, c5) == (c1, NFC(c1), NFD(c1), NFKC(c1), NFKD(c1))
 //
 // CONFORMANCE:
@@ -223,13 +223,11 @@ func doTest(t *Test, f norm.Form, gold, test string) {
 	cmpResult(t, "Bytes", f, gold, test, string(result))
 	sresult := f.String(test)
 	cmpResult(t, "String", f, gold, test, sresult)
-	buf := make([]byte, norm.MaxSegmentSize)
 	acc := []byte{}
 	i := norm.Iter{}
-	i.SetInputString(f, test)
+	i.InitString(f, test)
 	for !i.Done() {
-		n := i.Next(buf)
-		acc = append(acc, buf[:n]...)
+		acc = append(acc, i.Next()...)
 	}
 	cmpResult(t, "Iter.Next", f, gold, test, string(acc))
 	for i := range test {

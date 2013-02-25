@@ -1,5 +1,5 @@
 /* Flags on basic blocks and edges.
-   Copyright (C) 2012  Free Software Foundation, Inc.
+   Copyright (C) 2012-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -170,6 +170,12 @@ DEF_EDGE_FLAG(CAN_FALLTHRU, 13)
 /* Exit of a loop.  This is only used in ifcvt.c.
    This flag is only used for the RTL CFG.  */
 DEF_EDGE_FLAG(LOOP_EXIT, 14)
+
+/* Uninstrumented edge out of a GIMPLE_TRANSACTION statement.  */
+DEF_EDGE_FLAG(TM_UNINSTRUMENTED, 15)
+
+/* Abort (over) edge out of a GIMPLE_TRANSACTION statement.  */
+DEF_EDGE_FLAG(TM_ABORT, 16)
 
 #endif
 

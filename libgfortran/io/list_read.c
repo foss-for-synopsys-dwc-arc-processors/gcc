@@ -1,5 +1,4 @@
-/* Copyright (C) 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+/* Copyright (C) 2002-2013 Free Software Foundation, Inc.
    Contributed by Andy Vaught
    Namelist input contributed by Paul Thomas
    F2003 I/O support contributed by Jerry DeLisle
@@ -697,6 +696,7 @@ read_logical (st_parameter_dt *dtp, int length)
       break;
 
     CASE_SEPARATORS:
+    case EOF:
       unget_char (dtp, c);
       eat_separator (dtp);
       return;			/* Null value.  */
@@ -951,6 +951,7 @@ read_character (st_parameter_dt *dtp, int length __attribute__ ((unused)))
       break;
 
     CASE_SEPARATORS:
+    case EOF:
       unget_char (dtp, c);		/* NULL value.  */
       eat_separator (dtp);
       return;
@@ -975,8 +976,7 @@ read_character (st_parameter_dt *dtp, int length __attribute__ ((unused)))
 
   for (;;)
     {
-      if ((c = next_char (dtp)) == EOF)
-	goto eof;
+      c = next_char (dtp);
       switch (c)
 	{
 	CASE_DIGITS:
@@ -984,6 +984,7 @@ read_character (st_parameter_dt *dtp, int length __attribute__ ((unused)))
 	  break;
 
 	CASE_SEPARATORS:
+	case EOF:
 	  unget_char (dtp, c);
 	  goto done;		/* String was only digits!  */
 
@@ -1041,7 +1042,7 @@ read_character (st_parameter_dt *dtp, int length __attribute__ ((unused)))
 	     the string.  */
 
 	  if ((c = next_char (dtp)) == EOF)
-	    goto eof;
+	    goto done_eof;
 	  if (c == quote)
 	    {
 	      push_char (dtp, quote);
@@ -1167,6 +1168,7 @@ parse_real (st_parameter_dt *dtp, void *buffer, int length)
 	  goto exp2;
 
 	CASE_SEPARATORS:
+	case EOF:
 	  goto done;
 
 	default:
@@ -1202,6 +1204,7 @@ parse_real (st_parameter_dt *dtp, void *buffer, int length)
 	  break;
 
 	CASE_SEPARATORS:
+	case EOF:
 	  unget_char (dtp, c);
 	  goto done;
 
@@ -1243,7 +1246,7 @@ parse_real (st_parameter_dt *dtp, void *buffer, int length)
 		&& ((c = next_char (dtp)) == 'y' || c == 'Y')
 		&& (c = next_char (dtp))))
 	  {
-	     if (is_separator (c))
+	     if (is_separator (c) || (c == EOF))
 	       unget_char (dtp, c);
 	     push_char (dtp, 'i');
 	     push_char (dtp, 'n');
@@ -1255,7 +1258,7 @@ parse_real (st_parameter_dt *dtp, void *buffer, int length)
 	   && ((c = next_char (dtp)) == 'n' || c == 'N')
 	   && (c = next_char (dtp)))
     {
-      if (is_separator (c))
+      if (is_separator (c) || (c == EOF))
 	unget_char (dtp, c);
       push_char (dtp, 'n');
       push_char (dtp, 'a');
@@ -1269,7 +1272,7 @@ parse_real (st_parameter_dt *dtp, void *buffer, int length)
 	      goto bad;
 
 	  c = next_char (dtp);
-	  if (is_separator (c))
+	  if (is_separator (c) || (c == EOF))
 	    unget_char (dtp, c);
 	}
       goto done_infnan;
@@ -1315,6 +1318,7 @@ read_complex (st_parameter_dt *dtp, void * dest, int kind, size_t size)
       break;
 
     CASE_SEPARATORS:
+    case EOF:
       unget_char (dtp, c);
       eat_separator (dtp);
       return;
@@ -1369,7 +1373,7 @@ eol_4:
     goto bad_complex;
 
   c = next_char (dtp);
-  if (!is_separator (c))
+  if (!is_separator (c) && (c != EOF))
     goto bad_complex;
 
   unget_char (dtp, c);
@@ -1429,6 +1433,7 @@ read_real (st_parameter_dt *dtp, void * dest, int length)
       goto got_sign;
 
     CASE_SEPARATORS:
+    case EOF:
       unget_char (dtp, c);		/* Single null.  */
       eat_separator (dtp);
       return;
@@ -1484,6 +1489,7 @@ read_real (st_parameter_dt *dtp, void * dest, int length)
 	  goto got_repeat;
 
 	CASE_SEPARATORS:
+	case EOF:
           if (c != '\n' && c != ',' && c != '\r' && c != ';')
 	    unget_char (dtp, c);
 	  goto done;
@@ -1612,6 +1618,7 @@ read_real (st_parameter_dt *dtp, void * dest, int length)
 	  break;
 
 	CASE_SEPARATORS:
+	case EOF:
 	  goto done;
 
 	default:
@@ -1647,7 +1654,7 @@ read_real (st_parameter_dt *dtp, void * dest, int length)
 	goto unwind;
       c = next_char (dtp);
       l_push_char (dtp, c);
-      if (!is_separator (c))
+      if (!is_separator (c) && (c != EOF))
 	{
 	  if (c != 'i' && c != 'I')
 	    goto unwind;
@@ -1700,7 +1707,7 @@ read_real (st_parameter_dt *dtp, void * dest, int length)
 	}
     }
 
-  if (!is_separator (c))
+  if (!is_separator (c) && (c != EOF))
     goto unwind;
 
   if (dtp->u.p.namelist_mode)
@@ -2537,16 +2544,16 @@ nml_read_obj (st_parameter_dt *dtp, namelist_info * nl, index_type offset,
           switch (nl->type)
 	  {
 	  case BT_INTEGER:
-	      read_integer (dtp, len);
-              break;
+	    read_integer (dtp, len);
+            break;
 
 	  case BT_LOGICAL:
-	      read_logical (dtp, len);
-              break;
+	    read_logical (dtp, len);
+	    break;
 
 	  case BT_CHARACTER:
-	      read_character (dtp, len);
-              break;
+	    read_character (dtp, len);
+	    break;
 
 	  case BT_REAL:
 	    /* Need to copy data back from the real location to the temp in order

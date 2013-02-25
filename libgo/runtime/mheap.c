@@ -138,7 +138,9 @@ HaveSpan:
 		*(uintptr*)(t->start<<PageShift) = *(uintptr*)(s->start<<PageShift);  // copy "needs zeroing" mark
 		t->state = MSpanInUse;
 		MHeap_FreeLocked(h, t);
+		t->unusedsince = s->unusedsince; // preserve age
 	}
+	s->unusedsince = 0;
 
 	// Record span info, because gc needs to be
 	// able to map interior pointer to containing span.
@@ -300,10 +302,12 @@ MHeap_FreeLocked(MHeap *h, MSpan *s)
 	}
 	mstats.heap_idle += s->npages<<PageShift;
 	s->state = MSpanFree;
-	s->unusedsince = 0;
-	s->npreleased = 0;
 	runtime_MSpanList_Remove(s);
 	sp = (uintptr*)(s->start<<PageShift);
+	// Stamp newly unused spans. The scavenger will use that
+	// info to potentially give back some pages to the OS.
+	s->unusedsince = runtime_nanotime();
+	s->npreleased = 0;
 
 	// Coalesce with earlier, later spans.
 	p = s->start;
@@ -343,6 +347,15 @@ MHeap_FreeLocked(MHeap *h, MSpan *s)
 		runtime_MSpanList_Insert(&h->large, s);
 }
 
+static void
+forcegchelper(void *vnote)
+{
+	Note *note = (Note*)vnote;
+
+	runtime_gc(1);
+	runtime_notewakeup(note);
+}
+
 // Release (part of) unused memory to OS.
 // Goroutine created at startup.
 // Loop forever.
@@ -356,7 +369,7 @@ runtime_MHeap_Scavenger(void* dummy)
 	uintptr released, sumreleased;
 	const byte *env;
 	bool trace;
-	Note note;
+	Note note, *notep;
 
 	USED(dummy);
 
@@ -387,11 +400,19 @@ runtime_MHeap_Scavenger(void* dummy)
 		now = runtime_nanotime();
 		if(now - mstats.last_gc > forcegc) {
 			runtime_unlock(h);
-			runtime_gc(1);
+			// The scavenger can not block other goroutines,
+			// otherwise deadlock detector can fire spuriously.
+			// GC blocks other goroutines via the runtime_worldsema.
+			runtime_noteclear(&note);
+			notep = &note;
+			__go_go(forcegchelper, (void*)notep);
+			runtime_entersyscall();
+			runtime_notesleep(&note);
+			runtime_exitsyscall();
+			if(trace)
+				runtime_printf("scvg%d: GC forced\n", k);
 			runtime_lock(h);
 			now = runtime_nanotime();
-			if (trace)
-				runtime_printf("scvg%d: GC forced\n", k);
 		}
 		sumreleased = 0;
 		for(i=0; i < nelem(h->free)+1; i++) {
@@ -402,7 +423,7 @@ runtime_MHeap_Scavenger(void* dummy)
 			if(runtime_MSpanList_IsEmpty(list))
 				continue;
 			for(s=list->next; s != list; s=s->next) {
-				if(s->unusedsince != 0 && (now - s->unusedsince) > limit) {
+				if((now - s->unusedsince) > limit) {
 					released = (s->npages - s->npreleased) << PageShift;
 					mstats.heap_released += released;
 					sumreleased += released;

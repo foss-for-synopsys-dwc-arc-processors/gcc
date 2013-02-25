@@ -1,6 +1,5 @@
-/* Induction variable canonicalization.
-   Copyright (C) 2004, 2005, 2007, 2008, 2010
-   Free Software Foundation, Inc.
+/* Induction variable canonicalization and loop peeling.
+   Copyright (C) 2004-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -207,16 +206,18 @@ constant_after_peeling (tree op, gimple stmt, struct loop *loop)
    iteration of the loop.
    EDGE_TO_CANCEL (if non-NULL) is an non-exit edge eliminated in the last iteration
    of loop.
-   Return results in SIZE, estimate benefits for complete unrolling exiting by EXIT.  */
+   Return results in SIZE, estimate benefits for complete unrolling exiting by EXIT. 
+   Stop estimating after UPPER_BOUND is met. Return true in this case */
 
-static void
-tree_estimate_loop_size (struct loop *loop, edge exit, edge edge_to_cancel, struct loop_size *size)
+static bool
+tree_estimate_loop_size (struct loop *loop, edge exit, edge edge_to_cancel, struct loop_size *size,
+			 int upper_bound)
 {
   basic_block *body = get_loop_body (loop);
   gimple_stmt_iterator gsi;
   unsigned int i;
   bool after_exit;
-  VEC (basic_block, heap) *path = get_loop_hot_path (loop);
+  vec<basic_block> path = get_loop_hot_path (loop);
 
   size->overall = 0;
   size->eliminated_by_peeling = 0;
@@ -316,11 +317,17 @@ tree_estimate_loop_size (struct loop *loop, edge exit, edge edge_to_cancel, stru
 	      if (likely_eliminated || likely_eliminated_last)
 		size->last_iteration_eliminated_by_peeling += num;
 	    }
+	  if ((size->overall * 3 / 2 - size->eliminated_by_peeling
+	      - size->last_iteration_eliminated_by_peeling) > upper_bound)
+	    {
+              free (body);
+	      return true;
+	    }
 	}
     }
-  while (VEC_length (basic_block, path))
+  while (path.length ())
     {
-      basic_block bb = VEC_pop (basic_block, path);
+      basic_block bb = path.pop ();
       for (gsi = gsi_start_bb (bb); !gsi_end_p (gsi); gsi_next (&gsi))
 	{
 	  gimple stmt = gsi_stmt (gsi);
@@ -350,13 +357,14 @@ tree_estimate_loop_size (struct loop *loop, edge exit, edge edge_to_cancel, stru
 	    size->num_branches_on_hot_path++;
 	}
     }
-  VEC_free (basic_block, heap, path);
+  path.release ();
   if (dump_file && (dump_flags & TDF_DETAILS))
     fprintf (dump_file, "size: %i-%i, last_iteration: %i-%i\n", size->overall,
     	     size->eliminated_by_peeling, size->last_iteration,
 	     size->last_iteration_eliminated_by_peeling);
 
   free (body);
+  return false;
 }
 
 /* Estimate number of insns of completely unrolled loop.
@@ -414,7 +422,7 @@ estimated_unrolled_size (struct loop_size *size,
 edge
 loop_edge_to_cancel (struct loop *loop)
 {
-  VEC (edge, heap) *exits;
+  vec<edge> exits;
   unsigned i;
   edge edge_to_cancel;
   gimple_stmt_iterator gsi;
@@ -425,7 +433,7 @@ loop_edge_to_cancel (struct loop *loop)
 
   exits = get_loop_exit_edges (loop);
 
-  FOR_EACH_VEC_ELT (edge, exits, i, edge_to_cancel)
+  FOR_EACH_VEC_ELT (exits, i, edge_to_cancel)
     {
        /* Find the other edge than the loop exit
           leaving the conditoinal.  */
@@ -447,7 +455,7 @@ loop_edge_to_cancel (struct loop *loop)
       if (edge_to_cancel->dest != loop->latch)
         continue;
 
-      VEC_free (edge, heap, exits);
+      exits.release ();
 
       /* Verify that the code in loop latch does nothing that may end program
          execution without really reaching the exit.  This may include
@@ -457,7 +465,7 @@ loop_edge_to_cancel (struct loop *loop)
 	   return NULL;
       return edge_to_cancel;
     }
-  VEC_free (edge, heap, exits);
+  exits.release ();
   return NULL;
 }
 
@@ -546,9 +554,8 @@ remove_redundant_iv_tests (struct loop *loop)
 	  /* Only when we know the actual number of iterations, not
 	     just a bound, we can remove the exit.  */
 	  if (!number_of_iterations_exit (loop, exit_edge,
-					  &niter, false, false))
-	    gcc_unreachable ();
-	  if (!integer_onep (niter.assumptions)
+					  &niter, false, false)
+	      || !integer_onep (niter.assumptions)
 	      || !integer_zerop (niter.may_be_zero)
 	      || !niter.niter
 	      || TREE_CODE (niter.niter) != INTEGER_CST
@@ -573,8 +580,8 @@ remove_redundant_iv_tests (struct loop *loop)
 }
 
 /* Stores loops that will be unlooped after we process whole loop tree. */
-static VEC(loop_p, heap) *loops_to_unloop;
-static VEC(int, heap) *loops_to_unloop_nunroll;
+static vec<loop_p> loops_to_unloop;
+static vec<int> loops_to_unloop_nunroll;
 
 /* Cancel all fully unrolled loops by putting __builtin_unreachable
    on the latch edge.  
@@ -592,10 +599,10 @@ void
 unloop_loops (bitmap loop_closed_ssa_invalidated,
 	      bool *irred_invalidated)
 {
-  while (VEC_length (loop_p, loops_to_unloop))
+  while (loops_to_unloop.length ())
     {
-      struct loop *loop = VEC_pop (loop_p, loops_to_unloop);
-      int n_unroll = VEC_pop (int, loops_to_unloop_nunroll);
+      struct loop *loop = loops_to_unloop.pop ();
+      int n_unroll = loops_to_unloop_nunroll.pop ();
       basic_block latch = loop->latch;
       edge latch_edge = loop_latch_edge (loop);
       int flags = latch_edge->flags;
@@ -625,30 +632,30 @@ unloop_loops (bitmap loop_closed_ssa_invalidated,
       gsi = gsi_start_bb (latch_edge->dest);
       gsi_insert_after (&gsi, stmt, GSI_NEW_STMT);
     }
-  VEC_free (loop_p, heap, loops_to_unloop);
-  loops_to_unloop = NULL;
-  VEC_free (int, heap, loops_to_unloop_nunroll);
-  loops_to_unloop_nunroll = NULL;
+  loops_to_unloop.release ();
+  loops_to_unloop_nunroll.release ();
 }
 
 /* Tries to unroll LOOP completely, i.e. NITER times.
    UL determines which loops we are allowed to unroll.
-   EXIT is the exit of the loop that should be eliminated.  
+   EXIT is the exit of the loop that should be eliminated.
    MAXITER specfy bound on number of iterations, -1 if it is
-   not known or too large for HOST_WIDE_INT.  */
+   not known or too large for HOST_WIDE_INT.  The location
+   LOCUS corresponding to the loop is used when emitting
+   a summary of the unroll to the dump file.  */
 
 static bool
 try_unroll_loop_completely (struct loop *loop,
 			    edge exit, tree niter,
 			    enum unroll_level ul,
-			    HOST_WIDE_INT maxiter)
+			    HOST_WIDE_INT maxiter,
+			    location_t locus)
 {
   unsigned HOST_WIDE_INT n_unroll, ninsns, max_unroll, unr_insns;
   gimple cond;
   struct loop_size size;
   bool n_unroll_found = false;
   edge edge_to_cancel = NULL;
-  int num = loop->num;
 
   /* See if we proved number of iterations to be low constant.
 
@@ -701,12 +708,22 @@ try_unroll_loop_completely (struct loop *loop,
       sbitmap wont_exit;
       edge e;
       unsigned i;
-      VEC (edge, heap) *to_remove = NULL;
+      bool large;
+      vec<edge> to_remove = vNULL;
       if (ul == UL_SINGLE_ITER)
 	return false;
 
-      tree_estimate_loop_size (loop, exit, edge_to_cancel, &size);
+      large = tree_estimate_loop_size
+		 (loop, exit, edge_to_cancel, &size,
+		  PARAM_VALUE (PARAM_MAX_COMPLETELY_PEELED_INSNS));
       ninsns = size.overall;
+      if (large)
+	{
+	  if (dump_file && (dump_flags & TDF_DETAILS))
+	    fprintf (dump_file, "Not unrolling loop %d: it is too large.\n",
+		     loop->num);
+	  return false;
+	}
 
       unr_insns = estimated_unrolled_size (&size, n_unroll);
       if (dump_file && (dump_flags & TDF_DETAILS))
@@ -817,13 +834,13 @@ try_unroll_loop_completely (struct loop *loop,
 	  return false;
 	}
 
-      FOR_EACH_VEC_ELT (edge, to_remove, i, e)
+      FOR_EACH_VEC_ELT (to_remove, i, e)
 	{
 	  bool ok = remove_path (e);
 	  gcc_assert (ok);
 	}
 
-      VEC_free (edge, heap, to_remove);
+      to_remove.release ();
       free (wont_exit);
       free_original_copy_tables ();
     }
@@ -843,17 +860,28 @@ try_unroll_loop_completely (struct loop *loop,
     }
 
   /* Store the loop for later unlooping and exit removal.  */
-  VEC_safe_push (loop_p, heap, loops_to_unloop, loop);
-  VEC_safe_push (int, heap, loops_to_unloop_nunroll, n_unroll);
+  loops_to_unloop.safe_push (loop);
+  loops_to_unloop_nunroll.safe_push (n_unroll);
+
+  if (dump_enabled_p ())
+    {
+      if (!n_unroll)
+        dump_printf_loc (MSG_OPTIMIZED_LOCATIONS | TDF_DETAILS, locus,
+                         "Turned loop into non-loop; it never loops.\n");
+      else
+        {
+          dump_printf_loc (MSG_OPTIMIZED_LOCATIONS | TDF_DETAILS, locus,
+                           "Completely unroll loop %d times", (int)n_unroll);
+          if (profile_info)
+            dump_printf (MSG_OPTIMIZED_LOCATIONS | TDF_DETAILS,
+                         " (header execution count %d)",
+                         (int)loop->header->count);
+          dump_printf (MSG_OPTIMIZED_LOCATIONS | TDF_DETAILS, "\n");
+        }
+    }
 
   if (dump_file && (dump_flags & TDF_DETAILS))
     {
-      if (!n_unroll)
-        fprintf (dump_file, "Turned loop %d to non-loop; it never loops.\n",
-		 num);
-      else
-        fprintf (dump_file, "Unrolled loop %d completely "
-		 "(duplicated %i times).\n", num, (int)n_unroll);
       if (exit)
         fprintf (dump_file, "Exit condition of peeled iterations was "
 		 "eliminated.\n");
@@ -882,15 +910,17 @@ canonicalize_loop_induction_variables (struct loop *loop,
   tree niter;
   HOST_WIDE_INT maxiter;
   bool modified = false;
+  location_t locus = UNKNOWN_LOCATION;
 
   niter = number_of_latch_executions (loop);
+  exit = single_exit (loop);
   if (TREE_CODE (niter) == INTEGER_CST)
-    exit = single_exit (loop);
+    locus = gimple_location (last_stmt (exit->src));
   else
     {
       /* If the loop has more than one exit, try checking all of them
 	 for # of iterations determinable through scev.  */
-      if (!single_exit (loop))
+      if (!exit)
 	niter = find_loop_niter (loop, &exit);
 
       /* Finally if everything else fails, try brute force evaluation.  */
@@ -898,6 +928,9 @@ canonicalize_loop_induction_variables (struct loop *loop,
 	  && (chrec_contains_undetermined (niter)
 	      || TREE_CODE (niter) != INTEGER_CST))
 	niter = find_loop_niter_by_eval (loop, &exit);
+
+      if (exit)
+        locus = gimple_location (last_stmt (exit->src));
 
       if (TREE_CODE (niter) != INTEGER_CST)
 	exit = NULL;
@@ -933,7 +966,7 @@ canonicalize_loop_induction_variables (struct loop *loop,
      populates the loop bounds.  */
   modified |= remove_redundant_iv_tests (loop);
 
-  if (try_unroll_loop_completely (loop, exit, niter, ul, maxiter))
+  if (try_unroll_loop_completely (loop, exit, niter, ul, maxiter, locus))
     return true;
 
   if (create_iv
@@ -1070,7 +1103,7 @@ propagate_constants_for_unrolling (basic_block bb)
 unsigned int
 tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
 {
-  VEC(loop_p,stack) *father_stack = VEC_alloc (loop_p, stack, 16);
+  vec<loop_p, va_stack> father_stack;
   loop_iterator li;
   struct loop *loop;
   bool changed;
@@ -1078,6 +1111,7 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
   int iteration = 0;
   bool irred_invalidated = false;
 
+  vec_stack_alloc (loop_p, father_stack, 16);
   do
     {
       changed = false;
@@ -1111,7 +1145,7 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
 		 iteration is complete and the IR eventually cleaned up.  */
 	      if (loop_outer (loop_father) && !loop_father->aux)
 	        {
-		  VEC_safe_push (loop_p, stack, father_stack, loop_father);
+		  father_stack.safe_push (loop_father);
 		  loop_father->aux = loop_father;
 		}
 	    }
@@ -1124,9 +1158,9 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
 
 	  /* Be sure to skip unlooped loops while procesing father_stack
 	     array.  */
-	  FOR_EACH_VEC_ELT (loop_p, loops_to_unloop, i, iter)
+	  FOR_EACH_VEC_ELT (loops_to_unloop, i, iter)
 	    (*iter)->aux = NULL;
-	  FOR_EACH_VEC_ELT (loop_p, father_stack, i, iter)
+	  FOR_EACH_VEC_ELT (father_stack, i, iter)
 	    if (!(*iter)->aux)
 	      *iter = NULL;
           unloop_loops (loop_closed_ssa_invalidated, &irred_invalidated);
@@ -1140,7 +1174,7 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
 	    update_ssa (TODO_update_ssa);
 
 	  /* Propagate the constants within the new basic blocks.  */
-	  FOR_EACH_VEC_ELT (loop_p, father_stack, i, iter)
+	  FOR_EACH_VEC_ELT (father_stack, i, iter)
 	    if (*iter)
 	      {
 		unsigned j;
@@ -1150,7 +1184,7 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
 		free (body);
 		(*iter)->aux = NULL;
 	      }
-	  VEC_truncate (loop_p, father_stack, 0);
+	  father_stack.truncate (0);
 
 	  /* This will take care of removing completely unrolled loops
 	     from the loop structures so we can continue unrolling now
@@ -1172,7 +1206,7 @@ tree_unroll_loops_completely (bool may_increase_size, bool unroll_outer)
   while (changed
 	 && ++iteration <= PARAM_VALUE (PARAM_MAX_UNROLL_ITERATIONS));
 
-  VEC_free (loop_p, stack, father_stack);
+  father_stack.release ();
 
   if (irred_invalidated
       && loops_state_satisfies_p (LOOPS_HAVE_MARKED_IRREDUCIBLE_REGIONS))

@@ -1,7 +1,5 @@
 /* Definitions of target machine for GCC for IA-32.
-   Copyright (C) 1988, 1992, 1994, 1995, 1996, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1988-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -172,7 +170,10 @@ extern int ix86_mode_needed (int, rtx);
 extern int ix86_mode_after (int, int, rtx);
 extern int ix86_mode_entry (int);
 extern int ix86_mode_exit (int);
-extern void ix86_emit_mode_set (int, int);
+
+#ifdef HARD_CONST
+extern void ix86_emit_mode_set (int, int, HARD_REG_SET);
+#endif
 
 extern void x86_order_regs_for_local_alloc (void);
 extern void x86_function_profiler (FILE *, int);

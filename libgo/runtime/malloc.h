@@ -114,12 +114,12 @@ enum
 	HeapAllocChunk = 1<<20,		// Chunk size for heap growth
 
 	// Number of bits in page to span calculations (4k pages).
-	// On 64-bit, we limit the arena to 16G, so 22 bits suffices.
-	// On 32-bit, we don't bother limiting anything: 20 bits for 4G.
+	// On 64-bit, we limit the arena to 128GB, or 37 bits.
+	// On 32-bit, we don't bother limiting anything, so we use the full 32-bit address.
 #if __SIZEOF_POINTER__ == 8
-	MHeapMap_Bits = 22,
+	MHeapMap_Bits = 37 - PageShift,
 #else
-	MHeapMap_Bits = 20,
+	MHeapMap_Bits = 32 - PageShift,
 #endif
 
 	// Max number of threads to run garbage collection.
@@ -133,7 +133,7 @@ enum
 // This must be a #define instead of an enum because it
 // is so large.
 #if __SIZEOF_POINTER__ == 8
-#define	MaxMem	(16ULL<<30)	/* 16 GB */
+#define	MaxMem	(1ULL<<(MHeapMap_Bits+PageShift))	/* 128 GB */
 #else
 #define	MaxMem	((uintptr)-1)
 #endif
@@ -198,7 +198,7 @@ void	runtime_FixAlloc_Free(FixAlloc *f, void *p);
 
 
 // Statistics.
-// Shared with Go: if you edit this structure, also edit extern.go.
+// Shared with Go: if you edit this structure, also edit type MemStats in mem.go.
 struct MStats
 {
 	// General statistics.
@@ -247,7 +247,7 @@ struct MStats
 };
 
 extern MStats mstats
-  __asm__ ("runtime.VmemStats");
+  __asm__ (GOSYM_PREFIX "runtime.VmemStats");
 
 
 // Size classes.  Computed and initialized by InitSizes.
@@ -358,7 +358,7 @@ struct MSpan
 	uintptr	npages;		// number of pages in span
 	MLink	*freelist;	// list of free objects
 	uint32	ref;		// number of allocated objects in this span
-	uint32	sizeclass;	// size class
+	int32	sizeclass;	// size class
 	uintptr	elemsize;	// computed from sizeclass or from npages
 	uint32	state;		// MSpanInUse etc
 	int64   unusedsince;	// First time spotted by GC in MSpanFree state
@@ -446,12 +446,14 @@ void	runtime_markallocated(void *v, uintptr n, bool noptr);
 void	runtime_checkallocated(void *v, uintptr n);
 void	runtime_markfreed(void *v, uintptr n);
 void	runtime_checkfreed(void *v, uintptr n);
-int32	runtime_checking;
+extern	int32	runtime_checking;
 void	runtime_markspan(void *v, uintptr size, uintptr n, bool leftover);
 void	runtime_unmarkspan(void *v, uintptr size);
 bool	runtime_blockspecial(void*);
 void	runtime_setblockspecial(void*, bool);
 void	runtime_purgecachedstats(MCache*);
+void*	runtime_new(const Type *);
+#define runtime_cnew(T) runtime_new(T)
 
 void	runtime_settype(void*, uintptr);
 void	runtime_settype_flush(M*, bool);
@@ -466,17 +468,25 @@ enum
 	FlagNoGC = 1<<2,	// must not free or scan for pointers
 };
 
+typedef struct Obj Obj;
+struct Obj
+{
+	byte	*p;	// data pointer
+	uintptr	n;	// size of data in bytes
+	uintptr	ti;	// type info
+};
+
 void	runtime_MProf_Malloc(void*, uintptr);
 void	runtime_MProf_Free(void*, uintptr);
 void	runtime_MProf_GC(void);
-void	runtime_MProf_Mark(void (*addroot)(byte *, uintptr));
+void	runtime_MProf_Mark(void (*addroot)(Obj));
 int32	runtime_gcprocs(void);
 void	runtime_helpgc(int32 nproc);
 void	runtime_gchelper(void);
 
 struct __go_func_type;
 bool	runtime_getfinalizer(void *p, bool del, void (**fn)(void*), const struct __go_func_type **ft);
-void	runtime_walkfintab(void (*fn)(void*), void (*scan)(byte *, uintptr));
+void	runtime_walkfintab(void (*fn)(void*), void (*scan)(Obj));
 
 enum
 {
@@ -487,3 +497,12 @@ enum
 	// Enables type information at the end of blocks allocated from heap	
 	DebugTypeAtBlockEnd = 0,
 };
+
+// defined in mgc0.go
+void	runtime_gc_m_ptr(Eface*);
+void	runtime_gc_itab_ptr(Eface*);
+
+void	runtime_memorydump(void);
+
+void	runtime_time_scan(void (*)(Obj));
+void	runtime_trampoline_scan(void (*)(Obj));

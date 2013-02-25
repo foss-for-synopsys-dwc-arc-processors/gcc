@@ -1,6 +1,5 @@
 /* Language-independent diagnostic subroutines for the GNU Compiler Collection
-   Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
-   2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 1999-2013 Free Software Foundation, Inc.
    Contributed by Gabriel Dos Reis <gdr@codesourcery.com>
 
 This file is part of GCC.
@@ -833,7 +832,10 @@ diagnostic_append_note (diagnostic_context *context,
   va_start (ap, gmsgid);
   diagnostic_set_info (&diagnostic, gmsgid, &ap, location, DK_NOTE);
   if (context->inhibit_notes_p)
-    return;
+    {
+      va_end (ap);
+      return;
+    }
   pp_set_prefix (context->printer,
                  diagnostic_build_prefix (context, &diagnostic));
   pp_newline (context->printer);

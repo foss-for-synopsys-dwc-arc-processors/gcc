@@ -1,7 +1,5 @@
 /* Calculate branch probabilities, and basic block execution counts.
-   Copyright (C) 1990, 1991, 1992, 1993, 1994, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1990-2013 Free Software Foundation, Inc.
    Contributed by James E. Wilson, UC Berkeley/Cygnus Support;
    based on some ideas from Dain Samples of UC Berkeley.
    Further mangling by Bob Manson, Cygnus Support.
@@ -156,9 +154,9 @@ instrument_values (histogram_values values)
 
   /* Emit code to generate the histograms before the insns.  */
 
-  for (i = 0; i < VEC_length (histogram_value, values); i++)
+  for (i = 0; i < values.length (); i++)
     {
-      histogram_value hist = VEC_index (histogram_value, values, i);
+      histogram_value hist = values[i];
       unsigned t = COUNTER_FOR_HIST_TYPE (hist->type);
 
       if (!coverage_counter_alloc (t, hist->n_counters))
@@ -207,7 +205,7 @@ instrument_values (histogram_values values)
    the number of counters required to cover that working set percentage and
    the minimum counter value in that working set.  */
 
-static void
+void
 compute_working_sets (void)
 {
   gcov_type working_set_cum_values[NUM_GCOV_WORKING_SETS];
@@ -288,11 +286,11 @@ compute_working_sets (void)
           else
             tmp_cum = cum + histo_bucket->cum_value;
 
-          /* Next walk through successive working set entries and fill in
-            the statistics for any whose size we have reached by accumulating
-            this histogram counter.  */
-          while (tmp_cum >= working_set_cum_values[ws_ix]
-                 && ws_ix < NUM_GCOV_WORKING_SETS)
+	  /* Next walk through successive working set entries and fill in
+	     the statistics for any whose size we have reached by accumulating
+	     this histogram counter.  */
+	  while (ws_ix < NUM_GCOV_WORKING_SETS
+		 && tmp_cum >= working_set_cum_values[ws_ix])
             {
               gcov_working_sets[ws_ix].num_counters = count;
               gcov_working_sets[ws_ix].min_counter
@@ -385,7 +383,7 @@ get_exec_counts (unsigned cfg_checksum, unsigned lineno_checksum)
 
 
 static bool
-is_edge_inconsistent (VEC(edge,gc) *edges)
+is_edge_inconsistent (vec<edge, va_gc> *edges)
 {
   edge e;
   edge_iterator ei;
@@ -950,9 +948,9 @@ compute_value_histograms (histogram_values values, unsigned cfg_checksum,
   for (t = 0; t < GCOV_N_VALUE_COUNTERS; t++)
     n_histogram_counters[t] = 0;
 
-  for (i = 0; i < VEC_length (histogram_value, values); i++)
+  for (i = 0; i < values.length (); i++)
     {
-      histogram_value hist = VEC_index (histogram_value, values, i);
+      histogram_value hist = values[i];
       n_histogram_counters[(int) hist->type] += hist->n_counters;
     }
 
@@ -976,9 +974,9 @@ compute_value_histograms (histogram_values values, unsigned cfg_checksum,
   if (!any)
     return;
 
-  for (i = 0; i < VEC_length (histogram_value, values); i++)
+  for (i = 0; i < values.length (); i++)
     {
-      histogram_value hist = VEC_index (histogram_value, values, i);
+      histogram_value hist = values[i];
       gimple stmt = hist->hvalue.stmt;
 
       t = (int) hist->type;
@@ -1069,7 +1067,7 @@ branch_prob (void)
   unsigned num_edges, ignored_edges;
   unsigned num_instrumented;
   struct edge_list *el;
-  histogram_values values = NULL;
+  histogram_values values = histogram_values();
   unsigned cfg_checksum, lineno_checksum;
 
   total_num_times_called++;
@@ -1396,7 +1394,7 @@ branch_prob (void)
 
   free_aux_for_edges ();
 
-  VEC_free (histogram_value, heap, values);
+  values.release ();
   free_edge_list (el);
   coverage_end_function (lineno_checksum, cfg_checksum);
 }

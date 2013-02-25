@@ -1,8 +1,5 @@
 /* Command line option handling.
-   Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
-   2012
-
-   Free Software Foundation, Inc.
+   Copyright (C) 2002-2013 Free Software Foundation, Inc.
    Contributed by Neil Booth.
 
 This file is part of GCC.
@@ -190,8 +187,6 @@ base_of_path (const char *path, const char **base_out)
 static const char undocumented_msg[] = N_("This switch lacks documentation");
 
 typedef char *char_p; /* For DEF_VEC_P.  */
-DEF_VEC_P(char_p);
-DEF_VEC_ALLOC_P(char_p,heap);
 
 static void handle_param (struct gcc_options *opts,
 			  struct gcc_options *opts_set, location_t loc,
@@ -239,7 +234,9 @@ add_comma_separated_to_vector (void **pvec, const char *arg)
   char *r;
   char *w;
   char *token_start;
-  VEC(char_p,heap) *vec = (VEC(char_p,heap) *) *pvec;
+  vec<char_p> *v = (vec<char_p> *) *pvec;
+  
+  vec_check_alloc (v, 1);
 
   /* We never free this string.  */
   tmp = xstrdup (arg);
@@ -254,7 +251,7 @@ add_comma_separated_to_vector (void **pvec, const char *arg)
 	{
 	  *w++ = '\0';
 	  ++r;
-	  VEC_safe_push (char_p, heap, vec, token_start);
+	  v->safe_push (token_start);
 	  token_start = w;
 	}
       if (*r == '\\' && r[1] == ',')
@@ -266,9 +263,9 @@ add_comma_separated_to_vector (void **pvec, const char *arg)
 	*w++ = *r++;
     }
   if (*token_start != '\0')
-    VEC_safe_push (char_p, heap, vec, token_start);
+    v->safe_push (token_start);
 
-  *pvec = vec;
+  *pvec = v;
 }
 
 /* Initialize OPTS and OPTS_SET before using them in parsing options.  */
@@ -542,9 +539,8 @@ default_options_optimization (struct gcc_options *opts,
 	    {
 	      const int optimize_val = integral_argument (opt->arg);
 	      if (optimize_val == -1)
-		error_at (loc,
-			  "argument to %qs should be a non-negative integer",
-			  "-O");
+		error_at (loc, "argument to %<-O%> should be a non-negative "
+			       "integer, %<g%>, %<s%> or %<fast%>");
 	      else
 		{
 		  opts->x_optimize = optimize_val;
@@ -1753,8 +1749,20 @@ common_handle_option (struct gcc_options *opts,
       dc->max_errors = value;
       break;
 
+    case OPT_fuse_ld_bfd:
+    case OPT_fuse_ld_gold:
     case OPT_fuse_linker_plugin:
       /* No-op. Used by the driver and passed to us because it starts with f.*/
+      break;
+
+    case OPT_fwrapv:
+      if (value)
+	opts->x_flag_trapv = 0;
+      break;
+
+    case OPT_ftrapv:
+      if (value)
+	opts->x_flag_wrapv = 0;
       break;
 
     default:
@@ -1981,9 +1989,6 @@ decode_d_option (const char *arg, struct gcc_options *opts,
       case 'P':
 	opts->x_flag_dump_rtl_in_asm = 1;
 	opts->x_flag_print_asm_name = 1;
-	break;
-      case 'v':
-	opts->x_graph_dump_format = vcg;
 	break;
       case 'x':
 	opts->x_rtl_dump_and_exit = 1;

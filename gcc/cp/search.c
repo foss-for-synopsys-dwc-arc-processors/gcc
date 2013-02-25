@@ -1,9 +1,6 @@
 /* Breadth-first and depth-first routines for
    searching multiple-inheritance lattice for GNU C++.
-   Copyright (C) 1987, 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011,
-   2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
    Contributed by Michael Tiemann (tiemann@cygnus.com)
 
 This file is part of GCC.
@@ -639,14 +636,14 @@ dfs_access_in_type (tree binfo, void *data)
 	{
 	  int i;
 	  tree base_binfo;
-	  VEC(tree,gc) *accesses;
+	  vec<tree, va_gc> *accesses;
 
 	  /* Otherwise, scan our baseclasses, and pick the most favorable
 	     access.  */
 	  accesses = BINFO_BASE_ACCESSES (binfo);
 	  for (i = 0; BINFO_BASE_ITERATE (binfo, i, base_binfo); i++)
 	    {
-	      tree base_access = VEC_index (tree, accesses, i);
+	      tree base_access = (*accesses)[i];
 	      access_kind base_access_now = BINFO_ACCESS (base_binfo);
 
 	      if (base_access_now == ak_none || base_access_now == ak_private)
@@ -830,6 +827,19 @@ dfs_accessible_post (tree binfo, void * /*data*/)
     }
 
   return NULL_TREE;
+}
+
+/* Like accessible_p below, but within a template returns true iff DECL is
+   accessible in TYPE to all possible instantiations of the template.  */
+
+int
+accessible_in_template_p (tree type, tree decl)
+{
+  int save_ptd = processing_template_decl;
+  processing_template_decl = 0;
+  int val = accessible_p (type, decl, false);
+  processing_template_decl = save_ptd;
+  return val;
 }
 
 /* DECL is a declaration from a base class of TYPE, which was the
@@ -1316,10 +1326,10 @@ lookup_conversion_operator (tree class_type, tree type)
     {
       int i;
       tree fn;
-      VEC(tree,gc) *methods = CLASSTYPE_METHOD_VEC (class_type);
+      vec<tree, va_gc> *methods = CLASSTYPE_METHOD_VEC (class_type);
 
       for (i = CLASSTYPE_FIRST_CONVERSION_SLOT;
-	   VEC_iterate (tree, methods, i, fn); ++i)
+	   vec_safe_iterate (methods, i, &fn); ++i)
 	{
 	  /* All the conversion operators come near the beginning of
 	     the class.  Therefore, if FN is not a conversion
@@ -1348,7 +1358,7 @@ lookup_conversion_operator (tree class_type, tree type)
 static int
 lookup_fnfields_idx_nolazy (tree type, tree name)
 {
-  VEC(tree,gc) *method_vec;
+  vec<tree, va_gc> *method_vec;
   tree fn;
   tree tmp;
   size_t i;
@@ -1380,7 +1390,7 @@ lookup_fnfields_idx_nolazy (tree type, tree name)
 
   /* Skip the conversion operators.  */
   for (i = CLASSTYPE_FIRST_CONVERSION_SLOT;
-       VEC_iterate (tree, method_vec, i, fn);
+       vec_safe_iterate (method_vec, i, &fn);
        ++i)
     if (!DECL_CONV_FN_P (OVL_CURRENT (fn)))
       break;
@@ -1392,7 +1402,7 @@ lookup_fnfields_idx_nolazy (tree type, tree name)
       int hi;
 
       lo = i;
-      hi = VEC_length (tree, method_vec);
+      hi = method_vec->length ();
       while (lo < hi)
 	{
 	  i = (lo + hi) / 2;
@@ -1400,7 +1410,7 @@ lookup_fnfields_idx_nolazy (tree type, tree name)
 	  if (GATHER_STATISTICS)
 	    n_outer_fields_searched++;
 
-	  tmp = VEC_index (tree, method_vec, i);
+	  tmp = (*method_vec)[i];
 	  tmp = DECL_NAME (OVL_CURRENT (tmp));
 	  if (tmp > name)
 	    hi = i;
@@ -1411,7 +1421,7 @@ lookup_fnfields_idx_nolazy (tree type, tree name)
 	}
     }
   else
-    for (; VEC_iterate (tree, method_vec, i, fn); ++i)
+    for (; vec_safe_iterate (method_vec, i, &fn); ++i)
       {
 	if (GATHER_STATISTICS)
 	  n_outer_fields_searched++;
@@ -1471,7 +1481,7 @@ lookup_fnfields_slot (tree type, tree name)
   int ix = lookup_fnfields_1 (complete_type (type), name);
   if (ix < 0)
     return NULL_TREE;
-  return VEC_index (tree, CLASSTYPE_METHOD_VEC (type), ix);
+  return (*CLASSTYPE_METHOD_VEC (type))[ix];
 }
 
 /* As above, but avoid lazily declaring functions.  */
@@ -1482,7 +1492,7 @@ lookup_fnfields_slot_nolazy (tree type, tree name)
   int ix = lookup_fnfields_idx_nolazy (complete_type (type), name);
   if (ix < 0)
     return NULL_TREE;
-  return VEC_index (tree, CLASSTYPE_METHOD_VEC (type), ix);
+  return (*CLASSTYPE_METHOD_VEC (type))[ix];
 }
 
 /* Like lookup_fnfields_1, except that the name is extracted from
@@ -1701,12 +1711,12 @@ dfs_walk_once (tree binfo, tree (*pre_fn) (tree, void *),
 	  /* We are at the top of the hierarchy, and can use the
 	     CLASSTYPE_VBASECLASSES list for unmarking the virtual
 	     bases.  */
-	  VEC(tree,gc) *vbases;
+	  vec<tree, va_gc> *vbases;
 	  unsigned ix;
 	  tree base_binfo;
 
 	  for (vbases = CLASSTYPE_VBASECLASSES (BINFO_TYPE (binfo)), ix = 0;
-	       VEC_iterate (tree, vbases, ix, base_binfo); ix++)
+	       vec_safe_iterate (vbases, ix, &base_binfo); ix++)
 	    BINFO_MARKED (base_binfo) = 0;
 	}
       else
@@ -1809,12 +1819,12 @@ dfs_walk_once_accessible (tree binfo, bool friends_p,
 	  /* We are at the top of the hierarchy, and can use the
 	     CLASSTYPE_VBASECLASSES list for unmarking the virtual
 	     bases.  */
-	  VEC(tree,gc) *vbases;
+	  vec<tree, va_gc> *vbases;
 	  unsigned ix;
 	  tree base_binfo;
 
 	  for (vbases = CLASSTYPE_VBASECLASSES (BINFO_TYPE (binfo)), ix = 0;
-	       VEC_iterate (tree, vbases, ix, base_binfo); ix++)
+	       vec_safe_iterate (vbases, ix, &base_binfo); ix++)
 	    BINFO_MARKED (base_binfo) = 0;
 	}
       else
@@ -2019,7 +2029,7 @@ look_for_overrides_here (tree type, tree fndecl)
     ix = lookup_fnfields_1 (type, DECL_NAME (fndecl));
   if (ix >= 0)
     {
-      tree fns = VEC_index (tree, CLASSTYPE_METHOD_VEC (type), ix);
+      tree fns = (*CLASSTYPE_METHOD_VEC (type))[ix];
 
       for (; fns; fns = OVL_NEXT (fns))
 	{
@@ -2090,8 +2100,7 @@ dfs_get_pure_virtuals (tree binfo, void *data)
 	   virtuals;
 	   virtuals = TREE_CHAIN (virtuals))
 	if (DECL_PURE_VIRTUAL_P (BV_FN (virtuals)))
-	  VEC_safe_push (tree, gc, CLASSTYPE_PURE_VIRTUALS (type),
-			 BV_FN (virtuals));
+	  vec_safe_push (CLASSTYPE_PURE_VIRTUALS (type), BV_FN (virtuals));
     }
 
   return NULL_TREE;
@@ -2364,7 +2373,7 @@ lookup_conversions_r (tree binfo,
   tree child_tpl_convs = NULL_TREE;
   unsigned i;
   tree base_binfo;
-  VEC(tree,gc) *method_vec = CLASSTYPE_METHOD_VEC (BINFO_TYPE (binfo));
+  vec<tree, va_gc> *method_vec = CLASSTYPE_METHOD_VEC (BINFO_TYPE (binfo));
   tree conv;
 
   /* If we have no conversion operators, then don't look.  */
@@ -2380,7 +2389,7 @@ lookup_conversions_r (tree binfo,
 
   /* First, locate the unhidden ones at this level.  */
   for (i = CLASSTYPE_FIRST_CONVERSION_SLOT;
-       VEC_iterate (tree, method_vec, i, conv);
+       vec_safe_iterate (method_vec, i, &conv);
        ++i)
     {
       tree cur = OVL_CURRENT (conv);
@@ -2622,10 +2631,10 @@ binfo_for_vbase (tree base, tree t)
 {
   unsigned ix;
   tree binfo;
-  VEC(tree,gc) *vbases;
+  vec<tree, va_gc> *vbases;
 
   for (vbases = CLASSTYPE_VBASECLASSES (t), ix = 0;
-       VEC_iterate (tree, vbases, ix, binfo); ix++)
+       vec_safe_iterate (vbases, ix, &binfo); ix++)
     if (SAME_BINFO_TYPE_P (BINFO_TYPE (binfo), base))
       return binfo;
   return NULL;

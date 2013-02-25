@@ -1,5 +1,5 @@
 ;; Atom Scheduling
-;; Copyright (C) 2009, 2010 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2013 Free Software Foundation, Inc.
 ;;
 ;; This file is part of GCC.
 ;;
@@ -433,25 +433,25 @@
 
 (define_insn_reservation  "atom_sselog" 1
   (and (eq_attr "cpu" "atom")
-       (and (eq_attr "type" "sselog")
+       (and (eq_attr "type" "sselog,sseshuf")
             (eq_attr "memory" "none")))
   "atom-simple-either")
 
 (define_insn_reservation  "atom_sselog_mem" 1
   (and (eq_attr "cpu" "atom")
-       (and (eq_attr "type" "sselog")
+       (and (eq_attr "type" "sselog,sseshuf")
             (eq_attr "memory" "!none")))
   "atom-simple-either")
 
 (define_insn_reservation  "atom_sselog1" 1
   (and (eq_attr "cpu" "atom")
-       (and (eq_attr "type" "sselog1")
+       (and (eq_attr "type" "sselog1,sseshuf1")
             (eq_attr "memory" "none")))
   "atom-simple-0")
 
 (define_insn_reservation  "atom_sselog1_mem" 1
   (and (eq_attr "cpu" "atom")
-       (and (eq_attr "type" "sselog1")
+       (and (eq_attr "type" "sselog1,sseshuf1")
             (eq_attr "memory" "!none")))
   "atom-simple-0")
 

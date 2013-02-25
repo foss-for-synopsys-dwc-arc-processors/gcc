@@ -1,7 +1,5 @@
 /* Target hook definitions.
-   Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2001-2013 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -1495,6 +1493,13 @@ DEFHOOK
  bool, (enum machine_mode mode, const_rtx x),
  hook_bool_mode_const_rtx_false)
 
+/* True if the given decl can be put into an object_block.  */
+DEFHOOK
+(use_blocks_for_decl_p,
+ "",
+ bool, (const_tree decl),
+ hook_bool_const_tree_true)
+
 /* The minimum and maximum byte offsets for anchored addresses.  */
 DEFHOOKPOD
 (min_anchor_offset,
@@ -1809,7 +1814,7 @@ DEFHOOK
  "",
  rtx, (rtx hard_reg), NULL)
 
-/* Return nonzero if evaluating UNSPEC[_VOLATILE] X might cause a trap.
+/* Return nonzero if evaluating UNSPEC X might cause a trap.
    FLAGS has the same meaning as in rtlanal.c: may_trap_p_1.  */
 DEFHOOK
 (unspec_may_trap_p,
@@ -2055,6 +2060,17 @@ DEFHOOK
 (memmodel_check,
  "",
  unsigned HOST_WIDE_INT, (unsigned HOST_WIDE_INT val), NULL)
+
+/* Defines an offset bitwise ored into shifted address to get corresponding
+   Address Sanitizer shadow address, or -1 if Address Sanitizer is not
+   supported by the target.  */
+DEFHOOK
+(asan_shadow_offset,
+ "Return the offset bitwise ored into shifted address to get corresponding\n\
+Address Sanitizer shadow memory address.  NULL if Address Sanitizer is not\n\
+supported by the target.",
+ unsigned HOST_WIDE_INT, (void),
+ NULL)
 
 /* Functions relating to calls - argument passing, returns, etc.  */
 /* Members of struct call have no special macro prefix.  */
@@ -2858,6 +2874,14 @@ DEFHOOK
  "",
  enum unwind_info_type, (void),
  default_debug_unwind_info)
+
+/* The code parameter should be of type enum rtx_code but this is not
+   defined at this time.  */
+DEFHOOK
+(canonicalize_comparison,
+ "",
+ void, (int *code, rtx *op0, rtx *op1, bool op0_preserve_value),
+ default_canonicalize_comparison)
 
 DEFHOOK
 (adjust_insn_length,

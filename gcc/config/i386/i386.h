@@ -1,7 +1,5 @@
 /* Definitions of target machine for GCC for IA-32.
-   Copyright (C) 1988, 1992, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1988-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -101,6 +99,9 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
    known at compile time or estimated via feedback, the SIZE array
    is walked in order until MAX is greater then the estimate (or -1
    means infinity).  Corresponding ALG is used then.
+   When NOALIGN is true the code guaranting the alignment of the memory
+   block is skipped.
+
    For example initializer:
     {{256, loop}, {-1, rep_prefix_4_byte}}
    will use loop for blocks smaller or equal to 256 bytes, rep prefix will
@@ -111,6 +112,7 @@ struct stringop_algs
   const struct stringop_strategy {
     const int max;
     const enum stringop_alg alg;
+    int noalign;
   } size [MAX_STRINGOP_ALGS];
 };
 
@@ -242,18 +244,16 @@ extern const struct processor_costs ix86_size_cost;
 #define TARGET_K8 (ix86_tune == PROCESSOR_K8)
 #define TARGET_ATHLON_K8 (TARGET_K8 || TARGET_ATHLON)
 #define TARGET_NOCONA (ix86_tune == PROCESSOR_NOCONA)
-#define TARGET_CORE2_32 (ix86_tune == PROCESSOR_CORE2_32)
-#define TARGET_CORE2_64 (ix86_tune == PROCESSOR_CORE2_64)
-#define TARGET_CORE2 (TARGET_CORE2_32 || TARGET_CORE2_64)
-#define TARGET_COREI7_32 (ix86_tune == PROCESSOR_COREI7_32)
-#define TARGET_COREI7_64 (ix86_tune == PROCESSOR_COREI7_64)
-#define TARGET_COREI7 (TARGET_COREI7_32 || TARGET_COREI7_64)
+#define TARGET_CORE2 (ix86_tune == PROCESSOR_CORE2)
+#define TARGET_COREI7 (ix86_tune == PROCESSOR_COREI7)
+#define TARGET_HASWELL (ix86_tune == PROCESSOR_HASWELL)
 #define TARGET_GENERIC32 (ix86_tune == PROCESSOR_GENERIC32)
 #define TARGET_GENERIC64 (ix86_tune == PROCESSOR_GENERIC64)
 #define TARGET_GENERIC (TARGET_GENERIC32 || TARGET_GENERIC64)
 #define TARGET_AMDFAM10 (ix86_tune == PROCESSOR_AMDFAM10)
 #define TARGET_BDVER1 (ix86_tune == PROCESSOR_BDVER1)
 #define TARGET_BDVER2 (ix86_tune == PROCESSOR_BDVER2)
+#define TARGET_BDVER3 (ix86_tune == PROCESSOR_BDVER3)
 #define TARGET_BTVER1 (ix86_tune == PROCESSOR_BTVER1)
 #define TARGET_BTVER2 (ix86_tune == PROCESSOR_BTVER2)
 #define TARGET_ATOM (ix86_tune == PROCESSOR_ATOM)
@@ -313,7 +313,6 @@ enum ix86_tune_indices {
   X86_TUNE_PAD_RETURNS,
   X86_TUNE_PAD_SHORT_FUNCTION,
   X86_TUNE_EXT_80387_CONSTANTS,
-  X86_TUNE_SHORTEN_X87_SSE,
   X86_TUNE_AVOID_VECTOR_DECODE,
   X86_TUNE_PROMOTE_HIMODE_IMUL,
   X86_TUNE_SLOW_IMUL_IMM32_MEM,
@@ -331,6 +330,7 @@ enum ix86_tune_indices {
   X86_TUNE_REASSOC_INT_TO_PARALLEL,
   X86_TUNE_REASSOC_FP_TO_PARALLEL,
   X86_TUNE_GENERAL_REGS_SSE_SPILL,
+  X86_TUNE_AVOID_MEM_OPND_FOR_CMOVE,
 
   X86_TUNE_LAST
 };
@@ -407,7 +407,6 @@ extern unsigned char ix86_tune_features[X86_TUNE_LAST];
 	ix86_tune_features[X86_TUNE_PAD_SHORT_FUNCTION]
 #define TARGET_EXT_80387_CONSTANTS \
 	ix86_tune_features[X86_TUNE_EXT_80387_CONSTANTS]
-#define TARGET_SHORTEN_X87_SSE	ix86_tune_features[X86_TUNE_SHORTEN_X87_SSE]
 #define TARGET_AVOID_VECTOR_DECODE \
 	ix86_tune_features[X86_TUNE_AVOID_VECTOR_DECODE]
 #define TARGET_TUNE_PROMOTE_HIMODE_IMUL \
@@ -437,6 +436,8 @@ extern unsigned char ix86_tune_features[X86_TUNE_LAST];
 	ix86_tune_features[X86_TUNE_REASSOC_FP_TO_PARALLEL]
 #define TARGET_GENERAL_REGS_SSE_SPILL \
 	ix86_tune_features[X86_TUNE_GENERAL_REGS_SSE_SPILL]
+#define TARGET_AVOID_MEM_OPND_FOR_CMOVE \
+	ix86_tune_features[X86_TUNE_AVOID_MEM_OPND_FOR_CMOVE]
 
 /* Feature tests against the various architecture variations.  */
 enum ix86_arch_indices {
@@ -516,6 +517,9 @@ extern tree x86_mfence;
 #define MACHO_DYNAMIC_NO_PIC_P 0
 #define MACHOPIC_INDIRECT 0
 #define MACHOPIC_PURE 0
+
+/* For the RDOS  */
+#define TARGET_RDOS 0
 
 /* For the Windows 64-bit ABI.  */
 #define TARGET_64BIT_MS_ABI (TARGET_64BIT && ix86_cfun_abi () == MS_ABI)
@@ -604,6 +608,7 @@ enum target_cpu_default
   TARGET_CPU_DEFAULT_nocona,
   TARGET_CPU_DEFAULT_core2,
   TARGET_CPU_DEFAULT_corei7,
+  TARGET_CPU_DEFAULT_haswell,
   TARGET_CPU_DEFAULT_atom,
 
   TARGET_CPU_DEFAULT_geode,
@@ -616,6 +621,7 @@ enum target_cpu_default
   TARGET_CPU_DEFAULT_amdfam10,
   TARGET_CPU_DEFAULT_bdver1,
   TARGET_CPU_DEFAULT_bdver2,
+  TARGET_CPU_DEFAULT_bdver3,
   TARGET_CPU_DEFAULT_btver1,
   TARGET_CPU_DEFAULT_btver2,
 
@@ -1614,7 +1620,8 @@ typedef struct ix86_args {
    They give nonzero only if REGNO is a hard reg of the suitable class
    or a pseudo reg currently allocated to a suitable hard reg.
    Since they use reg_renumber, they are safe only once reg_renumber
-   has been allocated, which happens in local-alloc.c.  */
+   has been allocated, which happens in reginfo.c during register
+   allocation.  */
 
 #define REGNO_OK_FOR_INDEX_P(REGNO) 					\
   ((REGNO) < STACK_POINTER_REGNUM 					\
@@ -2077,6 +2084,10 @@ do {									\
    asm (SECTION_OP "\n\t"					\
 	"call " CRT_MKSTR(__USER_LABEL_PREFIX__) #FUNC "\n"	\
 	TEXT_SECTION_ASM_OP);
+
+/* Default threshold for putting data in large sections
+   with x86-64 medium memory model */
+#define DEFAULT_LARGE_SECTION_THRESHOLD 65536
 
 /* Which processor to tune code generation for.  */
 
@@ -2092,15 +2103,15 @@ enum processor_type
   PROCESSOR_PENTIUM4,
   PROCESSOR_K8,
   PROCESSOR_NOCONA,
-  PROCESSOR_CORE2_32,
-  PROCESSOR_CORE2_64,
-  PROCESSOR_COREI7_32,
-  PROCESSOR_COREI7_64,
+  PROCESSOR_CORE2,
+  PROCESSOR_COREI7,
+  PROCESSOR_HASWELL,
   PROCESSOR_GENERIC32,
   PROCESSOR_GENERIC64,
   PROCESSOR_AMDFAM10,
   PROCESSOR_BDVER1,
   PROCESSOR_BDVER2,
+  PROCESSOR_BDVER3,
   PROCESSOR_BTVER1,
   PROCESSOR_BTVER2,
   PROCESSOR_ATOM,
@@ -2223,7 +2234,7 @@ enum avx_u128_state
    are to be inserted.  */
 
 #define EMIT_MODE_SET(ENTITY, MODE, HARD_REGS_LIVE) \
-  ix86_emit_mode_set ((ENTITY), (MODE))
+  ix86_emit_mode_set ((ENTITY), (MODE), (HARD_REGS_LIVE))
 
 /* Avoid renaming of stack registers, as doing so in combination with
    scheduling just increases amount of live registers at time and in

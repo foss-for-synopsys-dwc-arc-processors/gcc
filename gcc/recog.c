@@ -1,7 +1,5 @@
 /* Subroutines used by or related to instruction recognition.
-   Copyright (C) 1987, 1988, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 1987-2013 Free Software Foundation, Inc.
 
 This file is part of GCC.
 
@@ -40,6 +38,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "target.h"
 #include "tree-pass.h"
 #include "df.h"
+#include "insn-codes.h"
 
 #ifndef STACK_PUSH_CODE
 #ifdef STACK_GROWS_DOWNWARD
@@ -542,6 +541,16 @@ cancel_changes (int num)
   num_changes = num;
 }
 
+/* Reduce conditional compilation elsewhere.  */
+#ifndef HAVE_extv
+#define HAVE_extv	0
+#define CODE_FOR_extv	CODE_FOR_nothing
+#endif
+#ifndef HAVE_extzv
+#define HAVE_extzv	0
+#define CODE_FOR_extzv	CODE_FOR_nothing
+#endif
+
 /* A subroutine of validate_replace_rtx_1 that tries to simplify the resulting
    rtx.  */
 
@@ -578,8 +587,7 @@ simplify_while_replacing (rtx *loc, rtx to, rtx object,
 			 (PLUS, GET_MODE (x), XEXP (x, 0), XEXP (x, 1)), 1);
       break;
     case MINUS:
-      if (CONST_INT_P (XEXP (x, 1))
-	  || CONST_DOUBLE_AS_INT_P (XEXP (x, 1)))
+      if (CONST_SCALAR_INT_P (XEXP (x, 1)))
 	validate_change (object, loc,
 			 simplify_gen_binary
 			 (PLUS, GET_MODE (x), XEXP (x, 0),
@@ -629,19 +637,17 @@ simplify_while_replacing (rtx *loc, rtx to, rtx object,
 	  enum machine_mode is_mode = GET_MODE (XEXP (x, 0));
 	  int pos = INTVAL (XEXP (x, 2));
 
-	  if (GET_CODE (x) == ZERO_EXTRACT)
+	  if (GET_CODE (x) == ZERO_EXTRACT && HAVE_extzv)
 	    {
-	      enum machine_mode new_mode
-		= mode_for_extraction (EP_extzv, 1);
-	      if (new_mode != MAX_MACHINE_MODE)
-		wanted_mode = new_mode;
+	      wanted_mode = insn_data[CODE_FOR_extzv].operand[1].mode;
+	      if (wanted_mode == VOIDmode)
+		wanted_mode = word_mode;
 	    }
-	  else if (GET_CODE (x) == SIGN_EXTRACT)
+	  else if (GET_CODE (x) == SIGN_EXTRACT && HAVE_extv)
 	    {
-	      enum machine_mode new_mode
-		= mode_for_extraction (EP_extv, 1);
-	      if (new_mode != MAX_MACHINE_MODE)
-		wanted_mode = new_mode;
+	      wanted_mode = insn_data[CODE_FOR_extv].operand[1].mode;
+	      if (wanted_mode == VOIDmode)
+		wanted_mode = word_mode;
 	    }
 
 	  /* If we have a narrower mode, we can do something.  */
@@ -1730,7 +1736,7 @@ asm_operand_ok (rtx op, const char *constraint, const char **constraints)
 	  break;
 
 	case 's':
-	  if (CONST_INT_P (op) || CONST_DOUBLE_AS_INT_P (op))
+	  if (CONST_SCALAR_INT_P (op))
 	    break;
 	  /* Fall through.  */
 
@@ -1740,7 +1746,7 @@ asm_operand_ok (rtx op, const char *constraint, const char **constraints)
 	  break;
 
 	case 'n':
-	  if (CONST_INT_P (op) || CONST_DOUBLE_AS_INT_P (op))
+	  if (CONST_SCALAR_INT_P (op))
 	    result = 1;
 	  break;
 
@@ -1943,6 +1949,9 @@ offsettable_address_addr_space_p (int strictp, enum machine_mode mode, rtx y,
     (strictp ? strict_memory_address_addr_space_p
 	     : memory_address_addr_space_p);
   unsigned int mode_sz = GET_MODE_SIZE (mode);
+#ifdef POINTERS_EXTEND_UNSIGNED
+  enum machine_mode pointer_mode = targetm.addr_space.pointer_mode (as);
+#endif
 
   if (CONSTANT_ADDRESS_P (y))
     return 1;
@@ -1992,6 +2001,15 @@ offsettable_address_addr_space_p (int strictp, enum machine_mode mode, rtx y,
     z = gen_rtx_LO_SUM (GET_MODE (y), XEXP (y, 0),
 			plus_constant (GET_MODE (y), XEXP (y, 1),
 				       mode_sz - 1));
+#ifdef POINTERS_EXTEND_UNSIGNED
+  /* Likewise for a ZERO_EXTEND from pointer_mode.  */
+  else if (POINTERS_EXTEND_UNSIGNED > 0
+	   && GET_CODE (y) == ZERO_EXTEND
+	   && GET_MODE (XEXP (y, 0)) == pointer_mode)
+    z = gen_rtx_ZERO_EXTEND (GET_MODE (y),
+			     plus_constant (pointer_mode, XEXP (y, 0),
+					    mode_sz - 1));
+#endif
   else
     z = plus_constant (GET_MODE (y), y, mode_sz - 1);
 
@@ -2596,7 +2614,7 @@ constrain_operands (int strict)
 		break;
 
 	      case 's':
-		if (CONST_INT_P (op) || CONST_DOUBLE_AS_INT_P (op))
+		if (CONST_SCALAR_INT_P (op))
 		  break;
 	      case 'i':
 		if (CONSTANT_P (op))
@@ -2604,7 +2622,7 @@ constrain_operands (int strict)
 		break;
 
 	      case 'n':
-		if (CONST_INT_P (op) || CONST_DOUBLE_AS_INT_P (op))
+		if (CONST_SCALAR_INT_P (op))
 		  win = 1;
 		break;
 

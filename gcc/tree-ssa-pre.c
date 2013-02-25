@@ -1,6 +1,5 @@
 /* SSA-PRE for trees.
-   Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 2001-2013 Free Software Foundation, Inc.
    Contributed by Daniel Berlin <dan@dberlin.org> and Steven Bosscher
    <stevenb@suse.de>
 
@@ -233,11 +232,9 @@ pre_expr_d::hash (const value_type *e)
 static unsigned int next_expression_id;
 
 /* Mapping from expression to id number we can use in bitmap sets.  */
-DEF_VEC_P (pre_expr);
-DEF_VEC_ALLOC_P (pre_expr, heap);
-static VEC(pre_expr, heap) *expressions;
+static vec<pre_expr> expressions;
 static hash_table <pre_expr_d> expression_to_id;
-static VEC(unsigned, heap) *name_to_id;
+static vec<unsigned> name_to_id;
 
 /* Allocate an expression id for EXPR.  */
 
@@ -248,18 +245,18 @@ alloc_expression_id (pre_expr expr)
   /* Make sure we won't overflow. */
   gcc_assert (next_expression_id + 1 > next_expression_id);
   expr->id = next_expression_id++;
-  VEC_safe_push (pre_expr, heap, expressions, expr);
+  expressions.safe_push (expr);
   if (expr->kind == NAME)
     {
       unsigned version = SSA_NAME_VERSION (PRE_EXPR_NAME (expr));
-      /* VEC_safe_grow_cleared allocates no headroom.  Avoid frequent
-	 re-allocations by using VEC_reserve upfront.  There is no
-	 VEC_quick_grow_cleared unfortunately.  */
-      unsigned old_len = VEC_length (unsigned, name_to_id);
-      VEC_reserve (unsigned, heap, name_to_id, num_ssa_names - old_len);
-      VEC_safe_grow_cleared (unsigned, heap, name_to_id, num_ssa_names);
-      gcc_assert (VEC_index (unsigned, name_to_id, version) == 0);
-      VEC_replace (unsigned, name_to_id, version, expr->id);
+      /* vec::safe_grow_cleared allocates no headroom.  Avoid frequent
+	 re-allocations by using vec::reserve upfront.  There is no
+	 vec::quick_grow_cleared unfortunately.  */
+      unsigned old_len = name_to_id.length ();
+      name_to_id.reserve (num_ssa_names - old_len);
+      name_to_id.safe_grow_cleared (num_ssa_names);
+      gcc_assert (name_to_id[version] == 0);
+      name_to_id[version] = expr->id;
     }
   else
     {
@@ -286,9 +283,9 @@ lookup_expression_id (const pre_expr expr)
   if (expr->kind == NAME)
     {
       unsigned version = SSA_NAME_VERSION (PRE_EXPR_NAME (expr));
-      if (VEC_length (unsigned, name_to_id) <= version)
+      if (name_to_id.length () <= version)
 	return 0;
-      return VEC_index (unsigned, name_to_id, version);
+      return name_to_id[version];
     }
   else
     {
@@ -316,7 +313,7 @@ get_or_alloc_expression_id (pre_expr expr)
 static inline pre_expr
 expression_for_id (unsigned int id)
 {
-  return VEC_index (pre_expr, expressions, id);
+  return expressions[id];
 }
 
 /* Free the expression id field in all of our expressions,
@@ -325,7 +322,7 @@ expression_for_id (unsigned int id)
 static void
 clear_expression_ids (void)
 {
-  VEC_free (pre_expr, heap, expressions);
+  expressions.release ();
 }
 
 static alloc_pool pre_expr_pool;
@@ -368,7 +365,7 @@ typedef struct bitmap_set
   EXECUTE_IF_SET_IN_BITMAP(&(set)->values, 0, (id), (bi))
 
 /* Mapping from value id to expressions with that value_id.  */
-static VEC(bitmap, heap) *value_expressions;
+static vec<bitmap> value_expressions;
 
 /* Sets that we need to keep track of.  */
 typedef struct bb_bitmap_sets
@@ -448,10 +445,6 @@ static struct
 
   /* The number of new PHI nodes added by PRE.  */
   int phis;
-
-  /* The number of values found constant.  */
-  int constified;
-
 } pre_stats;
 
 static bool do_partial_partial;
@@ -583,16 +576,16 @@ add_to_value (unsigned int v, pre_expr e)
 
   gcc_checking_assert (get_expr_value_id (e) == v);
 
-  if (v >= VEC_length (bitmap, value_expressions))
+  if (v >= value_expressions.length ())
     {
-      VEC_safe_grow_cleared (bitmap, heap, value_expressions, v + 1);
+      value_expressions.safe_grow_cleared (v + 1);
     }
 
-  set = VEC_index (bitmap, value_expressions, v);
+  set = value_expressions[v];
   if (!set)
     {
       set = BITMAP_ALLOC (&grand_bitmap_obstack);
-      VEC_replace (bitmap, value_expressions, v, set);
+      value_expressions[v] = set;
     }
 
   bitmap_set_bit (set, get_or_alloc_expression_id (e));
@@ -614,28 +607,28 @@ bitmap_set_new (void)
 static unsigned int
 get_expr_value_id (pre_expr expr)
 {
+  unsigned int id;
   switch (expr->kind)
     {
     case CONSTANT:
-      {
-	unsigned int id;
-	id = get_constant_value_id (PRE_EXPR_CONSTANT (expr));
-	if (id == 0)
-	  {
-	    id = get_or_alloc_constant_value_id (PRE_EXPR_CONSTANT (expr));
-	    add_to_value (id, expr);
-	  }
-	return id;
-      }
+      id = get_constant_value_id (PRE_EXPR_CONSTANT (expr));
+      break;
     case NAME:
-      return VN_INFO (PRE_EXPR_NAME (expr))->value_id;
+      id = VN_INFO (PRE_EXPR_NAME (expr))->value_id;
+      break;
     case NARY:
-      return PRE_EXPR_NARY (expr)->value_id;
+      id = PRE_EXPR_NARY (expr)->value_id;
+      break;
     case REFERENCE:
-      return PRE_EXPR_REFERENCE (expr)->value_id;
+      id = PRE_EXPR_REFERENCE (expr)->value_id;
+      break;
     default:
       gcc_unreachable ();
     }
+  /* ???  We cannot assert that expr has a value-id (it can be 0), because
+     we assign value-ids only to expressions that have a result
+     in set_hashtable_value_ids.  */
+  return id;
 }
 
 /* Return a SCCVN valnum (SSA name or constant) for the PRE value-id VAL.  */
@@ -645,7 +638,7 @@ sccvn_valnum_from_value_id (unsigned int val)
 {
   bitmap_iterator bi;
   unsigned int i;
-  bitmap exprset = VEC_index (bitmap, value_expressions, val);
+  bitmap exprset = value_expressions[val];
   EXECUTE_IF_SET_IN_BITMAP (exprset, 0, i, bi)
     {
       pre_expr vexpr = expression_for_id (i);
@@ -712,15 +705,15 @@ bitmap_set_free (bitmap_set_t set)
 
 /* Generate an topological-ordered array of bitmap set SET.  */
 
-static VEC(pre_expr, heap) *
+static vec<pre_expr> 
 sorted_array_from_bitmap_set (bitmap_set_t set)
 {
   unsigned int i, j;
   bitmap_iterator bi, bj;
-  VEC(pre_expr, heap) *result;
+  vec<pre_expr> result;
 
   /* Pre-allocate roughly enough space for the array.  */
-  result = VEC_alloc (pre_expr, heap, bitmap_count_bits (&set->values));
+  result.create (bitmap_count_bits (&set->values));
 
   FOR_EACH_VALUE_ID_IN_SET (set, i, bi)
     {
@@ -734,11 +727,11 @@ sorted_array_from_bitmap_set (bitmap_set_t set)
 
 	 If this is somehow a significant lose for some cases, we can
 	 choose which set to walk based on the set size.  */
-      bitmap exprset = VEC_index (bitmap, value_expressions, i);
+      bitmap exprset = value_expressions[i];
       EXECUTE_IF_SET_IN_BITMAP (exprset, 0, j, bj)
 	{
 	  if (bitmap_bit_p (&set->expressions, j))
-	    VEC_safe_push (pre_expr, heap, result, expression_for_id (j));
+	    result.safe_push (expression_for_id (j));
         }
     }
 
@@ -860,7 +853,7 @@ bitmap_set_replace_value (bitmap_set_t set, unsigned int lookfor,
      5-10x faster than walking the bitmap.  If this is somehow a
      significant lose for some cases, we can choose which set to walk
      based on the set size.  */
-  exprset = VEC_index (bitmap, value_expressions, lookfor);
+  exprset = value_expressions[lookfor];
   EXECUTE_IF_SET_IN_BITMAP (exprset, 0, i, bi)
     {
       if (bitmap_clear_bit (&set->expressions, i))
@@ -869,6 +862,8 @@ bitmap_set_replace_value (bitmap_set_t set, unsigned int lookfor,
 	  return;
 	}
     }
+
+  gcc_unreachable ();
 }
 
 /* Return true if two bitmap sets are equal.  */
@@ -947,7 +942,7 @@ print_pre_expr (FILE *outfile, const pre_expr expr)
 	vn_reference_t ref = PRE_EXPR_REFERENCE (expr);
 	fprintf (outfile, "{");
 	for (i = 0;
-	     VEC_iterate (vn_reference_op_s, ref->operands, i, vro);
+	     ref->operands.iterate (i, &vro);
 	     i++)
 	  {
 	    bool closebrace = false;
@@ -977,7 +972,7 @@ print_pre_expr (FILE *outfile, const pre_expr expr)
 	      }
 	    if (closebrace)
 		fprintf (outfile, ">");
-	    if (i != VEC_length (vn_reference_op_s, ref->operands) - 1)
+	    if (i != ref->operands.length () - 1)
 	      fprintf (outfile, ",");
 	  }
 	fprintf (outfile, "}");
@@ -1056,7 +1051,7 @@ debug_bitmap_sets_for (basic_block bb)
 static void
 print_value_expressions (FILE *outfile, unsigned int val)
 {
-  bitmap set = VEC_index (bitmap, value_expressions, val);
+  bitmap set = value_expressions[val];
   if (set)
     {
       bitmap_set x;
@@ -1111,7 +1106,7 @@ get_constant_for_value_id (unsigned int v)
     {
       unsigned int i;
       bitmap_iterator bi;
-      bitmap exprset = VEC_index (bitmap, value_expressions, v);
+      bitmap exprset = value_expressions[v];
 
       EXECUTE_IF_SET_IN_BITMAP (exprset, 0, i, bi)
 	{
@@ -1262,7 +1257,7 @@ fully_constant_expression (pre_expr e)
    in case the new vuse doesn't change the value id of the OPERANDS.  */
 
 static tree
-translate_vuse_through_block (VEC (vn_reference_op_s, heap) *operands,
+translate_vuse_through_block (vec<vn_reference_op_s> operands,
 			      alias_set_type set, tree type, tree vuse,
 			      basic_block phiblock,
 			      basic_block block, bool *same_valid)
@@ -1393,37 +1388,32 @@ get_representative_for (const pre_expr e)
 	   and pick out an SSA_NAME.  */
 	unsigned int i;
 	bitmap_iterator bi;
-	bitmap exprs = VEC_index (bitmap, value_expressions, value_id);
+	bitmap exprs = value_expressions[value_id];
 	EXECUTE_IF_SET_IN_BITMAP (exprs, 0, i, bi)
 	  {
 	    pre_expr rep = expression_for_id (i);
 	    if (rep->kind == NAME)
 	      return PRE_EXPR_NAME (rep);
+	    else if (rep->kind == CONSTANT)
+	      return PRE_EXPR_CONSTANT (rep);
 	  }
       }
       break;
     }
+
   /* If we reached here we couldn't find an SSA_NAME.  This can
      happen when we've discovered a value that has never appeared in
-     the program as set to an SSA_NAME, most likely as the result of
-     phi translation.  */
-  if (dump_file)
-    {
-      fprintf (dump_file,
-	       "Could not find SSA_NAME representative for expression:");
-      print_pre_expr (dump_file, e);
-      fprintf (dump_file, "\n");
-    }
-
-  /* Build and insert the assignment of the end result to the temporary
-     that we will return.  */
+     the program as set to an SSA_NAME, as the result of phi translation.
+     Create one here.
+     ???  We should be able to re-use this when we insert the statement
+     to compute it.  */
   name = make_temp_ssa_name (get_expr_type (e), gimple_build_nop (), "pretmp");
   VN_INFO_GET (name)->value_id = value_id;
-  VN_INFO (name)->valnum = sccvn_valnum_from_value_id (value_id);
-  if (VN_INFO (name)->valnum == NULL_TREE)
-    VN_INFO (name)->valnum = name;
+  VN_INFO (name)->valnum = name;
+  /* ???  For now mark this SSA name for release by SCCVN.  */
+  VN_INFO (name)->needs_insertion = true;
   add_to_value (value_id, get_or_alloc_expr_for_name (name));
-  if (dump_file)
+  if (dump_file && (dump_flags & TDF_DETAILS))
     {
       fprintf (dump_file, "Created SSA_NAME representative ");
       print_generic_expr (dump_file, name, 0);
@@ -1512,9 +1502,7 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 	    else
 	      {
 		new_val_id = get_next_value_id ();
-		VEC_safe_grow_cleared (bitmap, heap,
-				       value_expressions,
-				       get_max_value_id() + 1);
+		value_expressions.safe_grow_cleared (get_max_value_id() + 1);
 		nary = vn_nary_op_insert_pieces (newnary->length,
 						 newnary->opcode,
 						 newnary->type,
@@ -1535,17 +1523,17 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
     case REFERENCE:
       {
 	vn_reference_t ref = PRE_EXPR_REFERENCE (expr);
-	VEC (vn_reference_op_s, heap) *operands = ref->operands;
+	vec<vn_reference_op_s> operands = ref->operands;
 	tree vuse = ref->vuse;
 	tree newvuse = vuse;
-	VEC (vn_reference_op_s, heap) *newoperands = NULL;
+	vec<vn_reference_op_s> newoperands = vNULL;
 	bool changed = false, same_valid = true;
 	unsigned int i, j, n;
 	vn_reference_op_t operand;
 	vn_reference_t newref;
 
 	for (i = 0, j = 0;
-	     VEC_iterate (vn_reference_op_s, operands, i, operand); i++, j++)
+	     operands.iterate (i, &operand); i++, j++)
 	  {
 	    pre_expr opresult;
 	    pre_expr leader;
@@ -1593,12 +1581,11 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 	      }
 	    if (n != 3)
 	      {
-		if (newoperands)
-		  VEC_free (vn_reference_op_s, heap, newoperands);
+		newoperands.release ();
 		return NULL;
 	      }
-	    if (!newoperands)
-	      newoperands = VEC_copy (vn_reference_op_s, heap, operands);
+	    if (!newoperands.exists ())
+	      newoperands = operands.copy ();
 	    /* We may have changed from an SSA_NAME to a constant */
 	    if (newop.opcode == SSA_NAME && TREE_CODE (op[0]) != SSA_NAME)
 	      newop.opcode = TREE_CODE (op[0]);
@@ -1620,18 +1607,16 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 		if (off.fits_shwi ())
 		  newop.off = off.low;
 	      }
-	    VEC_replace (vn_reference_op_s, newoperands, j, newop);
+	    newoperands[j] = newop;
 	    /* If it transforms from an SSA_NAME to an address, fold with
 	       a preceding indirect reference.  */
 	    if (j > 0 && op[0] && TREE_CODE (op[0]) == ADDR_EXPR
-		&& VEC_index (vn_reference_op_s,
-			      newoperands, j - 1).opcode == MEM_REF)
+		&& newoperands[j - 1].opcode == MEM_REF)
 	      vn_reference_fold_indirect (&newoperands, &j);
 	  }
-	if (i != VEC_length (vn_reference_op_s, operands))
+	if (i != operands.length ())
 	  {
-	    if (newoperands)
-	      VEC_free (vn_reference_op_s, heap, newoperands);
+	    newoperands.release ();
 	    return NULL;
 	  }
 
@@ -1643,7 +1628,7 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 						    &same_valid);
 	    if (newvuse == NULL_TREE)
 	      {
-		VEC_free (vn_reference_op_s, heap, newoperands);
+		newoperands.release ();
 		return NULL;
 	      }
 	  }
@@ -1658,7 +1643,7 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 						      newoperands,
 						      &newref, VN_WALK);
 	    if (result)
-	      VEC_free (vn_reference_op_s, heap, newoperands);
+	      newoperands.release ();
 
 	    /* We can always insert constants, so if we have a partial
 	       redundant constant load of another type try to translate it
@@ -1686,7 +1671,7 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 	    else if (!result && newref
 		     && !useless_type_conversion_p (ref->type, newref->type))
 	      {
-		VEC_free (vn_reference_op_s, heap, newoperands);
+		newoperands.release ();
 		return NULL;
 	      }
 
@@ -1709,9 +1694,7 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 		if (changed || !same_valid)
 		  {
 		    new_val_id = get_next_value_id ();
-		    VEC_safe_grow_cleared (bitmap, heap,
-					   value_expressions,
-					   get_max_value_id() + 1);
+		    value_expressions.safe_grow_cleared(get_max_value_id() + 1);
 		  }
 		else
 		  new_val_id = ref->value_id;
@@ -1719,7 +1702,7 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 						     ref->type,
 						     newoperands,
 						     result, new_val_id);
-		newoperands = NULL;
+		newoperands.create (0);
 		PRE_EXPR_REFERENCE (expr) = newref;
 		constant = fully_constant_expression (expr);
 		if (constant != expr)
@@ -1728,7 +1711,7 @@ phi_translate_1 (pre_expr expr, bitmap_set_t set1, bitmap_set_t set2,
 	      }
 	    add_to_value (new_val_id, expr);
 	  }
-	VEC_free (vn_reference_op_s, heap, newoperands);
+	newoperands.release ();
 	return expr;
       }
       break;
@@ -1807,7 +1790,7 @@ static void
 phi_translate_set (bitmap_set_t dest, bitmap_set_t set, basic_block pred,
 		   basic_block phiblock)
 {
-  VEC (pre_expr, heap) *exprs;
+  vec<pre_expr> exprs;
   pre_expr expr;
   int i;
 
@@ -1818,7 +1801,7 @@ phi_translate_set (bitmap_set_t dest, bitmap_set_t set, basic_block pred,
     }
 
   exprs = sorted_array_from_bitmap_set (set);
-  FOR_EACH_VEC_ELT (pre_expr, exprs, i, expr)
+  FOR_EACH_VEC_ELT (exprs, i, expr)
     {
       pre_expr translated;
       translated = phi_translate (expr, set, NULL, pred, phiblock);
@@ -1834,7 +1817,7 @@ phi_translate_set (bitmap_set_t dest, bitmap_set_t set, basic_block pred,
       else
 	bitmap_value_insert_into_set (dest, translated);
     }
-  VEC_free (pre_expr, heap, exprs);
+  exprs.release ();
 }
 
 /* Find the leader for a value (i.e., the name representing that
@@ -1849,7 +1832,7 @@ bitmap_find_leader (bitmap_set_t set, unsigned int val)
     {
       unsigned int i;
       bitmap_iterator bi;
-      bitmap exprset = VEC_index (bitmap, value_expressions, val);
+      bitmap exprset = value_expressions[val];
 
       EXECUTE_IF_SET_IN_BITMAP (exprset, 0, i, bi)
 	{
@@ -1873,7 +1856,7 @@ bitmap_find_leader (bitmap_set_t set, unsigned int val)
 	 choose which set to walk based on which set is smaller.  */
       unsigned int i;
       bitmap_iterator bi;
-      bitmap exprset = VEC_index (bitmap, value_expressions, val);
+      bitmap exprset = value_expressions[val];
 
       EXECUTE_IF_AND_IN_BITMAP (exprset, &set->expressions, 0, i, bi)
 	return expression_for_id (i);
@@ -1990,7 +1973,8 @@ valid_in_sets (bitmap_set_t set1, bitmap_set_t set2, pre_expr expr,
   switch (expr->kind)
     {
     case NAME:
-      return bitmap_set_contains_expr (AVAIL_OUT (block), expr);
+      return bitmap_find_leader (AVAIL_OUT (block),
+				 get_expr_value_id (expr)) != NULL;
     case NARY:
       {
 	unsigned int i;
@@ -2007,7 +1991,7 @@ valid_in_sets (bitmap_set_t set1, bitmap_set_t set2, pre_expr expr,
 	vn_reference_op_t vro;
 	unsigned int i;
 
-	FOR_EACH_VEC_ELT (vn_reference_op_s, ref->operands, i, vro)
+	FOR_EACH_VEC_ELT (ref->operands, i, vro)
 	  {
 	    if (!op_valid_in_sets (set1, set2, vro->op0)
 		|| !op_valid_in_sets (set1, set2, vro->op1)
@@ -2030,16 +2014,16 @@ valid_in_sets (bitmap_set_t set1, bitmap_set_t set2, pre_expr expr,
 static void
 dependent_clean (bitmap_set_t set1, bitmap_set_t set2, basic_block block)
 {
-  VEC (pre_expr, heap) *exprs = sorted_array_from_bitmap_set (set1);
+  vec<pre_expr> exprs = sorted_array_from_bitmap_set (set1);
   pre_expr expr;
   int i;
 
-  FOR_EACH_VEC_ELT (pre_expr, exprs, i, expr)
+  FOR_EACH_VEC_ELT (exprs, i, expr)
     {
       if (!valid_in_sets (set1, set2, expr, block))
 	bitmap_remove_from_set (set1, expr);
     }
-  VEC_free (pre_expr, heap, exprs);
+  exprs.release ();
 }
 
 /* Clean the set of expressions that are no longer valid in SET.  This
@@ -2049,16 +2033,16 @@ dependent_clean (bitmap_set_t set1, bitmap_set_t set2, basic_block block)
 static void
 clean (bitmap_set_t set, basic_block block)
 {
-  VEC (pre_expr, heap) *exprs = sorted_array_from_bitmap_set (set);
+  vec<pre_expr> exprs = sorted_array_from_bitmap_set (set);
   pre_expr expr;
   int i;
 
-  FOR_EACH_VEC_ELT (pre_expr, exprs, i, expr)
+  FOR_EACH_VEC_ELT (exprs, i, expr)
     {
       if (!valid_in_sets (set, NULL, expr, block))
 	bitmap_remove_from_set (set, expr);
     }
-  VEC_free (pre_expr, heap, exprs);
+  exprs.release ();
 }
 
 /* Clean the set of expressions that are no longer valid in SET because
@@ -2198,18 +2182,18 @@ compute_antic_aux (basic_block block, bool block_has_abnormal_pred_edge)
      phis to translate through.  */
   else
     {
-      VEC(basic_block, heap) * worklist;
+      vec<basic_block> worklist;
       size_t i;
       basic_block bprime, first = NULL;
 
-      worklist = VEC_alloc (basic_block, heap, EDGE_COUNT (block->succs));
+      worklist.create (EDGE_COUNT (block->succs));
       FOR_EACH_EDGE (e, ei, block->succs)
 	{
 	  if (!first
 	      && BB_VISITED (e->dest))
 	    first = e->dest;
 	  else if (BB_VISITED (e->dest))
-	    VEC_quick_push (basic_block, worklist, e->dest);
+	    worklist.quick_push (e->dest);
 	}
 
       /* Of multiple successors we have to have visited one already.  */
@@ -2219,7 +2203,7 @@ compute_antic_aux (basic_block block, bool block_has_abnormal_pred_edge)
 	  BB_VISITED (block) = 0;
 	  BB_DEFERRED (block) = 1;
 	  changed = true;
-	  VEC_free (basic_block, heap, worklist);
+	  worklist.release ();
 	  goto maybe_dump_sets;
 	}
 
@@ -2228,7 +2212,7 @@ compute_antic_aux (basic_block block, bool block_has_abnormal_pred_edge)
       else
 	bitmap_set_copy (ANTIC_OUT, ANTIC_IN (first));
 
-      FOR_EACH_VEC_ELT (basic_block, worklist, i, bprime)
+      FOR_EACH_VEC_ELT (worklist, i, bprime)
 	{
 	  if (!gimple_seq_empty_p (phi_nodes (bprime)))
 	    {
@@ -2240,7 +2224,7 @@ compute_antic_aux (basic_block block, bool block_has_abnormal_pred_edge)
 	  else
 	    bitmap_set_and (ANTIC_OUT, ANTIC_IN (bprime));
 	}
-      VEC_free (basic_block, heap, worklist);
+      worklist.release ();
     }
 
   /* Prune expressions that are clobbered in block and thus become
@@ -2362,20 +2346,20 @@ compute_partial_antic_aux (basic_block block,
      them.  */
   else
     {
-      VEC(basic_block, heap) * worklist;
+      vec<basic_block> worklist;
       size_t i;
       basic_block bprime;
 
-      worklist = VEC_alloc (basic_block, heap, EDGE_COUNT (block->succs));
+      worklist.create (EDGE_COUNT (block->succs));
       FOR_EACH_EDGE (e, ei, block->succs)
 	{
 	  if (e->flags & EDGE_DFS_BACK)
 	    continue;
-	  VEC_quick_push (basic_block, worklist, e->dest);
+	  worklist.quick_push (e->dest);
 	}
-      if (VEC_length (basic_block, worklist) > 0)
+      if (worklist.length () > 0)
 	{
-	  FOR_EACH_VEC_ELT (basic_block, worklist, i, bprime)
+	  FOR_EACH_VEC_ELT (worklist, i, bprime)
 	    {
 	      unsigned int i;
 	      bitmap_iterator bi;
@@ -2398,7 +2382,7 @@ compute_partial_antic_aux (basic_block block,
 						expression_for_id (i));
 	    }
 	}
-      VEC_free (basic_block, heap, worklist);
+      worklist.release ();
     }
 
   /* Prune expressions that are clobbered in block and thus become
@@ -2559,8 +2543,7 @@ static tree
 create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
 				  unsigned int *operand, gimple_seq *stmts)
 {
-  vn_reference_op_t currop = &VEC_index (vn_reference_op_s, ref->operands,
-					 *operand);
+  vn_reference_op_t currop = &ref->operands[*operand];
   tree genop;
   ++*operand;
   switch (currop->opcode)
@@ -2574,14 +2557,21 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
 	  fn = currop->op0;
 	else
 	  fn = find_or_generate_expression (block, currop->op0, stmts);
+	if (!fn)
+	  return NULL_TREE;
 	if (currop->op1)
-	  sc = find_or_generate_expression (block, currop->op1, stmts);
-	args = XNEWVEC (tree, VEC_length (vn_reference_op_s,
-					  ref->operands) - 1);
-	while (*operand < VEC_length (vn_reference_op_s, ref->operands))
+	  {
+	    sc = find_or_generate_expression (block, currop->op1, stmts);
+	    if (!sc)
+	      return NULL_TREE;
+	  }
+	args = XNEWVEC (tree, ref->operands.length () - 1);
+	while (*operand < ref->operands.length ())
 	  {
 	    args[nargs] = create_component_ref_by_pieces_1 (block, ref,
 							    operand, stmts);
+	    if (!args[nargs])
+	      return NULL_TREE;
 	    nargs++;
 	  }
 	folded = build_call_array (currop->type,
@@ -2598,6 +2588,8 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
       {
 	tree baseop = create_component_ref_by_pieces_1 (block, ref, operand,
 							stmts);
+	if (!baseop)
+	  return NULL_TREE;
 	tree offset = currop->op0;
 	if (TREE_CODE (baseop) == ADDR_EXPR
 	    && handled_component_p (TREE_OPERAND (baseop, 0)))
@@ -2618,14 +2610,23 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
     case TARGET_MEM_REF:
       {
 	tree genop0 = NULL_TREE, genop1 = NULL_TREE;
-	vn_reference_op_t nextop = &VEC_index (vn_reference_op_s, ref->operands,
-					       ++*operand);
+	vn_reference_op_t nextop = &ref->operands[++*operand];
 	tree baseop = create_component_ref_by_pieces_1 (block, ref, operand,
 							stmts);
+	if (!baseop)
+	  return NULL_TREE;
 	if (currop->op0)
-	  genop0 = find_or_generate_expression (block, currop->op0, stmts);
+	  {
+	    genop0 = find_or_generate_expression (block, currop->op0, stmts);
+	    if (!genop0)
+	      return NULL_TREE;
+	  }
 	if (nextop->op0)
-	  genop1 = find_or_generate_expression (block, nextop->op0, stmts);
+	  {
+	    genop1 = find_or_generate_expression (block, nextop->op0, stmts);
+	    if (!genop1)
+	      return NULL_TREE;
+	  }
 	return build5 (TARGET_MEM_REF, currop->type,
 		       baseop, currop->op2, genop0, currop->op1, genop1);
       }
@@ -2641,8 +2642,10 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
     case IMAGPART_EXPR:
     case VIEW_CONVERT_EXPR:
       {
-	tree genop0 = create_component_ref_by_pieces_1 (block, ref,
-							operand, stmts);
+	tree genop0 = create_component_ref_by_pieces_1 (block, ref, operand,
+							stmts);
+	if (!genop0)
+	  return NULL_TREE;
 	return fold_build1 (currop->opcode, currop->type, genop0);
       }
 
@@ -2650,7 +2653,11 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
       {
 	tree genop0 = create_component_ref_by_pieces_1 (block, ref, operand,
 							stmts);
+	if (!genop0)
+	  return NULL_TREE;
 	tree genop1 = find_or_generate_expression (block, currop->op0, stmts);
+	if (!genop1)
+	  return NULL_TREE;
 	return fold_build2 (currop->opcode, currop->type, genop0, genop1);
       }
 
@@ -2658,6 +2665,8 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
       {
 	tree genop0 = create_component_ref_by_pieces_1 (block, ref, operand,
 							stmts);
+	if (!genop0)
+	  return NULL_TREE;
 	tree op1 = currop->op0;
 	tree op2 = currop->op1;
 	return fold_build3 (BIT_FIELD_REF, currop->type, genop0, op1, op2);
@@ -2673,8 +2682,13 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
 	tree genop1 = currop->op0;
 	tree genop2 = currop->op1;
 	tree genop3 = currop->op2;
-	genop0 = create_component_ref_by_pieces_1 (block, ref, operand, stmts);
+	genop0 = create_component_ref_by_pieces_1 (block, ref, operand,
+						   stmts);
+	if (!genop0)
+	  return NULL_TREE;
 	genop1 = find_or_generate_expression (block, genop1, stmts);
+	if (!genop1)
+	  return NULL_TREE;
 	if (genop2)
 	  {
 	    tree domain_type = TYPE_DOMAIN (TREE_TYPE (genop0));
@@ -2684,7 +2698,11 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
 		    || integer_zerop (TYPE_MIN_VALUE (domain_type))))
 	      genop2 = NULL_TREE;
 	    else
-	      genop2 = find_or_generate_expression (block, genop2, stmts);
+	      {
+		genop2 = find_or_generate_expression (block, genop2, stmts);
+		if (!genop2)
+		  return NULL_TREE;
+	      }
 	  }
 	if (genop3)
 	  {
@@ -2700,6 +2718,8 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
 		genop3 = size_binop (EXACT_DIV_EXPR, genop3,
 				     size_int (TYPE_ALIGN_UNIT (elmt_type)));
 		genop3 = find_or_generate_expression (block, genop3, stmts);
+		if (!genop3)
+		  return NULL_TREE;
 	      }
 	  }
 	return build4 (currop->opcode, currop->type, genop0, genop1,
@@ -2711,10 +2731,16 @@ create_component_ref_by_pieces_1 (basic_block block, vn_reference_t ref,
 	tree op1;
 	tree genop2 = currop->op1;
 	op0 = create_component_ref_by_pieces_1 (block, ref, operand, stmts);
+	if (!op0)
+	  return NULL_TREE;
 	/* op1 should be a FIELD_DECL, which are represented by themselves.  */
 	op1 = currop->op0;
 	if (genop2)
-	  genop2 = find_or_generate_expression (block, genop2, stmts);
+	  {
+	    genop2 = find_or_generate_expression (block, genop2, stmts);
+	    if (!genop2)
+	      return NULL_TREE;
+	  }
 	return fold_build3 (COMPONENT_REF, TREE_TYPE (op1), op0, op1, genop2);
       }
 
@@ -2761,18 +2787,11 @@ create_component_ref_by_pieces (basic_block block, vn_reference_t ref,
   return create_component_ref_by_pieces_1 (block, ref, &op, stmts);
 }
 
-/* Find a leader for an expression, or generate one using
-   create_expression_by_pieces if it's ANTIC but
-   complex.
+/* Find a simple leader for an expression, or generate one using
+   create_expression_by_pieces from a NARY expression for the value.
    BLOCK is the basic_block we are looking for leaders in.
    OP is the tree expression to find a leader for or generate.
-   STMTS is the statement list to put the inserted expressions on.
-   Returns the SSA_NAME of the LHS of the generated expression or the
-   leader.
-   DOMSTMT if non-NULL is a statement that should be dominated by
-   all uses in the generated expression.  If DOMSTMT is non-NULL this
-   routine can fail and return NULL_TREE.  Otherwise it will assert
-   on failure.  */
+   Returns the leader or NULL_TREE on failure.  */
 
 static tree
 find_or_generate_expression (basic_block block, tree op, gimple_seq *stmts)
@@ -2786,21 +2805,30 @@ find_or_generate_expression (basic_block block, tree op, gimple_seq *stmts)
 	return PRE_EXPR_NAME (leader);
       else if (leader->kind == CONSTANT)
 	return PRE_EXPR_CONSTANT (leader);
+
+      /* Defer.  */
+      return NULL_TREE;
     }
 
-  /* It must be a complex expression, so generate it recursively.  */
-  bitmap exprset = VEC_index (bitmap, value_expressions, lookfor);
+  /* It must be a complex expression, so generate it recursively.  Note
+     that this is only necessary to handle gcc.dg/tree-ssa/ssa-pre28.c
+     where the insert algorithm fails to insert a required expression.  */
+  bitmap exprset = value_expressions[lookfor];
   bitmap_iterator bi;
   unsigned int i;
   EXECUTE_IF_SET_IN_BITMAP (exprset, 0, i, bi)
     {
       pre_expr temp = expression_for_id (i);
-      if (temp->kind != NAME)
+      /* We cannot insert random REFERENCE expressions at arbitrary
+	 places.  We can insert NARYs which eventually re-materializes
+	 its operand values.  */
+      if (temp->kind == NARY)
 	return create_expression_by_pieces (block, temp, stmts,
 					    get_expr_type (expr));
     }
 
-  gcc_unreachable ();
+  /* Defer.  */
+  return NULL_TREE;
 }
 
 #define NECESSARY GF_PLF_1
@@ -2813,15 +2841,13 @@ find_or_generate_expression (basic_block block, tree op, gimple_seq *stmts)
 
    This function will die if we hit some value that shouldn't be
    ANTIC but is (IE there is no leader for it, or its components).
+   The function returns NULL_TREE in case a different antic expression
+   has to be inserted first.
    This function may also generate expressions that are themselves
    partially or fully redundant.  Those that are will be either made
    fully redundant during the next iteration of insert (for partially
    redundant ones), or eliminated by eliminate (for fully redundant
-   ones).
-
-   If DOMSTMT is non-NULL then we make sure that all uses in the
-   expressions dominate that statement.  In this case the function
-   can return NULL_TREE to signal failure.  */
+   ones).  */
 
 static tree
 create_expression_by_pieces (basic_block block, pre_expr expr,
@@ -2850,6 +2876,8 @@ create_expression_by_pieces (basic_block block, pre_expr expr,
       {
 	vn_reference_t ref = PRE_EXPR_REFERENCE (expr);
 	folded = create_component_ref_by_pieces (block, ref, stmts);
+	if (!folded)
+	  return NULL_TREE;
       }
       break;
     case NARY:
@@ -2860,6 +2888,8 @@ create_expression_by_pieces (basic_block block, pre_expr expr,
 	for (i = 0; i < nary->length; ++i)
 	  {
 	    genop[i] = find_or_generate_expression (block, nary->op[i], stmts);
+	    if (!genop[i])
+	      return NULL_TREE;
 	    /* Ensure genop[] is properly typed for POINTER_PLUS_EXPR.  It
 	       may have conversions stripped.  */
 	    if (nary->opcode == POINTER_PLUS_EXPR)
@@ -2874,7 +2904,7 @@ create_expression_by_pieces (basic_block block, pre_expr expr,
 	  }
 	if (nary->opcode == CONSTRUCTOR)
 	  {
-	    VEC(constructor_elt,gc) *elts = NULL;
+	    vec<constructor_elt, va_gc> *elts = NULL;
 	    for (i = 0; i < nary->length; ++i)
 	      CONSTRUCTOR_APPEND_ELT (elts, NULL_TREE, genop[i]);
 	    folded = build_constructor (nary->type, elts);
@@ -2893,7 +2923,7 @@ create_expression_by_pieces (basic_block block, pre_expr expr,
 		break;
 	      case 3:
 		folded = fold_build3 (nary->opcode, nary->type,
-				      genop[0], genop[1], genop[3]);
+				      genop[0], genop[1], genop[2]);
 		break;
 	      default:
 		gcc_unreachable ();
@@ -2990,7 +3020,7 @@ static bool
 inhibit_phi_insertion (basic_block bb, pre_expr expr)
 {
   vn_reference_t vr = PRE_EXPR_REFERENCE (expr);
-  VEC (vn_reference_op_s, heap) *ops = vr->operands;
+  vec<vn_reference_op_s> ops = vr->operands;
   vn_reference_op_t op;
   unsigned i;
 
@@ -3002,7 +3032,7 @@ inhibit_phi_insertion (basic_block bb, pre_expr expr)
      memory reference is a simple induction variable.  In other
      cases the vectorizer won't do anything anyway (either it's
      loop invariant or a complicated expression).  */
-  FOR_EACH_VEC_ELT (vn_reference_op_s, ops, i, op)
+  FOR_EACH_VEC_ELT (ops, i, op)
     {
       switch (op->opcode)
 	{
@@ -3048,7 +3078,7 @@ inhibit_phi_insertion (basic_block bb, pre_expr expr)
 
 static bool
 insert_into_preds_of_block (basic_block block, unsigned int exprnum,
-			    VEC(pre_expr, heap) *avail)
+			    vec<pre_expr> avail)
 {
   pre_expr expr = expression_for_id (exprnum);
   pre_expr newphi;
@@ -3089,7 +3119,7 @@ insert_into_preds_of_block (basic_block block, unsigned int exprnum,
       gimple_seq stmts = NULL;
       tree builtexpr;
       bprime = pred->src;
-      eprime = VEC_index (pre_expr, avail, pred->dest_idx);
+      eprime = avail[pred->dest_idx];
 
       if (eprime->kind != NAME && eprime->kind != CONSTANT)
 	{
@@ -3097,8 +3127,14 @@ insert_into_preds_of_block (basic_block block, unsigned int exprnum,
 						   &stmts, type);
 	  gcc_assert (!(pred->flags & EDGE_ABNORMAL));
 	  gsi_insert_seq_on_edge (pred, stmts);
-	  VEC_replace (pre_expr, avail, pred->dest_idx,
-		       get_or_alloc_expr_for_name (builtexpr));
+	  if (!builtexpr)
+	    {
+	      /* We cannot insert a PHI node if we failed to insert
+		 on one edge.  */
+	      nophi = true;
+	      continue;
+	    }
+	  avail[pred->dest_idx] = get_or_alloc_expr_for_name (builtexpr);
 	  insertions = true;
 	}
       else if (eprime->kind == CONSTANT)
@@ -3136,13 +3172,13 @@ insert_into_preds_of_block (basic_block block, unsigned int exprnum,
 			    }
 			  gsi_insert_seq_on_edge (pred, stmts);
 			}
-		      VEC_replace (pre_expr, avail, pred->dest_idx,
-				   get_or_alloc_expr_for_name (forcedexpr));
+		      avail[pred->dest_idx]
+			= get_or_alloc_expr_for_name (forcedexpr);
 		    }
 		}
 	      else
-		VEC_replace (pre_expr, avail, pred->dest_idx,
-			     get_or_alloc_expr_for_constant (builtexpr));
+		avail[pred->dest_idx]
+		    = get_or_alloc_expr_for_constant (builtexpr);
 	    }
 	}
       else if (eprime->kind == NAME)
@@ -3181,8 +3217,7 @@ insert_into_preds_of_block (basic_block block, unsigned int exprnum,
 		    }
 		  gsi_insert_seq_on_edge (pred, stmts);
 		}
-	      VEC_replace (pre_expr, avail, pred->dest_idx,
-			   get_or_alloc_expr_for_name (forcedexpr));
+	      avail[pred->dest_idx] = get_or_alloc_expr_for_name (forcedexpr);
 	    }
 	}
     }
@@ -3207,11 +3242,12 @@ insert_into_preds_of_block (basic_block block, unsigned int exprnum,
   bitmap_set_bit (inserted_exprs, SSA_NAME_VERSION (temp));
   FOR_EACH_EDGE (pred, ei, block->preds)
     {
-      pre_expr ae = VEC_index (pre_expr, avail, pred->dest_idx);
+      pre_expr ae = avail[pred->dest_idx];
       gcc_assert (get_expr_type (ae) == type
 		  || useless_type_conversion_p (type, get_expr_type (ae)));
       if (ae->kind == CONSTANT)
-	add_phi_arg (phi, PRE_EXPR_CONSTANT (ae), pred, UNKNOWN_LOCATION);
+	add_phi_arg (phi, unshare_expr (PRE_EXPR_CONSTANT (ae)),
+		     pred, UNKNOWN_LOCATION);
       else
 	add_phi_arg (phi, PRE_EXPR_NAME (ae), pred, UNKNOWN_LOCATION);
     }
@@ -3273,17 +3309,18 @@ static bool
 do_regular_insertion (basic_block block, basic_block dom)
 {
   bool new_stuff = false;
-  VEC (pre_expr, heap) *exprs;
+  vec<pre_expr> exprs;
   pre_expr expr;
-  VEC (pre_expr, heap) *avail = NULL;
+  vec<pre_expr> avail = vNULL;
   int i;
 
   exprs = sorted_array_from_bitmap_set (ANTIC_IN (block));
-  VEC_safe_grow (pre_expr, heap, avail, EDGE_COUNT (block->preds));
+  avail.safe_grow (EDGE_COUNT (block->preds));
 
-  FOR_EACH_VEC_ELT (pre_expr, exprs, i, expr)
+  FOR_EACH_VEC_ELT (exprs, i, expr)
     {
-      if (expr->kind != NAME)
+      if (expr->kind == NARY
+	  || expr->kind == REFERENCE)
 	{
 	  unsigned int val;
 	  bool by_some = false;
@@ -3329,7 +3366,7 @@ do_regular_insertion (basic_block block, basic_block dom)
 		 rest of the results are.  */
 	      if (eprime == NULL)
 		{
-		  VEC_replace (pre_expr, avail, pred->dest_idx, NULL);
+		  avail[pred->dest_idx] = NULL;
 		  cant_insert = true;
 		  break;
 		}
@@ -3340,12 +3377,12 @@ do_regular_insertion (basic_block block, basic_block dom)
 						 vprime);
 	      if (edoubleprime == NULL)
 		{
-		  VEC_replace (pre_expr, avail, pred->dest_idx, eprime);
+		  avail[pred->dest_idx] = eprime;
 		  all_same = false;
 		}
 	      else
 		{
-		  VEC_replace (pre_expr, avail, pred->dest_idx, edoubleprime);
+		  avail[pred->dest_idx] = edoubleprime;
 		  by_some = true;
 		  /* We want to perform insertions to remove a redundancy on
 		     a path in the CFG we want to optimize for speed.  */
@@ -3393,41 +3430,34 @@ do_regular_insertion (basic_block block, basic_block dom)
 	  /* If all edges produce the same value and that value is
 	     an invariant, then the PHI has the same value on all
 	     edges.  Note this.  */
-	  else if (!cant_insert && all_same && eprime
-		   && (edoubleprime->kind == CONSTANT
-		       || edoubleprime->kind == NAME)
-		   && !value_id_constant_p (val))
+	  else if (!cant_insert && all_same)
 	    {
-	      unsigned int j;
-	      bitmap_iterator bi;
-	      bitmap exprset = VEC_index (bitmap, value_expressions, val);
+	      gcc_assert (edoubleprime->kind == CONSTANT
+			  || edoubleprime->kind == NAME);
 
-	      unsigned int new_val = get_expr_value_id (edoubleprime);
-	      EXECUTE_IF_SET_IN_BITMAP (exprset, 0, j, bi)
-		{
-		  pre_expr expr = expression_for_id (j);
+	      tree temp = make_temp_ssa_name (get_expr_type (expr),
+					      NULL, "pretmp");
+	      gimple assign = gimple_build_assign (temp,
+						   edoubleprime->kind == CONSTANT ? PRE_EXPR_CONSTANT (edoubleprime) : PRE_EXPR_NAME (edoubleprime));
+	      gimple_stmt_iterator gsi = gsi_after_labels (block);
+	      gsi_insert_before (&gsi, assign, GSI_NEW_STMT);
 
-		  if (expr->kind == NAME)
-		    {
-		      vn_ssa_aux_t info = VN_INFO (PRE_EXPR_NAME (expr));
-		      /* Just reset the value id and valnum so it is
-			 the same as the constant we have discovered.  */
-		      if (edoubleprime->kind == CONSTANT)
-			{
-			  info->valnum = PRE_EXPR_CONSTANT (edoubleprime);
-			  pre_stats.constified++;
-			}
-		      else
-			info->valnum = VN_INFO (PRE_EXPR_NAME (edoubleprime))->valnum;
-		      info->value_id = new_val;
-		    }
-		}
+	      gimple_set_plf (assign, NECESSARY, false);
+	      VN_INFO_GET (temp)->value_id = val;
+	      VN_INFO (temp)->valnum = sccvn_valnum_from_value_id (val);
+	      if (VN_INFO (temp)->valnum == NULL_TREE)
+		VN_INFO (temp)->valnum = temp;
+	      bitmap_set_bit (inserted_exprs, SSA_NAME_VERSION (temp));
+	      pre_expr newe = get_or_alloc_expr_for_name (temp);
+	      add_to_value (val, newe);
+	      bitmap_value_replace_in_set (AVAIL_OUT (block), newe);
+	      bitmap_insert_into_set (NEW_SETS (block), newe);
 	    }
 	}
     }
 
-  VEC_free (pre_expr, heap, exprs);
-  VEC_free (pre_expr, heap, avail);
+  exprs.release ();
+  avail.release ();
   return new_stuff;
 }
 
@@ -3443,17 +3473,18 @@ static bool
 do_partial_partial_insertion (basic_block block, basic_block dom)
 {
   bool new_stuff = false;
-  VEC (pre_expr, heap) *exprs;
+  vec<pre_expr> exprs;
   pre_expr expr;
-  VEC (pre_expr, heap) *avail = NULL;
+  vec<pre_expr> avail = vNULL;
   int i;
 
   exprs = sorted_array_from_bitmap_set (PA_IN (block));
-  VEC_safe_grow (pre_expr, heap, avail, EDGE_COUNT (block->preds));
+  avail.safe_grow (EDGE_COUNT (block->preds));
 
-  FOR_EACH_VEC_ELT (pre_expr, exprs, i, expr)
+  FOR_EACH_VEC_ELT (exprs, i, expr)
     {
-      if (expr->kind != NAME)
+      if (expr->kind == NARY
+	  || expr->kind == REFERENCE)
 	{
 	  unsigned int val;
 	  bool by_all = true;
@@ -3493,7 +3524,7 @@ do_partial_partial_insertion (basic_block block, basic_block dom)
 		 rest of the results are.  */
 	      if (eprime == NULL)
 		{
-		  VEC_replace (pre_expr, avail, pred->dest_idx, NULL);
+		  avail[pred->dest_idx] = NULL;
 		  cant_insert = true;
 		  break;
 		}
@@ -3501,7 +3532,7 @@ do_partial_partial_insertion (basic_block block, basic_block dom)
 	      eprime = fully_constant_expression (eprime);
 	      vprime = get_expr_value_id (eprime);
 	      edoubleprime = bitmap_find_leader (AVAIL_OUT (bprime), vprime);
-	      VEC_replace (pre_expr, avail, pred->dest_idx, edoubleprime);
+	      avail[pred->dest_idx] = edoubleprime;
 	      if (edoubleprime == NULL)
 		{
 		  by_all = false;
@@ -3525,7 +3556,8 @@ do_partial_partial_insertion (basic_block block, basic_block dom)
 		 may cause regressions on the speed path.  */
 	      FOR_EACH_EDGE (succ, ei, block->succs)
 		{
-		  if (bitmap_set_contains_value (PA_IN (succ->dest), val))
+		  if (bitmap_set_contains_value (PA_IN (succ->dest), val)
+		      || bitmap_set_contains_value (ANTIC_IN (succ->dest), val))
 		    {
 		      if (optimize_edge_for_speed_p (succ))
 			do_insertion = true;
@@ -3539,7 +3571,7 @@ do_partial_partial_insertion (basic_block block, basic_block dom)
 		      fprintf (dump_file, "Skipping partial partial redundancy "
 			       "for expression ");
 		      print_pre_expr (dump_file, expr);
-		      fprintf (dump_file, " (%04d), not partially anticipated "
+		      fprintf (dump_file, " (%04d), not (partially) anticipated "
 			       "on any to be optimized for speed edges\n", val);
 		    }
 		}
@@ -3563,8 +3595,8 @@ do_partial_partial_insertion (basic_block block, basic_block dom)
 	}
     }
 
-  VEC_free (pre_expr, heap, exprs);
-  VEC_free (pre_expr, heap, avail);
+  exprs.release ();
+  avail.release ();
   return new_stuff;
 }
 
@@ -3637,48 +3669,6 @@ insert (void)
 }
 
 
-/* Add OP to EXP_GEN (block), and possibly to the maximal set.  */
-
-static void
-add_to_exp_gen (basic_block block, tree op)
-{
-  pre_expr result;
-
-  if (TREE_CODE (op) == SSA_NAME && ssa_undefined_value_p (op))
-    return;
-
-  result = get_or_alloc_expr_for_name (op);
-  bitmap_value_insert_into_set (EXP_GEN (block), result);
-}
-
-/* Create value ids for PHI in BLOCK.  */
-
-static void
-make_values_for_phi (gimple phi, basic_block block)
-{
-  tree result = gimple_phi_result (phi);
-  unsigned i;
-
-  /* We have no need for virtual phis, as they don't represent
-     actual computations.  */
-  if (virtual_operand_p (result))
-    return;
-
-  pre_expr e = get_or_alloc_expr_for_name (result);
-  add_to_value (get_expr_value_id (e), e);
-  bitmap_value_insert_into_set (AVAIL_OUT (block), e);
-  bitmap_insert_into_set (PHI_GEN (block), e);
-  for (i = 0; i < gimple_phi_num_args (phi); ++i)
-    {
-      tree arg = gimple_phi_arg_def (phi, i);
-      if (TREE_CODE (arg) == SSA_NAME)
-	{
-	  e = get_or_alloc_expr_for_name (arg);
-	  add_to_value (get_expr_value_id (e), e);
-	}
-    }
-}
-
 /* Compute the AVAIL set for all basic blocks.
 
    This function performs value numbering of the statements in each basic
@@ -3716,6 +3706,14 @@ compute_avail (void)
       bitmap_value_insert_into_set (AVAIL_OUT (ENTRY_BLOCK_PTR), e);
     }
 
+  if (dump_file && (dump_flags & TDF_DETAILS))
+    {
+      print_bitmap_set (dump_file, TMP_GEN (ENTRY_BLOCK_PTR),
+			"tmp_gen", ENTRY_BLOCK);
+      print_bitmap_set (dump_file, AVAIL_OUT (ENTRY_BLOCK_PTR),
+			"avail_out", ENTRY_BLOCK);
+    }
+
   /* Allocate the worklist.  */
   worklist = XNEWVEC (basic_block, n_basic_blocks);
 
@@ -3744,7 +3742,19 @@ compute_avail (void)
 
       /* Generate values for PHI nodes.  */
       for (gsi = gsi_start_phis (block); !gsi_end_p (gsi); gsi_next (&gsi))
-	make_values_for_phi (gsi_stmt (gsi), block);
+	{
+	  tree result = gimple_phi_result (gsi_stmt (gsi));
+
+	  /* We have no need for virtual phis, as they don't represent
+	     actual computations.  */
+	  if (virtual_operand_p (result))
+	    continue;
+
+	  pre_expr e = get_or_alloc_expr_for_name (result);
+	  add_to_value (get_expr_value_id (e), e);
+	  bitmap_value_insert_into_set (AVAIL_OUT (block), e);
+	  bitmap_insert_into_set (PHI_GEN (block), e);
+	}
 
       BB_MAY_NOTRETURN (block) = 0;
 
@@ -3788,7 +3798,12 @@ compute_avail (void)
 	    continue;
 
 	  FOR_EACH_SSA_TREE_OPERAND (op, stmt, iter, SSA_OP_USE)
-	    add_to_exp_gen (block, op);
+	    {
+	      if (ssa_undefined_value_p (op))
+		continue;
+	      pre_expr e = get_or_alloc_expr_for_name (op);
+	      bitmap_value_insert_into_set (EXP_GEN (block), e);
+	    }
 
 	  switch (gimple_code (stmt))
 	    {
@@ -3799,7 +3814,7 @@ compute_avail (void)
 	      {
 		vn_reference_t ref;
 		pre_expr result = NULL;
-		VEC(vn_reference_op_s, heap) *ops = NULL;
+		vec<vn_reference_op_s> ops = vNULL;
 
 		/* We can value number only calls to real functions.  */
 		if (gimple_call_internal_p (stmt))
@@ -3809,7 +3824,7 @@ compute_avail (void)
 		vn_reference_lookup_pieces (gimple_vuse (stmt), 0,
 					    gimple_expr_type (stmt),
 					    ops, &ref, VN_NOWALK);
-		VEC_free (vn_reference_op_s, heap, ops);
+		ops.release ();
 		if (!ref)
 		  continue;
 
@@ -3924,6 +3939,18 @@ compute_avail (void)
 	    }
 	}
 
+      if (dump_file && (dump_flags & TDF_DETAILS))
+	{
+	  print_bitmap_set (dump_file, EXP_GEN (block),
+			    "exp_gen", block->index);
+	  print_bitmap_set (dump_file, PHI_GEN (block),
+			    "phi_gen", block->index);
+	  print_bitmap_set (dump_file, TMP_GEN (block),
+			    "tmp_gen", block->index);
+	  print_bitmap_set (dump_file, AVAIL_OUT (block),
+			    "avail_out", block->index);
+	}
+
       /* Put the dominator children of BLOCK on the worklist of blocks
 	 to compute available sets for.  */
       for (son = first_dom_son (CDI_DOMINATORS, block);
@@ -3937,11 +3964,11 @@ compute_avail (void)
 
 
 /* Local state for the eliminate domwalk.  */
-static VEC (gimple, heap) *el_to_remove;
-static VEC (gimple, heap) *el_to_update;
+static vec<gimple> el_to_remove;
+static vec<gimple> el_to_update;
 static unsigned int el_todo;
-static VEC (tree, heap) *el_avail;
-static VEC (tree, heap) *el_avail_stack;
+static vec<tree> el_avail;
+static vec<tree> el_avail_stack;
 
 /* Return a leader for OP that is available at the current point of the
    eliminate domwalk.  */
@@ -3954,8 +3981,8 @@ eliminate_avail (tree op)
     {
       if (SSA_NAME_IS_DEFAULT_DEF (valnum))
 	return valnum;
-      if (VEC_length (tree, el_avail) > SSA_NAME_VERSION (valnum))
-	return VEC_index (tree, el_avail, SSA_NAME_VERSION (valnum));
+      if (el_avail.length () > SSA_NAME_VERSION (valnum))
+	return el_avail[SSA_NAME_VERSION (valnum)];
     }
   else if (is_gimple_min_invariant (valnum))
     return valnum;
@@ -3970,11 +3997,10 @@ eliminate_push_avail (tree op)
   tree valnum = VN_INFO (op)->valnum;
   if (TREE_CODE (valnum) == SSA_NAME)
     {
-      if (VEC_length (tree, el_avail) <= SSA_NAME_VERSION (valnum))
-	VEC_safe_grow_cleared (tree, heap,
-			       el_avail, SSA_NAME_VERSION (valnum) + 1);
-      VEC_replace (tree, el_avail, SSA_NAME_VERSION (valnum), op);
-      VEC_safe_push (tree, heap, el_avail_stack, op);
+      if (el_avail.length () <= SSA_NAME_VERSION (valnum))
+	el_avail.safe_grow_cleared (SSA_NAME_VERSION (valnum) + 1);
+      el_avail[SSA_NAME_VERSION (valnum)] = op;
+      el_avail_stack.safe_push (op);
     }
 }
 
@@ -4023,7 +4049,7 @@ eliminate_bb (dom_walk_data *, basic_block b)
   gimple stmt;
 
   /* Mark new bb.  */
-  VEC_safe_push (tree, heap, el_avail_stack, NULL_TREE);
+  el_avail_stack.safe_push (NULL_TREE);
 
   for (gsi = gsi_start_phis (b); !gsi_end_p (gsi);)
     {
@@ -4081,7 +4107,7 @@ eliminate_bb (dom_walk_data *, basic_block b)
       gsi2 = gsi_after_labels (b);
       gsi_insert_before (&gsi2, stmt, GSI_NEW_STMT);
       /* Queue the copy for eventual removal.  */
-      VEC_safe_push (gimple, heap, el_to_remove, stmt);
+      el_to_remove.safe_push (stmt);
       /* If we inserted this PHI node ourself, it's not an elimination.  */
       if (inserted_exprs
 	  && bitmap_bit_p (inserted_exprs, SSA_NAME_VERSION (res)))
@@ -4105,26 +4131,32 @@ eliminate_bb (dom_walk_data *, basic_block b)
 
       /* Lookup the RHS of the expression, see if we have an
 	 available computation for it.  If so, replace the RHS with
-	 the available computation.
-
-	 See PR43491.
-	 We don't replace global register variable when it is a the RHS of
-	 a single assign. We do replace local register variable since gcc
-	 does not guarantee local variable will be allocated in register.  */
+	 the available computation.  */
       if (gimple_has_lhs (stmt)
 	  && TREE_CODE (lhs) == SSA_NAME
-	  && !gimple_assign_ssa_name_copy_p (stmt)
-	  && (!gimple_assign_single_p (stmt)
-	      || (!is_gimple_min_invariant (rhs)
-		  && (gimple_assign_rhs_code (stmt) != VAR_DECL
-		      || !is_global_var (rhs)
-		      || !DECL_HARD_REGISTER (rhs))))
 	  && !gimple_has_volatile_ops  (stmt))
 	{
 	  tree sprime;
 	  gimple orig_stmt = stmt;
 
 	  sprime = eliminate_avail (lhs);
+	  /* If there is no usable leader mark lhs as leader for its value.  */
+	  if (!sprime)
+	    eliminate_push_avail (lhs);
+
+	  /* See PR43491.  Do not replace a global register variable when
+	     it is a the RHS of an assignment.  Do replace local register
+	     variables since gcc does not guarantee a local variable will
+	     be allocated in register.
+	     Do not perform copy propagation or undo constant propagation.  */
+	  if (gimple_assign_single_p (stmt)
+	      && (TREE_CODE (rhs) == SSA_NAME
+		  || is_gimple_min_invariant (rhs)
+		  || (TREE_CODE (rhs) == VAR_DECL
+		      && is_global_var (rhs)
+		      && DECL_HARD_REGISTER (rhs))))
+	    continue;
+
 	  if (!sprime)
 	    {
 	      /* If there is no existing usable leader but SCCVN thinks
@@ -4134,6 +4166,7 @@ eliminate_bb (dom_walk_data *, basic_block b)
 	      if (val != VN_TOP
 		  && TREE_CODE (val) == SSA_NAME
 		  && VN_INFO (val)->needs_insertion
+		  && VN_INFO (val)->expr != NULL_TREE
 		  && (sprime = eliminate_insert (&gsi, val)) != NULL_TREE)
 		eliminate_push_avail (sprime);
 	    }
@@ -4170,10 +4203,6 @@ eliminate_bb (dom_walk_data *, basic_block b)
 		}
 	      continue;
 	    }
-
-	  /* If there is no usable leader mark lhs as leader for its value.  */
-	  if (!sprime)
-	    eliminate_push_avail (lhs);
 
 	  if (sprime
 	      && sprime != lhs
@@ -4258,7 +4287,7 @@ eliminate_bb (dom_walk_data *, basic_block b)
 		}
 
 	      /* Queue stmt for removal.  */
-	      VEC_safe_push (gimple, heap, el_to_remove, stmt);
+	      el_to_remove.safe_push (stmt);
 	    }
 	}
       /* Visit COND_EXPRs and fold the comparison with the
@@ -4317,7 +4346,7 @@ eliminate_bb (dom_walk_data *, basic_block b)
 		}
 
 	      gimple_call_set_fn (stmt, fn);
-	      VEC_safe_push (gimple, heap, el_to_update, stmt);
+	      el_to_update.safe_push (stmt);
 
 	      /* When changing a call into a noreturn call, cfg cleanup
 		 is needed to fix up the noreturn call.  */
@@ -4359,9 +4388,8 @@ static void
 eliminate_leave_block (dom_walk_data *, basic_block)
 {
   tree entry;
-  while ((entry = VEC_pop (tree, el_avail_stack)) != NULL_TREE)
-    VEC_replace (tree, el_avail,
-		 SSA_NAME_VERSION (VN_INFO (entry)->valnum), NULL_TREE);
+  while ((entry = el_avail_stack.pop ()) != NULL_TREE)
+    el_avail[SSA_NAME_VERSION (VN_INFO (entry)->valnum)] = NULL_TREE;
 }
 
 /* Eliminate fully redundant computations.  */
@@ -4377,11 +4405,11 @@ eliminate (void)
   need_eh_cleanup = BITMAP_ALLOC (NULL);
   need_ab_cleanup = BITMAP_ALLOC (NULL);
 
-  el_to_remove = NULL;
-  el_to_update = NULL;
+  el_to_remove.create (0);
+  el_to_update.create (0);
   el_todo = 0;
-  el_avail = NULL;
-  el_avail_stack = NULL;
+  el_avail.create (0);
+  el_avail_stack.create (0);
 
   walk_data.dom_direction = CDI_DOMINATORS;
   walk_data.initialize_block_local_data = NULL;
@@ -4393,13 +4421,13 @@ eliminate (void)
   walk_dominator_tree (&walk_data, ENTRY_BLOCK_PTR);
   fini_walk_dominator_tree (&walk_data);
 
-  VEC_free (tree, heap, el_avail);
-  VEC_free (tree, heap, el_avail_stack);
+  el_avail.release ();
+  el_avail_stack.release ();
 
   /* We cannot remove stmts during BB walk, especially not release SSA
      names there as this confuses the VN machinery.  The stmts ending
      up in el_to_remove are either stores or simple copies.  */
-  FOR_EACH_VEC_ELT (gimple, el_to_remove, i, stmt)
+  FOR_EACH_VEC_ELT (el_to_remove, i, stmt)
     {
       tree lhs = gimple_assign_lhs (stmt);
       tree rhs = gimple_assign_rhs1 (stmt);
@@ -4436,14 +4464,14 @@ eliminate (void)
 	  release_defs (stmt);
 	}
     }
-  VEC_free (gimple, heap, el_to_remove);
+  el_to_remove.release ();
 
   /* We cannot update call statements with virtual operands during
      SSA walk.  This might remove them which in turn makes our
      VN lattice invalid.  */
-  FOR_EACH_VEC_ELT (gimple, el_to_update, i, stmt)
+  FOR_EACH_VEC_ELT (el_to_update, i, stmt)
     update_stmt (stmt);
-  VEC_free (gimple, heap, el_to_update);
+  el_to_update.release ();
 
   return el_todo;
 }
@@ -4600,12 +4628,11 @@ init_pre (void)
   basic_block bb;
 
   next_expression_id = 1;
-  expressions = NULL;
-  VEC_safe_push (pre_expr, heap, expressions, NULL);
-  value_expressions = VEC_alloc (bitmap, heap, get_max_value_id () + 1);
-  VEC_safe_grow_cleared (bitmap, heap, value_expressions,
-			 get_max_value_id() + 1);
-  name_to_id = NULL;
+  expressions.create (0);
+  expressions.safe_push (NULL);
+  value_expressions.create (get_max_value_id () + 1);
+  value_expressions.safe_grow_cleared (get_max_value_id() + 1);
+  name_to_id.create (0);
 
   inserted_exprs = BITMAP_ALLOC (NULL);
 
@@ -4643,14 +4670,14 @@ static void
 fini_pre ()
 {
   free (postorder);
-  VEC_free (bitmap, heap, value_expressions);
+  value_expressions.release ();
   BITMAP_FREE (inserted_exprs);
   bitmap_obstack_release (&grand_bitmap_obstack);
   free_alloc_pool (bitmap_set_pool);
   free_alloc_pool (pre_expr_pool);
   phi_translate_table.dispose ();
   expression_to_id.dispose ();
-  VEC_free (unsigned, heap, name_to_id);
+  name_to_id.release ();
 
   free_aux_for_blocks ();
 
@@ -4683,22 +4710,6 @@ do_pre (void)
   /* Collect and value number expressions computed in each basic block.  */
   compute_avail ();
 
-  if (dump_file && (dump_flags & TDF_DETAILS))
-    {
-      basic_block bb;
-      FOR_ALL_BB (bb)
-	{
-	  print_bitmap_set (dump_file, EXP_GEN (bb),
-			    "exp_gen", bb->index);
-	  print_bitmap_set (dump_file, PHI_GEN (bb),
-			    "phi_gen", bb->index);
-	  print_bitmap_set (dump_file, TMP_GEN (bb),
-			    "tmp_gen", bb->index);
-	  print_bitmap_set (dump_file, AVAIL_OUT (bb),
-			    "avail_out", bb->index);
-	}
-    }
-
   /* Insert can get quite slow on an incredibly large number of basic
      blocks due to some quadratic behavior.  Until this behavior is
      fixed, don't run it when he have an incredibly large number of
@@ -4723,7 +4734,6 @@ do_pre (void)
   statistics_counter_event (cfun, "PA inserted", pre_stats.pa_insert);
   statistics_counter_event (cfun, "New PHIs", pre_stats.phis);
   statistics_counter_event (cfun, "Eliminated", pre_stats.eliminations);
-  statistics_counter_event (cfun, "Constified", pre_stats.constified);
 
   clear_expression_ids ();
   remove_dead_inserted_code ();
@@ -4804,7 +4814,6 @@ execute_fre (void)
 
   statistics_counter_event (cfun, "Insertions", pre_stats.insertions);
   statistics_counter_event (cfun, "Eliminated", pre_stats.eliminations);
-  statistics_counter_event (cfun, "Constified", pre_stats.constified);
 
   return todo;
 }
