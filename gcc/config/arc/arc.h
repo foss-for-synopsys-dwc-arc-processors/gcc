@@ -152,7 +152,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC601|mcpu=arc601:-mARC601} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
-%{!mcpu=*:%{!A5:%{!A6:%{!mARC600:%{!mARC700:-mARC700 -mEA}}}}} \
+%{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:-mARC700 -mEA}}}}} \
 %{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
 %{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
 %{msimd} \
@@ -238,7 +238,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
-  "%{mARC601:-mcpu=ARC601 %<mARC601}"
+  "%{mARC601:-mcpu=ARC601 %<mARC601}" 
 
 #if 0
 /* -mA7 is invalid for TARGET_CPU_OPT, it would have to be -mA7 -mnorm.  */

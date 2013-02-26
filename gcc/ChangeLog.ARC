@@ -1,3 +1,8 @@
+2013-02-26  Simon Cook  <simon.cook@embecosm.com>
+
+	* config/arc/arc.h (ASM_SPEC): Change condition for assembler
+	arguments.
+
 2012-12-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/predicates.md <long_immediate_loadstore_operand>:
