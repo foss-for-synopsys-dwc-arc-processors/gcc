@@ -121,7 +121,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC601|mcpu=arc601:-mARC601} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
-%{!mcpu=*:%{!A5:%{!A6:%{!mARC600:%{!mARC700:-mARC700 -mEA}}}}} \
+%{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:-mARC700 -mEA}}}}} \
 %{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
 %{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
 %{msimd} \
@@ -201,9 +201,9 @@ along with GCC; see the file COPYING3.  If not see
 
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
   "%{mARC5:-mcpu=A5 %<mA5}" \
-  "%{mARC600:-mcpu=ARC600 %<mARC600}" \
+  "%{mARC600|mA6:-mcpu=ARC600 %<mARC600}" \
   "%{mARC601:-mcpu=ARC601 %<mARC601}" \
-  "%{mARC700:-mcpu=ARC700 %<mARC700}"
+  "%{mARC700|mA7:-mcpu=ARC700 %<mARC700}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 

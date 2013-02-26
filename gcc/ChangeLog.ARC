@@ -1,3 +1,9 @@
+2013-02-26  Simon Cook  <simon.cook@embecosm.com>
+
+	* config/arc/arc.h (ASM_SPEC): Change condition for assembler
+	arguments.
+	(DRIVER_SELF_SPECS): Parse -mA6 and -mA7.
+
 2013-02-25  Simon Cook  <simon.cook@embecosm.com>
 
 	* config.gcc: Change references for arc-*-elf* to arc*-*-elf*.
