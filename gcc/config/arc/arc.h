@@ -163,6 +163,14 @@ along with GCC; see the file COPYING3.  If not see
 "
 
 #if UCLIBC_DEFAULT
+
+#define TARGET_OS_CPP_BUILTINS() \
+  do						\
+    {						\
+      LINUX_TARGET_OS_CPP_BUILTINS();		\
+    }						\
+  while (0)
+
 #if 1
 /* Note that the default is to link against dynamic libraries, if they are
    available.  While it is a bit simpler to get started with static linking,

@@ -1,3 +1,7 @@
+2013-02-28  Vineet Gupta    <vgupta@synopsys.com>
+
+	* config/arc/arc.h (TARGET_OS_CPP_BUILTINS): Provide default
+
 2013-02-26  Simon Cook  <simon.cook@embecosm.com>
 
 	* config/arc/arc.h (ASM_SPEC): Change condition for assembler
