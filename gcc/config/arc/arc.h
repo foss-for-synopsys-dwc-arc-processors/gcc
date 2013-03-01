@@ -99,6 +99,16 @@ along with GCC; see the file COPYING3.  If not see
       builtin_define ("__big_endian__"); \
 } while(0)
 
+#if DEFAULT_LIBC == LIBC_UCLIBC
+
+#define TARGET_OS_CPP_BUILTINS() \
+  do \
+    { \
+      GNU_USER_TARGET_OS_CPP_BUILTINS (); \
+    } \
+  while (0)
+#endif
+
 /* Match the macros used in the assembler.  */
 #define CPP_SPEC "\
 %{msimd:-D__Xsimd} %{mno-mpy:-D__Xno_mpy} %{mswap:-D__Xswap} \
