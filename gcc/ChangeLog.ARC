@@ -1,3 +1,8 @@
+2013-03-04  Simon Cook  <simon.cook@embecosm.com>
+
+	* config.gcc (arc*-*-elf*): Add big endian options based on
+	arc*-*-linux-uclibc*.
+
 2013-02-26  Simon Cook  <simon.cook@embecosm.com>
 
 	* config/arc/arc.h (ASM_SPEC): Change condition for assembler

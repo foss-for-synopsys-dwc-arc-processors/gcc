@@ -867,6 +867,19 @@ arc*-*-elf*)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
 	esac
+	if test x${with_endian} = x; then
+		case ${target} in
+		arc*be-*-* | arc*eb-*-*)	with_endian=big ;;
+		*)				with_endian=little ;;
+		esac
+	fi
+	case ${with_endian} in
+	big|little)		;;
+	*)	echo "with_endian=${with_endian} not supported."; exit 1 ;;
+	esac
+	case ${with_endian} in
+	big*)	tm_defines="DRIVER_ENDIAN_SELF_SPECS=\\\"%{!EL:%{!mlittle-endian:-mbig-endian}}\\\" ${tm_defines}"
+	esac
 	;;
 arc*-*-linux-uclibc*)
 	extra_headers="arc-simd.h"
