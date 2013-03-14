@@ -922,7 +922,10 @@ extern int arc_initial_elimination_offset(int from, int to);
    for profiling a function entry.
    We actually emit the profiler code at the call site, so leave this one
    empty.  */
-#define FUNCTION_PROFILER(FILE, LABELNO)
+#define FUNCTION_PROFILER(FILE, LABELNO) \
+  if (TARGET_UCB_MCOUNT) \
+    fprintf (FILE, "\t%s\n", arc_output_libcall ("__mcount"))
+
 #define NO_PROFILE_COUNTERS  1
 
 /* Trampolines.  */

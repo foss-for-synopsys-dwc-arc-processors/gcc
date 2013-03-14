@@ -3183,7 +3183,7 @@ arc_print_operand_address (FILE *file , rtx addr)
    X is a store which we want to examine for an UNSPEC_PROF, which
    would be an address loaded into a register, or directly used in a MEM.
    If we found an UNSPEC_PROF, if we encounter a new counter the first time,
-   write out ia description and a data allocation for a 32 bit counter.
+   write out a description and a data allocation for a 32 bit counter.
    Also, fill in the appropriate symbol_ref into each UNSPEC_PROF instance.  */
 
 static void
@@ -5478,6 +5478,10 @@ bool
 arc_profile_call (rtx callee)
 {
   rtx from = XEXP (DECL_RTL (current_function_decl), 0);
+
+  if (TARGET_UCB_MCOUNT)
+    /* Profiling is done by instrumenting the callee.  */
+    return false;
 
   if (CONSTANT_P (callee))
     {

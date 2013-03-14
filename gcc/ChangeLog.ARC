@@ -1,3 +1,9 @@
+2013-03-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_profile_call): Check for TARGET_UCB_MCOUNT.
+	* config/arc/arc.h (FUNCTION_PROFILER): Likewise.
+	* config/arc/arc.opt (mucb-mcount): New option.
+
 2013-03-04  Simon Cook  <simon.cook@embecosm.com>
 
 	* config.gcc (arc*-*-elf*): Add big endian options based on
