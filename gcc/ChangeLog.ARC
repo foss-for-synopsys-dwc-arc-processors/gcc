@@ -5,6 +5,9 @@
 	* testsuite/gcc.target/arc/sdata-1.c: New file.
 	* testsuite/gcc.target/arc/sdata-2.c: Likewise.
 
+	* config/arc/arc.h [DEFAULT_LIBC == LIBC_UCLIBC] (TARGET_ASM_FILE_END):
+	Define.
+
 2013-03-14  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_profile_call): Check for TARGET_UCB_MCOUNT.

@@ -199,6 +199,7 @@ along with GCC; see the file COPYING3.  If not see
   "%{pthread:-lpthread} \
    %{shared:-lc} \
    %{!shared:%{pg|p|profile:-lgmon -u profil --defsym __profil=profil} -lc}"
+#define TARGET_ASM_FILE_END file_end_indicate_exec_stack
 #else
 #undef LIB_SPEC
 /* -lc_p not present for arc-elf32-* : ashwin */
