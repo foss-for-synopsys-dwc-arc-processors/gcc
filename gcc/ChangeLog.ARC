@@ -7,6 +7,36 @@
 	(EH_RETURN_DATA_REGNO): Define.
 	* config/arc/arc.md (eh_return): New pattern.
 
+2013-03-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (enum reg_class): Rename R0_REG to R0_REGS.
+	(REG_CLASS_NAMES): Likewise.
+	* config/arc/constraints.md (x): Likewise.
+	* config/arc/arc.md (R0_REG, R1_REG, R2_REG, R3_REG): New constants.
+	(MUL64_OUT_REG): Likewise.
+	(mulsidi_600, umulsidi_600): Use new constants.
+	(mulsi3): Make pattern unconditional, emit sfunc pattern as fallback.
+	(mulsi3_600_lib, umulsi3_highpart_600_lib_le): New patterns.
+	(umulsi3_highpart_600_lib_be, umulsidi3_600_lib): Likewise.
+	(umulsidi3_600_lib+1): Likewise.
+	(mulsidi3): Enable / complete support for TARGET_MUL64_SET.
+	(mulsidi3_700): New a define_insn_and_split.
+	(umulsi3_highpart): Enable / complete support for TARGET_MUL64_SET.
+	Add support to generate sfunc pattern as fallback.
+	(umulsidi3): Likewise.
+	* testsuite/gcc.target/arc/mulsidi3_highpart-1.c: New file.
+	* testsuite/gcc.target/arc/mulsidi3_highpart-2.c: Likewise.
+
+2013-03-15  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.opt (msdata): Replace with:
+	(mno-sdata).
+	* testsuite/gcc.target/arc/sdata-1.c: New file.
+	* testsuite/gcc.target/arc/sdata-2.c: Likewise.
+
+	* config/arc/arc.h [DEFAULT_LIBC == LIBC_UCLIBC] (TARGET_ASM_FILE_END):
+	Define.
+
 2013-03-14  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_profile_call): Check for TARGET_UCB_MCOUNT.

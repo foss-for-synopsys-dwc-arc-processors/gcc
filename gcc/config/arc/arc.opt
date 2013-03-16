@@ -105,9 +105,9 @@ mno-brcc
 Target Report Mask(NO_BRCC_SET)
 Do no generate BRcc instructions in arc_reorg.
 
-mno-sdata
-Target Report Mask(NO_SDATA_SET)
-Do not generate sdata references
+msdata
+Target Report InverseMask(NO_SDATA_SET)
+Generate sdata references.  This is the default, unless you compile for PIC.
 
 mno-millicode
 Target Report Mask(NO_MILLICODE_THUNK_SET)

@@ -128,11 +128,16 @@
    (VUNSPEC_TRAP_S 27) ; blockage insn for trap_s generation
    (VUNSPEC_UNIMP_S 28) ; blockage insn for unimp_s generation
 
+   (R0_REG 0)
+   (R1_REG 1)
+   (R2_REG 2)
+   (R3_REG 3)
    (R12_REG 12)
    (SP_REG 28)
    (ILINK1_REGNUM 29)
    (ILINK2_REGNUM 30)
    (RETURN_ADDR_REGNUM 31)
+   (MUL64_OUT_REG 58)
 
    (VUNSPEC_DEXCL 32) ; blockage insn for reading an auxiliary register without LR support
    (VUNSPEC_DEXCL_NORES 33) ; blockage insn for reading an auxiliary register without LR support
@@ -1592,18 +1597,18 @@
  [(set (match_operand:SI 0 "nonimmediate_operand"            "")
 	(mult:SI (match_operand:SI 1 "register_operand"  "")
 		 (match_operand:SI 2 "nonmemory_operand" "")))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET)
-    || TARGET_MUL64_SET || TARGET_MULMAC_32BY16_SET"
-  "
+  ""
 {
-  if ((TARGET_ARC700 && !TARGET_NOMPY_SET) &&
-      !register_operand (operands[0], SImode))
+  if (TARGET_ARC700 && !TARGET_NOMPY_SET)
     {
-      rtx result = gen_reg_rtx (SImode);
+      if (!register_operand (operands[0], SImode))
+	{
+	  rtx result = gen_reg_rtx (SImode);
 
-      emit_insn (gen_mulsi3 (result, operands[1], operands[2]));
-      emit_move_insn (operands[0], result);
-      DONE;
+	  emit_insn (gen_mulsi3 (result, operands[1], operands[2]));
+	  emit_move_insn (operands[0], result);
+	  DONE;
+	}
     }
   else if (TARGET_MUL64_SET)
     {
@@ -1631,7 +1636,15 @@
       emit_move_insn (operands[0], gen_acc2 ());
       DONE;
     }
-}")
+  else
+    {
+      emit_move_insn (gen_rtx_REG (SImode, R0_REG), operands[1]);
+      emit_move_insn (gen_rtx_REG (SImode, R1_REG), operands[2]);
+      emit_insn (gen_mulsi3_600_lib ());
+      emit_move_insn (operands[0], gen_rtx_REG (SImode, R0_REG));
+      DONE;
+    }
+})
 
 ; mululw conditional execution without a LIMM clobbers an input register;
 ; we'd need a different pattern to describe this.
@@ -1697,8 +1710,28 @@
    (set_attr "predicable" "yes,yes,no,yes")
    (set_attr "cond" "canuse,canuse,canuse_limm,canuse")])
 
+; If we compile without an mul option enabled, but link with libraries
+; for a mul option, we'll see clobbers of multiplier output registers.
+; There is also an implementation using norm that clobbers the loop registers.
+(define_insn "mulsi3_600_lib"
+  [(set (reg:SI R0_REG)
+	(mult:SI (reg:SI R0_REG) (reg:SI R1_REG)))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:SI R1_REG))
+   (clobber (reg:SI R2_REG))
+   (clobber (reg:SI R3_REG))
+   (clobber (reg:DI MUL64_OUT_REG))
+   (clobber (reg:SI LP_COUNT))
+   (clobber (reg:SI LP_START))
+   (clobber (reg:SI LP_END))
+   (clobber (reg:CC CC_REG))]
+  "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+  "*return arc_output_libcall (\"__mulsi3\");"
+  [(set_attr "is_sfunc" "yes")])
+
 (define_insn "mulsidi_600"
-  [(set (reg:DI 58)
+  [(set (reg:DI MUL64_OUT_REG)
 	(mult:DI (sign_extend:DI
 		   (match_operand:SI 0 "register_operand"  "Rcq#q,c,c,%c"))
 		 (sign_extend:DI
@@ -1714,7 +1747,7 @@
    (set_attr "cond" "canuse,canuse,canuse_limm,canuse")])
 
 (define_insn "umulsidi_600"
-  [(set (reg:DI 58)
+  [(set (reg:DI MUL64_OUT_REG)
 	(mult:DI (zero_extend:DI
 		   (match_operand:SI 0 "register_operand"  "Rcq#q,c,c,%c"))
 		 (sign_extend:DI
@@ -1753,10 +1786,11 @@
 	(mult:DI (sign_extend:DI(match_operand:SI 1 "register_operand" ""))
 		 (sign_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
   "(TARGET_ARC700 && !TARGET_NOMPY_SET)
+   || TARGET_MUL64_SET
    || TARGET_MULMAC_32BY16_SET"
 "
 {
-  if ((TARGET_ARC700 && !TARGET_NOMPY_SET))
+  if (TARGET_ARC700 && !TARGET_NOMPY_SET)
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -1769,11 +1803,12 @@
 	  DONE;
 	}
     }
-  if (TARGET_MUL64_SET)
+  else if (TARGET_MUL64_SET)
     {
       operands[2] = force_reg (SImode, operands[2]);
       emit_insn (gen_mulsidi_600 (operands[1], operands[2]));
-      emit_move_insn (operands[0], gen_rtx_REG (DImode, 58));
+      emit_move_insn (operands[0], gen_rtx_REG (DImode, MUL64_OUT_REG));
+      DONE;
     }
   else if (TARGET_MULMAC_32BY16_SET)
     {
@@ -1833,33 +1868,23 @@
 
 
 ;; DI <- DI(signed SI) * DI(signed SI)
-;;; NEW VERSION still needs work:
-;(define_insn_and_split "mulsidi3_700"
-;  [(set (match_operand:DI 0 "register_operand" "=&r")
-;	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "%c"))
-;		 (sign_extend:DI (match_operand:SI 2 "register_operand" "cL"))))]
-;  "TARGET_ARC700 && !TARGET_NOMPY_SET"
-;  "#"
-;  "reload_completed"
-;  [(const_int 0)]
-;{
-;  int hi = !TARGET_BIG_ENDIAN;
-;  int lo = !hi;
-;  rtx l0 = operand_subword (operands[0], lo, 0, DImode);
-;  rtx h0 = operand_subword (operands[0], hi, 0, DImode);
-;  emit_insn (gen_mulsi3_highpart (h0, operands[1], operands[2]));
-;  emit_insn (gen_mulsi3_700 (l0, operands[1], operands[2]));
-;  DONE;
-;}
-;  [(set_attr "type" "multi")
-;   (set_attr "length" "8")])
-;;; OLD VERSION
-(define_insn "mulsidi3_700"
+(define_insn_and_split "mulsidi3_700"
   [(set (match_operand:DI 0 "register_operand" "=&r")
-	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "c"))
+	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "%c"))
 		 (sign_extend:DI (match_operand:SI 2 "register_operand" "cL"))))]
   "TARGET_ARC700 && !TARGET_NOMPY_SET"
-  "mpy%? %L0,%1,%S2\;mpyh%? %H0,%1,%S2 ;; mulsidi3"
+  "#"
+  "&& reload_completed"
+  [(const_int 0)]
+{
+  int hi = TARGET_BIG_ENDIAN ? 0 : UNITS_PER_WORD;
+  int lo = TARGET_BIG_ENDIAN ? UNITS_PER_WORD : 0;
+  rtx l0 = simplify_gen_subreg (word_mode, operands[0], DImode, lo);
+  rtx h0 = simplify_gen_subreg (word_mode, operands[0], DImode, hi);
+  emit_insn (gen_mulsi3_highpart (h0, operands[1], operands[2]));
+  emit_insn (gen_mulsi3_700 (l0, operands[1], operands[2]));
+  DONE;
+}
   [(set_attr "type" "multi")
    (set_attr "length" "8")])
 
@@ -1895,6 +1920,46 @@
    (set_attr "predicable" "yes,no,yes,no")
    (set_attr "cond" "canuse,nocond,canuse,nocond")])
 
+; Implementations include additional labels for umulsidi3, so we got all
+; the same clobbers - plus one for the result low part.  */
+(define_insn "umulsi3_highpart_600_lib_le"
+  [(set (reg:SI R1_REG)
+	(truncate:SI
+	 (lshiftrt:DI
+	  (mult:DI (zero_extend:DI (reg:SI R0_REG))
+		   (zero_extend:DI (reg:SI R1_REG)))
+	  (const_int 32))))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:SI R0_REG))
+   (clobber (reg:DI R2_REG))
+   (clobber (reg:SI R12_REG))
+   (clobber (reg:DI MUL64_OUT_REG))
+   (clobber (reg:CC CC_REG))]
+  "!TARGET_BIG_ENDIAN
+   && !TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+  "*return arc_output_libcall (\"__umulsi3_highpart\");"
+  [(set_attr "is_sfunc" "yes")])
+
+(define_insn "umulsi3_highpart_600_lib_be"
+  [(set (reg:SI R0_REG)
+	(truncate:SI
+	 (lshiftrt:DI
+	  (mult:DI (zero_extend:DI (reg:SI R0_REG))
+		   (zero_extend:DI (reg:SI R1_REG)))
+	  (const_int 32))))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:SI R1_REG))
+   (clobber (reg:DI R2_REG))
+   (clobber (reg:SI R12_REG))
+   (clobber (reg:DI MUL64_OUT_REG))
+   (clobber (reg:CC CC_REG))]
+  "TARGET_BIG_ENDIAN
+   && !TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+  "*return arc_output_libcall (\"__umulsi3_highpart\");"
+  [(set_attr "is_sfunc" "yes")])
+
 ;; (zero_extend:DI (const_int)) leads to internal errors in combine, so we
 ;; need a separate pattern for immediates
 ;; ??? This is fine for combine, but not for reload.
@@ -1921,10 +1986,22 @@
 	   (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
 	   (zero_extend:DI (match_operand:SI 2 "nonmemory_operand" "")))
 	  (const_int 32))))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET"
+  "TARGET_ARC700 || (!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET)"
   "
 {
   rtx target = operands[0];
+
+  if (!TARGET_ARC700 || TARGET_NOMPY_SET)
+    {
+      emit_move_insn (gen_rtx_REG (SImode, 0), operands[1]);
+      emit_move_insn (gen_rtx_REG (SImode, 1), operands[2]);
+      if (TARGET_BIG_ENDIAN)
+	emit_insn (gen_umulsi3_highpart_600_lib_be ());
+      else
+	emit_insn (gen_umulsi3_highpart_600_lib_le ());
+      emit_move_insn (target, gen_rtx_REG (SImode, 0));
+      DONE;
+    }
 
   if (!register_operand (target, SImode))
     target = gen_reg_rtx (SImode);
@@ -1944,11 +2021,9 @@
   [(set (match_operand:DI 0 "nonimmediate_operand" "")
 	(mult:DI (zero_extend:DI(match_operand:SI 1 "register_operand" ""))
 		 (zero_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET)
-   || TARGET_MULMAC_32BY16_SET"
-"
+  ""
 {
-  if ((TARGET_ARC700 && !TARGET_NOMPY_SET))
+  if (TARGET_ARC700 && !TARGET_NOMPY_SET)
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -1964,7 +2039,8 @@
     {
       operands[2] = force_reg (SImode, operands[2]);
       emit_insn (gen_mulsidi_600 (operands[1], operands[2]));
-      emit_move_insn (operands[0], gen_rtx_REG (DImode, 58));
+      emit_move_insn (operands[0], gen_rtx_REG (DImode, MUL64_OUT_REG));
+      DONE;
     }
   else if (TARGET_MULMAC_32BY16_SET)
     {
@@ -1979,7 +2055,15 @@
       emit_move_insn (result_low, gen_acc2 ());
       DONE;
     }
-}")
+  else
+    {
+      emit_move_insn (gen_rtx_REG (SImode, R0_REG), operands[1]);
+      emit_move_insn (gen_rtx_REG (SImode, R1_REG), operands[2]);
+      emit_insn (gen_umulsidi3_600_lib ());
+      emit_move_insn (operands[0], gen_rtx_REG (DImode, R0_REG));
+      DONE;
+    }
+})
 
 (define_insn "umul64_600"
   [(set (reg:DI 56)
@@ -2047,6 +2131,42 @@
 }
   [(set_attr "type" "umulti")
   (set_attr "length" "8")])
+
+(define_insn "umulsidi3_600_lib"
+  [(set (reg:DI R0_REG)
+	(mult:DI (zero_extend:DI (reg:SI R0_REG))
+		 (zero_extend:DI (reg:SI R1_REG))))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:DI R2_REG))
+   (clobber (reg:SI R12_REG))
+   (clobber (reg:DI MUL64_OUT_REG))
+   (clobber (reg:CC CC_REG))]
+   "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+  "*return arc_output_libcall (\"__umulsidi3\");"
+  [(set_attr "is_sfunc" "yes")])
+
+(define_peephole2
+  [(parallel
+     [(set (reg:DI R0_REG)
+	   (mult:DI (zero_extend:DI (reg:SI R0_REG))
+		    (zero_extend:DI (reg:SI R1_REG))))
+      (clobber (reg:SI RETURN_ADDR_REGNUM))
+      (clobber (reg:DI R2_REG))
+      (clobber (reg:SI R12_REG))
+      (clobber (reg:DI MUL64_OUT_REG))
+      (clobber (reg:CC CC_REG))])]
+  "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && peep2_regno_dead_p (1, TARGET_BIG_ENDIAN ? R1_REG : R0_REG)"
+  [(pc)]
+{
+  if (TARGET_BIG_ENDIAN)
+    emit_insn (gen_umulsi3_highpart_600_lib_be ());
+  else
+    emit_insn (gen_umulsi3_highpart_600_lib_le ());
+  DONE;
+})
 
 (define_expand "addsi3"
   [(set (match_operand:SI 0 "dest_reg_operand" "")

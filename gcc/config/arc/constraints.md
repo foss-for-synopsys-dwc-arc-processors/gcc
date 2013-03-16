@@ -1,5 +1,5 @@
 ;; Constraint definitions for Synopsys DesignWare ARC.
-;; Copyright (C) 2007-2012 Free Software Foundation, Inc.
+;; Copyright (C) 2007-2013 Free Software Foundation, Inc.
 ;;
 ;; This file is part of GCC.
 ;;
@@ -46,7 +46,7 @@
   "@internal
    Loop count register @code{r60}")
 
-(define_register_constraint "x" "R0_REG"
+(define_register_constraint "x" "R0_REGS"
   "@code{R0} register.")
 
 (define_register_constraint "Rgp" "GP_REG"
