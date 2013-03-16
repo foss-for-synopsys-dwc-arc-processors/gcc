@@ -1,5 +1,5 @@
 /* Definitions of target machine for GNU compiler, Synopsys DesignWare ARC cpu.
-   Copyright (C) 1994, 1995, 1997, 1998, 2007-2012
+   Copyright (C) 1994, 1995, 1997, 1998, 2007-2013
    Free Software Foundation, Inc.
 
    Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
@@ -590,7 +590,7 @@ extern unsigned int arc_mode_class[];
 enum reg_class
 {
    NO_REGS,
-   R0_REG,			/* 'x' */
+   R0_REGS,			/* 'x' */
    GP_REG,			/* 'Rgp' */
    FP_REG,			/* 'f' */
    SP_REGS,			/* 'b' */
@@ -617,7 +617,7 @@ enum reg_class
 #define REG_CLASS_NAMES	  \
 {                         \
   "NO_REGS",           	  \
-  "R0_REG",            	  \
+  "R0_REGS",            	  \
   "GP_REG",            	  \
   "FP_REG",            	  \
   "SP_REGS",		  \

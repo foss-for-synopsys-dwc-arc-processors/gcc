@@ -1,3 +1,16 @@
+2013-03-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* lib1funcs.S (__mulsi3): Use mlo register name.
+	(__umulsidi3): Use ARCompact instructions & re-schedule for
+	ARC600 & ARC700 pipelines.  Provide __umulsi3_highpart symbol
+	for __ARC700__, __ARC_MUL64__ and __ARC601__.
+	(__umulsi3_highpart): New function.
+	* config/arc/t-arc (LIB1ASMFUNCS): Add _umulsi3_highpart.
+	* longlong.h [__arc__] (umul_ppmm): Remove.
+	[__arc__] (__umulsidi3): Define.
+	[__arc__ && __ARC_NORM__] (count_leading_zeroes): Define.
+	[__arc__ && __ARC_NORM__] (COUNT_LEADING_ZEROS_0): Likewise.
+
 2013-02-25  Simon Cook  <simon.cook@embecosm.com>
 
 	* config.host: arc-*-elf* renamed to arc*-*-elf*.

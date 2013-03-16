@@ -1,6 +1,6 @@
 ; libgcc1 routines for Synopsys DesignWare ARC cpu.
 
-/* Copyright (C) 1995, 1997, 2007-2012 Free Software Foundation, Inc.
+/* Copyright (C) 1995, 1997, 2007-2013 Free Software Foundation, Inc.
    Contributor: Joern Rennecke <joern.rennecke@embecosm.com>
 		on behalf of Synopsys Inc.
 
@@ -77,7 +77,7 @@ SYM(__mulsi3):
 	FUNC(__mulsi3)
 	mulu64 r0,r1
 	j_s.d [blink]
-	mov_s r0,r57
+	mov_s r0,mlo
 	ENDFUNC(__mulsi3)
 #elif defined (__ARC700__)
 	HIDDEN_FUNC(__mulsi3)
@@ -162,6 +162,19 @@ SYM(__mulsi3):
 
 	.global SYM(__umulsidi3)
 SYM(__umulsidi3):
+	HIDDEN_FUNC(__umulsidi3)
+/* We need ARC700 /ARC_MUL64 definitions of __umulsidi3 / __umulsi3_highpart
+   in case some code has been compiled without multiply support enabled,
+   but linked with the multiply-support enabled libraries.
+   For ARC601 (i.e. without a barrel shifter), we also use umuldisi3 as our
+   umulsi3_highpart implementation; the use of the latter label doesn't
+   actually benefit ARC601 platforms, but is useful when ARC601 code is linked
+   against other libraries.  */
+#if defined (__ARC700__) || defined (__ARC_MUL64__) || defined (__ARC601__)
+	.global SYM(__umulsi3_highpart)
+SYM(__umulsi3_highpart):
+	HIDDEN_FUNC(__umulsi3_highpart)
+#endif
 
 /* This the simple version.
 
@@ -173,47 +186,73 @@ SYM(__umulsidi3):
       b <<= 1;
     }
 */
-#ifdef __ARC700__
 #include "ieee-754/arc-ieee-754.h"
-	HIDDEN_FUNC(__umulsidi3)
+
+#ifdef __ARC700__
 	mov_s	r12,DBL0L
 	mpyu	DBL0L,r12,DBL0H
 	j_s.d	[blink]
 	mpyhu	DBL0H,r12,DBL0H
-	ENDFUNC(__umulsidi3)
-#else /* !__ARC700__*/
-	FUNC(__umulsidi3)
-	mov r2,0		; Top part of b.
-	mov r3,0		; Accumulate result here.
-	mov r4,0
+#elif defined (__ARC_MUL64__)
+/* Likewise for __ARC_MUL64__ */
+	mulu64 r0,r1
+	mov_s DBL0L,mlo
+	j_s.d [blink]
+	mov_s DBL0H,mhi
+#else /* !__ARC700__ && !__ARC_MUL64__ */
+/* Although it might look tempting to extend this to handle muldi3,
+   using mulsi3 twice with 2.25 cycles per 32 bit add is faster
+   than one loop with 3 or four cycles per 32 bit add.  */
+	asl.f r12,0		; Top part of b.
+	mov_s r2,0		; Accumulate result here.
+	bbit1.d r0,0,@.Ladd
+	mov_s r3,0
+.Llooptst:
+	rlc r12,r12
+	breq r0,0,@.Ldone	; while (a)
 .Lloop:
-	sub.f 0,r0,0		; while (a)
-	nop
-	beq.nd @.Ldone
-	and.f 0,r0,1		; if (a & 1)
-	nop
-	bz.nd @.Lnoadd	
-	add.f r4,r4,r1	; r += b
-	adc   r3,r3,r2
-.Lnoadd:	
-	lsr r0,r0		; a >>= 1
 	asl.f r1,r1		; b <<= 1
-	b.d @.Lloop
-	rlc r2,r2
+	bbit0.d r0,1,@.Llooptst
+	lsr r0,r0		; a >>= 1
+	rlc r12,r12
+.Ladd:
+	add.f r3,r3,r1	; r += b
+	brne.d r0,0,@.Lloop	; while (a);
+	adc   r2,r2,r12
 .Ldone:
-#ifdef __big_endian__
-	mov r1,r4
-	j.d [blink]
-	mov r0,r3
-#else
-	mov r0,r4
-	j.d [blink]
-	mov r1,r3
-	ENDFUNC(__umulsidi3)
+	mov_s DBL0L,r3
+	j_s.d [blink]
+	mov DBL0H,r2
 #endif /* !__ARC700__*/
+	ENDFUNC(__umulsidi3)
+#if defined (__ARC700__) || defined (__ARC_MUL64__) || defined (__ARC601__)
+	ENDFUNC(__umulsi3_highpart)
 #endif
-
 #endif /* L_umulsidi3 */
+
+#ifdef  L_umulsi3_highpart
+#include "ieee-754/arc-ieee-754.h"
+/* For use without a barrel shifter, and for ARC700 / ARC_MUL64, the
+   mulsidi3 algorithms above look better, so for these, there is an
+   extra label up there.  */
+#if !defined (__ARC700__) && !defined (__ARC_MUL64__) && !defined (__ARC601__)
+	.global SYM(__umulsi3_highpart)
+SYM(__umulsi3_highpart):
+	HIDDEN_FUNC(__umulsi3_highpart)
+	mov_s r2,0
+	mov_s r3,32
+.Loop:
+	lsr.f r0,r0
+	add.cs.f r2,r2,r1
+	sub_s r3,r3,1
+	brne.d r0,0,.Loop
+	rrc r2,r2
+	j_s.d	[blink]
+/* Make the result register peephole-compatible with mulsidi3.  */
+	lsr DBL0H,r2,r3
+	ENDFUNC(__umulsi3_highpart)
+#endif /* !__ARC700__  && !__ARC601__ */
+#endif /* L_umulsi3_highpart */
 
 #ifdef L_divmod_tools
 
