@@ -4381,6 +4381,34 @@
 	       (const_int 4)]
 	      (const_int 2)))])
 
+(define_insn_and_split "eh_return"
+  [(eh_return)
+   (use (match_operand:SI 0 "move_src_operand" "rC32,mCalCpc"))
+   (clobber (match_scratch 1 "=X,r"))]
+  ""
+  "#"
+  "reload_completed"
+  [(set (match_dup 2) (match_dup 0))]
+{
+  int offs = arc_return_slot_offset ();
+
+  if (offs < 0)
+    operands[2] = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
+  else
+    {
+      if (!register_operand (operands[0], Pmode)
+	  && !satisfies_constraint_C32 (operands[0]))
+	{
+	  emit_move_insn (operands[1], operands[0]);
+	  operands[0] = operands[1];
+	}
+      operands[2]
+	= gen_frame_mem (SImode,
+			 plus_constant (Pmode, stack_pointer_rtx, offs));
+    }
+}
+  [(set_attr "length" "12")])
+
  ;; Comment in final.c (insn_current_reference_address) says
  ;; forward branch addresses are calculated from the next insn after branch
  ;; and for backward branches, it is calculated from the branch insn start.

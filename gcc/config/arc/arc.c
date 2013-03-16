@@ -2400,6 +2400,18 @@ arc_expand_epilogue (int sibcall_p)
     }
 }
 
+/* Return the offset relative to the stack pointer where the return address
+   is stored, or -1 if it is not stored.  */
+
+int
+arc_return_slot_offset ()
+{
+  struct arc_frame_info *afi = &cfun->machine->frame_info;
+
+  return (afi->save_return_addr
+	  ? afi->total_size - afi->pretend_size - afi->extra_size : -1);
+}
+
 /* PIC */
 
 /* Emit special PIC prologues and epilogues.  */

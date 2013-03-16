@@ -1500,8 +1500,15 @@ extern int arc_return_address_regs[4];
 
 /* Define this macro to 0 if your target supports DWARF 2 frame unwind
    information, but it does not yet work with exception handling.  */
+/* N.B. the below test is valid in an #if, but not in a C expression.  */
+#if DEFAULT_LIBC == LIBC_UCLIBC
+#define DWARF2_UNWIND_INFO 1
+#else
 #define DWARF2_UNWIND_INFO 0
+#endif
 
+#define EH_RETURN_DATA_REGNO(N)	\
+  ((N) < 4 ? (N) : INVALID_REGNUM)
 
 /* Turn off splitting of long stabs.  */
 #define DBX_CONTIN_LENGTH 0

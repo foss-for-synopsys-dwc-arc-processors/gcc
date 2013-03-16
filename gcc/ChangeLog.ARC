@@ -1,3 +1,12 @@
+2013-03-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_return_slot_offset): Declare.
+	* config/arc/arc.c (arc_return_slot_offset): New function.
+	* gcc/config/arc/arc.h [DEFAULT_LIBC == LIBC_UCLIBC]
+	(DWARF2_UNWIND_INFO): Set to 1.
+	(EH_RETURN_DATA_REGNO): Define.
+	* config/arc/arc.md (eh_return): New pattern.
+
 2013-03-14  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_profile_call): Check for TARGET_UCB_MCOUNT.
