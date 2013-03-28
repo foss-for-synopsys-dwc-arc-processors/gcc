@@ -1,3 +1,8 @@
+2013-03-16  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* config/arc/arc.h (DRIVER_SELF_SPECS): Insert space before
+	concatenated -mcpu options.
+
 2013-03-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (arc_return_slot_offset): Declare.
