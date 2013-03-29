@@ -65,6 +65,14 @@ mmpy_option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
 -mmpy_option={0,1,2,3,4,5,6} Compile ARC EM code with a multiplier design option. WLH1 is default on
 
+mdiv_rem
+Target Report Mask(DIVREM)
+Enable DIV-REM instructions for ARCv2
+
+mcode_density
+Target Report Mask(CODE_DENSITY)
+Enable code density instructions for ARCv2
+
 mmixed-code
 Target Report Mask(MIXED_CODE_SET)
 Tweak register allocation to help 16-bit instruction generation
