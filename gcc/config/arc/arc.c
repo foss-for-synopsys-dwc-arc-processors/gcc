@@ -204,6 +204,11 @@ enum arc_builtins {
   ARC_BUILTIN_TRAP_S     =   20,
   ARC_BUILTIN_UNIMP_S    =   21,
   ARC_BUILTIN_ALIGNED    =   22,
+  ARC_BUILTIN_KFLAG      =   23,
+  ARC_BUILTIN_CLRI       =   24,
+  ARC_BUILTIN_FFS        =   25,
+  ARC_BUILTIN_FLS        =   26,
+  ARC_BUILTIN_SETI       =   27,
 
   /* Sentinel to mark start of simd builtins.  */
   ARC_SIMD_BUILTIN_BEGIN      = 1000,
@@ -1360,10 +1365,17 @@ arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
       *no_add_attrs = true;
     }
   else if (strcmp (TREE_STRING_POINTER (value), "ilink1")
-	   && strcmp (TREE_STRING_POINTER (value), "ilink2"))
+	   && strcmp (TREE_STRING_POINTER (value), "ilink2") && !TARGET_EM)
     {
       warning (OPT_Wattributes,
                "argument of %qE attribute is not \"ilink1\" or \"ilink2\"",
+               name);
+      *no_add_attrs = true;
+    }
+  else if (TARGET_EM && strcmp (TREE_STRING_POINTER (value), "ilink"))
+    {
+      warning (OPT_Wattributes,
+               "argument of %qE attribute is not \"ilink\"",
                name);
       *no_add_attrs = true;
     }
@@ -1877,7 +1889,7 @@ arc_compute_function_type (struct function *fun)
 	{
 	  tree value = TREE_VALUE (args);
 
-	  if (!strcmp (TREE_STRING_POINTER (value), "ilink1"))
+	  if (!strcmp (TREE_STRING_POINTER (value), "ilink1") || !strcmp (TREE_STRING_POINTER (value), "ilink"))
 	    fn_type = ARC_FUNCTION_ILINK1;
 	  else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
 	    fn_type = ARC_FUNCTION_ILINK2;
@@ -5020,6 +5032,14 @@ arc_init_builtins (void)
 	= build_function_type (void_type_node,
 			   tree_cons (NULL_TREE, long_unsigned_type_node, endlink));
 
+    tree int_ftype_void
+      = build_function_type (integer_type_node,
+			     tree_cons (NULL_TREE, void_type_node, endlink));
+
+    tree void_ftype_int
+      = build_function_type (void_type_node,
+			     tree_cons (NULL_TREE, integer_type_node, endlink));
+
     /* Add the builtins.  */
     def_mbuiltin (1,"__builtin_arc_nop", void_ftype_void, ARC_BUILTIN_NOP);
     def_mbuiltin (TARGET_NORM, "__builtin_arc_norm", int_ftype_int, ARC_BUILTIN_NORM);
@@ -5029,7 +5049,7 @@ arc_init_builtins (void)
     def_mbuiltin (TARGET_MUL64_SET,"__builtin_arc_mulu64", void_ftype_usint_usint, ARC_BUILTIN_MULU64);
     def_mbuiltin (1,"__builtin_arc_rtie", void_ftype_void, ARC_BUILTIN_RTIE);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_sync", void_ftype_void, ARC_BUILTIN_SYNC);
-    def_mbuiltin ((TARGET_EA_SET),"__builtin_arc_divaw", int_ftype_int_int, ARC_BUILTIN_DIVAW);
+    def_mbuiltin ((TARGET_EA_SET && !TARGET_EM),"__builtin_arc_divaw", int_ftype_int_int, ARC_BUILTIN_DIVAW);
     def_mbuiltin (1,"__builtin_arc_brk", void_ftype_void, ARC_BUILTIN_BRK);
     def_mbuiltin (1,"__builtin_arc_flag", void_ftype_usint, ARC_BUILTIN_FLAG);
     def_mbuiltin (1,"__builtin_arc_sleep", void_ftype_usint, ARC_BUILTIN_SLEEP);
@@ -5041,6 +5061,12 @@ arc_init_builtins (void)
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
     def_mbuiltin (1,"__builtin_arc_aligned", int_ftype_pcvoid_int, ARC_BUILTIN_ALIGNED);
+
+    def_mbuiltin (TARGET_EM,"__builtin_arc_kflag", void_ftype_usint, ARC_BUILTIN_KFLAG);
+    def_mbuiltin (TARGET_EM,"__builtin_arc_clri", int_ftype_void, ARC_BUILTIN_CLRI);
+    def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_ffs", int_ftype_int, ARC_BUILTIN_FFS);
+    def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_fls", int_ftype_int, ARC_BUILTIN_FLS);
+    def_mbuiltin (TARGET_EM,"__builtin_arc_seti", void_ftype_int, ARC_BUILTIN_SETI);
 
     if (TARGET_SIMD_SET)
       arc_init_simd_builtins ();
