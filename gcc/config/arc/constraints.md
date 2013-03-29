@@ -403,4 +403,10 @@
   "@internal
    A signed 9-bit integer constant."
   (and (match_code "const_int")
-       (match_test "(ival >= -512) && (ival <=511)")))
+       (match_test "(ival >= -256) && (ival <=255)")))
+
+(define_constraint "Cm3"
+  "@internal
+   A signed 6-bit integer constant."
+  (and (match_code "const_int")
+       (match_test "(ival >= -32) && (ival <=31)")))
