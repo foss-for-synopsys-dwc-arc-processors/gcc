@@ -1817,12 +1817,12 @@
   [(set (match_operand:DI 0 "nonimmediate_operand" "")
 	(mult:DI (sign_extend:DI(match_operand:SI 1 "register_operand" ""))
 		 (sign_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET)
+  "((TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET)
    || TARGET_MUL64_SET
    || TARGET_MULMAC_32BY16_SET"
 "
 {
-  if (TARGET_ARC700 && !TARGET_NOMPY_SET)
+  if (((TARGET_ARC700 ||TARGET_EM) && !TARGET_NOMPY_SET))
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -1904,7 +1904,7 @@
   [(set (match_operand:DI 0 "register_operand" "=&r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "%c"))
 		 (sign_extend:DI (match_operand:SI 2 "register_operand" "cL"))))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET"
+  "(TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET"
   "#"
   "&& reload_completed"
   [(const_int 0)]
@@ -1928,8 +1928,8 @@
 	   (sign_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
 	   (sign_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
 	  (const_int 32))))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET"
-  "mpyh%? %0,%1,%2"
+  "(TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET"
+  "* return TARGET_ARC700 ? \"mpyh%? %0,%1,%2\" : \"mpym%? %0,%1,%2\"; "
   [(set_attr "length" "4,4,8,8")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no,yes,no")
@@ -1945,8 +1945,8 @@
 	   (zero_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
 	   (zero_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
 	  (const_int 32))))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET"
-  "mpyhu%? %0,%1,%2"
+  "(TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET"
+  "* return TARGET_ARC700 ? \"mpyhu%? %0,%1,%2\" : \"mpymu%? %0,%1,%2\"; "
   [(set_attr "length" "4,4,8,8")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no,yes,no")
@@ -2003,8 +2003,8 @@
 	   (zero_extend:DI (match_operand:SI 1 "register_operand"  " 0, c, 0,  0,  c"))
 	   (match_operand:DI 2 "immediate_usidi_operand" "L, L, I, Cal, Cal"))
 	  (const_int 32))))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET"
-  "mpyhu%? %0,%1,%2"
+  "(TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET"
+  "* return TARGET_ARC700 ? \"mpyhu%? %0,%1,%2\" : \"mpymu%? %0,%1,%2\"; "
   [(set_attr "length" "4,4,4,8,8")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no,no,yes,no")
@@ -2018,7 +2018,7 @@
 	   (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
 	   (zero_extend:DI (match_operand:SI 2 "nonmemory_operand" "")))
 	  (const_int 32))))]
-  "TARGET_ARC700 || (!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET)"
+  "TARGET_ARC700 || TARGET_EM || (!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET)"
   "
 {
   rtx target = operands[0];
@@ -2055,7 +2055,7 @@
 		 (zero_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
   ""
 {
-  if (TARGET_ARC700 && !TARGET_NOMPY_SET)
+  if ((TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET)
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -2148,7 +2148,7 @@
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "%c"))
 		 (zero_extend:DI (match_operand:SI 2 "register_operand" "c"))))]
 ;;		 (zero_extend:DI (match_operand:SI 2 "register_operand" "rL"))))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET"
+  "(TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET"
   "#"
   "reload_completed"
   [(const_int 0)]
@@ -2355,7 +2355,7 @@
 	adc %0,%1,%2"
   ; if we have a bad schedule after sched2, split.
   "reload_completed
-   && !optimize_size && TARGET_ARC700
+   && !optimize_size && (TARGET_ARC700 || TARGET_EM)
    && arc_scheduling_not_expected ()
    && arc_sets_cc_p (prev_nonnote_insn (insn))
    /* If next comes a return or other insn that needs a delay slot,
@@ -2567,7 +2567,7 @@
 	sbc %0,%1,%2"
   ; if we have a bad schedule after sched2, split.
   "reload_completed
-   && !optimize_size && TARGET_ARC700
+   && !optimize_size && (TARGET_ARC700 || TARGET_EM)
    && arc_scheduling_not_expected ()
    && arc_sets_cc_p (prev_nonnote_insn (insn))
    /* If next comes a return or other insn that needs a delay slot,
@@ -4289,7 +4289,7 @@
 (define_insn "trap_s"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "L,Cal")]
 		   VUNSPEC_TRAP_S)]
-  "TARGET_ARC700"
+  "TARGET_ARC700 || TARGET_EM"
 {
   if (which_alternative == 0)
     {
@@ -4307,7 +4307,7 @@
 (define_insn "unimp_s"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "N")]
 		   VUNSPEC_UNIMP_S)]
-  "TARGET_ARC700"
+  "TARGET_ARC700 || TARGET_EM"
   "unimp_s"
   [(set_attr "length" "4")
   (set_attr "type" "misc")])
