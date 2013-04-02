@@ -78,6 +78,10 @@ along with GCC; see the file COPYING3.  If not see
 	builtin_define ("__A7__");	\
 	builtin_define ("__ARC700__");	\
       }					\
+    else if (TARGET_EM)			\
+      {					\
+	builtin_define ("__EM__");	\
+      }					\
     if (TARGET_NORM)			\
       {					\
 	builtin_define ("__ARC_NORM__");\
@@ -132,6 +136,8 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
 %{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:-mARC700 -mEA}}}}} \
+%{mcpu=EM|mEM:%<mbarrel_shifter}\
+%{mcpu=EM|mEM:%<mno-mpy}\
 %{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
 %{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
 %{msimd} \
@@ -139,6 +145,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mARC700|mA7:%{mlock}} \
 %{mcpu=ARC700|mARC700|mA7:%{mswape}} \
 %{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
+%{mcpu=EM|mEM:-mEM} \
 "
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
@@ -178,7 +185,8 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} crtbegin.o%s"
+#define STARTFILE_SPEC "%{!shared:crt0.o%s}"
+//#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} crtbegin.o%s"
 #else
 #define STARTFILE_SPEC   "%{!shared:%{!mkernel:crt1.o%s}} crti.o%s \
   %{!shared:%{pg|p|profile:crtg.o%s} crtbegin.o%s} %{shared:crtbeginS.o%s}"
@@ -186,7 +194,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
+//#define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
 #else
 #define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s} crtend.o%s} \
   %{shared:crtendS.o%s} crtn.o%s"
@@ -215,6 +223,7 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC600|mA6: -mcpu=ARC600 %<mARC600}" \
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
   "%{mARC700|mA7: -mcpu=ARC700 %<mARC700}"
+  "%{mEM:-mcpu=EM %<mEM}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
@@ -261,6 +270,7 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_ARC600 (arc_cpu == PROCESSOR_ARC600)
 #define TARGET_ARC601 (arc_cpu == PROCESSOR_ARC601)
 #define TARGET_ARC700 (arc_cpu == PROCESSOR_ARC700)
+#define TARGET_EM (arc_cpu == PROCESSOR_EM)
 
 /* Recast the cpu class to be the cpu attribute.  */
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
@@ -1328,14 +1338,14 @@ do {							\
 #endif
 #define SET_ASM_OP "\t.set\t"
 
-extern char rname56[], rname57[], rname58[], rname59[];
+extern char rname29[], rname30[], rname56[], rname57[], rname58[], rname59[];
 /* How to refer to registers in assembler output.
    This sequence is indexed by compiler's hard-register-number (see above).  */
 #define REGISTER_NAMES								\
 {  "r0",   "r1",   "r2",   "r3",       "r4",     "r5",     "r6",    "r7",	\
    "r8",   "r9",  "r10",  "r11",      "r12",    "r13",    "r14",   "r15",	\
   "r16",  "r17",  "r18",  "r19",      "r20",    "r21",    "r22",   "r23",	\
-  "r24",  "r25",   "gp",   "fp",       "sp", "ilink1", "ilink2", "blink",	\
+  "r24",  "r25",   "gp",   "fp",       "sp",  rname29, rname30, "blink",	\
   "r32",  "r33",  "r34",  "r35",      "r36",    "r37",    "r38",   "r39",	\
    "d1",   "d1",   "d2",   "d2",      "r44",    "r45",    "r46",   "r47",	\
   "r48",  "r49",  "r50",  "r51",      "r52",    "r53",    "r54",   "r55",	\
