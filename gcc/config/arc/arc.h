@@ -129,27 +129,10 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
 #ifdef ARC_DEFAULT_CPU_EM
-#define ASM_SPEC  "\
-%{mbig-endian|EB:-EB} %{EL} \
-%{mcpu=A5|mcpu=a5|mA5:-mA5} \
-%{mcpu=ARC600|mcpu=arc600|mARC600|mA6:-mARC600} \
-%{mcpu=ARC601|mcpu=arc601:-mARC601} \
-%{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
-%{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
-%{!mcpu=*:%{!A5:%{!A6:%{!mARC600:%{!mARC700:-mEM}}}}} \
-%{mcpu=EM|mEM:%<mbarrel_shifter}\
-%{mcpu=EM|mEM:%<mno-mpy}\
-%{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
-%{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
-%{msimd} \
-%{mmac_d16} %{mmac_24} %{mdsp_packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
-%{mcpu=ARC700|mARC700|mA7:%{mlock}} \
-%{mcpu=ARC700|mARC700|mA7:%{mswape}} \
-%{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
-%{mcpu=EM|mEM:-mEM} \
-"
-
+#define ASM_DEFAULT "-mEM"
 #else
+#define ASM_DEFAULT "-mARC700 -mEA"
+#endif
 
 #define ASM_SPEC  "\
 %{mbig-endian|EB:-EB} %{EL} \
@@ -158,7 +141,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC601|mcpu=arc601:-mARC601} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
-%{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:-mARC700 -mEA}}}}} \
+%{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:" ASM_DEFAULT "}}}}} \
 %{mcpu=EM|mEM:%<mbarrel_shifter}\
 %{mcpu=EM|mEM:%<mno-mpy}\
 %{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
@@ -170,7 +153,6 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
 %{mcpu=EM|mEM:-mEM} \
 "
-#endif
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
 /* Note that the default is to link against dynamic libraries, if they are
@@ -246,6 +228,7 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC600|mA6: -mcpu=ARC600 %<mARC600}" \
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
   "%{mARC700|mA7: -mcpu=ARC700 %<mARC700}"
+  "%{mA5:-mcpu=A5 %<mA5}" \
   "%{mEM:-mcpu=EM %<mEM}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
