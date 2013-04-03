@@ -1,5 +1,9 @@
 2013-04-03  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.h (DRIVER_SELF_SPECS): Also remove -mA6 / -mA7.
+
+2013-04-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* common/config/arc/arc-common.c (DEFAULT_NO_SDATA): Use
 	TARGET_SDATA_DEFAULT.
 	* config.gcc (arc*-*-linux-uclibc) <tm_defines>: Set
