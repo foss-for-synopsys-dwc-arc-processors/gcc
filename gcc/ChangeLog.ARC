@@ -2,6 +2,8 @@
 
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Also remove -mA6 / -mA7.
 
+	* lto-wrapper.c (run_gcc): Don't duplicate target options.
+
 2013-04-03  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* common/config/arc/arc-common.c (DEFAULT_NO_SDATA): Use

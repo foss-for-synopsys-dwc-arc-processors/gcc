@@ -599,6 +599,11 @@ run_gcc (unsigned argc, char *argv[])
 	    & (CL_COMMON|CL_TARGET|CL_DRIVER|CL_LTO)))
 	continue;
 
+      /* We already copied target options in the loop above.
+	 Don't dupliacte them.  */
+      if (cl_options[option->opt_index].flags & CL_TARGET)
+	continue;
+
       switch (option->opt_index)
 	{
 	case OPT_o:
