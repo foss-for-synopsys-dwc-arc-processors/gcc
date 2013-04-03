@@ -3420,10 +3420,14 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
       || GET_CODE (PATTERN (insn)) == ADDR_DIFF_VEC)
     return;
 
+ /* We can't predicate BRCC or loop ends.
+    Also, when generating PIC code, and considering a medium range call,
+    we can't predicate the call.  */
   jump_insn_type = get_attr_type (insn);
   if (jump_insn_type == TYPE_BRCC
       || jump_insn_type == TYPE_BRCC_NO_DELAY_SLOT
-      || jump_insn_type == TYPE_LOOP_END)
+      || jump_insn_type == TYPE_LOOP_END
+      || (jump_insn_type == TYPE_CALL && !get_attr_predicable (insn)))
     return;
 
   /* This jump might be paralleled with a clobber of the condition codes,
@@ -9045,7 +9049,7 @@ arc_register_priority (int r)
 }
 
 static reg_class_t
-arc_spill_class (reg_class_t orig_class, enum machine_mode)
+arc_spill_class (reg_class_t /* orig_class */, enum machine_mode)
 {
   return GENERAL_REGS;
 }

@@ -209,6 +209,12 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef DRIVER_ENDIAN_SELF_SPECS
 #define DRIVER_ENDIAN_SELF_SPECS ""
 #endif
+#ifndef TARGET_SDATA_DEFAULT
+#define TARGET_SDATA_DEFAULT 1
+#endif
+#ifndef TARGET_MMEDIUM_CALLS_DEFAULT
+#define TARGET_MMEDIUM_CALLS_DEFAULT 0
+#endif
 
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
   "%{mARC5: -mcpu=A5 %<mA5}" \
@@ -1700,5 +1706,15 @@ enum
 {
   ARC_LRA_PRIORITY_NONE, ARC_LRA_PRIORITY_NONCOMPACT, ARC_LRA_PRIORITY_COMPACT
 };
+
+/* The define_cond_exec construct is rather crude, as we can't have
+   different ones with different conditions apply to different sets
+   of instructions.  We can't use an attribute test inside the condition,
+   because that would lead to infinite recursion as the attribute test
+   needs to recognize the insn.  So, instead we have a clause for
+   the pattern condition of all sfunc patterns which is only relevant for
+   the predicated varaint.  */
+#define SFUNC_CHECK_PREDICABLE \
+  (GET_CODE (PATTERN (insn)) != COND_EXEC || !flag_pic || !TARGET_MEDIUM_CALLS)
 
 #endif /* GCC_ARC_H */

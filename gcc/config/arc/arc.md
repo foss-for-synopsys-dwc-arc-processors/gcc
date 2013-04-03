@@ -153,6 +153,10 @@
 (define_attr "is_sfunc" "no,yes" (const_string "no"))
 
 ;; Insn type.  Used to default other attribute values.
+; While the attribute is_sfunc is set for any call of a special function,
+; the instruction type sfunc is used only for the special call sequence
+; that loads the (pc-relative) function address into r12 and then calls
+; via r12.
 
 (define_attr "type"
   "move,load,store,cmove,unary,binary,compare,shift,uncond_branch,jump,branch,
@@ -249,20 +253,18 @@
 
 (define_attr "cond" "use,canuse,canuse_limm,canuse_limm_add,set,set_zn,clob,nocond"
   (cond
-    [(eq_attr "predicable" "yes") (const_string "canuse")
+    [(and (eq_attr "predicable" "yes")
+	  (eq_attr "is_sfunc" "no")
+	  (eq_attr "delay_slot_filled" "no"))
+     (const_string "canuse")
 
      (eq_attr "type" "call")
      (cond [(eq_attr "delay_slot_filled" "yes") (const_string "nocond")
 	    (match_test "!flag_pic") (const_string "canuse_limm")]
-	   (const_string "canuse"))
+	   (const_string "nocond"))
 
      (eq_attr "iscompact" "maybe,false")
-     (cond [ (eq_attr "type" "call")
-	     (cond [(eq_attr "delay_slot_filled" "yes") (const_string "nocond")
-		    (match_test "!flag_pic") (const_string "canuse_limm")]
-		   (const_string "nocond"))
-
-	     (and (eq_attr "type" "move")
+     (cond [ (and (eq_attr "type" "move")
 		  (match_operand 1 "immediate_operand" ""))
 	     (if_then_else
 		(ior (match_operand 1 "u6_immediate_operand" "")
@@ -1726,9 +1728,11 @@
    (clobber (reg:SI LP_END))
    (clobber (reg:CC CC_REG))]
   "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__mulsi3\");"
-  [(set_attr "is_sfunc" "yes")])
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
 
 (define_insn "mulsidi_600"
   [(set (reg:DI MUL64_OUT_REG)
@@ -1937,9 +1941,11 @@
    (clobber (reg:CC CC_REG))]
   "!TARGET_BIG_ENDIAN
    && !TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__umulsi3_highpart\");"
-  [(set_attr "is_sfunc" "yes")])
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
 
 (define_insn "umulsi3_highpart_600_lib_be"
   [(set (reg:SI R0_REG)
@@ -1956,9 +1962,11 @@
    (clobber (reg:CC CC_REG))]
   "TARGET_BIG_ENDIAN
    && !TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__umulsi3_highpart\");"
-  [(set_attr "is_sfunc" "yes")])
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
 
 ;; (zero_extend:DI (const_int)) leads to internal errors in combine, so we
 ;; need a separate pattern for immediates
@@ -2142,9 +2150,11 @@
    (clobber (reg:DI MUL64_OUT_REG))
    (clobber (reg:CC CC_REG))]
    "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__umulsidi3\");"
-  [(set_attr "is_sfunc" "yes")])
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
 
 (define_peephole2
   [(parallel
@@ -5021,10 +5031,11 @@
   [(set (reg:OPTFPE_CMP CC_REG) (compare:OPTFPE_CMP (reg:SF 0) (reg:SF 1)))
    (clobber (reg:SI RETURN_ADDR_REGNUM))
    (clobber (reg:SI R12_REG))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_SPFP)"
+  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_SPFP)
+   && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__<cmp>sf2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
 
 ;; N.B. for "*cmpdf_ord":
 ;; double precision fpx sets bit 31 for NaNs.  We need bit 51 set
@@ -5033,10 +5044,11 @@
   [(set (reg:OPTFPE_CMP CC_REG) (compare:OPTFPE_CMP (reg:DF 0) (reg:DF 2)))
    (clobber (reg:SI RETURN_ADDR_REGNUM))
    (clobber (reg:SI R12_REG))]
-  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_DPFP)"
+  "TARGET_OPTFPE && (!TARGET_ARGONAUT_SET || !TARGET_DPFP)
+   && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__<cmp>df2\");"
-  [(set_attr "is_sfunc" "yes")]
-)
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
 
 (define_insn "abssf2"
   [(set (match_operand:SF 0 "dest_reg_operand"    "=Rcq#q,Rcw,w")

@@ -1,3 +1,25 @@
+2013-04-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* common/config/arc/arc-common.c (DEFAULT_NO_SDATA): Use
+	TARGET_SDATA_DEFAULT.
+	* config.gcc (arc*-*-linux-uclibc) <tm_defines>: Set
+	TARGET_SDATA_DEFAULT and TARGET_MMEDIUM_CALLS_DEFAULT.
+	* config/arc/arc.h (TARGET_SDATA_DEFAULT): Provide default definition.
+	(TARGET_MMEDIUM_CALLS_DEFAULT): Likewise.
+	* config/arc/arc.opt (mmedium-calls): Add Init clause.
+
+	* config/arc/arc.c (arc_ccfsm_advance): Return early for
+	non-predicable call.
+	* config/arc/arc.h (SFUNC_CHECK_PREDICABLE): Define.
+	* config/arc/arc.md (attribute cond): Refine call processing.
+	(mulsi3_600_lib): Set predicable attribute and add
+	SFUNC_CHECK_PREDICABLE clause.
+	(umulsi3_highpart_600_lib_le, umulsi3_highpart_600_lib_be): Likewise.
+	(umulsidi3_600_lib, cmpsf_<cmp>, cmpdf_<cmp>): Likewise.
+
+	* config/arc/arc.c (arc_spill_class): Comment out unused parameter
+	name.
+
 2013-03-16  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Insert space before

@@ -223,7 +223,7 @@ Target RejectNegative Joined UInteger Var(arc_unalign_prob_threshold) Init(10000
 Set probability threshold for unaligning branches
 
 mmedium-calls
-Target Var(TARGET_MEDIUM_CALLS)
+Target Var(TARGET_MEDIUM_CALLS) Init(TARGET_MMEDIUM_CALLS_DEFAULT)
 Don't use less than 25 bit addressing range for calls.
 
 mannotate-align
