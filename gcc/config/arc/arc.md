@@ -1729,7 +1729,7 @@
 		 (match_operand:SI 2 "nonmemory_operand" "")))]
   ""
 {
-  if ((TARGET_ARC700 || TARGET_EM) && !TARGET_NOMPY_SET)
+  if ((TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI)
     {
       if (!register_operand (operands[0], SImode))
 	{
@@ -1856,7 +1856,8 @@
    (clobber (reg:SI LP_END))
    (clobber (reg:CC CC_REG))]
   "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)"
+   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && (!EM_MULTI)"
   "*return arc_output_libcall (\"__mulsi3\");"
   [(set_attr "is_sfunc" "yes")])
 
@@ -1915,7 +1916,8 @@
   [(set (match_operand:DI 0 "nonimmediate_operand" "")
 	(mult:DI (sign_extend:DI(match_operand:SI 1 "register_operand" ""))
 		 (sign_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI
+  "(TARGET_ARC700 && !TARGET_NOMPY_SET)
+   || EM_MULTI
    || TARGET_MUL64_SET
    || TARGET_MULMAC_32BY16_SET"
 "
@@ -2121,7 +2123,7 @@
 {
   rtx target = operands[0];
 
-  if (!TARGET_ARC700 || TARGET_NOMPY_SET)
+  if ((!TARGET_ARC700 || TARGET_NOMPY_SET) && !EM_MULTI)
     {
       emit_move_insn (gen_rtx_REG (SImode, 0), operands[1]);
       emit_move_insn (gen_rtx_REG (SImode, 1), operands[2]);
@@ -2288,6 +2290,7 @@
       (clobber (reg:CC CC_REG))])]
   "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
    && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && !EM_MULTI
    && peep2_regno_dead_p (1, TARGET_BIG_ENDIAN ? R1_REG : R0_REG)"
   [(pc)]
 {
@@ -5399,13 +5402,22 @@
 
 (define_insn "prefetch_2"
   [(prefetch (plus:SI (match_operand:SI 0 "register_operand" "r,r,r")
-		      (match_operand:SI 1 "nonmemory_operand" "&r,Cm2,Cal"))
+		      (match_operand:SI 1 "nonmemory_operand" "r,Cm2,Cal"))
 	     (match_operand:SI 2 "" "")
 	     (match_operand:SI 3 "" ""))]
   "TARGET_EM"
   "prefetch [%0,%1]"
   [(set_attr "type" "load")
    (set_attr "length" "4,4,8")])
+
+(define_insn "prefetch_3"
+  [(prefetch (match_operand:SI 0 "symbolic_operand" "Clb, Cal")
+	     (match_operand:SI 1 "" "")
+	     (match_operand:SI 2 "" ""))]
+  "TARGET_EM"
+  "prefetch [%0]"
+  [(set_attr "type" "load")
+   (set_attr "length" "8")])
 
 (define_insn "divsi3"
   [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")

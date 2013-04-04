@@ -779,6 +779,11 @@ arc_override_options (void)
     TARGET_Q_CLASS = 1;
   if (!TARGET_Q_CLASS)
     TARGET_COMPACT_CASESI = 0;
+
+  /*For the time being don't support COMPACT_CASESI for EM*/
+  if (arc_cpu == PROCESSOR_EM)
+    TARGET_COMPACT_CASESI = 0;
+
   if (TARGET_COMPACT_CASESI)
     TARGET_CASE_VECTOR_PC_RELATIVE = 1;
 
@@ -7268,7 +7273,7 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
   int neg_intval = -intval;
   int short_0 = satisfies_constraint_Rcq (operands[0]);
   int short_p = (!cond_p && short_0 && satisfies_constraint_Rcq (operands[1]));
-  int ret = 0;
+  static int ret = 0;
 
 #define ADDSI_OUTPUT1(FORMAT) do {\
   if (output_p) \
@@ -7281,6 +7286,17 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
   ADDSI_OUTPUT1 (format);\
   return ret; \
 } while (0)
+
+  /* When it is asked if the current insn is compact or not, return
+     the previous computed return value. Hence, we avoid problems like
+     add3 r0,sp,8 to be matched in the second round as add_s
+     r0,sp,64*/
+  if (!cond_p && !output_p && (ret != 0))
+    {
+      int tmp = ret;
+      ret = 0;
+      return tmp;
+    }
 
   /* First try to emit a 16 bit insn.  */
   ret = 2;
@@ -7308,10 +7324,10 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
 	      && match && !(neg_intval & ~124)))
 	ADDSI_OUTPUT1 ("sub%? %0,%1,%n2");
 
-      if (!cond_p && REG_P(operands[0]) && REG_P(operands[1])
+      if (REG_P(operands[0]) && REG_P(operands[1])
 	  && (REGNO(operands[0]) <= 31) && (REGNO(operands[0]) == REGNO(operands[1]))
 	  && CONST_INT_P (operands[2]) && ( (intval>= -1) && (intval <= 6)))
-	return "add%? %0,%1,%2%&    ;5";
+	ADDSI_OUTPUT1 ("add%? %0,%1,%2");
     }
 
   /* Now try to emit a 32 bit insn without long immediate.  */

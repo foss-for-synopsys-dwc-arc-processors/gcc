@@ -227,7 +227,7 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC5: -mcpu=A5 %<mA5}" \
   "%{mARC600|mA6: -mcpu=ARC600 %<mARC600}" \
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
-  "%{mARC700|mA7: -mcpu=ARC700 %<mARC700}"
+  "%{mARC700|mA7: -mcpu=ARC700 %<mARC700}" \
   "%{mA5:-mcpu=A5 %<mA5}" \
   "%{mEM:-mcpu=EM %<mEM}"
 

@@ -23,7 +23,8 @@
 TARGET_LIBGCC2_CFLAGS = -mEM -O1
 
 LIB1ASMSRC    = arc/lib1funcs.S
-LIB1ASMFUNCS  = _umulsidi3 _millicodethunk_st _millicodethunk_ld _millicodethunk_ret
+#LIB1ASMFUNCS  = _umulsidi3 _millicodethunk_st _millicodethunk_ld _millicodethunk_ret
+LIB1ASMFUNCS  = _millicodethunk_st _millicodethunk_ld _millicodethunk_ret
 
 LIB2ADD = $(srcdir)/udivmod.c \
           $(srcdir)/divmod.c \
