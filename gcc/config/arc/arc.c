@@ -7859,6 +7859,11 @@ arc_get_insn_variants (rtx insn, int len, bool, bool target_p,
 	}
       /* Fall through.  */
     case TYPE_BRCC_NO_DELAY_SLOT:
+      /* doloop_fallback* patterns are TYPE_BRCC_NO_DELAY_SLOT for
+	 (delay slot) scheduling purposes, but they are longer.  */
+      if (GET_CODE (PATTERN (insn)) == PARALLEL
+	  && GET_CODE (XVECEXP (PATTERN (insn), 0, 1)) == SET)
+	return 0;
       /* Standard BRCC: 4 bytes, or 8 bytes with limm.  */
       ilv->length = ((type == TYPE_BRCC) ? 4 : 8);
       ilv->align_set = 3;

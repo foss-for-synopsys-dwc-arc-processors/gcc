@@ -1,3 +1,8 @@
+2013-04-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_get_insn_variants) <TYPE_BRCC_NO_DELAY_SLOT>:
+	Return 0 for a PARALLEL with a second SET.
+
 2013-04-03  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Also remove -mA6 / -mA7.
