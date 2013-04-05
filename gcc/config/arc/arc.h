@@ -270,7 +270,7 @@ along with GCC; see the file COPYING3.  If not see
 
 /* For an anulled-true delay slot insn for a delayed branch, should we only
    use conditional execution?  */
-#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700)
+#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700 && !TARGET_EM)
 
 #define TARGET_A5 (arc_cpu == PROCESSOR_A5)
 #define TARGET_ARC600 (arc_cpu == PROCESSOR_ARC600)

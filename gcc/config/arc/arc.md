@@ -428,7 +428,6 @@
 	 (const_string "false")
 	 (eq_attr "iscompact" "maybe") (const_string "true")
 	 ]
-
 	 (if_then_else (eq_attr "length" "2,4")
 		       (const_string "true")
 		       (const_string "false"))))
@@ -496,8 +495,7 @@
    (nil)
    (nil)])
 
-(define_delay
-  (eq_attr "type" "return")
+(define_delay (eq_attr "type" "return")
   [(eq_attr "in_ret_delay_slot" "yes")
    (eq_attr "type" "!call,branch,uncond_branch,jump,brcc,return,sfunc")
    (eq_attr "cond_ret_delay_insn" "yes")])
@@ -587,7 +585,7 @@
    stb%U0%V0 %1,%0"
   [(set_attr "type" "move,move,move,move,move,move,move,move,load,store,load,load,store,store")
    (set_attr "iscompact" "maybe,maybe,maybe,maybe,false,false,false,false,true,true,true,false,false,false")
-   (set_attr "predicable" "yes,yes,no,yes,yes,no,yes,yes,no,no,no,no,no,no")
+   (set_attr "predicable" "no,yes,no,yes,yes,no,yes,yes,no,no,no,no,no,no")
    (set_attr "cpu_facility" "em,arcv1,*,arcv1,*,*,*,*,*,*,*,*,*,*")])
 
 (define_expand "movhi"
@@ -630,7 +628,7 @@
    sth%U0%V0 %S1,%0"
   [(set_attr "type" "move,move,move,move,move,move,move,move,move,load,store,load,store,store,store,load,store,load,store,store,store")
    (set_attr "iscompact" "maybe,maybe,maybe,maybe,false,false,false,maybe_limm,false,true,true,false,false,false,false,true,true,false,false,false,false")
-   (set_attr "predicable" "yes,yes,no,yes,yes,no,yes,yes,yes,no,no,no,no,no,no,no,no,no,no,no,no")
+   (set_attr "predicable" "no,yes,no,yes,yes,no,yes,yes,yes,no,no,no,no,no,no,no,no,no,no,no,no")
    (set_attr "cpu_facility" "em,arcv1,*,arcv1,*,*,*,*,*,arcv1,arcv1,arcv1,arcv1,arcv1,arcv1,em,em,em,em,em,em")])
 
 (define_expand "movsi"
@@ -650,9 +648,9 @@
 ; insns it should lengthen the return insn.
 ; N.B. operand 1 of alternative 7 expands into pcl,symbol@gotpc .
 (define_insn "*movsi_insn"
-;                                                -1   0    1      2   3 4  5   6    7   8    9    9'   10  11  12   13     14    15 16 17 18  18` 19
-  [(set (match_operand:SI 0 "move_dest_operand" "=W, Rcq,Rcq#q,    w, w,w,  w,???w, ?w,  w,Rcq#q,   W,   w,Rcq,  S,   Us<,RcqRck,!*x,r,m,???m,  m,VUsc")
-	(match_operand:SI 1 "move_src_operand" "WCm1, cL,   cP,Rcq#q,cL,I,Crr,?Rac,Cpc,Clb, ?Cal,?Cal,?Cal,  T,Rcq,RcqRck,   Us>,Usd,m,c,?Rac,Cm3,C32"))]
+;                                                -1   0    1      2   3 4  5   6    7   8    9    9'   10  11  12   13     14    15 16 17 18   18`      19
+  [(set (match_operand:SI 0 "move_dest_operand" "=W, Rcq,Rcq#q,    w, w,w,  w,???w, ?w,  w,Rcq#q,   W,   w,Rcq,  S,   Us<,RcqRck,!*x,r,m,???m,VUsc,VUsc")
+	(match_operand:SI 1 "move_src_operand" "WCm1, cL,   cP,Rcq#q,cL,I,Crr,?Rac,Cpc,Clb, ?Cal,?Cal,?Cal,  T,Rcq,RcqRck,   Us>,Usd,m,c,?Rac, Cm3,C32"))]
   "register_operand (operands[0], SImode)
    || register_operand (operands[1], SImode)
    || (CONSTANT_P (operands[1])
@@ -689,7 +687,7 @@
    ; Use default length for iscompact to allow for COND_EXEC.  But set length
    ; of Crr to 4.
    (set_attr "length" "*,*,*,*,4,4,4,4,8,8,*,*,8,*,*,*,*,*,*,*,*,4,8")
-   (set_attr "predicable" "yes,yes,no,yes,yes,no,no,yes,no,no,yes,yes,yes,no,no,no,no,no,no,no,no,no,no")
+   (set_attr "predicable" "no,yes,no,yes,yes,no,no,yes,no,no,yes,yes,yes,no,no,no,no,no,no,no,no,no,no")
    (set_attr "cpu_facility" "em,arcv1,*,arcv1,*,*,*,*,*,*,arcv1,em,*,*,*,*,*,*,*,*,*,em,*")
    ])
 
