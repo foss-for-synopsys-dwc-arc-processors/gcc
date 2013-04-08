@@ -1,3 +1,8 @@
+2013-04-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* testsuite/gcc.dg/torture/stackalign/builtin-apply-2.c
+	[__arc__] (STACK_ARGUMENTS_SIZE): Set to 0.
+
 2013-04-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_get_insn_variants) <TYPE_BRCC_NO_DELAY_SLOT>:
