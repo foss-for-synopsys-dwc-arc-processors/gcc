@@ -1,3 +1,14 @@
+2013-04-05 Claudiu Zissulescu <claziss@synopsys.com>
+	* doc/invoke.texi: Add gcc-EM options to the documentation
+	* config/arc/arcEM.md: add ARC-EM pipeline description
+	* config/arc/arc.c: Add ARCompactV2 instructions. 
+	* config/arc/arc.h: Likewise
+	* config/arc/arc.opt: Likewise
+	* config/arc/arc.md: Likewise
+	* config/arc/constraints.md: Likewise
+	* config/arc/predicates.md: Likewise
+	* common/config/arc/arc-common.c:  Likewise
+
 2013-04-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_get_insn_variants) <TYPE_BRCC_NO_DELAY_SLOT>:

@@ -869,6 +869,11 @@ arc*-*-elf*)
 	  xarc600|xarc601|xarc700)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
+	  xEM)
+		echo "Select ARCv2EM"
+		tm_defines="${tm_defines} ARC_DEFAULT_CPU_EM"
+		target_cpu_default="TARGET_CPU_$with_cpu"
+		;;
 	esac
 	if test x${with_endian} = x; then
 		case ${target} in
@@ -3245,7 +3250,7 @@ case "${target}" in
 	arc*-*-*) # was:	arc*-*-linux-uclibc)
 		supported_defaults="cpu"
 		case $with_cpu in
-		  arc600|arc601|arc700)
+		  arc600|arc601|arc700|EM)
 			;;
 		  *) echo "Unknown cpu type"
 			exit 1

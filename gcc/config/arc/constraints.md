@@ -300,9 +300,10 @@
   (match_test "arc_legitimate_pc_offset_p (op)"))
 
 (define_constraint "Clb"
-  "label"
+  "A local label"
   (and (match_code "label_ref")
-       (match_test "arc_text_label (XEXP (op, 0))")))
+       (match_test "arc_text_label (XEXP (op, 0))")
+       (match_test "!LABEL_REF_NONLOCAL_P(op)")))
 
 (define_constraint "Cal"
   "constant for arithmetic/logical operations"
@@ -391,3 +392,21 @@
    Integer constant zero"
   (and (match_code "const_int")
        (match_test "IS_ZERO (ival)")))
+
+(define_constraint "Cm1"
+  "@internal
+   Integer signed constant in the interval [-1,6]"
+  (and (match_code "const_int")
+       (match_test "(ival >= -1) && (ival <=6)")))
+
+(define_constraint "Cm2"
+  "@internal
+   A signed 9-bit integer constant."
+  (and (match_code "const_int")
+       (match_test "(ival >= -256) && (ival <=255)")))
+
+(define_constraint "Cm3"
+  "@internal
+   A signed 6-bit integer constant."
+  (and (match_code "const_int")
+       (match_test "(ival >= -32) && (ival <=31)")))
