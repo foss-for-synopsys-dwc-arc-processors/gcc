@@ -302,8 +302,7 @@
 (define_constraint "Clb"
   "A local label"
   (and (match_code "label_ref")
-       (match_test "arc_text_label (XEXP (op, 0))")
-       (match_test "!LABEL_REF_NONLOCAL_P(op)")))
+       (match_test "arc_text_label (XEXP (op, 0))")))
 
 (define_constraint "Cal"
   "constant for arithmetic/logical operations"
