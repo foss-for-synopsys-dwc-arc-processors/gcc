@@ -318,7 +318,7 @@ alpha*-dec-*vms*)
 	extra_parts="$extra_parts vms-dwarf2.o vms-dwarf2eh.o"
 	md_unwind_header=alpha/vms-unwind.h
 	;;
-arc-*-elf*)
+arc*-*-elf*)
 	case x"${with_cpu}" in
 	     xarc600|xarc601|xarc700)
 	     	echo "Configure for ARCv1"
