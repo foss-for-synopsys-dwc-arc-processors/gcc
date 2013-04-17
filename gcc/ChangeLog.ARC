@@ -1,3 +1,11 @@
+2013-04-17 Claudiu Zissulescu <claziss@synopsys.com>
+	* doc/invoke.texi: Change the option -mcpu=EM into -mcpu=ARCv2EM, and change the -mEM driver option to -mav2em
+	* common/config/arc/arc-common.c:  Likewise
+	* config/arc/arc-opts.h: Likewise
+	* config/arc/arc.c: Likewise
+	* config/arc/arc.h: Likewise
+	* config/arc/arc.opt: Likewise
+
 2013-04-05 Claudiu Zissulescu <claziss@synopsys.com>
 	* doc/invoke.texi: Add gcc-EM options to the documentation
 	* config/arc/arcEM.md: add ARC-EM pipeline description
