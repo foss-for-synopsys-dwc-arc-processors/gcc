@@ -53,8 +53,8 @@ mARC700
 Target Report
 Same as -mA7
 
-mEM
-Target Report RejectNegative Var(arc_cpu, PROCESSOR_EM)
+mav2em
+Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
 Generate ARCv2 code for EM processor
 
 mforce_short
@@ -189,7 +189,7 @@ EnumValue
 Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
 
 EnumValue
-Enum(processor_type) String(EM) Value(PROCESSOR_EM)
+Enum(processor_type) String(ARCv2EM) Value(PROCESSOR_ARCv2EM)
 
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
