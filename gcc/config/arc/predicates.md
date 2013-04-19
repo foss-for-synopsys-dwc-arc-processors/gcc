@@ -805,3 +805,11 @@
     (match_test "INTVAL (op) >= 0")
     (and (match_test "const_double_operand (op, mode)")
 	 (match_test "CONST_DOUBLE_HIGH (op) == 0"))))
+
+(define_predicate "mpy_reg_operand"
+  (match_code "reg,subreg")
+{
+ if (GET_CODE(op) == SUBREG && GET_MODE(SUBREG_REG(op)) == QImode)
+    return 0;
+ return register_operand(op, mode);
+})

@@ -11186,6 +11186,12 @@ Compile for ARC601.
 @opindex mARC700
 Compile for ARC700.  Aliases: @option{-mA7}, @option{-mARC700}.
 This is the default when configured with @samp{--with-cpu=arc700}@.
+
+@item EM
+@opindex mEM
+Compile for ARC-EM.  Aliases: @option{-mEM}.
+This is the default when configured with @samp{--with-cpu=EM}@.
+
 @end table
 
 @item -mbig-endian
@@ -11441,7 +11447,7 @@ when you link in a nonstandard way, this option is provided to turn off
 millicode call generation.
 
 @item -msize-level=@var{level}
-@ opindex msize-level
+@opindex msize-level
 Fine-tune size optimization with regards to instruction lengths and alignment.
 The recognized values for @var{level} are:
 @table @samp
@@ -11537,6 +11543,43 @@ Annotate assembler instructions with estimated addresses.
 @opindex mannotate-align
 Explain what alignment considerations lead to the decision to make an
 instruction short or long.
+
+@item -mdiv_rem
+@opindex mdiv_rem
+Enable DIV/REM instructions for ARC-EM (arcV2).
+
+@item -mmpy_option=@var{multo}
+@opindex mmpy_option
+Compile ARC EM code with a multiplier design option. WLH1 is default
+on. The recognized values for @var{multo} are:
+
+@table @samp
+@item 0
+No multiplier available.
+
+@item 1
+The multiply option is set to w: 16x16 multiplier, fully pipelined.
+
+@item 2
+The multiply option is set to wlh1: 32x32 multiplier, fully pipelined(1 stage).
+
+@item 3
+The multiply option is set to wlh2: 32x32 multiplier, fully pipelined (2 stages).
+
+@item 4
+The multiply option is set to wlh3: Two 16x16 multiplier, blocking, sequential.
+
+@item 5
+The multiply option is set to wlh4: One 16x16 multiplier, blocking, sequential.
+
+@item 6
+The multiply option is set to wlh5: One 32x4 multiplier, blocking, sequential.
+
+@end table
+
+@item -mcode_density
+@opindex mcode_density
+Enable code density instructions for ARC-EM (arcV2).
 
 @end table
 

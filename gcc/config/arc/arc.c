@@ -204,6 +204,11 @@ enum arc_builtins {
   ARC_BUILTIN_TRAP_S     =   20,
   ARC_BUILTIN_UNIMP_S    =   21,
   ARC_BUILTIN_ALIGNED    =   22,
+  ARC_BUILTIN_KFLAG      =   23,
+  ARC_BUILTIN_CLRI       =   24,
+  ARC_BUILTIN_FFS        =   25,
+  ARC_BUILTIN_FLS        =   26,
+  ARC_BUILTIN_SETI       =   27,
 
   /* Sentinel to mark start of simd builtins.  */
   ARC_SIMD_BUILTIN_BEGIN      = 1000,
@@ -632,6 +637,15 @@ arc_init (void)
       arc_cpu_string = "ARC700";
       tune_dflt = TUNE_ARC700_4_2_STD;
     }
+  else if (TARGET_EM)
+    {
+      arc_cpu_string = "EM";
+      /* I have the multiplier, then use it*/
+      if (arc_mpy_option)
+	{
+	  arc_multcost = COSTS_N_INSNS (1);
+	}
+    }
   else
     gcc_unreachable ();
   if (arc_tune == TUNE_NONE)
@@ -667,11 +681,11 @@ arc_init (void)
       }
 
   /* Support mul64 generation only for A5 and ARC600.  */
-  if (TARGET_MUL64_SET && TARGET_ARC700)
-      error ("-mmul64 not supported for ARC700");
+  if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_EM))
+      error ("-mmul64 not supported for ARC700 or ARCv2");
 
   /* MPY instructions valid only for ARC700.  */
-  if (TARGET_NOMPY_SET && !TARGET_ARC700)
+  if (TARGET_NOMPY_SET && (!TARGET_ARC700))
       error ("-mno-mpy supported only for ARC700");
 
   /* mul/mac instructions only for ARC600.  */
@@ -696,10 +710,17 @@ arc_init (void)
     error ("FPX extensions not available on pre-ARC600 cores");
 
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
-  if (flag_pic && !TARGET_ARC700)
+  if (flag_pic && (!(TARGET_ARC700 || TARGET_EM)))
     {
       warning (DK_WARNING, "PIC is not supported for %s. Generating non-PIC code only..", arc_cpu_string);
       flag_pic = 0;
+    }
+
+  /* Warn for unimplemented profiler support for ARCv2-cores*/
+  if (profile_flag && TARGET_EM)
+    {
+      warning (DK_WARNING, "No profiler support for %s.", arc_cpu_string);
+      profile_flag = 0;
     }
 
   arc_init_reg_tables ();
@@ -738,7 +759,11 @@ static void
 arc_override_options (void)
 {
   if (arc_cpu == PROCESSOR_NONE)
+#ifdef ARC_DEFAULT_CPU_EM
+    arc_cpu = PROCESSOR_EM;
+#else
     arc_cpu = PROCESSOR_ARC700;
+#endif
 
   if (arc_size_opt_level == 3)
     optimize_size = 1;
@@ -754,6 +779,11 @@ arc_override_options (void)
     TARGET_Q_CLASS = 1;
   if (!TARGET_Q_CLASS)
     TARGET_COMPACT_CASESI = 0;
+
+  /*For the time being don't support COMPACT_CASESI for EM*/
+  if (arc_cpu == PROCESSOR_EM)
+    TARGET_COMPACT_CASESI = 0;
+
   if (TARGET_COMPACT_CASESI)
     TARGET_CASE_VECTOR_PC_RELATIVE = 1;
 
@@ -1121,6 +1151,9 @@ arc_init_reg_tables (void)
   char rname58[5] = "r58";
   char rname59[5] = "r59";
 
+char rname29[7] = "ilink1";
+char rname30[7] = "ilink2";
+
 static void
 arc_conditional_register_usage (void)
 {
@@ -1128,6 +1161,11 @@ arc_conditional_register_usage (void)
   int i;
   int fix_start = 60, fix_end = 55;
 
+  if (TARGET_EM)
+    {
+      strcpy(rname29, "ilink");
+      strcpy(rname30, "r30");
+    }
   if (TARGET_MUL64_SET)
     {
       fix_start = 57;
@@ -1190,7 +1228,7 @@ arc_conditional_register_usage (void)
      machine_dependent_reorg.  */
   if (TARGET_ARC600)
     CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], LP_COUNT);
-  else if (!TARGET_ARC700)
+  else if (!TARGET_ARC700 && !TARGET_EM)
     fixed_regs[LP_COUNT] = 1;
   for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
     if (!call_used_regs[regno])
@@ -1198,7 +1236,7 @@ arc_conditional_register_usage (void)
   for (regno = 32; regno < 60; regno++)
     if (!fixed_regs[regno])
       SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], regno);
-  if (TARGET_ARC700)
+  if (TARGET_ARC700 || TARGET_EM)
     {
       for (regno = 32; regno <= 60; regno++)
 	CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], regno);
@@ -1332,10 +1370,17 @@ arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
       *no_add_attrs = true;
     }
   else if (strcmp (TREE_STRING_POINTER (value), "ilink1")
-	   && strcmp (TREE_STRING_POINTER (value), "ilink2"))
+	   && strcmp (TREE_STRING_POINTER (value), "ilink2") && !TARGET_EM)
     {
       warning (OPT_Wattributes,
                "argument of %qE attribute is not \"ilink1\" or \"ilink2\"",
+               name);
+      *no_add_attrs = true;
+    }
+  else if (TARGET_EM && strcmp (TREE_STRING_POINTER (value), "ilink"))
+    {
+      warning (OPT_Wattributes,
+               "argument of %qE attribute is not \"ilink\"",
                name);
       *no_add_attrs = true;
     }
@@ -1849,7 +1894,7 @@ arc_compute_function_type (struct function *fun)
 	{
 	  tree value = TREE_VALUE (args);
 
-	  if (!strcmp (TREE_STRING_POINTER (value), "ilink1"))
+	  if (!strcmp (TREE_STRING_POINTER (value), "ilink1") || !strcmp (TREE_STRING_POINTER (value), "ilink"))
 	    fn_type = ARC_FUNCTION_ILINK1;
 	  else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
 	    fn_type = ARC_FUNCTION_ILINK2;
@@ -3822,7 +3867,7 @@ arc_verify_short (rtx insn, int, int check_attr)
   if (machine->force_short_suffix >= 0)
     return machine->force_short_suffix;
 
-  return (get_attr_length (insn) & 2) != 0;
+  return TARGET_FSHORT_SET ? 1 : ((get_attr_length (insn) & 2) != 0);
 }
 
 /* When outputting an instruction (alternative) that can potentially be short,
@@ -4139,7 +4184,7 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
 	*total= arc_multcost;
       /* We do not want synth_mult sequences when optimizing
 	 for size.  */
-      else if (TARGET_MUL64_SET || (TARGET_ARC700 && !TARGET_NOMPY_SET))
+      else if (TARGET_MUL64_SET || (TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MUL_MPYW)
 	*total = COSTS_N_INSNS (1);
       else
 	*total = COSTS_N_INSNS (2);
@@ -4996,6 +5041,14 @@ arc_init_builtins (void)
 	= build_function_type (void_type_node,
 			   tree_cons (NULL_TREE, long_unsigned_type_node, endlink));
 
+    tree int_ftype_void
+      = build_function_type (integer_type_node,
+			     tree_cons (NULL_TREE, void_type_node, endlink));
+
+    tree void_ftype_int
+      = build_function_type (void_type_node,
+			     tree_cons (NULL_TREE, integer_type_node, endlink));
+
     /* Add the builtins.  */
     def_mbuiltin (1,"__builtin_arc_nop", void_ftype_void, ARC_BUILTIN_NOP);
     def_mbuiltin (TARGET_NORM, "__builtin_arc_norm", int_ftype_int, ARC_BUILTIN_NORM);
@@ -5005,7 +5058,7 @@ arc_init_builtins (void)
     def_mbuiltin (TARGET_MUL64_SET,"__builtin_arc_mulu64", void_ftype_usint_usint, ARC_BUILTIN_MULU64);
     def_mbuiltin (1,"__builtin_arc_rtie", void_ftype_void, ARC_BUILTIN_RTIE);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_sync", void_ftype_void, ARC_BUILTIN_SYNC);
-    def_mbuiltin ((TARGET_EA_SET),"__builtin_arc_divaw", int_ftype_int_int, ARC_BUILTIN_DIVAW);
+    def_mbuiltin ((TARGET_EA_SET && !TARGET_EM),"__builtin_arc_divaw", int_ftype_int_int, ARC_BUILTIN_DIVAW);
     def_mbuiltin (1,"__builtin_arc_brk", void_ftype_void, ARC_BUILTIN_BRK);
     def_mbuiltin (1,"__builtin_arc_flag", void_ftype_usint, ARC_BUILTIN_FLAG);
     def_mbuiltin (1,"__builtin_arc_sleep", void_ftype_usint, ARC_BUILTIN_SLEEP);
@@ -5017,6 +5070,12 @@ arc_init_builtins (void)
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
     def_mbuiltin (1,"__builtin_arc_aligned", int_ftype_pcvoid_int, ARC_BUILTIN_ALIGNED);
+
+    def_mbuiltin (TARGET_EM,"__builtin_arc_kflag", void_ftype_usint, ARC_BUILTIN_KFLAG);
+    def_mbuiltin (TARGET_EM,"__builtin_arc_clri", int_ftype_void, ARC_BUILTIN_CLRI);
+    def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_ffs", int_ftype_int, ARC_BUILTIN_FFS);
+    def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_fls", int_ftype_int, ARC_BUILTIN_FLS);
+    def_mbuiltin (TARGET_EM,"__builtin_arc_seti", void_ftype_int, ARC_BUILTIN_SETI);
 
     if (TARGET_SIMD_SET)
       arc_init_simd_builtins ();
@@ -7188,7 +7247,7 @@ arc_register_move_cost (enum machine_mode,
     }
 
   /* The ARC700 stalls for 3 cycles when *reading* from lp_count.  */
-  if (TARGET_ARC700
+  if ((TARGET_ARC700 || TARGET_EM)
       && (from_class == LPCOUNT_REG || from_class == ALL_CORE_REGS
 	  || from_class == WRITABLE_CORE_REGS))
     return 8;
@@ -7218,7 +7277,7 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
   int neg_intval = -intval;
   int short_0 = satisfies_constraint_Rcq (operands[0]);
   int short_p = (!cond_p && short_0 && satisfies_constraint_Rcq (operands[1]));
-  int ret = 0;
+  static int ret = 0;
 
 #define ADDSI_OUTPUT1(FORMAT) do {\
   if (output_p) \
@@ -7231,6 +7290,17 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
   ADDSI_OUTPUT1 (format);\
   return ret; \
 } while (0)
+
+  /* When it is asked if the current insn is compact or not, return
+     the previous computed return value. Hence, we avoid problems like
+     add3 r0,sp,8 to be matched in the second round as add_s
+     r0,sp,64*/
+  if (!cond_p && !output_p && (ret != 0))
+    {
+      int tmp = ret;
+      ret = 0;
+      return tmp;
+    }
 
   /* First try to emit a 16 bit insn.  */
   ret = 2;
@@ -7257,6 +7327,11 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
 	  || (REGNO (operands[0]) == STACK_POINTER_REGNUM
 	      && match && !(neg_intval & ~124)))
 	ADDSI_OUTPUT1 ("sub%? %0,%1,%n2");
+
+      if (REG_P(operands[0]) && REG_P(operands[1])
+	  && (REGNO(operands[0]) <= 31) && (REGNO(operands[0]) == REGNO(operands[1]))
+	  && CONST_INT_P (operands[2]) && ( (intval>= -1) && (intval <= 6)))
+	ADDSI_OUTPUT1 ("add%? %0,%1,%2");
     }
 
   /* Now try to emit a 32 bit insn without long immediate.  */
@@ -8937,7 +9012,7 @@ arc_label_align (rtx label)
   return align_labels_log;
 }
 
-/* Return true if LABEL is in executable code.  */
+/* Return true if LABEL is in executable code. */
 
 bool
 arc_text_label (rtx label)
@@ -8949,6 +9024,7 @@ arc_text_label (rtx label)
   gcc_assert (GET_CODE (label) == CODE_LABEL
 	      || (GET_CODE (label) == NOTE
 		  && NOTE_KIND (label) == NOTE_INSN_DELETED_LABEL));
+
   next = next_nonnote_insn (label);
   if (next)
     return (GET_CODE (next) != JUMP_INSN
