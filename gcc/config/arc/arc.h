@@ -142,8 +142,8 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
 %{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:" ASM_DEFAULT "}}}}} \
-%{mcpu=EM|mEM:%<mbarrel_shifter}\
-%{mcpu=EM|mEM:%<mno-mpy}\
+%{mcpu=ARCv2EM|mav2em:%<mbarrel_shifter}\
+%{mcpu=ARCv2EM|mav2em:%<mno-mpy}\
 %{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
 %{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
 %{msimd} \
@@ -151,7 +151,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mARC700|mA7:%{mlock}} \
 %{mcpu=ARC700|mARC700|mA7:%{mswape}} \
 %{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
-%{mcpu=EM|mEM:-mEM} \
+%{mcpu=ARCv2EM|mav2em:-mEM} \
 "
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
@@ -191,7 +191,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:%{!mcpu=EM:crtg.o%s}} crtbegin.o%s"
+#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:%{!mcpu=ARCv2EM:crtg.o%s}} crtbegin.o%s"
 #else
 #define STARTFILE_SPEC   "%{!shared:%{!mkernel:crt1.o%s}} crti.o%s \
   %{!shared:%{pg|p|profile:crtg.o%s} crtbegin.o%s} %{shared:crtbeginS.o%s}"
@@ -199,7 +199,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define ENDFILE_SPEC "%{pg|p:%{!mcpu=EM:crtgend.o%s}} crtend.o%s crtn%O%s"
+#define ENDFILE_SPEC "%{pg|p:%{!mcpu=ARCv2EM:crtgend.o%s}} crtend.o%s crtn%O%s"
 #else
 #define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s} crtend.o%s} \
   %{shared:crtendS.o%s} crtn.o%s"
@@ -216,7 +216,7 @@ along with GCC; see the file COPYING3.  If not see
 #else
 #undef LIB_SPEC
 /* -lc_p not present for arc-elf32-* : ashwin */
-#define LIB_SPEC "%{!shared:%{g*:-lg} %{pg|p:%{!mcpu=EM:-lgmon}} -lc}"
+#define LIB_SPEC "%{!shared:%{g*:-lg} %{pg|p:%{!mcpu=ARCv2EM:-lgmon}} -lc}"
 #endif
 
 #ifndef DRIVER_ENDIAN_SELF_SPECS
@@ -235,7 +235,7 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
   "%{mARC700|mA7: -mcpu=ARC700 %<mARC700}" \
   "%{mA5:-mcpu=A5 %<mA5}" \
-  "%{mEM:-mcpu=EM %<mEM}"
+  "%{mav2em:-mcpu=ARCv2EM %<mav2em}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
@@ -282,14 +282,14 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_ARC600 (arc_cpu == PROCESSOR_ARC600)
 #define TARGET_ARC601 (arc_cpu == PROCESSOR_ARC601)
 #define TARGET_ARC700 (arc_cpu == PROCESSOR_ARC700)
-#define TARGET_EM (arc_cpu == PROCESSOR_EM)
+#define TARGET_EM (arc_cpu == PROCESSOR_ARCv2EM)
 
 /* Recast the cpu class to be the cpu attribute.  */
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
 
 #ifndef MULTILIB_DEFAULTS
 #ifdef ARC_DEFAULT_CPU_EM
-#define MULTILIB_DEFAULTS { "mEM" }
+#define MULTILIB_DEFAULTS { "mav2em" }
 #else
 #define MULTILIB_DEFAULTS { "mARC700" }
 #endif
