@@ -760,7 +760,7 @@ arc_override_options (void)
 {
   if (arc_cpu == PROCESSOR_NONE)
 #ifdef ARC_DEFAULT_CPU_EM
-    arc_cpu = PROCESSOR_EM;
+    arc_cpu = PROCESSOR_ARCv2EM;
 #else
     arc_cpu = PROCESSOR_ARC700;
 #endif
@@ -781,7 +781,7 @@ arc_override_options (void)
     TARGET_COMPACT_CASESI = 0;
 
   /*For the time being don't support COMPACT_CASESI for EM*/
-  if (arc_cpu == PROCESSOR_EM)
+  if (arc_cpu == PROCESSOR_ARCv2EM)
     TARGET_COMPACT_CASESI = 0;
 
   if (TARGET_COMPACT_CASESI)
