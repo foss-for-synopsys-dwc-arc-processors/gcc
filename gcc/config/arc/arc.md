@@ -4298,7 +4298,7 @@
 (define_expand "sibcall"
   [(parallel [(call (match_operand 0 "memory_operand" "")
 		    (match_operand 1 "general_operand" ""))
-	      (return)
+	      (simple_return)
 	      (use (match_operand 2 "" ""))])]
   ""
   "
@@ -4324,7 +4324,7 @@
   [(parallel [(set (match_operand 0 "dest_reg_operand" "")
 		   (call (match_operand 1 "memory_operand" "")
 			 (match_operand 2 "general_operand" "")))
-	      (return)
+	      (simple_return)
 	      (use (match_operand 3 "" ""))])]
   ""
   "
@@ -4349,7 +4349,7 @@
  [(call (mem:SI (match_operand:SI 0 "call_address_operand"
 		 "Cbp,Cbr,Rs5,Rsc,Cal"))
 	(match_operand 1 "" ""))
-  (return)
+  (simple_return)
   (use (match_operand 2 "" ""))]
   ""
   "@
@@ -4369,7 +4369,7 @@
        (call (mem:SI (match_operand:SI 1 "call_address_operand"
 	      "Cbp,Cbr,Rs5,Rsc,Cal"))
 	     (match_operand 2 "" "")))
-  (return)
+  (simple_return)
   (use (match_operand 3 "" ""))]
   ""
   "@
@@ -4387,7 +4387,7 @@
 (define_insn "sibcall_prof"
  [(call (mem:SI (match_operand:SI 0 "call_address_operand" "Cbr,Cal"))
 	(match_operand 1 "" ""))
-  (return)
+  (simple_return)
   (use (match_operand 2 "" ""))
   (use (reg:SI 8))
   (use (reg:SI 9))]
@@ -4404,7 +4404,7 @@
  [(set (match_operand 0 "dest_reg_operand" "")
        (call (mem:SI (match_operand:SI 1 "call_address_operand" "Cbr,Cal"))
 	     (match_operand 2 "" "")))
-  (return)
+  (simple_return)
   (use (match_operand 3 "" ""))
   (use (reg:SI 8))
   (use (reg:SI 9))]
@@ -4449,7 +4449,7 @@
 ; instead have to show it in EPILOGUE_USES and must explicitly
 ; forbid instructions that change blink in the return / sibcall delay slot.
 (define_insn "return_i"
-  [(return)]
+  [(simple_return)]
   "reload_completed"
 {
   rtx reg
@@ -4480,7 +4480,7 @@
   [(set (pc)
 	(if_then_else (match_operator 0 "proper_comparison_operator"
 				      [(reg CC_REG) (const_int 0)])
-		      (return) (pc)))]
+		      (simple_return) (pc)))]
   "reload_completed"
 {
   rtx xop[2];
@@ -5093,6 +5093,7 @@
 }
   [(set_attr "type" "call")])
 
+; the sibthunk restores blink, so we use the return rtx.
 (define_insn "*millicode_sibthunk_ld"
   [(match_parallel 0 "millicode_load_operation"
      [(return)

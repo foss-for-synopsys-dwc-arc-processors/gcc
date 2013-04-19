@@ -1,3 +1,10 @@
+2013-04-19  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_ccfsm_advance): Check for SIMPLE_RETURN.
+	* config/arc/arc.md (sibcall, sibcall_value): Use simple_return.
+	(sibcall_insn, sibcall_value_insn, sibcall_prof): Likewise.
+	(sibcall_value_prof, sibcall_epilogue, p_return_i): Likewise.
+
 2013-04-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* testsuite/gcc.dg/torture/stackalign/builtin-apply-2.c
