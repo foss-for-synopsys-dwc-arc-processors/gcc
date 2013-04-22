@@ -1,3 +1,8 @@
+2013-04-22 Claudiu Zissulescu <claziss@synopsys.com>
+	* resource.c: when computing the resources that are alive at TARGET 
+	(mark_target_live_regs) ignore the CALLs that are predicated in altering
+        the current_live_regs set. This is because a predicated call may be taken or not.
+
 2013-04-17 Claudiu Zissulescu <claziss@synopsys.com>
 	* doc/invoke.texi: Change the option -mcpu=EM into -mcpu=ARCv2EM, and change the -mEM driver option to -mav2em
 	* common/config/arc/arc-common.c:  Likewise
