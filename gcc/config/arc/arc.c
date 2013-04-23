@@ -3446,7 +3446,7 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
 	  else
 	    return;
 	}
-      else if (GET_CODE (body) == RETURN)
+      else if (GET_CODE (body) == SIMPLE_RETURN)
         {
 	  start_insn = next_nonnote_insn (start_insn);
 	  if (GET_CODE (start_insn) == BARRIER)
@@ -3509,9 +3509,9 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
 	  label = XEXP (XEXP (SET_SRC (body), 2), 0);
 	  then_not_else = FALSE;
 	}
-      else if (GET_CODE (XEXP (SET_SRC (body), 1)) == RETURN)
+      else if (GET_CODE (XEXP (SET_SRC (body), 1)) == SIMPLE_RETURN)
 	seeking_return = 1;
-      else if (GET_CODE (XEXP (SET_SRC (body), 2)) == RETURN)
+      else if (GET_CODE (XEXP (SET_SRC (body), 2)) == SIMPLE_RETURN)
         {
 	  seeking_return = 1;
 	  then_not_else = FALSE;
@@ -3612,7 +3612,7 @@ arc_ccfsm_advance (rtx insn, struct arc_ccfsm *state)
 		  else if (get_attr_cond (this_insn) != COND_CANUSE)
 		    fail = TRUE;
 		}
-	      else if (GET_CODE (scanbody) == RETURN
+	      else if (GET_CODE (scanbody) == SIMPLE_RETURN
 		       && seeking_return)
 	        {
 		  state->state = 2;

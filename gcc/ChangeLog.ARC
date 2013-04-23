@@ -9,13 +9,29 @@
 	(mark_target_live_regs) ignore the CALLs that are predicated in altering
         the current_live_regs set. This is because a predicated call may be taken or not.
 
+2013-04-19  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_ccfsm_advance): Check for SIMPLE_RETURN.
+	* config/arc/arc.md (sibcall, sibcall_value): Use simple_return.
+	(sibcall_insn, sibcall_value_insn, sibcall_prof): Likewise.
+	(sibcall_value_prof, sibcall_epilogue, p_return_i): Likewise.
+
 2013-04-17 Claudiu Zissulescu <claziss@synopsys.com>
-	* doc/invoke.texi: Change the option -mcpu=EM into -mcpu=ARCv2EM, and change the -mEM driver option to -mav2em
+	* doc/invoke.texi: Change the option -mcpu=EM into -mcpu=ARCv2EM,
+	and change the -mEM driver option to -mav2em
 	* common/config/arc/arc-common.c:  Likewise
 	* config/arc/arc-opts.h: Likewise
 	* config/arc/arc.c: Likewise
 	* config/arc/arc.h: Likewise
 	* config/arc/arc.opt: Likewise
+
+2013-04-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* testsuite/gcc.dg/torture/stackalign/builtin-apply-2.c
+	[__arc__] (STACK_ARGUMENTS_SIZE): Set to 0.
+
+	* testsuite/gcc.dg/builtin-apply2.c
+	[__arc__] (STACK_ARGUMENTS_SIZE): Set to 0.
 
 2013-04-05 Claudiu Zissulescu <claziss@synopsys.com>
 	* doc/invoke.texi: Add gcc-EM options to the documentation
