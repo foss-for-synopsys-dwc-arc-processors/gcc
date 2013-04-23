@@ -1,3 +1,14 @@
+2013-04-23 Claudiu Zissulescu <claziss@synopsys.com>
+	* resource.c: For a predicated call take into account all the global registers
+	that may be  modified by the call.
+	* config/arc/arc.c: Modify CHEAP_CORE_REGS to match better the ARCv2 architecture
+	* config/arc/arc.md: Cleanup some of the instruction patterns used by ARCv2
+
+2013-04-22 Claudiu Zissulescu <claziss@synopsys.com>
+	* resource.c: when computing the resources that are alive at TARGET 
+	(mark_target_live_regs) ignore the CALLs that are predicated in altering
+        the current_live_regs set. This is because a predicated call may be taken or not.
+
 2013-04-19  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_ccfsm_advance): Check for SIMPLE_RETURN.
