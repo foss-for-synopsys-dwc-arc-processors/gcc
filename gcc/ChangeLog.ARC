@@ -1,3 +1,7 @@
+2013-04-25 Claudiu Zissulescu <claziss@synopsys.com>
+	*  config/arc/arc.c: AP and PCL regs are in NO_REGS class for EM;
+	   Enable the FPX option for EM
+
 2013-04-23 Claudiu Zissulescu <claziss@synopsys.com>
 	* resource.c: For a predicated call take into account all the global registers
 	that may be  modified by the call.
