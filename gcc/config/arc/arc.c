@@ -706,7 +706,7 @@ arc_init (void)
 
   /* FPX-3. No FPX extensions on pre-ARC600 cores.  */
   if ((TARGET_DPFP || TARGET_SPFP)
-      && !(TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700))
+      && !(TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700 || TARGET_EM))
     error ("FPX extensions not available on pre-ARC600 cores");
 
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
@@ -1294,6 +1294,11 @@ arc_conditional_register_usage (void)
   arc_regno_reg_class[29] = LINK_REGS; /* ilink1 register.  */
   if (!TARGET_EM)
     arc_regno_reg_class[30] = LINK_REGS; /* ilink2 register.  */
+  else
+    {
+      arc_regno_reg_class[62] = NO_REGS;
+      arc_regno_reg_class[63] = NO_REGS;
+    }
   arc_regno_reg_class[31] = LINK_REGS; /* blink register.  */
   arc_regno_reg_class[60] = LPCOUNT_REG;
   arc_regno_reg_class[61] = NO_REGS;      /* CC_REG: must be NO_REGS.  */
