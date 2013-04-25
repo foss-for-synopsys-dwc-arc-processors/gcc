@@ -998,11 +998,15 @@ mark_target_live_regs (rtx insns, rtx target, struct resources *res)
 
 	  if (CALL_P (real_insn))
 	    {
-	      /* CALL clobbers all call-used regs that aren't fixed except
-		 sp, ap, and fp.  Do this before setting the result of the
-		 call live.  */
-	      AND_COMPL_HARD_REG_SET (current_live_regs,
-				      regs_invalidated_by_call);
+	      /*CZI: do not take into account a predicated call*/
+	      if (GET_CODE(PATTERN(real_insn)) != COND_EXEC)
+		{
+		  /* CALL clobbers all call-used regs that aren't fixed except
+		     sp, ap, and fp.  Do this before setting the result of the
+		     call live.  */
+		  AND_COMPL_HARD_REG_SET (current_live_regs,
+					  regs_invalidated_by_call);
+		}
 
 	      /* A CALL_INSN sets any global register live, since it may
 		 have been modified by the call.  */
@@ -1020,7 +1024,11 @@ mark_target_live_regs (rtx insns, rtx target, struct resources *res)
 	       && GET_CODE (PATTERN (real_insn)) != USE
 	       && GET_CODE (PATTERN (real_insn)) != CLOBBER)
 	      || JUMP_P (real_insn)
-	      || CALL_P (real_insn))
+	      || (CALL_P (real_insn)
+	      /*CZI: do not take into account a predicated call*/
+		  && (GET_CODE(PATTERN(real_insn)) != COND_EXEC))
+	      /*CZI:end*/
+	      )
 	    {
 	      for (link = REG_NOTES (real_insn); link; link = XEXP (link, 1))
 		if (REG_NOTE_KIND (link) == REG_DEAD
