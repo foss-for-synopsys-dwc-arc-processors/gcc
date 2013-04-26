@@ -1,3 +1,7 @@
+2013-04-27  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (ASM_PREFERRED_EH_DATA_FORMAT): Define.
+
 2013-04-19  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_ccfsm_advance): Check for SIMPLE_RETURN.

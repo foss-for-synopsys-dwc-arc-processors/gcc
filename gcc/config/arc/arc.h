@@ -1213,6 +1213,11 @@ arc_select_cc_mode (OP, X, Y)
    position independent code.  */
 #define LEGITIMATE_PIC_OPERAND_P(X)  (arc_legitimate_pic_operand_p(X))
 
+#define ASM_PREFERRED_EH_DATA_FORMAT(CODE, GLOBAL) \
+  (flag_pic \
+   ? (GLOBAL ? DW_EH_PE_indirect : 0) | DW_EH_PE_pcrel | DW_EH_PE_sdata4 \
+   : DW_EH_PE_absptr)
+
 /* Control the assembler format that we output.  */
 
 /* A C string constant describing how to begin a comment in the target
