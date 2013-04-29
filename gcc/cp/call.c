@@ -7033,7 +7033,10 @@ build_over_call (struct z_candidate *cand, int flags, tsubst_flags_t complain)
   if (!already_used)
     mark_used (fn);
 
-  if (DECL_VINDEX (fn) && (flags & LOOKUP_NONVIRTUAL) == 0)
+  if (DECL_VINDEX (fn) && (flags & LOOKUP_NONVIRTUAL) == 0
+      /* Don't mess with virtual lookup in fold_non_dependent_expr; virtual
+	 functions can't be constexpr.  */
+      && !in_template_function ())
     {
       tree t;
       tree binfo = lookup_base (TREE_TYPE (TREE_TYPE (argarray[0])),
@@ -7624,6 +7627,7 @@ build_new_method_call_1 (tree instance, tree fns, vec<tree, va_gc> **args,
       else
 	{
 	  fn = cand->fn;
+	  call = NULL_TREE;
 
 	  if (!(flags & LOOKUP_NONVIRTUAL)
 	      && DECL_PURE_VIRTUAL_P (fn)
@@ -7641,12 +7645,26 @@ build_new_method_call_1 (tree instance, tree fns, vec<tree, va_gc> **args,
 	  if (TREE_CODE (TREE_TYPE (fn)) == METHOD_TYPE
 	      && is_dummy_object (instance_ptr))
 	    {
-	      if (complain & tf_error)
-		error ("cannot call member function %qD without object",
-		       fn);
-	      call = error_mark_node;
+	      instance = maybe_resolve_dummy (instance);
+	      if (instance == error_mark_node)
+		call = error_mark_node;
+	      else if (!is_dummy_object (instance))
+		{
+		  /* We captured 'this' in the current lambda now that
+		     we know we really need it.  */
+		  instance_ptr = build_this (instance);
+		  cand->first_arg = instance_ptr;
+		}
+	      else
+		{
+		  if (complain & tf_error)
+		    error ("cannot call member function %qD without object",
+			   fn);
+		  call = error_mark_node;
+		}
 	    }
-	  else
+
+	  if (call != error_mark_node)
 	    {
 	      /* Optimize away vtable lookup if we know that this
 		 function can't be overridden.  We need to check if

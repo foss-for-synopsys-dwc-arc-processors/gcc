@@ -89,6 +89,9 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  if (! (opts_set->x_target_flags & MASK_BARREL_SHIFTER) )
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
 	  break;
+	case PROCESSOR_ARCv2EM:
+	  if (! (opts_set->x_target_flags & MASK_FSHORT_SET) )
+	    opts->x_target_flags |= MASK_FSHORT_SET;
 	case PROCESSOR_ARC601:
 	  if (! (opts_set->x_target_flags & MASK_BARREL_SHIFTER) )
 	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
@@ -105,11 +108,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 #define TARGET_OPTION_OPTIMIZATION_TABLE arc_option_optimization_table
 #define TARGET_HANDLE_OPTION arc_handle_option
 
-#if UCLIBC_DEFAULT
-#define DEFAULT_NO_SDATA MASK_NO_SDATA_SET
-#else
-#define DEFAULT_NO_SDATA 0
-#endif
+#define DEFAULT_NO_SDATA (TARGET_SDATA_DEFAULT ? 0 : MASK_NO_SDATA_SET)
 
 /* We default to ARC700, which has the barrel shifter enabled.  */
 #define TARGET_DEFAULT_TARGET_FLAGS \

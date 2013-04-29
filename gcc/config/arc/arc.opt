@@ -53,6 +53,26 @@ mARC700
 Target Report
 Same as -mA7
 
+mav2em
+Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
+Generate ARCv2 code for EM processor
+
+mforce_short
+Target Report Mask(FSHORT_SET)
+Force short suffix by ignoring the instruction length attribute. It is on by default for EM.
+
+mmpy_option=
+Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
+-mmpy_option={0,1,2,3,4,5,6} Compile ARC EM code with a multiplier design option. WLH1 is default on
+
+mdiv_rem
+Target Report Mask(DIVREM)
+Enable DIV-REM instructions for ARCv2
+
+mcode_density
+Target Report Mask(CODE_DENSITY)
+Enable code density instructions for ARCv2
+
 mmixed-code
 Target Report Mask(MIXED_CODE_SET)
 Tweak register allocation to help 16-bit instruction generation
@@ -168,6 +188,9 @@ Enum(processor_type) String(ARC601) Value(PROCESSOR_ARC601)
 EnumValue
 Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
 
+EnumValue
+Enum(processor_type) String(ARCv2EM) Value(PROCESSOR_ARCv2EM)
+
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
 size optimization level: 0:none 1:opportunistic 2: regalloc 3:drop align, -Os
@@ -223,7 +246,7 @@ Target RejectNegative Joined UInteger Var(arc_unalign_prob_threshold) Init(10000
 Set probability threshold for unaligning branches
 
 mmedium-calls
-Target Var(TARGET_MEDIUM_CALLS)
+Target Var(TARGET_MEDIUM_CALLS) Init(TARGET_MMEDIUM_CALLS_DEFAULT)
 Don't use less than 25 bit addressing range for calls.
 
 mannotate-align

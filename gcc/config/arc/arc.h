@@ -78,6 +78,10 @@ along with GCC; see the file COPYING3.  If not see
 	builtin_define ("__A7__");	\
 	builtin_define ("__ARC700__");	\
       }					\
+    else if (TARGET_EM)			\
+      {					\
+	builtin_define ("__EM__");	\
+      }					\
     if (TARGET_NORM)			\
       {					\
 	builtin_define ("__ARC_NORM__");\
@@ -124,6 +128,12 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:%{EL:%emay not use both -EB and -EL}} \
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
+#ifdef ARC_DEFAULT_CPU_EM
+#define ASM_DEFAULT "-mEM"
+#else
+#define ASM_DEFAULT "-mARC700 -mEA"
+#endif
+
 #define ASM_SPEC  "\
 %{mbig-endian|EB:-EB} %{EL} \
 %{mcpu=A5|mcpu=a5|mA5:-mA5} \
@@ -131,7 +141,9 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC601|mcpu=arc601:-mARC601} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mARC700} \
 %{mcpu=ARC700|mcpu=arc700|mARC700|mA7:-mEA} \
-%{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:-mARC700 -mEA}}}}} \
+%{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:" ASM_DEFAULT "}}}}} \
+%{mcpu=ARCv2EM|mav2em:%<mbarrel_shifter}\
+%{mcpu=ARCv2EM|mav2em:%<mno-mpy}\
 %{mbarrel_shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp} %{mnorm} %{mswap} \
 %{mEA} %{mmin_max} %{mspfp*} %{mdpfp*} \
 %{msimd} \
@@ -139,6 +151,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700|mARC700|mA7:%{mlock}} \
 %{mcpu=ARC700|mARC700|mA7:%{mswape}} \
 %{mcpu=ARC700|mARC700|mA7:%{mrtsc}} \
+%{mcpu=ARCv2EM|mav2em:-mEM} \
 "
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
@@ -178,7 +191,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} crtbegin.o%s"
+#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:%{!mcpu=ARCv2EM:crtg.o%s}} crtbegin.o%s"
 #else
 #define STARTFILE_SPEC   "%{!shared:%{!mkernel:crt1.o%s}} crti.o%s \
   %{!shared:%{pg|p|profile:crtg.o%s} crtbegin.o%s} %{shared:crtbeginS.o%s}"
@@ -186,7 +199,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
+#define ENDFILE_SPEC "%{pg|p:%{!mcpu=ARCv2EM:crtgend.o%s}} crtend.o%s crtn%O%s"
 #else
 #define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s} crtend.o%s} \
   %{shared:crtendS.o%s} crtn.o%s"
@@ -203,18 +216,26 @@ along with GCC; see the file COPYING3.  If not see
 #else
 #undef LIB_SPEC
 /* -lc_p not present for arc-elf32-* : ashwin */
-#define LIB_SPEC "%{!shared:%{g*:-lg} %{pg|p:-lgmon} -lc}"
+#define LIB_SPEC "%{!shared:%{g*:-lg} %{pg|p:%{!mcpu=ARCv2EM:-lgmon}} -lc}"
 #endif
 
 #ifndef DRIVER_ENDIAN_SELF_SPECS
 #define DRIVER_ENDIAN_SELF_SPECS ""
 #endif
+#ifndef TARGET_SDATA_DEFAULT
+#define TARGET_SDATA_DEFAULT 1
+#endif
+#ifndef TARGET_MMEDIUM_CALLS_DEFAULT
+#define TARGET_MMEDIUM_CALLS_DEFAULT 0
+#endif
 
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
-  "%{mARC5:-mcpu=A5 %<mA5}" \
-  "%{mARC600|mA6:-mcpu=ARC600 %<mARC600}" \
-  "%{mARC601:-mcpu=ARC601 %<mARC601}" \
-  "%{mARC700|mA7:-mcpu=ARC700 %<mARC700}"
+  "%{mARC5: -mcpu=A5 %<mA5}" \
+  "%{mARC600|mA6: -mcpu=ARC600 %<mARC600 %<A6}" \
+  "%{mARC601: -mcpu=ARC601 %<mARC601}" \
+  "%{mARC700|mA7: -mcpu=ARC700 %<mARC700}" \
+  "%{mA5:-mcpu=A5 %<mA5}" \
+  "%{mav2em:-mcpu=ARCv2EM %<mav2em}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
@@ -255,18 +276,23 @@ along with GCC; see the file COPYING3.  If not see
 
 /* For an anulled-true delay slot insn for a delayed branch, should we only
    use conditional execution?  */
-#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700)
+#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700 && !TARGET_EM)
 
 #define TARGET_A5 (arc_cpu == PROCESSOR_A5)
 #define TARGET_ARC600 (arc_cpu == PROCESSOR_ARC600)
 #define TARGET_ARC601 (arc_cpu == PROCESSOR_ARC601)
 #define TARGET_ARC700 (arc_cpu == PROCESSOR_ARC700)
+#define TARGET_EM (arc_cpu == PROCESSOR_ARCv2EM)
 
 /* Recast the cpu class to be the cpu attribute.  */
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
 
 #ifndef MULTILIB_DEFAULTS
+#ifdef ARC_DEFAULT_CPU_EM
+#define MULTILIB_DEFAULTS { "mav2em" }
+#else
 #define MULTILIB_DEFAULTS { "mARC700" }
+#endif
 #endif
 
 /* Target machine storage layout.  */
@@ -1187,6 +1213,11 @@ arc_select_cc_mode (OP, X, Y)
    position independent code.  */
 #define LEGITIMATE_PIC_OPERAND_P(X)  (arc_legitimate_pic_operand_p(X))
 
+#define ASM_PREFERRED_EH_DATA_FORMAT(CODE, GLOBAL) \
+  (flag_pic \
+   ? (GLOBAL ? DW_EH_PE_indirect : 0) | DW_EH_PE_pcrel | DW_EH_PE_sdata4 \
+   : DW_EH_PE_absptr)
+
 /* Control the assembler format that we output.  */
 
 /* A C string constant describing how to begin a comment in the target
@@ -1328,14 +1359,14 @@ do {							\
 #endif
 #define SET_ASM_OP "\t.set\t"
 
-extern char rname56[], rname57[], rname58[], rname59[];
+extern char rname29[], rname30[], rname56[], rname57[], rname58[], rname59[];
 /* How to refer to registers in assembler output.
    This sequence is indexed by compiler's hard-register-number (see above).  */
 #define REGISTER_NAMES								\
 {  "r0",   "r1",   "r2",   "r3",       "r4",     "r5",     "r6",    "r7",	\
    "r8",   "r9",  "r10",  "r11",      "r12",    "r13",    "r14",   "r15",	\
   "r16",  "r17",  "r18",  "r19",      "r20",    "r21",    "r22",   "r23",	\
-  "r24",  "r25",   "gp",   "fp",       "sp", "ilink1", "ilink2", "blink",	\
+  "r24",  "r25",   "gp",   "fp",       "sp",  rname29, rname30, "blink",	\
   "r32",  "r33",  "r34",  "r35",      "r36",    "r37",    "r38",   "r39",	\
    "d1",   "d1",   "d2",   "d2",      "r44",    "r45",    "r46",   "r47",	\
   "r48",  "r49",  "r50",  "r51",      "r52",    "r53",    "r54",   "r55",	\
@@ -1700,5 +1731,19 @@ enum
 {
   ARC_LRA_PRIORITY_NONE, ARC_LRA_PRIORITY_NONCOMPACT, ARC_LRA_PRIORITY_COMPACT
 };
+
+/* The define_cond_exec construct is rather crude, as we can't have
+   different ones with different conditions apply to different sets
+   of instructions.  We can't use an attribute test inside the condition,
+   because that would lead to infinite recursion as the attribute test
+   needs to recognize the insn.  So, instead we have a clause for
+   the pattern condition of all sfunc patterns which is only relevant for
+   the predicated varaint.  */
+#define SFUNC_CHECK_PREDICABLE \
+  (GET_CODE (PATTERN (insn)) != COND_EXEC || !flag_pic || !TARGET_MEDIUM_CALLS)
+
+/* EM defines*/
+#define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_EM)
+#define EM_MULTI ((arc_mpy_option > 1) && TARGET_EM)
 
 #endif /* GCC_ARC_H */
