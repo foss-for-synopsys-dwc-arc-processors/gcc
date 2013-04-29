@@ -4903,7 +4903,7 @@ arc_legitimate_constant_p (enum machine_mode, rtx x)
 	  }
 
       /* We must have drilled down to a symbol.  */
-      if (arc_raw_symbolic_reference_mentioned_p (x, true))
+      if (arc_raw_symbolic_reference_mentioned_p (x, false))
 	return false;
 
       /* Return true.  */

@@ -1,3 +1,9 @@
+2013-04-29  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc/config/arc/arc.c (arc_legitimate_constant_p): When
+	calling arc_raw_symbolic_reference_mentioned_p, pass false as
+	ski_local argument.
+
 2013-04-27  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (ASM_PREFERRED_EH_DATA_FORMAT): Define.
