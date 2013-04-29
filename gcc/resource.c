@@ -1027,11 +1027,7 @@ mark_target_live_regs (rtx insns, rtx target, struct resources *res)
 	       && GET_CODE (PATTERN (real_insn)) != USE
 	       && GET_CODE (PATTERN (real_insn)) != CLOBBER)
 	      || JUMP_P (real_insn)
-	      || (CALL_P (real_insn)
-	      /*CZI: do not take into account a predicated call*/
-		  && (GET_CODE(PATTERN(real_insn)) != COND_EXEC))
-	      /*CZI:end*/
-	      )
+	      || CALL_P (real_insn))
 	    {
 	      for (link = REG_NOTES (real_insn); link; link = XEXP (link, 1))
 		if (REG_NOTE_KIND (link) == REG_DEAD
