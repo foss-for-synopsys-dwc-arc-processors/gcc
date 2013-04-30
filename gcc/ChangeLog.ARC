@@ -1,8 +1,3 @@
-2013-04-22 Claudiu Zissulescu <claziss@synopsys.com>
-
-       * resource.c: Compute resources taking into account if a call is
-       predicated or not
-
 2013-04-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc/config/arc/arc.c (arc_legitimate_constant_p): When
