@@ -1,3 +1,8 @@
+2013-04-29 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* resource.c (mark_target_live_regs): Compute resources taking
+	into account if a call is predicated or not.
+
 2013-04-29  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc/config/arc/arc.c (arc_legitimate_constant_p): When
