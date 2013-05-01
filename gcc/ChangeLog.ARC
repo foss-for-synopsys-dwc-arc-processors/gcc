@@ -25,6 +25,23 @@
 
 	* config/arc/arc.h (ASM_PREFERRED_EH_DATA_FORMAT): Define.
 
+2013-04-25 Claudiu Zissulescu <claziss@synopsys.com>
+
+	*  config/arc/arc.c: AP and PCL regs are in NO_REGS class for EM;
+	   Enable the FPX option for EM
+
+2013-04-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* resource.c: For a predicated call take into account all the global registers
+	that may be  modified by the call.
+	* config/arc/arc.c: Modify CHEAP_CORE_REGS to match better the ARCv2 architecture
+	* config/arc/arc.md: Cleanup some of the instruction patterns used by ARCv2
+
+2013-04-22 Claudiu Zissulescu <claziss@synopsys.com>
+
+       * resource.c: Compute resources taking into account if a call is
+       predicated or not
+
 2013-04-19  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_ccfsm_advance): Check for SIMPLE_RETURN.
