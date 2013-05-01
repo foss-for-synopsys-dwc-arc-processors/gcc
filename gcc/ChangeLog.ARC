@@ -1,3 +1,7 @@
+2013-04-30  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* resource.c (mark_referenced_resources): Handle COND_EXEC.
+
 2013-04-29 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* resource.c (mark_target_live_regs): Compute resources taking
@@ -7,7 +11,7 @@
 
 	* gcc/config/arc/arc.c (arc_legitimate_constant_p): When
 	calling arc_raw_symbolic_reference_mentioned_p, pass false as
-	ski_local argument.
+	skip_local argument.
 
 2013-04-27  Joern Rennecke  <joern.rennecke@embecosm.com>
 
