@@ -1,3 +1,11 @@
+2013-05-01  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Modify CHEAP_CORE_REGS to match better the ARCv2
+	architecture; AP and PCL regs are in NO_REGS class for EM;
+	Enable the FPX option for EM.
+	* config/arc/arc.md: Cleanup some of the instruction patterns used
+	by ARCv2.
+
 2013-04-30  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* resource.c (mark_referenced_resources): Handle COND_EXEC.

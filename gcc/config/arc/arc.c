@@ -706,7 +706,7 @@ arc_init (void)
 
   /* FPX-3. No FPX extensions on pre-ARC600 cores.  */
   if ((TARGET_DPFP || TARGET_SPFP)
-      && !(TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700))
+      && !(TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700 || TARGET_EM))
     error ("FPX extensions not available on pre-ARC600 cores");
 
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
@@ -1161,10 +1161,14 @@ arc_conditional_register_usage (void)
   int i;
   int fix_start = 60, fix_end = 55;
 
+  /* For ARCv2 the core register set is changed.*/
   if (TARGET_EM)
     {
       strcpy(rname29, "ilink");
       strcpy(rname30, "r30");
+      /* Cheap core regs can do from r0-r31 mapped on g/h */
+      CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], 62); /*ap*/
+      CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], 63); /*pcl*/
     }
   if (TARGET_MUL64_SET)
     {
@@ -1270,7 +1274,7 @@ arc_conditional_register_usage (void)
 	  = (fixed_regs[i]
 	     ? (TEST_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], i)
 		? CHEAP_CORE_REGS : ALL_CORE_REGS)
-	     : ((TARGET_ARC700
+	     : (((TARGET_ARC700 || TARGET_EM)
 		 && TEST_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], i))
 		? CHEAP_CORE_REGS : WRITABLE_CORE_REGS));
       else
@@ -1288,7 +1292,13 @@ arc_conditional_register_usage (void)
 
   /* Handle Special Registers.  */
   arc_regno_reg_class[29] = LINK_REGS; /* ilink1 register.  */
-  arc_regno_reg_class[30] = LINK_REGS; /* ilink2 register.  */
+  if (!TARGET_EM)
+    arc_regno_reg_class[30] = LINK_REGS; /* ilink2 register.  */
+  else
+    {
+      arc_regno_reg_class[62] = NO_REGS;
+      arc_regno_reg_class[63] = NO_REGS;
+    }
   arc_regno_reg_class[31] = LINK_REGS; /* blink register.  */
   arc_regno_reg_class[60] = LPCOUNT_REG;
   arc_regno_reg_class[61] = NO_REGS;      /* CC_REG: must be NO_REGS.  */
@@ -4903,7 +4913,7 @@ arc_legitimate_constant_p (enum machine_mode, rtx x)
 	  }
 
       /* We must have drilled down to a symbol.  */
-      if (arc_raw_symbolic_reference_mentioned_p (x, false))
+      if (arc_raw_symbolic_reference_mentioned_p (x, true))
 	return false;
 
       /* Return true.  */
