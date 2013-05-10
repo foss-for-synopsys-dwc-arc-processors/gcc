@@ -1,3 +1,16 @@
+2013-05-09  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (Option Summary, ARC Options): Remove -mcrc,
+	-mold-di-patterns, -mCPU=A5, -mA5. Add -mforce-short, -mlra,
+	-mlra-priority-compact, -mlra-priority-noncompact,
+	-mlra-priority-none and -mucb-count. Replace -mcpu=ARCv2EM by
+	-mcpu=ARCEM and add -mAEM and -mARCEM as synonyms. Mark
+	-mbarrel_shifter, -mdiv_rem, -mdpfp_compact, -mdpfp_fast,
+	-mdsp_packa, -mmac_24, -mmac_d16, -mmpy_option, -mspfp_compact,
+	-mspfp_fast and -mcode_density as deprecated and replace by
+	equivalents without '_'. Partition options into groups are reorder
+	alphabetically in groups. Update summary to match detailed list.
+
 2013-05-01  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Modify CHEAP_CORE_REGS to match better the ARCv2
