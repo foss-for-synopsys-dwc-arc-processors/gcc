@@ -1,3 +1,10 @@
+2013-05-10  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/extend.texi (ARC Built-in Functions): New section defining
+	generic ARC built-in functions.
+	(ARC SIMD Built-in Functions): New section defining SIMD specific
+	built-in functions.
+
 2013-05-09  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* doc/invoke.texi (Option Summary, ARC Options): Remove -mcrc,
