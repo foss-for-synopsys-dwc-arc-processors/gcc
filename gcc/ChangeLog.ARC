@@ -1,5 +1,11 @@
 2013-05-10  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
+	* doc/extend.tex (Declaring Attributes of Functions): Extended
+	description of short_call and long_call attributes for ARC and
+	added index entries.
+
+2013-05-10  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
 	* doc/extend.texi (ARC Built-in Functions): New section defining
 	generic ARC built-in functions.
 	(ARC SIMD Built-in Functions): New section defining SIMD specific
