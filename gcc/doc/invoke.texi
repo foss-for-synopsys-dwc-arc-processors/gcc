@@ -486,21 +486,7 @@ Objective-C and Objective-C++ Dialects}.
 -msplit-vecmove-early -m1reg-@var{reg}}
 
 @emph{ARC Options}
-@gccoptlist{-margonaut -mbarrel-shifter -mbig-endian -EB -mlittle-endian @gol
--EL -mcode-density -mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mAEM @gol
--mARCEM -mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr @gol
--mEA -mforce-short -mno-mpy -mmpy-option=@var{multo} -mmul32x16 -mmul64 @gol
--mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
--mdsp-packa -mdvbf -mlock -mmac-d16 -mmac-24 -mrtsc -mswape @gol
--mtelephony -mxy -misize -mannotate-align -marclinux -marclinux_prof @gol
--mepilogue-cfi -mno-epilogue-cfi -mlong-calls -mmedium-calls -mno-sdata @gol
--mucb-mcount -mvolatile-cache -mno-volatile-cache @gol
--malign-call -mauto-modify-reg -mbbit-peephole -mno-brcc @gol
--mcase-vector-pcrel -mcompact-casesi -mno-cond-exec -mearly-cbranchsi @gol
--mexpand-adddi -mindexed-loads -mlra -mlra-priority-none @gol
--mlra-priority-compact mlra-priority-noncompact -mno-millicode @gol
--mmixed-code -mq-class -mRcq -mRcw -msize-level=@var{level} @gol
--mtune=@var{cpu} -multcost=@var{num} -munalign-prob-threshold=@var{probability}}
+@gccoptlist{-mbarrel-shifter -mcode-density -mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mEM -mARCv2EM -mav2em -mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mea -mforce-short -mno-mpy -mmpy-option=@var{multo} -mmul32x16 -mmul64 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap -mdsp-packa -mdvbf -mlock -mmac-d16 -mmac-24 -mrtsc -mswape -mtelephony -mxy -misize -mannotate-align -marclinux -marclinux_prof -mepilogue-cfi -mno-epilogue-cfi -mlong-calls -mmedium-calls -mno-sdata -mucb-mcount -mvolatile-cache -mno-volatile-cache -malign-call -mauto-modify-reg -mbbit-peephole -mno-brcc -mcase-vector-pcrel -mcompact-casesi -mno-cond-exec -mearly-cbranchsi -mexpand-adddi -mindexed-loads -mlra -mlra-priority-none -mlra-priority-compact mlra-priority-noncompact -mno-millicode -mmixed-code -mmultcost=@var{num} -mq-class -mRcq -mRcw -msize-level=@var{level} -mtune=@var{cpu} -munalign-prob-threshold=@var{probability}}
 
 @emph{ARM Options}
 @gccoptlist{-mapcs-frame  -mno-apcs-frame @gol
@@ -11155,43 +11141,31 @@ purpose.  The default is @option{-m1reg-none}.
 @subsection ARC Options
 @cindex ARC options
 
-A range of @samp{-m} options are defined for Synopsys DesignWare ARC.
+A range of @samp{-m} options are defined for Synopsys DesignWare
+ARC.  There are two major flavours of the tool chain. The original
+ARCompact instruction set for the ARC600 and ARC700 families and the
+ARCompact v2 instruction set for the ARC v2 EM family.  For the latter
+the tool chain must be compiled using the configuration option
+@option{--with-cpu=EM}.
+
+ARC is a configurable architecture.  Requesting features from the
+compiler that are not provided on a particular hardware
+implementation will result in code that does not work correctly.
+
 The following options control the architecture variant for which code
 is being compiled:
 
 @c architecture variants
 @table @gcctabopt
 
-@item -margonaut
-@opindex margonaut
-FPX: Enable Argonaut ARC CPU Double Precision Floating Point extensions.
-
 @item -mbarrel-shifter
 @opindex mbarrel-shifter
 Generate instructions supported by barrel shifter.  This is the default
 unless @samp{-mcpu=ARC601} is in effect.
 
-@item -mbig-endian
-@opindex mbig-endian
-@item -EB
-@opindex EB
-Compile code for big endian targets.  Use of these options is now
-discouraged.  Users wanting big-endian code, should use the
-@emph{arceb-} targets when building the tool chain, for which
-big-endian is the default.
-
-@item -mlittle-endian
-@opindex mlittle-endian
-@item -EL
-@opindex EL
-Compile code for little endian targets.  Use of these options is now
-discouraged.  Users wanting little-endian code should use the
-@emph{arc-} targets when building the tool chain, for which
-little-endian is the default.
-
 @item -mcode-density
 @opindex mcode-density
-Enable code density instructions for ARC-EM (arcV2).
+Enable code density instructions for ARC v2 EM.
 
 @item -mcpu=@var{cpu}
 @opindex mcpu
@@ -11215,21 +11189,21 @@ Compile for ARC601.
 Compile for ARC700.  Aliases: @option{-mA7}, @option{-mARC700}.
 This is the default when configured with @samp{--with-cpu=arc700}@.
 
-@item ARCEM
+@item ARCv2EM
 @opindex mav2em
-Compile for ARC-EM and ARCompact v2 ISA.  Aliases: @option{-mAEM},
-@option{-mARCEM}.  This is the default when the tool chain is configured with
+Compile for ARC v2 EM.  Aliases: @option{-mEM},
+@option{-mARCv2EM}.  This is the default when the tool chain is configured with
 @samp{--with-cpu=EM}@.
 
 @end table
 
 @item -mdiv-rem
 @opindex mdiv-rem
-Enable DIV/REM instructions for ARC-EM (arcV2).
+Enable DIV/REM instructions for ARC v2 EM.
 
 @item -mdpfp
 @opindex mdpfp
-@item -mdpfp-compact
+@itemx -mdpfp-compact
 @opindex mdpfp-compact
 FPX: Generate Double Precision FPX instructions, tuned for the compact
 implementation.
@@ -11243,8 +11217,8 @@ implementation.
 @opindex mno-dpfp-lrsr
 Disable LR and SR instructions from using FPX extension aux registers.
 
-@item -mEA
-@opindex mEA
+@item -mea
+@opindex mea
 Generate Extended arithmetic instructions.  Currently only
 @code{divaw}, @code{adds}, @code{subs}, and @code{sat16} are
 supported.  This is always enabled for @samp{-mcpu=ARC700}.
@@ -11261,8 +11235,8 @@ Do not generate mpy instructions for ARC700.
 
 @item -mmpy-option=@var{multo}
 @opindex mmpy-option
-Compile ARC EM code with a multiplier design option. WLH1 is default
-on. The recognized values for @var{multo} are:
+Compile ARC v2 EM code with a multiplier design option. `wlh1' is the default
+value.  The recognized values for @var{multo} are:
 
 @table @samp
 @item 0
@@ -11290,12 +11264,12 @@ The multiply option is set to wlh5: One 32x4 multiplier, blocking, sequential.
 
 @item -mmul32x16
 @opindex mmul32x16
-Generate 32x16 bit multiply and mac instructions.
+Generate 32x16 bit multiply and mac instructions.  Not valid for ARC
+v2 EM.
 
 @item -mmul64
 @opindex mmul64
-Generate mul64 and mulu64 instructions.  This is not valid for
-@samp{-mcpu=ARC700}.
+Generate mul64 and mulu64 instructions.  Only valid for @samp{-mcpu=ARC600}.
 
 @item -mnorm
 @opindex mnorm
@@ -11304,7 +11278,7 @@ is in effect.
 
 @item -mspfp
 @opindex mspfp
-@item -mspfp-compact
+@itemx -mspfp-compact
 @opindex mspfp-compact
 FPX: Generate Single Precision FPX instructions, tuned for the compact
 implementation.
@@ -11316,7 +11290,8 @@ implementation.
 
 @item -msimd
 @opindex msimd
-Enable generation of ARC SIMD instructions via target-specific builtins.
+Enable generation of ARC SIMD instructions via target-specific
+builtins.  Only valid for @samp{-mcpu=ARC700}.
 
 @item -msoft-float
 @opindex msoft-float
@@ -11435,7 +11410,8 @@ Disable generation of call frame information for epilogues.
 
 @item -mlong-calls
 @opindex mlong-calls
-Generate call insns as register indirect calls.
+Generate call insns as register indirect calls, thus providing access
+to the full 32-bit address range.
 
 @item -mmedium-calls
 @opindex mmedium-calls
@@ -11501,7 +11477,7 @@ Disable ARCompact specific pass to generate conditional execution instructions.
 Due to delay slot scheduling and interactions between operand numbers,
 literal sizes, instruction lengths, and the support for conditional exection,
 the target-independent pass to generate conditional execution is often lacking,
-so the ARC port has kept a sepcial pass around that tries to find more
+so the ARC port has kept a special pass around that tries to find more
 conditional execution generating opportunities after register allocation,
 branch shortening, and delay slot scheduling have been done.  This pass
 generally, but not always, improves performace and code size, at the cost of
@@ -11526,11 +11502,10 @@ the case.
 
 @item -mlra
 @opindex mlra
-Enable Local Register Allocation.  This is still unproven for ARC, so
-by default we use standard reload (i.e. @samp{-mno-lra}). There are
-some additional options to control how LRA works:
+Enable Local Register Allocation.  This is still experimental for ARC,
+so by default the compiler uses standard reload
+(i.e. @samp{-mno-lra}).
 
-@table @samp
 @item -mlra-priority-none
 @opindex mlra-priority-none
 Don't indicate any priority for target registers.
@@ -11539,11 +11514,9 @@ Don't indicate any priority for target registers.
 @opindex mlra-priority-compact
 Indicate target regsiter priority for r0..r3 / r12..r15.
 
-@item mlra-priority-noncompact
+@item -mlra-priority-noncompact
 @opindex mlra-priority-noncompact
 Reduce target register priority for r0..r3 / r12..r15.
-
-@end table
 
 @item -mno-millicode
 @opindex mno-millicode
@@ -11602,24 +11575,24 @@ by @option{-mcpu=}.
 Supported values for @var{cpu} are
 
 @table @samp
-@item arc600
+@item ARC600
 Tune for ARC600 cpu.
 
-@item arc601
+@item ARC601
 Tune for ARC601 cpu.
 
-@item arc700
+@item ARC700
 Tune for ARC700 R4.2 Cpu with standard multiplier block.
 
-@item arc700-xmac
+@item ARC700-xmac
 @item ARC725D
 @item ARC750D
 Tune for ARC700 R4.2 Cpu with XMAC block.
 
 @end table
 
-@item -multcost=@var{num}
-@opindex multcost
+@item -mmultcost=@var{num}
+@opindex mmultcost
 Cost to assume for a multiply instruction, with @samp{4} being equal to a
 normal instruction.
 
@@ -11640,13 +11613,31 @@ are now deprecated and will be removed in a future release:
 @c Deprecated options
 @table @gcctabopt
 
+@item -margonaut
+@opindex margonaut
+Obsolete FPX.
+
+@item -mbig-endian
+@opindex mbig-endian
+@itemx -EB
+@opindex EB
+Compile code for big endian targets.  Use of these options is now
+deprecated.  Users wanting big-endian code, should use the
+@emph{arceb-} targets when building the tool chain, for which
+big-endian is the default.
+
+@item -mlittle-endian
+@opindex mlittle-endian
+@itemx -EL
+@opindex EL
+Compile code for little endian targets.  Use of these options is now
+deprecated.  Users wanting little-endian code should use the
+@emph{arc-} targets when building the tool chain, for which
+little-endian is the default.
+
 @item -mbarrel_shifter
 @opindex mbarrel_shifter
 Replaced by @samp{-mbarrel-shifter}
-
-@item -mdiv_rem
-@opindex mdiv_rem
-Replaced by @samp{-mdiv-rem}
 
 @item -mdpfp_compact
 @opindex mdpfp_compact
@@ -11659,6 +11650,10 @@ Replaced by @samp{-mdpfp-fast}
 @item -mdsp_packa
 @opindex mdsp_packa
 Replaced by @samp{-mdsp-packa}
+
+@item -mEA
+@opindex mEA
+Replaced by @samp{-mea}
 
 @item -mmac_24
 @opindex mmac_24
@@ -11680,9 +11675,15 @@ Replaced by @samp{-mspfp-compact}
 @opindex mspfp_fast
 Replaced by @samp{-mspfp-fast}
 
-@item -mcode_density
-@opindex mcode_density
-Replaced by @samp{-mcode-density}
+@item -mtune=@var{cpu}
+@opindex mtune
+Values @samp{arc600}, @samp{arc601}, @samp{arc700} and
+@samp{arc700-xmac} for @var{cpu} are replaced by @samp{ARC600},
+@samp{ARC601}, @samp{ARC700} and @samp{ARC700-xmac} respectively
+
+@item -multcost=@var{num}
+@opindex multcost
+Replaced by @samp{-mmultcost}.
 
 @end table
 

@@ -8913,41 +8913,45 @@ by a target may cause problems. At present the compiler is not
 guaranteed to detect such misuse, and as a result an internal compiler
 error may be generated.
 
-@table @code
-@item int __builtin_arc_aligned (void* @var{val}, int @var{alignval})
+@deftypefn {Built-in Function} int __builtin_arc_aligned (void* @var{val}, int @var{alignval})
 Return 1 if @var{val} has the alignment given by @var{alignval},
 otherwise return 0. May generate a load constant instruction if the
 result is used.
+@end deftypefn
 
-@item void __builtin_arc_brk (void)
+@deftypefn {Built-in Function} void __builtin_arc_brk (void)
 Generates
 @example
 brk
 @end example
+@end deftypefn
 
-@item void __builtin_arc_clri (unsigned int  @var{c})
+@deftypefn {Built-in Function}  void __builtin_arc_clri (unsigned int  @var{c})
 Only valid with @option{-mcpu=ARCEM}. Generates
 @example
 clri  @var{c}
 @end example
+@end deftypefn
 
-@item unsigned int __builtin_arc_core_read (unsigned int @var{regno})
+@deftypefn {Built-in Function} unsigned int __builtin_arc_core_read (unsigned int @var{regno})
 The operand is the number of a register to be read.  Generates:
 @example
 mov  @var{dest}, r@var{regno}
 @end example
 where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item void __builtin_arc_core_write (unsigned int @var{regno}, unsigned int @var{val})
+@deftypefn {Built-in Function} void __builtin_arc_core_write (unsigned int @var{regno}, unsigned int @var{val})
 The first operand is the number of a register to be written, the
 second operand is a compile time constant to write into that
 register.  Generates:
 @example
 mov  r@var{regno}, @var{val}
 @end example
+@end deftypefn
 
-@item int __builtin_arc_divaw (int @var{a}, int @var{b})
+@deftypefn {Built-in Function} int __builtin_arc_divaw (int @var{a}, int @var{b})
 Only available with either @option{-mcpu=ARC700} or @option{-mEA} is set, and
 never with @option{-mcpu=ARCEM}.  Generates:
 @example
@@ -8955,36 +8959,41 @@ divaw  @var{dest}, @var{a}, @var{b}
 @end example
 where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item int __builtin_arc_ffs (int @var{a})
+@deftypefn {Built-in Function} int __builtin_arc_ffs (int @var{a})
 Only valid with @option{-mcpu=ARCEM} and @option{-mnorm}.  Generates:
 @example
 ffs  @var{dest}, @var{a}
 @end example
 Where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item void __builtin_arc_flag (unsigned int @var{a})
+@deftypefn {Built-in Function} void __builtin_arc_flag (unsigned int @var{a})
 Generates
 @example
 flag  @var{a}
 @end example
+@end deftypefn
 
-@item int __builtin_arc_fls (int @var{a})
+@deftypefn {Built-in Function} int __builtin_arc_fls (int @var{a})
 Only valid with @option{-mcpu=ARCEM} and @option{-mnorm}.  Generates:
 @example
 fls  @var{dest}, @var{a}
 @end example
 Where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item void __builtin_arc_kflag (unsigned int @var{cc})
+@deftypefn {Built-in Function} void __builtin_arc_kflag (unsigned int @var{cc})
 Only valid with @option{-mcpu=ARCEM}. Generates:
 @example
 kflag  @var{cc}
 @end example
+@end deftypefn
 
-@item unsigned int __builtin_arc_lr (unsigned int @var{auxr})
+@deftypefn {Built-in Function} unsigned int __builtin_arc_lr (unsigned int @var{auxr})
 The operand, @var{auxv}, is the address of an auxiliary register and
 must be a compile time constant.  Generates:
 @example
@@ -8992,26 +9001,30 @@ lr  @var{dest}, [@var{auxr}]
 @end example
 Where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item void __builtin_arc_mul64 (int @var{a}, int @var{b})
+@deftypefn {Built-in Function} void __builtin_arc_mul64 (int @var{a}, int @var{b})
 Only available with @option{-mmul64}.  Generates:
 @example
 mul64  @var{a}, @var{b}
 @end example
+@end deftypefn
 
-@item void __builtin_arc_mulu64 (unsigned int @var{a}, unsigned int @var{b})
+@deftypefn {Built-in Function} void __builtin_arc_mulu64 (unsigned int @var{a}, unsigned int @var{b})
 Only available with @option{-mmul64}.  Generates:
 @example
 mulu64  @var{a}, @var{b}
 @end example
+@end deftypefn
 
-@item void __builtin_arc_nop (void)
+@deftypefn {Built-in Function} void __builtin_arc_nop (void)
 Generates:
 @example
 nop
 @end example
+@end deftypefn
 
-@item int __builtin_arc_norm (int @var{src})
+@deftypefn {Built-in Function} int __builtin_arc_norm (int @var{src})
 Only valid if the @samp{norm} instruction is available through the
 @option{-mnorm} option or by default with @option{-mcpu=ARC700}.
 Generates:
@@ -9020,8 +9033,9 @@ norm  @var{dest}, @var{src}
 @end example
 Where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item short int __builtin_arc_normw (short int @var{src})
+@deftypefn {Built-in Function}  short int __builtin_arc_normw (short int @var{src})
 Only valid if the @samp{normw} instruction is available through the
 @option{-mnorm} option or by default with @option{-mcpu=ARC700}.
 Generates:
@@ -9030,66 +9044,74 @@ normw  @var{dest}, @var{src}
 @end example
 Where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item void __builtin_arc_rtie (void)
+@deftypefn {Built-in Function}  void __builtin_arc_rtie (void)
 Generates:
 @example
 rtie
 @end example
+@end deftypefn
 
-@item void __builtin_arc_seti (int @var{c})
+@deftypefn {Built-in Function}  void __builtin_arc_seti (int @var{c})
 Only valid with @option{-mcpu=ARCEM}.  Generates:
 @example
 seti  @var{c}
 @end example
+@end deftypefn
 
-@item void __builtin_arc_sleep (int @var{a}
+@deftypefn {Built-in Function}  void __builtin_arc_sleep (int @var{a}
 Generates:
 @example
 sleep  @var{a}
 @end example
+@end deftypefn
 
-@item void __builtin_arc_sr (unsigned int @var{auxr}, unsigned int @var{val})
+@deftypefn {Built-in Function}  void __builtin_arc_sr (unsigned int @var{auxr}, unsigned int @var{val})
 The first argument, @var{auxv}, is the address of an auxiliary
 register, the second argument, @var{val}, is a compile time constant
 to be written to the register.  Generates:
 @example
 sr  @var{auxr}, [@var{val}]
 @end example
+@end deftypefn
 
-@item int __builtin_arc_swap (int @var{src})
+@deftypefn {Built-in Function}  int __builtin_arc_swap (int @var{src})
 Only valid with @option{-mswap}.  Generates:
 @example
 swap  @var{dest}, @var{src}
 @end example
 Where the value in @var{dest} will be the result returned from the
 built-in.
+@end deftypefn
 
-@item void __builtin_arc_swi (void)
+@deftypefn {Built-in Function}  void __builtin_arc_swi (void)
 Generates:
 @example
 swi
 @end example
+@end deftypefn
 
-@item void __builtin_arc_sync (void)
+@deftypefn {Built-in Function}  void __builtin_arc_sync (void)
 Only available with @option{-mcpu=ARC700}.  Generates:
 @example
 sync
 @end example
+@end deftypefn
 
-@item void __builtin_arc_trap_s (unsigned int @var{c})
+@deftypefn {Built-in Function}  void __builtin_arc_trap_s (unsigned int @var{c})
 Only available with @option{-mcpu=ARC700}.  Generates:
 @example
 trap_s  @var{c}
 @end example
+@end deftypefn
 
-@item void __builtin_arc_unimp_s (void)
+@deftypefn {Built-in Function}  void __builtin_arc_unimp_s (void)
 Only available with @option{-mcpu=ARC700}.  Generates:
 @example
 unimp_s
 @end example
-
-@end table
+@end deftypefn
 
 The instructions generated by the following builtins are not
 considered as candidates for scheduling.  They are not moved around by

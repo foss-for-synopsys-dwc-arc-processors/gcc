@@ -1,3 +1,21 @@
+2013-05-13  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/extend.texi (ARC Built-in Functions): Use deftypefn for
+	built-ins.
+	* doc/invoke.texi (Option Summary): Remove -margonaut,
+	-mbig-endian, -mEB, -mlittle-endian, -mEL. Change -mEA to -mea and
+	-multcost to -mmultcost.
+	(ARC Options): Mark -margonaut, -mbig-endian, -mEB,
+	-mlittle-endian, -mEL, -mEA and -multcost as
+	deprecated. Consistent description of ARC v2 EM architecture
+	throughout. Use -mcpu=ARCv2EM to specify ARC v2 EM architecture
+	with -mARCv2EM and -mEM as aliases. Provided -mea as replacement
+	for -mEA and -mmultcost as replacements for -multcost. -mmul32x16
+	not for ARC v2 EM, -mmul64 for ARC600 only. -msimd for ARC700
+	only. -mlra marked as experimental. -mtune match CPU names of
+	-mcpu and mark lower case alternatives as deprecated. Remove
+	-mdev_rem and -mcode_density from deprecated.
+
 2013-05-10  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* doc/extend.tex (Declaring Attributes of Functions): Extended
