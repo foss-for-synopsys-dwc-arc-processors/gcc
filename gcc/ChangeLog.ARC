@@ -1,3 +1,8 @@
+2013-05-14  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (Option Summary): Add @gol for ARC option
+	lines.
+
 2013-05-13  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* doc/extend.texi (ARC Built-in Functions): Use deftypefn for
