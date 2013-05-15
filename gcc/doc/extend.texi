@@ -2811,17 +2811,18 @@ least version 2.20.1), and GNU C library (at least version 2.11.1).
 
 @item interrupt
 @cindex interrupt handler functions
-Use this attribute on the ARC, ARM, AVR, CR16, Epiphany, M32C, M32R/D, m68k, MeP, MIPS,
-RL78, RX and Xstormy16 ports to indicate that the specified function is an
-interrupt handler.  The compiler generates function entry and exit
-sequences suitable for use in an interrupt handler when this attribute
-is present.  With Epiphany targets it may also generate a special section with
-code to initialize the interrupt vector table.
+Use this attribute on the ARC, ARM, AVR, CR16, Epiphany, M32C, M32R/D,
+m68k, MeP, MIPS, RL78, RX and Xstormy16 ports to indicate that the
+specified function is an interrupt handler.  The compiler generates
+function entry and exit sequences suitable for use in an interrupt
+handler when this attribute is present.  With Epiphany targets it may
+also generate a special section with code to initialize the interrupt
+vector table.
 
 Note, interrupt handlers for the Blackfin, H8/300, H8/300H, H8S, MicroBlaze,
 and SH processors can be specified via the @code{interrupt_handler} attribute.
 
-Note, on the ARC, you must specify the kind of interrupt to by handled
+Note, on the ARC, you must specify the kind of interrupt to be handled
 in a parameter to the interrupt attribute like this:
 
 @smallexample
@@ -3019,7 +3020,7 @@ always called using register-indirect jump-and-link instructions,
 thereby enabling the called function to be placed anywhere within the
 32-bit address space.  A function marked with the @code{short_call}
 attribute will always be close enough to be called with a
-branch-and-link instruction, i.e. within a signed 25-bit offset from
+branch-and-link instruction, which has a 21-bit offset from
 the call site.
 
 @item longcall/shortcall
@@ -8927,13 +8928,13 @@ brk
 @end deftypefn
 
 @deftypefn {Built-in Function}  void __builtin_arc_clri (unsigned int  @var{c})
-Only valid with @option{-mcpu=ARCEM}. Generates
+Only valid with @option{-mcpu=ARCv2EM}. Generates
 @example
 clri  @var{c}
 @end example
 @end deftypefn
 
-@deftypefn {Built-in Function} unsigned int __builtin_arc_core_read (unsigned int @var{regno})
+@deftypefn {Built-in Function} {unsigned int} __builtin_arc_core_read (unsigned int @var{regno})
 The operand is the number of a register to be read.  Generates:
 @example
 mov  @var{dest}, r@var{regno}
@@ -8953,7 +8954,7 @@ mov  r@var{regno}, @var{val}
 
 @deftypefn {Built-in Function} int __builtin_arc_divaw (int @var{a}, int @var{b})
 Only available with either @option{-mcpu=ARC700} or @option{-mEA} is set, and
-never with @option{-mcpu=ARCEM}.  Generates:
+never with @option{-mcpu=ARCv2EM}.  Generates:
 @example
 divaw  @var{dest}, @var{a}, @var{b}
 @end example
@@ -8962,7 +8963,7 @@ built-in.
 @end deftypefn
 
 @deftypefn {Built-in Function} int __builtin_arc_ffs (int @var{a})
-Only valid with @option{-mcpu=ARCEM} and @option{-mnorm}.  Generates:
+Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}.  Generates:
 @example
 ffs  @var{dest}, @var{a}
 @end example
@@ -8978,7 +8979,7 @@ flag  @var{a}
 @end deftypefn
 
 @deftypefn {Built-in Function} int __builtin_arc_fls (int @var{a})
-Only valid with @option{-mcpu=ARCEM} and @option{-mnorm}.  Generates:
+Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}.  Generates:
 @example
 fls  @var{dest}, @var{a}
 @end example
@@ -8987,13 +8988,13 @@ built-in.
 @end deftypefn
 
 @deftypefn {Built-in Function} void __builtin_arc_kflag (unsigned int @var{cc})
-Only valid with @option{-mcpu=ARCEM}. Generates:
+Only valid with @option{-mcpu=ARCv2EM}. Generates:
 @example
 kflag  @var{cc}
 @end example
 @end deftypefn
 
-@deftypefn {Built-in Function} unsigned int __builtin_arc_lr (unsigned int @var{auxr})
+@deftypefn {Built-in Function} {unsigned int} __builtin_arc_lr (unsigned int @var{auxr})
 The operand, @var{auxv}, is the address of an auxiliary register and
 must be a compile time constant.  Generates:
 @example
@@ -9035,7 +9036,7 @@ Where the value in @var{dest} will be the result returned from the
 built-in.
 @end deftypefn
 
-@deftypefn {Built-in Function}  short int __builtin_arc_normw (short int @var{src})
+@deftypefn {Built-in Function}  {short int} __builtin_arc_normw (short int @var{src})
 Only valid if the @samp{normw} instruction is available through the
 @option{-mnorm} option or by default with @option{-mcpu=ARC700}.
 Generates:
@@ -9054,7 +9055,7 @@ rtie
 @end deftypefn
 
 @deftypefn {Built-in Function}  void __builtin_arc_seti (int @var{c})
-Only valid with @option{-mcpu=ARCEM}.  Generates:
+Only valid with @option{-mcpu=ARCv2EM}.  Generates:
 @example
 seti  @var{c}
 @end example

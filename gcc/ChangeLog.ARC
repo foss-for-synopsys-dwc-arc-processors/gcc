@@ -1,3 +1,20 @@
+2013-05-15  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/extend.texi (Declaring Attributes of Functions): Correct
+	typo for interrupt attribute. Note that branch-and-link has a
+	21-bit offset.
+	(ARC Built-in Functions): Use -mcpu=ARCv2EM
+	throughout. Correct first argument of deftypefn in some places
+	* doc/invoke.texi (ARC Options): Make clear that ARC v2 EM options
+	are only available if built for ARC v2 EM. Add symbolic
+	alternatives for -mmpy-option. Note that -medium-calls has a
+	21-bit range. Clarify meaning of options passed through to the linker.
+
+2013-05-14  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (ARC Options): Add -mARC601 and -mav2em aliases
+	and index entries for -mARC601 and all ARC v2 EM cpu options.
+
 2013-05-14  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* doc/invoke.texi (Option Summary): Add @gol for ARC option

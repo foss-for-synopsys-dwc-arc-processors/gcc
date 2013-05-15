@@ -11155,11 +11155,13 @@ purpose.  The default is @option{-m1reg-none}.
 @subsection ARC Options
 @cindex ARC options
 
-A range of @samp{-m} options are defined for Synopsys DesignWare
-ARC.  There are two major flavours of the tool chain. The original
-ARCompact instruction set for the ARC600 and ARC700 families and the
-ARCompact v2 instruction set for the ARC v2 EM family.  For the latter
-the tool chain must be compiled using the configuration option
+A range of @samp{-m} options are defined for Synopsys DesignWare ARC.
+There are two major flavours of the tool chain. The original ARCompact
+instruction set for the ARC600 and ARC700 families and the ARCompact
+v2 instruction set for the ARC v2 EM family.  For the latter the tool
+chain must be built using the configuration option
+@option{--with-cpu=EM}.  In general ARC v2 EM options are only
+available when the tool chain has been built using
 @option{--with-cpu=EM}.
 
 ARC is a configurable architecture.  Requesting features from the
@@ -11192,28 +11194,37 @@ values for @var{cpu} are
 @opindex mA6
 @opindex mARC600
 @item ARC600
-Compile for ARC600.  Aliases: @option{-mA6}, @option{-mARC600}.
+Compile for ARC600.  Aliases: @option{-mA6}, @option{-mARC600}.  Not
+available when the tool chain is configured with
+@samp{--with-cpu=EM}@.
 
 @item ARC601
-Compile for ARC601.
+@opindex mARC600
+Compile for ARC601. Alias: @option{-mARC601}.  Not available when the
+tool chain is configured with @samp{--with-cpu=EM}@.
 
 @item ARC700
 @opindex mA7
 @opindex mARC700
-Compile for ARC700.  Aliases: @option{-mA7}, @option{-mARC700}.
-This is the default when configured with @samp{--with-cpu=arc700}@.
+Compile for ARC700.  Aliases: @option{-mA7}, @option{-mARC700}.  This
+is the default when configured with @samp{--with-cpu=arc700} and not
+available when the tool chain is configured with
+@samp{--with-cpu=EM}@.
 
 @item ARCv2EM
+@opindex mEM
+@opindex mARCv2EM
 @opindex mav2em
 Compile for ARC v2 EM.  Aliases: @option{-mEM},
-@option{-mARCv2EM}.  This is the default when the tool chain is configured with
+@option{-mARCv2EM}, @option{-mav2em}.  This is the default when the tool chain is configured with
 @samp{--with-cpu=EM}@.
 
 @end table
 
 @item -mdiv-rem
 @opindex mdiv-rem
-Enable DIV/REM instructions for ARC v2 EM.
+Enable DIV/REM instructions for ARC v2 EM.  Only available when the
+tool chain is configured with @samp{--with-cpu=EM}@.
 
 @item -mdpfp
 @opindex mdpfp
@@ -11235,13 +11246,15 @@ Disable LR and SR instructions from using FPX extension aux registers.
 @opindex mea
 Generate Extended arithmetic instructions.  Currently only
 @code{divaw}, @code{adds}, @code{subs}, and @code{sat16} are
-supported.  This is always enabled for @samp{-mcpu=ARC700}.
+supported.  This is always enabled for @samp{-mcpu=ARC700} and not
+available when the tool chain is configured with
+@samp{--with-cpu=EM}@.
 
 @item -mforce-short
 @opindex mforce-short
 Force short suffix by ignoring the instruction length attribute. This
-is the default when GCC is configured using @samp{--with-cpu=EM}, but
-otherwise is off by default.
+is the default when GCC is configured using @samp{--with-cpu=EM}, and
+is otherwise not available as an option.
 
 @item -mno-mpy
 @opindex mno-mpy
@@ -11249,32 +11262,46 @@ Do not generate mpy instructions for ARC700.
 
 @item -mmpy-option=@var{multo}
 @opindex mmpy-option
-Compile ARC v2 EM code with a multiplier design option. `wlh1' is the default
-value.  The recognized values for @var{multo} are:
+Compile ARC v2 EM code with a multiplier design option. @samp{wlh1} is
+the default value.  The recognized values for @var{multo} are:
 
 @table @samp
 @item 0
+@itemx none
 No multiplier available.
 
 @item 1
+@itemx w
 The multiply option is set to w: 16x16 multiplier, fully pipelined.
 
 @item 2
+@itemx wlh1
 The multiply option is set to wlh1: 32x32 multiplier, fully pipelined(1 stage).
 
 @item 3
-The multiply option is set to wlh2: 32x32 multiplier, fully pipelined (2 stages).
+@itemx wlh2
+The multiply option is set to wlh2: 32x32 multiplier, fully pipelined
+(2 stages).
 
 @item 4
-The multiply option is set to wlh3: Two 16x16 multiplier, blocking, sequential.
+@itemx wlh3
+The multiply option is set to wlh3: Two 16x16 multiplier, blocking,
+sequential.
 
 @item 5
-The multiply option is set to wlh4: One 16x16 multiplier, blocking, sequential.
+@itemx wlh4
+The multiply option is set to wlh4: One 16x16 multiplier, blocking,
+sequential.
 
 @item 6
-The multiply option is set to wlh5: One 32x4 multiplier, blocking, sequential.
+@itemx wlh5
+The multiply option is set to wlh5: One 32x4 multiplier, blocking,
+sequential.
 
 @end table
+
+This option is only available when the tool chain is configured with
+@samp{--with-cpu=EM}@.
 
 @item -mmul32x16
 @opindex mmul32x16
@@ -11402,11 +11429,17 @@ The following options are passed through to the linker:
 @table @gcctabopt
 @item -marclinux
 @opindex marclinux
-Pass -marclinux option through to linker.
+Pass -marclinux option through to linker, to specify use of the
+@code{arclinux} emulation.  This option is enabled by default in tool
+chains built for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc}
+targets when profiling is not requested.
 
 @item -marclinux_prof
 @opindex marclinux_prof
-Pass -marclinux_prof option through to linker.
+Pass -marclinux_prof option through to linker, to specify use of the
+@code{arclinux_prof} emulation.  This option is enabled by default in tool
+chains built for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc}
+targets when profiling is requested.
 
 @end table
 
@@ -11429,13 +11462,18 @@ to the full 32-bit address range.
 
 @item -mmedium-calls
 @opindex mmedium-calls
-Don't use less than 25 bit addressing range for calls.
+Don't use less than 25 bit addressing range for calls, which is the
+offset available for an unconditional branch-and-link
+instruction. Conditional execution of function calls is suppressed, to
+allow use of the 25-bit range, rather than the 21-bit range with
+conditional branch-and-link. This is the default for tool chains built
+for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc} targets.
 
 @item -mno-sdata
 @opindex mno-sdata
 Do not generate sdata references. This is the default for tool chains
-targeting Linux applications (@emph{arc-linux-uclibc-} and
-@emph{arceb-linux-uclibc}).
+built for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc}
+targets.
 
 @item -mucb-mcount
 @opindex mucb-mcount
@@ -11569,10 +11607,13 @@ The recognized values for @var{level} are:
 @table @samp
 @item 0
 No size optimization.  This level is deprecated and treated like @samp{1}.
+
 @item 1
 Short instructions are used opportunistically.
+
 @item 2
 In addition, alignment of loops and of code after barriers are dropped.
+
 @item 3
 In addition, optional data alignment is dropped, and the option @option{Os} is enabled.
 
