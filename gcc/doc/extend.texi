@@ -2829,8 +2829,9 @@ in a parameter to the interrupt attribute like this:
 void f () __attribute__ ((interrupt ("ilink1")));
 @end smallexample
 
-Permissible values for this parameter are: @w{@code{ilink1}} and
-@w{@code{ilink2}}.
+For the ARC 600 and ARC 700 families, the only permissible values for
+this parameter are: @w{@code{ilink1}} and @w{@code{ilink2}}.  For the
+ARC v2 EM processor, the only permissible value is @w{@code{ilink}}.
 
 Note, on the AVR, the hardware globally disables interrupts when an
 interrupt is executed.  The first instruction of an interrupt handler
@@ -8953,7 +8954,7 @@ mov  r@var{regno}, @var{val}
 @end deftypefn
 
 @deftypefn {Built-in Function} int __builtin_arc_divaw (int @var{a}, int @var{b})
-Only available with either @option{-mcpu=ARC700} or @option{-mEA} is set, and
+Only available with either @option{-mcpu=ARC700} or @option{-mea} is set, and
 never with @option{-mcpu=ARCv2EM}.  Generates:
 @example
 divaw  @var{dest}, @var{a}, @var{b}
@@ -9160,7 +9161,7 @@ provided:
 The following is a complete list of all the SIMD built-ins provided
 for ARC, grouped by calling signature.
 
-The followign take two @code{__v8hi} arguments and return a
+The following take two @code{__v8hi} arguments and return a
 @code{__v8hi} result:
 @example
 __v8hi __builtin_arc_vaddaw (__v8hi, __v8hi)
@@ -16718,3 +16719,6 @@ implicitly scoped inside a C language scope.  Also, an empty prototype
 @code{()} is treated as an unspecified number of arguments, rather
 than no arguments, as C++ demands.
 @end table
+
+@c  LocalWords:  emph deftypefn builtin ARCv2EM SIMD builtins msimd
+@c  LocalWords:  typedef v4si v8hi DMA dma vdiwr vdowr followign

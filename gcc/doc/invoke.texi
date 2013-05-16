@@ -11156,7 +11156,7 @@ purpose.  The default is @option{-m1reg-none}.
 @cindex ARC options
 
 A range of @samp{-m} options are defined for Synopsys DesignWare ARC.
-There are two major flavours of the tool chain. The original ARCompact
+There are two major flavors of the tool chain. The original ARCompact
 instruction set for the ARC600 and ARC700 families and the ARCompact
 v2 instruction set for the ARC v2 EM family.  For the latter the tool
 chain must be built using the configuration option
@@ -11356,7 +11356,7 @@ define preprocessor macro symbols.
 @table @gcctabopt
 @item -mdsp-packa
 @opindex mdsp-packa
-Passed down to the assembler to enable the DSP 3.1 Pack A extensions.
+Passed down to the assembler to enable the DSP Pack A extensions.
 Also sets the preprocessor symbol @code{__Xdsp_packa}.
 
 @item -mdvbf
@@ -11385,7 +11385,7 @@ Passed down to the assembler.  Also sets the preprocessor symbol
 @item -mrtsc
 @opindex mrtsc
 Passed down to the assembler to enable the 64-bit Time-Stamp Counter
-extension instruction Also sets the preprocessor symbol
+extension instruction.  Also sets the preprocessor symbol
 @code{__Xrtsc}.
 
 @c ARC700 4.10 extension instruction
@@ -11403,8 +11403,8 @@ instructions for telephony.  Also sets the preprocessor symbol
 
 @item -mxy
 @opindex mxy
-Passed down to the assembler to enable the XY Memory extension (DSP
-version 3).  Also sets the preprocessor symbol @code{__Xxy}.
+Passed down to the assembler to enable the XY Memory extension.  Also
+sets the preprocessor symbol @code{__Xxy}.
 
 @end table
 
@@ -11429,17 +11429,17 @@ The following options are passed through to the linker:
 @table @gcctabopt
 @item -marclinux
 @opindex marclinux
-Pass -marclinux option through to linker, to specify use of the
-@code{arclinux} emulation.  This option is enabled by default in tool
-chains built for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc}
-targets when profiling is not requested.
+Passed through to the linker, to specify use of the @code{arclinux} emulation.
+This option is enabled by default in tool chains built for
+@w{@code{arc-linux-uclibc}} and @w{@code{arceb-linux-uclibc}} targets
+when profiling is not requested.
 
 @item -marclinux_prof
 @opindex marclinux_prof
-Pass -marclinux_prof option through to linker, to specify use of the
-@code{arclinux_prof} emulation.  This option is enabled by default in tool
-chains built for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc}
-targets when profiling is requested.
+Passed through to the linker, to specify use of the
+@code{arclinux_prof} emulation.  This option is enabled by default in
+tool chains built for @w{@code{arc-linux-uclibc}} and
+@w{@code{arceb-linux-uclibc}} targets when profiling is requested.
 
 @end table
 
@@ -11467,12 +11467,12 @@ offset available for an unconditional branch-and-link
 instruction. Conditional execution of function calls is suppressed, to
 allow use of the 25-bit range, rather than the 21-bit range with
 conditional branch-and-link. This is the default for tool chains built
-for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc} targets.
+for @w{@code{arc-linux-uclibc}} and @w{@code{arceb-linux-uclibc}} targets.
 
 @item -mno-sdata
 @opindex mno-sdata
 Do not generate sdata references. This is the default for tool chains
-built for @code{arc-linux-uclibc} and @code{arceb-linux-uclibc}
+built for @w{@code{arc-linux-uclibc}} and @w{@code{arceb-linux-uclibc}}
 targets.
 
 @item -mucb-mcount
@@ -11509,9 +11509,9 @@ Enable bbit peephole2.
 
 @item -mno-brcc
 @opindex mno-brcc
-This option disables a target-specific pass in arc_reorg to generate BRcc
-instructions.  It has no effect on BRcc generation driven by the combiner
-pass.
+This option disables a target-specific pass in @file{arc_reorg} to
+generate @code{BRcc} instructions.  It has no effect on @code{BRcc}
+generation driven by the combiner pass.
 
 @item -mcase-vector-pcrel
 @opindex mcase-vector-pcrel
@@ -11527,12 +11527,12 @@ This is the default for @option{-Os}.
 @opindex mno-cond-exec
 Disable ARCompact specific pass to generate conditional execution instructions.
 Due to delay slot scheduling and interactions between operand numbers,
-literal sizes, instruction lengths, and the support for conditional exection,
+literal sizes, instruction lengths, and the support for conditional execution,
 the target-independent pass to generate conditional execution is often lacking,
 so the ARC port has kept a special pass around that tries to find more
 conditional execution generating opportunities after register allocation,
 branch shortening, and delay slot scheduling have been done.  This pass
-generally, but not always, improves performace and code size, at the cost of
+generally, but not always, improves performance and code size, at the cost of
 extra compilation time, which is why there is an option to switch it off.
 If you have a problem with call instructions exceeding their allowable
 offset range because they are conditionalized, you should consider using
@@ -11544,7 +11544,8 @@ Enable pre-reload use of the cbranchsi pattern.
 
 @item -mexpand-adddi
 @opindex mexpand-adddi
-Expand adddi3 and subdi3 at rtl generation time into add.f / adc etc.
+Expand @code{adddi3} and @code{subdi3} at rtl generation time into
+@code{add.f}, @code{adc} etc.
 
 @item -mindexed-loads
 @opindex mindexed-loads
@@ -11564,20 +11565,21 @@ Don't indicate any priority for target registers.
 
 @item -mlra-priority-compact
 @opindex mlra-priority-compact
-Indicate target regsiter priority for r0..r3 / r12..r15.
+Indicate target register priority for r0..r3 / r12..r15.
 
 @item -mlra-priority-noncompact
 @opindex mlra-priority-noncompact
-Reduce target register priority for r0..r3 / r12..r15.
+Reduce target regsiter priority for r0..r3 / r12..r15.
 
 @item -mno-millicode
 @opindex mno-millicode
-When optimizing for size (using @option{-Os}), prologues / epilogues that
-have to save / restore a lot of registers are often shortened by using call
-to a special function in libgcc; this is referred to as a millicode call.
-As these calls can pose performance issues, and/or cause linking issues
-when you link in a nonstandard way, this option is provided to turn off
-millicode call generation.
+When optimizing for size (using @option{-Os}), prologues and epilogues
+that have to save or restore a large number of registers are often
+shortened by using call to a special function in libgcc; this is
+referred to as a @emph{millicode} call.  As these calls can pose
+performance issues, and/or cause linking issues when linking in a
+nonstandard way, this option is provided to turn off millicode call
+generation.
 
 @item -mmixed-code
 @opindex mmixed-code
@@ -11620,7 +11622,7 @@ In addition, optional data alignment is dropped, and the option @option{Os} is e
 @end table
 
 This defaults to @samp{3} when @option{-Os} is in effect.  Otherwise,
-the behaviour when this is not set is equivalent to level @samp{1}.
+the behavior when this is not set is equivalent to level @samp{1}.
 
 @item -mtune=@var{cpu}
 @opindex mtune
@@ -11637,12 +11639,16 @@ Tune for ARC600 cpu.
 Tune for ARC601 cpu.
 
 @item ARC700
-Tune for ARC700 R4.2 Cpu with standard multiplier block.
+Tune for ARC700 cpu with standard multiplier block.
 
 @item ARC700-xmac
+Tune for ARC700 cpu with XMAC block.
+
 @item ARC725D
+Tune for ARC725D cpu.
+
 @item ARC750D
-Tune for ARC700 R4.2 Cpu with XMAC block.
+Tune for ARC750D cpu.
 
 @end table
 
@@ -11655,7 +11661,7 @@ normal instruction.
 @opindex munalign-prob-threshold
 Set probability threshold for unaligning branches.
 When tuning for @samp{ARC700} and optimizing for speed, branches without
-filled delay slot are preferrably emitted unaligned and long, unless
+filled delay slot are preferably emitted unaligned and long, unless
 profiling indicates that the probability for the branch to be taken
 is below @var{probability}.  @xref{Cross-profiling}.
 The default is (REG_BR_PROB_BASE/2), i.e.@: 5000.
@@ -11678,8 +11684,8 @@ Obsolete FPX.
 @opindex EB
 Compile code for big endian targets.  Use of these options is now
 deprecated.  Users wanting big-endian code, should use the
-@emph{arceb-} targets when building the tool chain, for which
-big-endian is the default.
+@w{@code{arceb-elf32}} and @w{@code{arceb-linux-uclibc}} targets when
+building the tool chain, for which big-endian is the default.
 
 @item -mlittle-endian
 @opindex mlittle-endian
@@ -11687,8 +11693,8 @@ big-endian is the default.
 @opindex EL
 Compile code for little endian targets.  Use of these options is now
 deprecated.  Users wanting little-endian code should use the
-@emph{arc-} targets when building the tool chain, for which
-little-endian is the default.
+@w{@code{arc-elf32}} and @w{@code{arc-linux-uclibc}} targets when
+building the tool chain, for which little-endian is the default.
 
 @item -mbarrel_shifter
 @opindex mbarrel_shifter

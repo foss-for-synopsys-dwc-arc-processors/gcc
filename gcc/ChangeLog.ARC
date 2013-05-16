@@ -1,3 +1,15 @@
+2013-05-16  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (ARC Options): Correct text for -mdsp-packa,
+	-mxy and the -mtune options for ARC700, ARC700-xmac, ARC725D and
+	ARC750D. Fix bad line-wrapping.  Spell check and correct this
+	section.
+	* doc/extend.texi (Declaring Attributes of Functions): Document
+	use of "ilink" for ARC v2 EM.  Spell check and correct this
+	section.
+	(ARC Built-in Functions): Change -mEA to -mea.  Spell check and
+	correct this section.
+
 2013-05-15  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* doc/extend.texi (Declaring Attributes of Functions): Correct
