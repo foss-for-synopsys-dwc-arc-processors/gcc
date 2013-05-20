@@ -87,7 +87,7 @@ extern rtx gen_mlo (void);
 extern rtx gen_mhi (void);
 extern bool arc_branch_size_unknown_p (void);
 struct arc_ccfsm;
-extern void arc_ccfsm_record_condition (rtx, int, rtx, struct arc_ccfsm *);
+extern void arc_ccfsm_record_condition (rtx, bool, rtx, struct arc_ccfsm *);
 extern void arc_expand_prologue (void);
 extern void arc_expand_epilogue (int);
 extern void arc_init_expanders (void);

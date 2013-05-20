@@ -1,3 +1,22 @@
+2013-05-20  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc/config/arc/arc.c (arc_expand_epilogue): Use gen_simple_return.
+	(arc_print_operand): Don't use .nd suffix for return instructions.
+	(arc_ccfsm_record_condition): Change type of second parameter to bool.
+	Changed all callers.
+	Disregard deleted delay slot insns.
+	(arc_ifcvt): Fix logic to detect SEQUENCEs.
+	When coanging an RTX_FRAME_RELATED_P, add a suitable
+	REG_FRAME_RELATED_EXPR note.
+	* config/arc/arc.md (return_i): Rename to ...
+	(simple_return): ... this.
+	(p_return_i):  Call arc_ccfsm_record_condition.
+	(return): New define_expand.
+	* config/arc/arc-protos.h (arc_ccfsm_record_condition): Update
+	prototype.
+	* recog.c (verify_changes): Verify that changes[i].old is non-zero
+	before applying REG_P.
+
 2013-05-01  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Modify CHEAP_CORE_REGS to match better the ARCv2
