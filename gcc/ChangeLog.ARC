@@ -6,7 +6,7 @@
 	Changed all callers.
 	Disregard deleted delay slot insns.
 	(arc_ifcvt): Fix logic to detect SEQUENCEs.
-	When coanging an RTX_FRAME_RELATED_P, add a suitable
+	When changing an RTX_FRAME_RELATED_P, add a suitable
 	REG_FRAME_RELATED_EXPR note.
 	* config/arc/arc.md (return_i): Rename to ...
 	(simple_return): ... this.
