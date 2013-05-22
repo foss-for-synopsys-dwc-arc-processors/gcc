@@ -1,3 +1,9 @@
+2013-05-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_pad_return): Don't disgorge the delay slot
+	insn if the delay slot is annulled or clobbers the condition of
+	the return insn.
+
 2013-05-20  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc/config/arc/arc.c (arc_expand_epilogue): Use gen_simple_return.

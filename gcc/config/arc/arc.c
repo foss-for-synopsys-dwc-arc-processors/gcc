@@ -8562,8 +8562,14 @@ arc_pad_return (void)
 	    = "Long unaligned jump avoids non-delay slot penalty";
 	  want_long = 1;
 	}
-      /* Disgorge delay insn, if there is any.  */
-      if (final_sequence)
+      /* Disgorge delay insn, if there is any, and it may be moved.  */
+      if (final_sequence
+	  /* ??? Annulled would be OK if we can and do conditionalize
+	     the delay slot insn accordingly.  */
+	  && !INSN_ANNULLED_BRANCH_P (insn)
+	  && (get_attr_cond (insn) != COND_USE
+	      || !reg_set_p (gen_rtx_REG (CCmode, CC_REG),
+			     XVECEXP (final_sequence, 0, 1))))
 	{
 	  prev = XVECEXP (final_sequence, 0, 1);
 	  gcc_assert (!prev_real_insn (insn)
