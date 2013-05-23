@@ -375,8 +375,12 @@
       (const_int 8) (const_int 4))
 
     (eq_attr "type" "move,unary")
-    (if_then_else (match_operand 1 "long_immediate_operand" "")
-		  (const_int 8) (const_int 4))
+    (cond
+      [(match_operand 1 "u6_immediate_operand" "") (const_int 4)
+       (match_operand 1 "register_operand" "") (const_int 4)
+       (match_operand 1 "long_immediate_operand" "") (const_int 8)
+       (match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 8)]
+      (const_int 4))
 
     (and (eq_attr "type" "shift")
 	 (match_operand 1 "immediate_operand"))

@@ -1,3 +1,9 @@
+2013-05-23  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (attribute length): Conditionalized move insns
+	have length 8 unless they use an u6_immediate_operand or
+	register_operand input.
+
 2013-05-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_pad_return): Don't disgorge the delay slot
