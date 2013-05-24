@@ -1,3 +1,7 @@
+2013-05-24  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md Fixed typo in the mulhisi3 pattern.
+
 2013-05-23  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (attribute length): Conditionalized move insns
