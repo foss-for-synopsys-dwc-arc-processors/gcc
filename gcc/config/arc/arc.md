@@ -1633,8 +1633,8 @@
 ;; FIXME: give appropriate type for these instructions
 (define_expand "mulhisi3"
   [(set (match_operand:SI 0 "register_operand"                           "")
-	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand"  ""))
-		 (zero_extend:SI (match_operand:HI 2 "nonmemory_operand" ""))))]
+	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand"  ""))
+		 (sign_extend:SI (match_operand:HI 2 "nonmemory_operand" ""))))]
   "EM_MUL_MPYW"
   "{
   if (GET_CODE(operands[2]) == CONST_INT)
