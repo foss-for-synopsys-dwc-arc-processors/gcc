@@ -375,8 +375,12 @@
       (const_int 8) (const_int 4))
 
     (eq_attr "type" "move,unary")
-    (if_then_else (match_operand 1 "long_immediate_operand" "")
-		  (const_int 8) (const_int 4))
+    (cond
+      [(match_operand 1 "u6_immediate_operand" "") (const_int 4)
+       (match_operand 1 "register_operand" "") (const_int 4)
+       (match_operand 1 "long_immediate_operand" "") (const_int 8)
+       (match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 8)]
+      (const_int 4))
 
     (and (eq_attr "type" "shift")
 	 (match_operand 1 "immediate_operand"))
@@ -3514,7 +3518,7 @@
     }
   else
     {
-      arc_ccfsm_record_condition (operands[1], 0, insn, 0);
+      arc_ccfsm_record_condition (operands[1], false, insn, 0);
       if (get_attr_length (insn) == 2)
 	 return \"b%d1%? %^%l0%&\";
       else
@@ -3564,7 +3568,7 @@
     }
   else
     {
-      arc_ccfsm_record_condition (operands[1], 1, insn, 0);
+      arc_ccfsm_record_condition (operands[1], true, insn, 0);
       if (get_attr_length (insn) == 2)
 	 return \"b%D1%? %^%l0\";
       else
@@ -4682,7 +4686,7 @@
 ; represent the blink use in return / sibcall instructions themselves, and
 ; instead have to show it in EPILOGUE_USES and must explicitly
 ; forbid instructions that change blink in the return / sibcall delay slot.
-(define_insn "return_i"
+(define_insn "simple_return"
   [(simple_return)]
   "reload_completed"
 {
@@ -4717,17 +4721,17 @@
 		      (simple_return) (pc)))]
   "reload_completed"
 {
-  rtx xop[2];
-  xop[0] = operands[0];
-  xop[1]
+  rtx xop
     = gen_rtx_REG (Pmode,
 		   arc_return_address_regs[arc_compute_function_type (cfun)]);
+  rtx cond = operands[0];
 
   if (TARGET_PAD_RETURN)
     arc_pad_return ();
 
-  current_insn_predicate = xop[0];
-  output_asm_insn (\"j%!%# [%1]%&\", xop);
+  current_insn_predicate = cond;
+  output_asm_insn (\"j%!%# [%0]%&\", &xop);
+  arc_ccfsm_record_condition (cond, false, insn, 0);
   return \"\";
 }
   [(set_attr "type" "return")
@@ -4774,6 +4778,12 @@
     }
 }
   [(set_attr "length" "12")])
+
+;; ??? #ifdefs in function.c require the presence of this pattern, with a
+;; non-constant predicate.
+(define_expand "return"
+  [(return)]
+  "optimize < 0")
 
  ;; Comment in final.c (insn_current_reference_address) says
  ;; forward branch addresses are calculated from the next insn after branch

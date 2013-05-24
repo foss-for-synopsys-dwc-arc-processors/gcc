@@ -397,7 +397,8 @@ verify_changes (int num)
 					     MEM_ADDR_SPACE (object)))
 	    break;
 	}
-      else if (REG_P (changes[i].old)
+      else if (changes[i].old
+	       && REG_P (changes[i].old)
 	       && asm_noperands (PATTERN (object)) > 0
 	       && REG_EXPR (changes[i].old) != NULL_TREE
 	       && DECL_ASSEMBLER_NAME_SET_P (REG_EXPR (changes[i].old))

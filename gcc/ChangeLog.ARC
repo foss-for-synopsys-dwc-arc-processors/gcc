@@ -1,3 +1,112 @@
+2013-05-23  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (attribute length): Conditionalized move insns
+	have length 8 unless they use an u6_immediate_operand or
+	register_operand input.
+
+2013-05-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_pad_return): Don't disgorge the delay slot
+	insn if the delay slot is annulled or clobbers the condition of
+	the return insn.
+
+2013-05-20  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc/config/arc/arc.c (arc_expand_epilogue): Use gen_simple_return.
+	(arc_print_operand): Don't use .nd suffix for return instructions.
+	(arc_ccfsm_record_condition): Change type of second parameter to bool.
+	Changed all callers.
+	Disregard deleted delay slot insns.
+	(arc_ifcvt): Fix logic to detect SEQUENCEs.
+	When changing an RTX_FRAME_RELATED_P, add a suitable
+	REG_FRAME_RELATED_EXPR note.
+	* config/arc/arc.md (return_i): Rename to ...
+	(simple_return): ... this.
+	(p_return_i):  Call arc_ccfsm_record_condition.
+	(return): New define_expand.
+	* config/arc/arc-protos.h (arc_ccfsm_record_condition): Update
+	prototype.
+	* recog.c (verify_changes): Verify that changes[i].old is non-zero
+	before applying REG_P.
+
+2013-05-16  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (ARC Options): Correct text for -mdsp-packa,
+	-mxy and the -mtune options for ARC700, ARC700-xmac, ARC725D and
+	ARC750D. Fix bad line-wrapping.  Spell check and correct this
+	section.
+	* doc/extend.texi (Declaring Attributes of Functions): Document
+	use of "ilink" for ARC v2 EM.  Spell check and correct this
+	section.
+	(ARC Built-in Functions): Change -mEA to -mea.  Spell check and
+	correct this section.
+
+2013-05-15  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/extend.texi (Declaring Attributes of Functions): Correct
+	typo for interrupt attribute. Note that branch-and-link has a
+	21-bit offset.
+	(ARC Built-in Functions): Use -mcpu=ARCv2EM
+	throughout. Correct first argument of deftypefn in some places
+	* doc/invoke.texi (ARC Options): Make clear that ARC v2 EM options
+	are only available if built for ARC v2 EM. Add symbolic
+	alternatives for -mmpy-option. Note that -medium-calls has a
+	21-bit range. Clarify meaning of options passed through to the linker.
+
+2013-05-14  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (ARC Options): Add -mARC601 and -mav2em aliases
+	and index entries for -mARC601 and all ARC v2 EM cpu options.
+
+2013-05-14  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (Option Summary): Add @gol for ARC option
+	lines.
+
+2013-05-13  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/extend.texi (ARC Built-in Functions): Use deftypefn for
+	built-ins.
+	* doc/invoke.texi (Option Summary): Remove -margonaut,
+	-mbig-endian, -mEB, -mlittle-endian, -mEL. Change -mEA to -mea and
+	-multcost to -mmultcost.
+	(ARC Options): Mark -margonaut, -mbig-endian, -mEB,
+	-mlittle-endian, -mEL, -mEA and -multcost as
+	deprecated. Consistent description of ARC v2 EM architecture
+	throughout. Use -mcpu=ARCv2EM to specify ARC v2 EM architecture
+	with -mARCv2EM and -mEM as aliases. Provided -mea as replacement
+	for -mEA and -mmultcost as replacements for -multcost. -mmul32x16
+	not for ARC v2 EM, -mmul64 for ARC600 only. -msimd for ARC700
+	only. -mlra marked as experimental. -mtune match CPU names of
+	-mcpu and mark lower case alternatives as deprecated. Remove
+	-mdev_rem and -mcode_density from deprecated.
+
+2013-05-10  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/extend.tex (Declaring Attributes of Functions): Extended
+	description of short_call and long_call attributes for ARC and
+	added index entries.
+
+2013-05-10  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/extend.texi (ARC Built-in Functions): New section defining
+	generic ARC built-in functions.
+	(ARC SIMD Built-in Functions): New section defining SIMD specific
+	built-in functions.
+
+2013-05-09  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* doc/invoke.texi (Option Summary, ARC Options): Remove -mcrc,
+	-mold-di-patterns, -mCPU=A5, -mA5. Add -mforce-short, -mlra,
+	-mlra-priority-compact, -mlra-priority-noncompact,
+	-mlra-priority-none and -mucb-count. Replace -mcpu=ARCv2EM by
+	-mcpu=ARCEM and add -mAEM and -mARCEM as synonyms. Mark
+	-mbarrel_shifter, -mdiv_rem, -mdpfp_compact, -mdpfp_fast,
+	-mdsp_packa, -mmac_24, -mmac_d16, -mmpy_option, -mspfp_compact,
+	-mspfp_fast and -mcode_density as deprecated and replace by
+	equivalents without '_'. Partition options into groups are reorder
+	alphabetically in groups. Update summary to match detailed list.
+
 2013-05-01  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Modify CHEAP_CORE_REGS to match better the ARCv2

@@ -2443,7 +2443,7 @@ arc_expand_epilogue (int sibcall_p)
 	frame_stack_add (size - restored);
       /* Emit the return instruction.  */
       if (sibcall_p == FALSE)
-	emit_jump_insn (gen_return_i ());
+	emit_jump_insn (gen_simple_return ());
     }
  epilogue_done:
   if (!TARGET_EPILOGUE_CFI)
@@ -2809,9 +2809,10 @@ arc_print_operand (FILE *file, rtx x, int code)
 	  if (INSN_DELETED_P (delay))
 	    return;
 	  if (JUMP_P (jump) && INSN_ANNULLED_BRANCH_P (jump))
-	    fputs (INSN_FROM_TARGET_P (delay)
-		   ?  ".d"
-		   : (TARGET_AT_DBR_CONDEXEC && code == '#' ? ".d" : ".nd"),
+	    fputs (INSN_FROM_TARGET_P (delay) ? ".d"
+		   : TARGET_AT_DBR_CONDEXEC && code == '#' ? ".d"
+		   : get_attr_type (jump) == TYPE_RETURN && code == '#' ? ""
+		   : ".nd",
 		   file);
 	  else
 	    fputs (".d", file);
@@ -3717,7 +3718,7 @@ arc_ccfsm_at_label (const char *prefix, int num, struct arc_ccfsm *state)
    the ccfsm state accordingly.
    REVERSE says branch will branch when the condition is false.  */
 void
-arc_ccfsm_record_condition (rtx cond, int reverse, rtx jump,
+arc_ccfsm_record_condition (rtx cond, bool reverse, rtx jump,
 			    struct arc_ccfsm *state)
 {
   rtx seq_insn = NEXT_INSN (PREV_INSN (jump));
@@ -3729,7 +3730,8 @@ arc_ccfsm_record_condition (rtx cond, int reverse, rtx jump,
     {
       rtx insn = XVECEXP (PATTERN (seq_insn), 0, 1);
 
-      if (INSN_ANNULLED_BRANCH_P (jump)
+      if (!INSN_DELETED_P (insn)
+	  && INSN_ANNULLED_BRANCH_P (jump)
 	  && (TARGET_AT_DBR_CONDEXEC || INSN_FROM_TARGET_P (insn)))
 	{
 	  state->cond = cond;
@@ -8234,9 +8236,9 @@ arc_ifcvt (void)
 	     processing an 'else' part.  */
 	  prev = PREV_INSN (insn);
 	  pprev = PREV_INSN (prev);
-	  if (pprev && NEXT_INSN (pprev) == NEXT_INSN (insn)
+	  if (pprev && NEXT_INSN (NEXT_INSN (pprev)) == NEXT_INSN (insn)
 	      && JUMP_P (prev) && get_attr_cond (prev) == COND_USE
-	      && !INSN_ANNULLED_BRANCH_P (insn))
+	      && !INSN_ANNULLED_BRANCH_P (prev))
 	    break;
 
 	  patp = &PATTERN (insn);
@@ -8246,6 +8248,21 @@ arc_ifcvt (void)
 	    {
 	      /* ??? don't conditionalize if all side effects are dead
 		 in the not-execute case.  */
+	      /* dwarf2out.c:dwarf2out_frame_debug_expr doesn't know
+		 what to do with COND_EXEC.  */
+	      if (RTX_FRAME_RELATED_P (insn))
+		{
+		  /* If this is the delay slot insn of an anulled branch,
+		     dwarf2out.c:scan_trace understands the anulling semantics
+		     without the COND_EXEC.  */
+		  gcc_assert
+		   (pprev && NEXT_INSN (NEXT_INSN (pprev)) == NEXT_INSN (insn)
+		    && JUMP_P (prev) && get_attr_cond (prev) == COND_USE
+		    && INSN_ANNULLED_BRANCH_P (prev));
+		  rtx note = alloc_reg_note (REG_FRAME_RELATED_EXPR, pat,
+					     REG_NOTES (insn));
+		  validate_change (insn, &REG_NOTES (insn), note, 1);
+		}
 	      pat = gen_rtx_COND_EXEC (VOIDmode, cond, pat);
 	    }
 	  else if (simplejump_p (insn))
@@ -8545,8 +8562,14 @@ arc_pad_return (void)
 	    = "Long unaligned jump avoids non-delay slot penalty";
 	  want_long = 1;
 	}
-      /* Disgorge delay insn, if there is any.  */
-      if (final_sequence)
+      /* Disgorge delay insn, if there is any, and it may be moved.  */
+      if (final_sequence
+	  /* ??? Annulled would be OK if we can and do conditionalize
+	     the delay slot insn accordingly.  */
+	  && !INSN_ANNULLED_BRANCH_P (insn)
+	  && (get_attr_cond (insn) != COND_USE
+	      || !reg_set_p (gen_rtx_REG (CCmode, CC_REG),
+			     XVECEXP (final_sequence, 0, 1))))
 	{
 	  prev = XVECEXP (final_sequence, 0, 1);
 	  gcc_assert (!prev_real_insn (insn)
