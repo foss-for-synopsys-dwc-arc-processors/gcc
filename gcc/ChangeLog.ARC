@@ -1,3 +1,9 @@
+2013-05-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/predicates.md (mult_operator): Check TARGET_NOMPY_SET.
+	Move before commutative_operator.
+	(commutative_operator): Use mult_operator.
+
 2013-05-24  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md Fixed typo in the mulhisi3 pattern.

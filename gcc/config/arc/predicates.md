@@ -663,9 +663,13 @@
   (ior (match_operand 0 "shiftl4_operator")
        (match_operand 0 "shiftr4_operator")))
 
+(define_predicate "mult_operator"
+    (and (match_code "mult") (match_test "TARGET_ARC700 && !TARGET_NOMPY_SET"))
+)
+
 (define_predicate "commutative_operator"
   (ior (match_code "plus,ior,xor,and")
-       (and (match_code "mult") (match_test "TARGET_ARC700"))
+       (match_operand 0 "mult_operator")
        (and (match_code "ss_plus")
 	    (match_test "TARGET_ARC700 || TARGET_EA_SET")))
 )
@@ -674,10 +678,6 @@
   (ior (match_code "plus,ior,xor,and")
        (and (match_code "ss_plus")
 	    (match_test "TARGET_ARC700 || TARGET_EA_SET")))
-)
-
-(define_predicate "mult_operator"
-    (and (match_code "mult") (match_test "TARGET_ARC700"))
 )
 
 (define_predicate "noncommutative_operator"
