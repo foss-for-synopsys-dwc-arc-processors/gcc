@@ -2845,9 +2845,14 @@ arc_print_operand (FILE *file, rtx x, int code)
 		 only beq_s / bne_s have the same offset range as b_s,
 		 and the only short conditional returns are jeq_s and jne_s.  */
 	      if (code == '!'
-		  && (arc_ccfsm_current.cc == ARC_CC_EQ
-		      || arc_ccfsm_current.cc == ARC_CC_NE
-		      || 0 /* FIXME: check if branch in 7 bit range.  */))
+		  && ((arc_ccfsm_current.cc == ARC_CC_EQ
+		       || arc_ccfsm_current.cc == ARC_CC_NE
+		       || 0 /* FIXME: check if branch in 7 bit range.  */)
+		      /*Avoid output of shor suffix for jeq.d and
+			jne.d. This is needed here because the above
+			if-clause is shaky */
+		      && (!final_sequence ||  XVECLEN (final_sequence, 0) < 2))
+		  )
 		output_short_suffix (file);
 	    }
 	  else if (code == '!') /* Jump with delay slot.  */

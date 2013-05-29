@@ -1,3 +1,8 @@
+2013-05-29  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c Avoid output of short siffix for jeq.d and
+          jne.d instructions.
+
 2013-05-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/predicates.md (mult_operator): Check TARGET_NOMPY_SET.
