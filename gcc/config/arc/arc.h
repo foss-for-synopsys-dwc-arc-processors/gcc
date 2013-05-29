@@ -1525,10 +1525,6 @@ extern int arc_return_address_regs[4];
 #define INCOMING_RETURN_ADDR_RTX  gen_rtx_REG (Pmode, 31)
 
 /* Frame info.  */
-/* Force the generation of dwarf .debug_frame sections even if not
-   compiling -g.  This guarantees that we can unwind the stack.  */
-
-#define DWARF2_FRAME_INFO 1
 
 /* Define this macro to 0 if your target supports DWARF 2 frame unwind
    information, but it does not yet work with exception handling.  */
