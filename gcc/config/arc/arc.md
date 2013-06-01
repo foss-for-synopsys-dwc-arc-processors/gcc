@@ -1772,6 +1772,8 @@
 
 ; mululw conditional execution without a LIMM clobbers an input register;
 ; we'd need a different pattern to describe this.
+; To make the conditional execution valid for the LIMM alternative, we
+; have to emit the LIMM before the register operand.
 (define_insn "umul_600"
   [(set (match_operand:SI 2 "acc2_operand" "")
 	(mult:SI (match_operand:SI 0 "register_operand"  "c,c,c")
@@ -1781,7 +1783,9 @@
 				  (const_int 0))))
    (clobber (match_operand:SI 3 "acc1_operand" ""))]
   "TARGET_MULMAC_32BY16_SET"
-  "mululw%? 0, %0, %1"
+  "@mululw 0, %0, %1
+    mululw 0, %0, %1
+    mululw%? 0, %1, %0"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "mulmac_600, mulmac_600, mulmac_600")
    (set_attr "predicable" "no, no, yes")
@@ -2207,7 +2211,9 @@
 				  (const_int 0))))
   ]
   "TARGET_MULMAC_32BY16_SET"
-  "mululw%? 0, %0, %1"
+  "@mululw 0, %0, %1
+    mululw 0, %0, %1
+    mululw%? 0, %1, %0"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "mulmac_600")
    (set_attr "predicable" "no,no,yes")
