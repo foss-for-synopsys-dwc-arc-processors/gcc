@@ -1,3 +1,8 @@
+2013-06-01  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (umul_600): Output LIMM before register operand.
+	(umul64_600): Likewise.
+
 2013-05-30  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c : Remove TARGET_FSHORT_SET.
