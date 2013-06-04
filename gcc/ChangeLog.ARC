@@ -5,6 +5,9 @@
 	* common/config/arc/arc-common.c (arc_handle_option): Allow multiple
 	identical -mcpu options.
 
+	* config/arc/arc.md (doloop_begin_i): Don't try to find
+	next_active_insn of simple_return.
+
 2013-06-01  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (umul_600): Output LIMM before register operand.

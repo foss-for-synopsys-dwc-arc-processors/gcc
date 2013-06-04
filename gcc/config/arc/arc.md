@@ -5043,9 +5043,11 @@
 		  continue;
 		}
 	      if (JUMP_LABEL (scan)
-		  && (!next_active_insn (JUMP_LABEL (scan))
-		      || (recog_memoized (next_active_insn (JUMP_LABEL (scan)))
-			  != CODE_FOR_doloop_begin_i))
+		  /* JUMP_LABEL might be simple_return instead if an insn.  */
+		  && (!INSN_P (JUMP_LABEL (scan))
+		      || (!next_active_insn (JUMP_LABEL (scan))
+			  || (recog_memoized (next_active_insn (JUMP_LABEL (scan)))
+			      != CODE_FOR_doloop_begin_i)))
 		  && (!next_active_insn (NEXT_INSN (PREV_INSN (scan)))
 		      || (recog_memoized
 			   (next_active_insn (NEXT_INSN (PREV_INSN (scan))))
