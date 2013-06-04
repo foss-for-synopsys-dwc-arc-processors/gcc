@@ -3879,7 +3879,7 @@ arc_verify_short (rtx insn, int, int check_attr)
   if (machine->force_short_suffix >= 0)
     return machine->force_short_suffix;
 
-  return TARGET_FSHORT_SET ? 1 : ((get_attr_length (insn) & 2) != 0);
+  return ((get_attr_length (insn) & 2) != 0);
 }
 
 /* When outputting an instruction (alternative) that can potentially be short,
