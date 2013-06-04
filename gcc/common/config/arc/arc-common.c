@@ -72,14 +72,14 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
   switch (code)
     {
-      static bool mcpu_seen = false;
+      static int mcpu_seen = PROCESSOR_NONE;
     case OPT_mcpu_:
       /* N.B., at this point arc_cpu has already been set to its new value by
 	 our caller, so comparing arc_cpu with PROCESSOR_NONE is pointless.  */
 
-      if (mcpu_seen)
+      if (mcpu_seen != PROCESSOR_NONE && mcpu_seen != value)
 	warning_at (loc, 0, "multiple -mcpu= options specified.");
-      mcpu_seen = true;
+      mcpu_seen = value;
 
       switch (value)
 	{

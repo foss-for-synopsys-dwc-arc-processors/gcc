@@ -2,6 +2,9 @@
 
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Fix typo: %<A6 -> %<mA6
 
+	* common/config/arc/arc-common.c (arc_handle_option): Allow multiple
+	identical -mcpu options.
+
 2013-06-01  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (umul_600): Output LIMM before register operand.
