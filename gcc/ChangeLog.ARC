@@ -3,6 +3,11 @@
 	* config/arc/arc.md (umul_600): Output LIMM before register operand.
 	(umul64_600): Likewise.
 
+2013-05-30  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c : Remove TARGET_FSHORT_SET.
+
+
 2013-05-29  Vineet Gupta  <vgupta@synopsys.com>
 
 	* config/arc/arc.h (DWARF2_FRAME_INFO): Don't define unconditionally
