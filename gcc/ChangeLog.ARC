@@ -1,3 +1,18 @@
+2013-06-05  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_is_shortcall_p): Declare.
+	* config/arc/arc.c (arc_attribute_table): Add medium_call
+	attribute entry.
+	(arc_comp_type_attributes): Check medium_call attribute.
+	(arc_encode_section_info): Process medium_call attribute.
+	(arc_is_longcall_p): Return false if SYMBOL_REF_MEDIUM_CALL_P is set.
+	(arc_is_shortcall_p): New function.
+	* config/arc/arc.h (SYMBOL_FLAG_MEDIUM_CALL): Define.
+	(SYMBOL_FLAG_LONG_CALL): Bump up bit number.
+	(SYMBOL_REF_MEDIUM_CALL_P): Define.
+	* config/arc/constraints.md (Cbp): Use arc_is_shortcall_p.
+	* doc/extend.texi: Add documentation for medium_call attribute.
+
 2013-06-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Fix typo: %<A6 -> %<mA6

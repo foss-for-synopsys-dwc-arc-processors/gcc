@@ -357,8 +357,11 @@ const struct attribute_spec arc_attribute_table[] =
      it may lie outside of the 21/25 bit addressing range of a normal function
      call.  */
   { "long_call",    0, 0, false, true,  true,  NULL, false },
-  /* Whereas these functions are always known to reside within the 21/25 bit
-     addressing range.  */
+  /* Whereas these functions are always known to reside within the 25 bit
+     addressing range of unconditionalized bl.  */
+  { "medium_call",   0, 0, false, true,  true,  NULL, false },
+  /* And these functions are always known to reside within the 21 bit
+     addressing range of blcc.  */
   { "short_call",   0, 0, false, true,  true,  NULL, false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
@@ -1405,7 +1408,7 @@ static int
 arc_comp_type_attributes (const_tree type1,
 			  const_tree type2)
 {
-  int l1, l2, s1, s2;
+  int l1, l2, m1, m2, s1, s2;
 
   /* Check for mismatch of non-default calling convention.  */
   if (TREE_CODE (type1) != FUNCTION_TYPE)
@@ -1414,18 +1417,20 @@ arc_comp_type_attributes (const_tree type1,
   /* Check for mismatched call attributes.  */
   l1 = lookup_attribute ("long_call", TYPE_ATTRIBUTES (type1)) != NULL;
   l2 = lookup_attribute ("long_call", TYPE_ATTRIBUTES (type2)) != NULL;
+  m1 = lookup_attribute ("medium_call", TYPE_ATTRIBUTES (type1)) != NULL;
+  m2 = lookup_attribute ("medium_call", TYPE_ATTRIBUTES (type2)) != NULL;
   s1 = lookup_attribute ("short_call", TYPE_ATTRIBUTES (type1)) != NULL;
   s2 = lookup_attribute ("short_call", TYPE_ATTRIBUTES (type2)) != NULL;
 
   /* Only bother to check if an attribute is defined.  */
-  if (l1 | l2 | s1 | s2)
+  if (l1 | l2 | m1 | m2 | s1 | s2)
     {
       /* If one type has an attribute, the other must have the same attribute.  */
-      if ((l1 != l2) || (s1 != s2))
+      if ((l1 != l2) || (m1 != m2) || (s1 != s2))
 	return 0;
 
       /* Disallow mixed attributes.  */
-      if ((l1 & s2) || (l2 & s1))
+      if (l1 + m1 + s1 > 1)
 	return 0;
     }
 
@@ -4022,8 +4027,8 @@ arc_encode_section_info (tree decl, rtx rtl, int first)
      This clears machine specific flags, so has to come first.  */
   default_encode_section_info (decl, rtl, first);
 
-  /* Check if it is a function, and whether it has the [long/short]_call
-     attribute specified.  */
+  /* Check if it is a function, and whether it has the
+     [long/medium/short]_call attribute specified.  */
   if (TREE_CODE (decl) == FUNCTION_DECL)
     {
       rtx symbol = XEXP (rtl, 0);
@@ -4032,10 +4037,13 @@ arc_encode_section_info (tree decl, rtx rtl, int first)
       tree attr = (TREE_TYPE (decl) != error_mark_node
 		   ? TYPE_ATTRIBUTES (TREE_TYPE (decl)) : NULL_TREE);
       tree long_call_attr = lookup_attribute ("long_call", attr);
+      tree medium_call_attr = lookup_attribute ("medium_call", attr);
       tree short_call_attr = lookup_attribute ("short_call", attr);
 
       if (long_call_attr != NULL_TREE)
 	flags |= SYMBOL_FLAG_LONG_CALL;
+      else if (medium_call_attr != NULL_TREE)
+	flags |= SYMBOL_FLAG_MEDIUM_CALL;
       else if (short_call_attr != NULL_TREE)
 	flags |= SYMBOL_FLAG_SHORT_CALL;
 
@@ -5542,7 +5550,7 @@ arc_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
      or b.  the -mlong-calls command line switch has been specified
 
    However we do not generate a long call if the function has an
-   __attribute__ ((short_call))
+   __attribute__ ((short_call)) or __attribute__ ((medium_call))
 
    This function will be called by C fragments contained in the machine
    description file.  */
@@ -5554,7 +5562,24 @@ arc_is_longcall_p (rtx sym_ref)
     return false;
 
   return (SYMBOL_REF_LONG_CALL_P (sym_ref)
-	  || (TARGET_LONG_CALLS_SET && !SYMBOL_REF_SHORT_CALL_P (sym_ref)));
+	  || (TARGET_LONG_CALLS_SET
+	      && !SYMBOL_REF_SHORT_CALL_P (sym_ref)
+	      && !SYMBOL_REF_MEDIUM_CALL_P (sym_ref)));
+
+}
+
+/* Likewise for short calls.  */
+
+bool
+arc_is_shortcall_p (rtx sym_ref)
+{
+  if (GET_CODE (sym_ref) != SYMBOL_REF)
+    return false;
+
+  return (SYMBOL_REF_SHORT_CALL_P (sym_ref)
+	  || (!TARGET_LONG_CALLS_SET && !TARGET_MEDIUM_CALLS
+	      && !SYMBOL_REF_LONG_CALL_P (sym_ref)
+	      && !SYMBOL_REF_MEDIUM_CALL_P (sym_ref)));
 
 }
 
