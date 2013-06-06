@@ -1,3 +1,16 @@
+2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.opt: Update optin names, replacing '_' hyphenation
+	with '-' hypphenation.
+	* config/arc/arc.h (CPP_SPEC): Likewise.
+	(ASM_SPEC): Likewise.
+	Remove invalid / SELF_SPEC translated option alternatives.
+	(DRIVER_SPELF_SPECS): Use option alternatives for mARC5|mA5 and
+	mav2em|mARCv2EM|mEM .
+	Also remove from processed options mARC5/mA7/ARCv2EM/mEM .
+	Add backwards compatibility translations from '_' hypenated options
+	to '-' hyphenated options.
+
 2013-06-05  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (arc_is_shortcall_p): Declare.

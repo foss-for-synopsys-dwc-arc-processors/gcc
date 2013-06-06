@@ -53,23 +53,25 @@ mARC700
 Target Report
 Same as -mA7
 
+; This is here just for documentation,
+; it is really handled in DRIVER_SELF_SPECS.
 mav2em
 Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
 Generate ARCv2 code for EM processor
 
-mforce_short
+mforce-short
 Target Report Mask(FSHORT_SET)
 Force short suffix by ignoring the instruction length attribute. It is on by default for EM.
 
-mmpy_option=
+mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
--mmpy_option={0,1,2,3,4,5,6} Compile ARC EM code with a multiplier design option. WLH1 is default on
+-mmpy-option={0,1,2,3,4,5,6} Compile ARC EM code with a multiplier design option. WLH1 is default on
 
-mdiv_rem
+mdiv-rem
 Target Report Mask(DIVREM)
 Enable DIV-REM instructions for ARCv2
 
-mcode_density
+mcode-density
 Target Report Mask(CODE_DENSITY)
 Enable code density instructions for ARCv2
 
@@ -89,7 +91,7 @@ mno-volatile-cache
 Target Report InverseMask(VOLATILE_CACHE_SET)
 Enable cache bypass for volatile references
 
-mbarrel_shifter
+mbarrel-shifter
 Target Report Mask(BARREL_SHIFTER)
 Generate instructions supported by barrel shifter
 
@@ -137,11 +139,11 @@ mspfp
 Target Report Mask(SPFP_COMPACT_SET)
 FPX: Generate Single Precision FPX (compact) instructions.
 
-mspfp_compact
+mspfp-compact
 Target Report Mask(SPFP_COMPACT_SET) MaskExists
 FPX: Generate Single Precision FPX (compact) instructions.
 
-mspfp_fast
+mspfp-fast
 Target Report Mask(SPFP_FAST_SET)
 FPX: Generate Single Precision FPX (fast) instructions.
 
@@ -153,11 +155,11 @@ mdpfp
 Target Report Mask(DPFP_COMPACT_SET)
 FPX: Generate Double Precision FPX (compact) instructions.
 
-mdpfp_compact
+mdpfp-compact
 Target Report Mask(DPFP_COMPACT_SET) MaskExists
 FPX: Generate Double Precision FPX (compact) instructions.
 
-mdpfp_fast
+mdpfp-fast
 Target Report Mask(DPFP_FAST_SET)
 FPX: Generate Double Precision FPX (fast) instructions.
 
@@ -296,7 +298,7 @@ mcrc
 Target Report RejectNegative
 Enable variable polynomial CRC extension
 
-mdsp_packa
+mdsp-packa
 Target Report RejectNegative
 Enable DSP 3.1 Pack A extensions
 
@@ -304,10 +306,10 @@ mdvbf
 Target Report RejectNegative
 Enable dual viterbi butterfly extension
 
-mmac_d16
+mmac-d16
 Target Report RejectNegative Undocumented
 
-mmac_24
+mmac-24
 Target Report RejectNegative Undocumented
 
 mtelephony
