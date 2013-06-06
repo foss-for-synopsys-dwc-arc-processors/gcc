@@ -1,3 +1,7 @@
+2013-06-06  Simon Cook  <simon.cook@embecosm.com>
+
+	* config/arc/arc.h (ASM_SPEC): Replace -mdsp with -mdsp-packa.
+
 2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt: Update option names, replacing '_' hyphenation
