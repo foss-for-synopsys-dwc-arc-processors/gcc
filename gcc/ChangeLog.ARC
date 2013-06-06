@@ -1,6 +1,6 @@
 2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
 
-	* config/arc/arc.opt: Update optin names, replacing '_' hyphenation
+	* config/arc/arc.opt: Update option names, replacing '_' hyphenation
 	with '-' hypphenation.
 	* config/arc/arc.h (CPP_SPEC): Likewise.
 	(ASM_SPEC): Likewise.
