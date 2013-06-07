@@ -1,3 +1,8 @@
+2013-06-07  Mischa Jonker  <mjonker@synopsys.com>
+
+	* config/arc/arc.h (LINK_COMMAND_SPEC): Don't include libgcc when
+	linking with -nostdlib
+
 2013-06-06  Simon Cook  <simon.cook@embecosm.com>
 
 	* config/arc/arc.h (ASM_SPEC): Replace -mdsp with -mdsp-packa.
