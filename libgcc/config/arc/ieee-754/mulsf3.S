@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2012 Free Software Foundation, Inc.  
+/* Copyright (C) 2008-2013 Free Software Foundation, Inc.  
    Contributor: Joern Rennecke <joern.rennecke@embecosm.com>
 		on behalf of Synopsys Inc.
 
@@ -59,7 +59,7 @@ __mulsf3:
 	.global	__mulsf3
 	FUNC(__mulsf3)
 __mulsf3:
-	ld.as	r9,[pcl,81]; [pcl,((.L7f800000-.+2)/4)]
+	ld.as	r9,[pcl,79]; [pcl,((.L7f800000-.+2)/4)]
 	bmsk	r4,r1,22
 	bset	r2,r0,23
 	asl_s	r2,r2,8
@@ -78,7 +78,7 @@ __mulsf3:
 	add.pl	r6,r6,r6
 	bclr.pl	r6,r6,23
 	add.pl.f r7,r7,r7
-	ld.as	r4,[pcl,66]; [pcl,((.L7fffffff-.+2)/4)]
+	ld.as	r4,[pcl,64]; [pcl,((.L7fffffff-.+2)/4)]
 	add.cs	r6,r6,1
 	lsr.f	0,r6,1
 	breq	r12,r9,.Linf_nan_dbl1
@@ -117,20 +117,24 @@ __mulsf3:
 
 	.balign	4
 .Linf_nan_dbl0:
-	add.f	0,r1,r1 ; set c to sign; set z if +-zero
-	sub.eq	r1,r1,1 ; inf/nan * 0 -> nan
-	bxor.cs	r0,r0,31 ; calculate result sign
-	bic.f	0,r9,r1
+	sub_s	r2,r1,1 ; inf/nan * 0 -> nan; inf * nan -> nan (use |r2| >= inf)
+	bic.f	0,r9,r2
+	xor_s	r0,r0,r1
+	bclr_s	r1,r1,31
+	xor_s	r0,r0,r1
+	jne_s	[blink]
+.Lretnan:
 	j_s.d	[blink]
-	or.eq	r0,r0,r1 ; r1 nan -> result nan
+	mov	r0,-1
 .Ldenorm_dbl0_inf_nan_dbl1:
 	bmsk.f	0,r0,30
-	mov.eq	r1,-1
+	beq_s	.Lretnan
+	xor_s	r0,r0,r1
 .Linf_nan_dbl1:
 	xor_s	r1,r1,r0
 	bclr_s	r1,r1,31
 	j_s.d	[blink]
-	xor_l	r0,r0,r1
+	xor_s	r0,r0,r1
 
 	.balign	4
 .Ldenorm_dbl0:

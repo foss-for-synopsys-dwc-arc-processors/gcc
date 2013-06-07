@@ -1,3 +1,9 @@
+2013-06-07  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/ieee-754/mulsf3.S (Linf_nan_dbl0): Fix inf*inf handling.
+	(Ldenorm_dbl0_inf_nan_dbl1): Fix subnormal*inf sign.  Shorten.
+	(.Linf_nan_dbl1): Shorten.  All load offsets changed.
+
 2013-04-12  Simon Cook  <simon.cook@embecosm.com>
 
 	* config.host: Restore arc*-*-elf* definition.
