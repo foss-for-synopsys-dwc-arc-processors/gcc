@@ -7778,8 +7778,13 @@ arc_hazard (rtx pred, rtx succ)
     return 0;
   if (!pred || !INSN_P (pred) || !succ || !INSN_P (succ))
     return 0;
+  /* We might have a CALL to a non-returning function before a loop end.
+     ??? Although the manual says that's OK (the target is outside the loop,
+     and the loop counter unused there), the assembler barfs on this, so we
+     must instert a nop before such a call too.  */
   if (recog_memoized (succ) == CODE_FOR_doloop_end_i
-      && (JUMP_P (pred) || GET_CODE (PATTERN (pred)) == SEQUENCE))
+      && (JUMP_P (pred) || CALL_P (pred)
+	  || GET_CODE (PATTERN (pred)) == SEQUENCE))
     return 4;
   return arc600_corereg_hazard (pred, succ);
 }
@@ -7806,7 +7811,10 @@ arc_adjust_insn_length (rtx insn, int len, bool)
 
       return ((LABEL_P (prev)
 	       || (TARGET_ARC600
-		   && (JUMP_P (prev) || GET_CODE (PATTERN (prev)) == SEQUENCE)))
+		   && (JUMP_P (prev)
+		       || CALL_P (prev) /* Could be a noreturn call.  */
+		       || (NONJUMP_INSN_P (prev)
+			   && GET_CODE (PATTERN (prev)) == SEQUENCE))))
 	      ? len + 4 : len);
     }
 

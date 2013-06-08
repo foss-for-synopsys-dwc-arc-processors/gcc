@@ -1,3 +1,9 @@
+2013-06-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc/config/arc/arc.c (arc_hazard): Also consider CALLs before
+	doloop_end_i.
+	(arc_adjust_insn_length): Likewise.
+
 2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt: Update option names, replacing '_' hyphenation
