@@ -8,6 +8,9 @@
 	(umulsidi3) <TARGET_MUL64_SET>: Use gen_umulsidi_600.
 	but require a barrel shifter.
 
+	* config/arc/arc.h (TARGET_OPTFPE): No longer require a multiplier,
+	but require a barrel shifter.
+
 2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt: Update option names, replacing '_' hyphenation

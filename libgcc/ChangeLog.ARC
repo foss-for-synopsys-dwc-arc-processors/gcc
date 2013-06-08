@@ -1,3 +1,24 @@
+2013-06-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/dp-hack.h
+	[!__ARC700__ && !__ARC_MUL64__ && !__ARC_MUL32BY16__] (QUIET_NAN):
+	Define to 0xfffffffffffffLL.
+	[!__ARC700__ && !__ARC_MUL64__ && !__ARC_MUL32BY16__] (__muldf3):
+	define as __muldf3_c.
+	[!__ARC700__ && !__ARC_MUL64__ && !__ARC_MUL32BY16__] (__divdf3):
+	define as __divdf3_c.
+	* config/arc/ieee-754/arc600-dsp/muldf3.S (__muldf3):
+	Add FUNC/ENDFUNC.
+	* config/arc/ieee-754/arc600: Rename directory to ..
+	* config/arc/ieee-754/arc600-mul64: .. this.
+	* config/arc/ieee-754/arc600-mul64/mulsf3.S
+	(.Ldenorm_dbl0_inf_nan_dbl1): Fix sign of subnormal*inf.
+	* config/arc/ieee-754/arc600: New directory.
+	* config/arc/lib1funcs.S: Reflect arc600-mul64 directory rename.
+	[ARC_NORM]: Include ieee-754/arc600/mulsf3.S, ieee-754/arc600/divsf3.S.
+	* config/arc/t-arc b/libgcc/config/arc/t-arc (dp-bit.c):
+	Place dp-hack.h include after fp-bit.h include.
+
 2013-06-07  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/ieee-754/mulsf3.S (Linf_nan_dbl0): Fix inf*inf handling.
