@@ -4,6 +4,10 @@
 	doloop_end_i.
 	(arc_adjust_insn_length): Likewise.
 
+	* config/arc/arc.md (umulsidi_600): Remove compact alternative.
+	(umulsidi3) <TARGET_MUL64_SET>: Use gen_umulsidi_600.
+	but require a barrel shifter.
+
 2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt: Update option names, replacing '_' hyphenation

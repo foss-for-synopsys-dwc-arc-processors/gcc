@@ -1880,18 +1880,18 @@
 (define_insn "umulsidi_600"
   [(set (reg:DI MUL64_OUT_REG)
 	(mult:DI (zero_extend:DI
-		   (match_operand:SI 0 "register_operand"  "Rcq#q,c,c,%c"))
+		   (match_operand:SI 0 "register_operand"  "c,c,%c"))
 		 (sign_extend:DI
 ; assembler issue for "I", see mulsi_600
-;		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,I,Cal"))))]
-		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,L,C32"))))]
+;		   (match_operand:SI 1 "register_operand" "cL,I,Cal"))))]
+		   (match_operand:SI 1 "register_operand" "cL,L,C32"))))]
   "TARGET_MUL64_SET"
   "mulu64%? \t0, %0, %1%&"
-  [(set_attr "length" "*,4,4,8")
-   (set_attr "iscompact" "maybe,false,false,false")
+  [(set_attr "length" "4,4,8")
+   (set_attr "iscompact" "false")
    (set_attr "type" "umulti")
-   (set_attr "predicable" "yes,yes,no,yes")
-   (set_attr "cond" "canuse,canuse,canuse_limm,canuse")])
+   (set_attr "predicable" "yes,no,yes")
+   (set_attr "cond" "canuse,canuse_limm,canuse")])
 
 ; ARC700 mpy* instructions: This is a multi-cycle extension, and thus 'w'
 ; may not be used as destination constraint.
@@ -2174,7 +2174,7 @@
   else if (TARGET_MUL64_SET)
     {
       operands[2] = force_reg (SImode, operands[2]);
-      emit_insn (gen_mulsidi_600 (operands[1], operands[2]));
+      emit_insn (gen_umulsidi_600 (operands[1], operands[2]));
       emit_move_insn (operands[0], gen_rtx_REG (DImode, MUL64_OUT_REG));
       DONE;
     }
