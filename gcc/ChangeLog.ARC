@@ -11,6 +11,15 @@
 	* config/arc/arc.h (TARGET_OPTFPE): No longer require a multiplier,
 	but require a barrel shifter.
 
+2013-06-07  Mischa Jonker  <mjonker@synopsys.com>
+
+	* config/arc/arc.h (LINK_COMMAND_SPEC): Don't include libgcc when
+	linking with -nostdlib
+
+2013-06-06  Simon Cook  <simon.cook@embecosm.com>
+
+	* config/arc/arc.h (ASM_SPEC): Replace -mdsp with -mdsp-packa.
+
 2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt: Update option names, replacing '_' hyphenation
