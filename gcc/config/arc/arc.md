@@ -1024,7 +1024,8 @@
    mov%? %0,%1 ; %A1
    ld%U1%V1 %0,%1
    st%U0%V0 %1,%0"
-  [(set_attr "type" "move,move,load,store")])
+  [(set_attr "type" "move,move,load,store")
+   (set_attr "predicable" "yes,yes,no,no")])
 
 (define_expand "movdf"
   [(set (match_operand:DF 0 "nonimmediate_operand" "")

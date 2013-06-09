@@ -1,3 +1,7 @@
+2013-06-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (movsf_insn): Add predicable attribute.
+
 2013-06-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc/config/arc/arc.c (arc_hazard): Also consider CALLs before
