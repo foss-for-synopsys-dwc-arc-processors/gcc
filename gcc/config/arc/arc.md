@@ -5539,6 +5539,16 @@
    (set_attr "predicable" "no")
    (set_attr "length" "4")])
 
+(define_insn "*ashlsi2_cnt1"
+  [(set (match_operand:SI 0 "dest_reg_operand"            "=Rcqq,w")
+	(ashift:SI (match_operand:SI 1 "nonmemory_operand" "Rcqq,c")
+		   (const_int 1)))]
+  "TARGET_EM"
+  "asl%? %0,%1%&"
+  [(set_attr "type" "shift")
+   (set_attr "iscompact" "maybe,false")
+   (set_attr "predicable" "no,no")])
+
 ;; SETcc instructions
 
 ;SETcc;(define_code_iterator arcCC_cond [eq ne gt lt ge le])

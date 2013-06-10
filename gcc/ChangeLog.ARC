@@ -1,3 +1,12 @@
+2013-06-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.opt: Remove force_short option
+	* config/arc/arc.h: Likewise
+	* common/config/arc/arc-common.c: Likewise; EM default has no
+        barrel shifter.
+        * config/arc/arc.md: Add asl instruction for EM
+	* config/arc/arc.opt: Add alias for mEM and mARCv2EM
+
 2013-06-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (movsf_insn): Add predicable attribute.
