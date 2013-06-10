@@ -238,7 +238,6 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
   "%{mARC700|mA7: -mcpu=ARC700 %<mARC700 %<mA7}" \
   "%{mav2em|mARCv2EM|mEM:-mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM}" \
-  "%{mforce_short: -mforce-short %<mforce_short}" \
   "%{mpy_option: -mpy-option %<mpy_option}" \
   "%{mdiv_rem: -mdiv-rem %<mdiv_rem}" \
   "%{mcode_density: -mcode-density %<mcode_density}" \

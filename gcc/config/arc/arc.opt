@@ -56,12 +56,16 @@ Same as -mA7
 ; This is here just for documentation,
 ; it is really handled in DRIVER_SELF_SPECS.
 mav2em
-Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
-Generate ARCv2 code for EM processor
+Target Report RejectNegative Alias(mcpu=, ARCv2EM)
+Generate ARCv2 code for EM processor (alias)
 
-mforce-short
-Target Report Mask(FSHORT_SET)
-Force short suffix by ignoring the instruction length attribute. It is on by default for EM.
+mEM
+Target Report RejectNegative Alias(mcpu=, ARCv2EM)
+Generate ARCv2 code for EM processor (alias)
+
+mARCv2EM
+Target Report RejectNegative Alias(mcpu=, ARCv2EM)
+Generate ARCv2 code for EM processor (alias)
 
 mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)

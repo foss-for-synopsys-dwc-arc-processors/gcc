@@ -1513,8 +1513,8 @@
 )
 
 (define_insn "*extendhisi2_i"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,w,r")
-	(sign_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "Rcqq,c,m")))]
+  [(set (match_operand:SI 0 "dest_reg_operand"                     "=Rcqq,w,Rcq,r")
+	(sign_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "Rcqq,c,  T,m")))]
   ""
   "*
    switch (which_alternative)
@@ -1524,13 +1524,16 @@
    case 1:
     return TARGET_EM ? \"sexh %0,%1\" : \"sexw %0,%1\";
    case 2:
+    return \"ldh%?.x %0, %1\";
+   case 3:
     return TARGET_EM ? \"ldh.x%U1%V1 %0,%1\" : \"ldw.x%U1%V1 %0,%1\";
    default:
      gcc_unreachable();
    }
   "
-  [(set_attr "type" "unary,unary,load")
-   (set_attr "iscompact" "true,false,false")
+  [(set_attr "type"     "unary,unary,load,load")
+   (set_attr "iscompact" "true,false,true,false")
+   (set_attr "cpu_facility"  "*,*,em,*");
    ])
 
 (define_expand "extendhisi2"
@@ -5535,6 +5538,16 @@
   [(set_attr "type" "shift")
    (set_attr "predicable" "no")
    (set_attr "length" "4")])
+
+(define_insn "*ashlsi2_cnt1"
+  [(set (match_operand:SI 0 "dest_reg_operand"            "=Rcqq,w")
+	(ashift:SI (match_operand:SI 1 "nonmemory_operand" "Rcqq,c")
+		   (const_int 1)))]
+  "TARGET_EM"
+  "asl%? %0,%1%&"
+  [(set_attr "type" "shift")
+   (set_attr "iscompact" "maybe,false")
+   (set_attr "predicable" "no,no")])
 
 ;; SETcc instructions
 
