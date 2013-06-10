@@ -46,20 +46,26 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #endif
 #ifndef __ARC_NORM__
 #define L_mul_df
+#define L_div_df
+#elif (!defined (__ARC700__) && !defined (__ARC_MUL64__) \
+       && !defined(__ARC_MUL32BY16__))
+#define L_mul_df
+#define L_div_df
+#undef QUIET_NAN
+#define QUIET_NAN 0xfffffffffffffLL
 #elif ARC_DP_DEBUG
 #define L_mul_df
 #define __muldf3 __muldf3_c
+#define L_div_df
+#define __divdf3 __divdf3_c
 #endif
 #ifndef __ARC_NORM__
-#define L_div_df
 #define L_df_to_sf
 #define L_si_to_df
 #define L_df_to_si
 #define L_tf_to_usi /* need to defined this instead of df_to_usi */
 #define L_usi_to_df
 #elif ARC_DP_DEBUG
-#define L_div_df
-#define __divdf3 __divdf3_c
 #define L_df_to_sf
 #define __truncdfsf2 __truncdfsf2_c
 #define L_si_to_df

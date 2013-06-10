@@ -1,3 +1,67 @@
+2013-06-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (movsf_insn): Add predicable attribute.
+
+2013-06-08  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc/config/arc/arc.c (arc_hazard): Also consider CALLs before
+	doloop_end_i.
+	(arc_adjust_insn_length): Likewise.
+
+	* config/arc/arc.md (umulsidi_600): Remove compact alternative.
+	(umulsidi3) <TARGET_MUL64_SET>: Use gen_umulsidi_600.
+	but require a barrel shifter.
+
+	* config/arc/arc.h (TARGET_OPTFPE): No longer require a multiplier,
+	but require a barrel shifter.
+
+2013-06-07  Mischa Jonker  <mjonker@synopsys.com>
+
+	* config/arc/arc.h (LINK_COMMAND_SPEC): Don't include libgcc when
+	linking with -nostdlib
+
+2013-06-06  Simon Cook  <simon.cook@embecosm.com>
+
+	* config/arc/arc.h (ASM_SPEC): Replace -mdsp with -mdsp-packa.
+
+2013-06-06  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.opt: Update option names, replacing '_' hyphenation
+	with '-' hypphenation.
+	* config/arc/arc.h (CPP_SPEC): Likewise.
+	(ASM_SPEC): Likewise.
+	Remove invalid / SELF_SPEC translated option alternatives.
+	(DRIVER_SPELF_SPECS): Use option alternatives for mARC5|mA5 and
+	mav2em|mARCv2EM|mEM .
+	Also remove from processed options mARC5/mA7/ARCv2EM/mEM .
+	Add backwards compatibility translations from '_' hypenated options
+	to '-' hyphenated options.
+
+2013-06-05  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_is_shortcall_p): Declare.
+	* config/arc/arc.c (arc_attribute_table): Add medium_call
+	attribute entry.
+	(arc_comp_type_attributes): Check medium_call attribute.
+	(arc_encode_section_info): Process medium_call attribute.
+	(arc_is_longcall_p): Return false if SYMBOL_REF_MEDIUM_CALL_P is set.
+	(arc_is_shortcall_p): New function.
+	* config/arc/arc.h (SYMBOL_FLAG_MEDIUM_CALL): Define.
+	(SYMBOL_FLAG_LONG_CALL): Bump up bit number.
+	(SYMBOL_REF_MEDIUM_CALL_P): Define.
+	* config/arc/constraints.md (Cbp): Use arc_is_shortcall_p.
+	* doc/extend.texi: Add documentation for medium_call attribute.
+
+2013-06-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (DRIVER_SELF_SPECS): Fix typo: %<A6 -> %<mA6
+
+	* common/config/arc/arc-common.c (arc_handle_option): Allow multiple
+	identical -mcpu options.
+
+	* config/arc/arc.md (doloop_begin_i): Don't try to find
+	next_active_insn of simple_return.
+
 2013-06-01  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (umul_600): Output LIMM before register operand.

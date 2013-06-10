@@ -3002,14 +3002,16 @@ unit.  This is to allow easy merging of multiple compilation units into one,
 for example, by using the link-time optimization.  For this reason the
 attribute is not allowed on types to annotate indirect calls.
 
-@item long_call/short_call
+@item long_call/medium_call/short_call
 @cindex indirect calls on ARC
 @cindex indirect calls on ARM
 @cindex indirect calls on Epiphany
-This attribute specifies how a particular function is called on
-ARC, ARM and Epiphany.  Both attributes override the
+These attribute specifies how a particular function is called on
+ARC, ARM and Epiphany - with @code{medium_call} being specific to ARC.
+These attributes override the
 @option{-mlong-calls} (@pxref{ARM Options} and @ref{ARC Options})
-command-line switch and @code{#pragma long_calls} settings.  For ARM, the
+and @option{-mmedium-calls} (@xref{ARC Options})
+command-line switches and @code{#pragma long_calls} settings.  For ARM, the
 @code{long_call} attribute indicates that the function might be far
 away from the call site and require a different (more expensive)
 calling sequence.   The @code{short_call} attribute always places
@@ -3019,8 +3021,11 @@ instruction directly.
 For ARC, a function marked with the @code{long_call} attribute is
 always called using register-indirect jump-and-link instructions,
 thereby enabling the called function to be placed anywhere within the
-32-bit address space.  A function marked with the @code{short_call}
-attribute will always be close enough to be called with a
+32-bit address space.  A function marked with the @code{medium_call}
+attribute will always be close enough to be called with an unconditional
+branch-and-link instruction, which has a 25-bit offset from
+the call site.  A function marked with the @code{short_call}
+attribute will always be close enough to be called with a conditional
 branch-and-link instruction, which has a 21-bit offset from
 the call site.
 

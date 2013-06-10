@@ -54,6 +54,7 @@ __muldf3:
 
 __muldf3_support: /* This label makes debugger output saner.  */
 	.balign 4
+	FUNC(__muldf3)
 .Ldenorm_2:
 	breq.d DBL1L,0,.Lret0_2 ; 0 input -> 0 output
 	norm.f r12,DBL1L
@@ -223,6 +224,7 @@ __muldf3:
 	mov_s DBL0H,r9
 	j_s.d [blink]
 	bset.mi DBL0H,DBL0H,31
+	ENDFUNC(__muldf3)
 
 	.balign 4
 .L7ff00000:
