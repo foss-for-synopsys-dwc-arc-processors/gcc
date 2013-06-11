@@ -4764,7 +4764,8 @@
 (define_insn_and_split "eh_return"
   [(eh_return)
    (use (match_operand:SI 0 "move_src_operand" "rC32,mCalCpc"))
-   (clobber (match_scratch 1 "=X,r"))]
+   (clobber (match_scratch:SI 1  "=X,r"))
+   (clobber (match_scratch:SI 2 "=&r,r"))]
   ""
   "#"
   "reload_completed"
@@ -4782,9 +4783,13 @@
 	  emit_move_insn (operands[1], operands[0]);
 	  operands[0] = operands[1];
 	}
-      operands[2]
-	= gen_frame_mem (SImode,
-			 plus_constant (Pmode, stack_pointer_rtx, offs));
+      rtx addr = plus_constant (Pmode, stack_pointer_rtx, offs);
+      if (!strict_memory_address_p (Pmode, addr))
+	{
+	  emit_move_insn (operands[2], addr);
+	  addr = operands[2];
+	}
+      operands[2] = gen_frame_mem (Pmode, addr);
     }
 }
   [(set_attr "length" "12")])

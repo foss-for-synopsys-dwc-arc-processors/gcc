@@ -7,6 +7,11 @@
         * config/arc/arc.md: Add asl instruction for EM
 	* config/arc/arc.opt: Add alias for mEM and mARCv2EM
 
+2013-06-10  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (eh_return): Check if address is valid, and
+	copy to a scratch register if it isn't.
+
 2013-06-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (movsf_insn): Add predicable attribute.
