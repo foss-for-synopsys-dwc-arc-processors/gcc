@@ -241,7 +241,7 @@ along with GCC; see the file COPYING3.  If not see
   "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}" \
   "%{mdiv_re*: -mdiv-re%* %<mdiv_re*}" \
   "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}" \
-  "%{barrel_shifte*: -barrel-shifte%* %<barrel_shifte*}" \
+  "%{mbarrel_shifte*: -mbarrel-shifte%* %<mbarrel_shifte*}" \
   "%{mspfp_*: -mspfp-%* %<mspfp_*}" \
   "%{mdpfp_*: -mdpfp-%* %<mdpfp_*}" \
   "%{mdsp_pack*: -mdsp-pack%* %<mdsp_pack*}" \

@@ -1,5 +1,9 @@
 2013-06-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.h (DRIVER_SELF_SPECS): Fix -mbarrel-shifter spelling.
+
+2013-06-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.opt: Add backward compatibility aliases
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Update backwards
 	compatibility translations to translate the prefixes choses
