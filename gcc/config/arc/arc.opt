@@ -59,10 +59,6 @@ mav2em
 Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
 Generate ARCv2 code for EM processor
 
-mforce-short
-Target Report Mask(FSHORT_SET)
-Force short suffix by ignoring the instruction length attribute. It is on by default for EM.
-
 mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
 -mmpy-option={0,1,2,3,4,5,6} Compile ARC EM code with a multiplier design option. WLH1 is default on
@@ -380,3 +376,35 @@ Reduce priority for r0..r3 / r12..r15 with TARGET_REGISTER_PRIORITY
 mucb-mcount
 Target Report Var(TARGET_UCB_MCOUNT)
 instrument with mcount calls as in the ucb code
+
+; backward-compatibility aliases, translated by DRIVER_SELF_SPECS
+mARCv2EM
+Target
+
+mEM
+Target
+
+; Unfortunately, listing the full option name gives us clashes
+; with OPT_opt_name being claimed for both opt_name and opt-name,
+; so we leave out the last character or more.
+mmpy_option
+Target Joined
+
+mcode_densit
+Target Joined
+
+mbarrel_shifte
+Target Joined
+
+mspfp_
+Target Joined
+
+mdpfp_
+Target Joined
+
+mdsp_pack
+Target Joined
+
+mmac_
+Target Joined
+

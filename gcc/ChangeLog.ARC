@@ -1,3 +1,16 @@
+2013-06-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.opt: Add backward compatibility aliases
+	* config/arc/arc.h (DRIVER_SELF_SPECS): Update backwards
+	compatibility translations to translate the prefixes choses
+	in arc.opt.
+
+2013-06-11 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.opt: Remove force_short option.
+	* config/arc/arc.h: Likewise.
+	* common/config/arc/arc-common.c: Likewise.
+
 2013-06-10  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (eh_return): Check if address is valid, and

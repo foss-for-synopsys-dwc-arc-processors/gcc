@@ -90,8 +90,6 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
 	  break;
 	case PROCESSOR_ARCv2EM:
-	  if (! (opts_set->x_target_flags & MASK_FSHORT_SET) )
-	    opts->x_target_flags |= MASK_FSHORT_SET;
 	case PROCESSOR_ARC601:
 	  if (! (opts_set->x_target_flags & MASK_BARREL_SHIFTER) )
 	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;

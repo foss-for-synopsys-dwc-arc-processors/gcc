@@ -238,18 +238,14 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
   "%{mARC700|mA7: -mcpu=ARC700 %<mARC700 %<mA7}" \
   "%{mav2em|mARCv2EM|mEM:-mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM}" \
-  "%{mforce_short: -mforce-short %<mforce_short}" \
-  "%{mpy_option: -mpy-option %<mpy_option}" \
-  "%{mdiv_rem: -mdiv-rem %<mdiv_rem}" \
-  "%{mcode_density: -mcode-density %<mcode_density}" \
-  "%{barrel_shifter: -barrel-shifter %<barrel_shifter}" \
-  "%{mspfp_compact: -mspfp-compact %<mspfp_compact}" \
-  "%{mspfp_fast: -mspfp-fast %<mspfp_fast}" \
-  "%{mdpfp_compact: -mdpfp-compact %<mdpfp_compact}" \
-  "%{mdpfp_fast: -mdpfp-fast %<mdpfp_fast}" \
-  "%{mdsp_packa: -mdsp-packa %<mdsp_packa}" \
-  "%{mmac_d16: -mmac-d16 %<mmac_d16}" \
-  "%{mmac_24: -mmac-24 %<mmac_24}"
+  "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}" \
+  "%{mdiv_re*: -mdiv-re%* %<mdiv_re*}" \
+  "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}" \
+  "%{barrel_shifte*: -barrel-shifte%* %<barrel_shifte*}" \
+  "%{mspfp_*: -mspfp-%* %<mspfp_*}" \
+  "%{mdpfp_*: -mdpfp-%* %<mdpfp_*}" \
+  "%{mdsp_pack*: -mdsp-pack%* %<mdsp_pack*}" \
+  "%{mmac_*: -mmac-%* %<mmac_*}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
