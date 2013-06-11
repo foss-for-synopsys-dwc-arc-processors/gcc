@@ -1,3 +1,13 @@
+2013-06-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.opt: Remove force_short option
+	* config/arc/arc.h: Likewise
+	* common/config/arc/arc-common.c: Likewise; EM default has no
+        barrel shifter.
+        * config/arc/arc.md: Add asl instruction for EM
+	* config/arc/arc.opt: Add alias for mEM and mARCv2EM
+	* config/arc/arc.h: Do not pass mnorm and mswap options to asm
+
 2013-06-10  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (eh_return): Check if address is valid, and
@@ -75,7 +85,6 @@
 2013-05-30  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c : Remove TARGET_FSHORT_SET.
-
 
 2013-05-29  Vineet Gupta  <vgupta@synopsys.com>
 
