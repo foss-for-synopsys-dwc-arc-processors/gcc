@@ -1513,8 +1513,8 @@
 )
 
 (define_insn "*extendhisi2_i"
-  [(set (match_operand:SI 0 "dest_reg_operand"                     "=Rcqq,w,Rcq,r")
-	(sign_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "Rcqq,c,  T,m")))]
+  [(set (match_operand:SI 0 "dest_reg_operand"                     "=Rcqq,w,Rcqq,r")
+	(sign_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "Rcqq,c,   T,m")))]
   ""
   "*
    switch (which_alternative)

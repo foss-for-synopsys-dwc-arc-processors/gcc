@@ -6,6 +6,7 @@
         barrel shifter.
         * config/arc/arc.md: Add asl instruction for EM
 	* config/arc/arc.opt: Add alias for mEM and mARCv2EM
+	* config/arc/arc.h: Do not pass mnorm and mswap options to asm
 
 2013-06-10  Joern Rennecke  <joern.rennecke@embecosm.com>
 
