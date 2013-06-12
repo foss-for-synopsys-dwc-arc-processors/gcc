@@ -1,3 +1,8 @@
+2013-06-12 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: By default EM has no barrel shifter
+	* config/arc/arc.h: Do not pass mnorm and mswap to GAS (for EM)
+
 2013-06-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Fix -mbarrel-shifter spelling.
