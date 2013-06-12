@@ -2,7 +2,8 @@
 
 	* config/arc/arc.md: Add ldh_s.x instruction
 	* config/arc/arc.md: Add asl_s instruction for EM
-	* config/arc/arc.h: Add mdiv_rem prefix option
+	* config/arc/arc.opt: Allow only mdiv_rem option
+	* config/arc/arc.h: Likewise
 
 2013-06-12 Claudiu Zissulescu <claziss@synopsys.com>
 

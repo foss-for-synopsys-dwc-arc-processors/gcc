@@ -239,7 +239,6 @@ along with GCC; see the file COPYING3.  If not see
   "%{mARC700|mA7: -mcpu=ARC700 %<mARC700 %<mA7}" \
   "%{mav2em|mARCv2EM|mEM:-mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM}" \
   "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}" \
-  "%{mdiv_re*: -mdiv-re%* %<mdiv_re*}" \
   "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}" \
   "%{mbarrel_shifte*: -mbarrel-shifte%* %<mbarrel_shifte*}" \
   "%{mspfp_*: -mspfp-%* %<mspfp_*}" \
