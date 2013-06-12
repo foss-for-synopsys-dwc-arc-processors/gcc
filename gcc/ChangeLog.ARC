@@ -1,6 +1,7 @@
 2013-06-12 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Add ldh_s.x instruction
+	* config/arc/arc.md: Add asl_s instruction for EM
 
 2013-06-12 Claudiu Zissulescu <claziss@synopsys.com>
 
