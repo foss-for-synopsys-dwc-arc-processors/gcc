@@ -1,3 +1,9 @@
+2013-06-12	Anton Kolesov <anton.kolesov@synopsys.com>
+
+	* testsuite/lib/target-supports.exp: Disable position independent
+	executable (-fpie, -fPIE) tests for arc*-*-linux* because they are not
+	supported.
+
 2013-06-12 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Add ldh_s.x instruction
