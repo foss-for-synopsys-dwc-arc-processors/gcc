@@ -1,3 +1,9 @@
+2013-06-17  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* final.c (shorten_branches_context_t): Add new member increasing.
+	(adjust_length): Don't increase size for alignment at O0.
+	(shorten_branches): Set ctx.increasing.
+
 2013-06-12	Anton Kolesov <anton.kolesov@synopsys.com>
 
 	* testsuite/lib/target-supports.exp: Disable position independent

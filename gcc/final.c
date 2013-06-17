@@ -844,11 +844,12 @@ typedef struct {
   /* uid of last insn that provides a choice of lengths.  */
   int last_aligning_insn;
   bool something_changed;
+  bool increasing;
 } shorten_branches_context_t;
 
 /* NEW_LENGTH is the length for INSN that has been computed by evaluating
    the raw instruction length attribute.  Return an adjusted length by
-   avaluating the adjust_insn_length target hook and the get_variants hook
+   evaluating the adjust_insn_length target hook and the get_variants hook
    in parameters.
    If INSN is inside a SEQUENCE, then SEQ is that SEQUENCE.
    TARGET_P indicates if INSN is the target of a call, branch, or call
@@ -1018,7 +1019,9 @@ adjust_length (rtx insn, int new_length, bool seq_p,
 		 requirement has matching bitmask.  */
 	      offset &= align_base_mask;
 	      offset <<= ctx->parameters.align_unit_log;
-	      new_length += offset;
+	      /* Don't increase size at -O0, when we can't handle that.  */
+	      if (ctx->increasing || new_length + offset <= insn_lengths[uid])
+		new_length += offset;
 	    }
 	  ctx->last_aligning_insn = uid;
 	}
@@ -1245,6 +1248,8 @@ shorten_branches (rtx first)
      When not optimizing, we start assuming maximum lengths, and
      do a single pass to update the lengths.  */
   bool increasing = optimize != 0;
+
+  ctx.increasing = increasing;
 
 #ifdef CASE_VECTOR_SHORTEN_MODE
   if (optimize)
