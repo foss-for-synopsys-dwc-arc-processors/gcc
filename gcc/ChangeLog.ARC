@@ -1,3 +1,8 @@
+2013-06-18  Anton Kolesov	<anton.kolesov@synopsys.com>
+
+	* testsuite/gcc.target/arc/branch_shortening-O0-fPIC-1.c: Add a testcase
+	for branch shortening error with -O0 -fPIC.
+
 2013-06-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (shorten_branches_context_t): Add new member increasing.
