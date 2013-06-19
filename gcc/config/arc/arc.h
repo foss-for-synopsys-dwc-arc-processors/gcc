@@ -134,7 +134,7 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
 #ifdef ARC_DEFAULT_CPU_EM
-#define ASM_DEFAULT "-mEM"
+#define ASM_DEFAULT "-mEM %<mbarrel-shifter %<mno-mpy %<mnorm %<mswap"
 #else
 #define ASM_DEFAULT "-mARC700 -mEA"
 #endif

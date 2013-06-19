@@ -1,3 +1,8 @@
+2013-06-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.h : Don't pass mbarrel-shifter, mnorm, and
+	mswap to gas when the default processor is EM.
+
 2013-06-17  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* final.c (shorten_branches_context_t): Add new member increasing.
