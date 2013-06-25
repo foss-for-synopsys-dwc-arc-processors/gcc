@@ -1,3 +1,9 @@
+2013-06-24	Anton Kolesov	<anton.kolesov@synopsys.com>
+
+	* testsuite/lib/c-torture.exp: Setup linker environemnt variables before
+	checking linker plugin support.
+	* testsuite/lib/gcc-dg.exp: Likewise.
+
 2013-06-18  Anton Kolesov	<anton.kolesov@synopsys.com>
 
 	* testsuite/gcc.target/arc/branch_shortening-O0-fPIC-1.c: Add a testcase
