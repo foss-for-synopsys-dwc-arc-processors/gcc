@@ -762,7 +762,7 @@ static void
 arc_override_options (void)
 {
   if (arc_cpu == PROCESSOR_NONE)
-#ifdef ARC_DEFAULT_CPU_EM
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
     arc_cpu = PROCESSOR_ARCv2EM;
 #else
     arc_cpu = PROCESSOR_ARC700;

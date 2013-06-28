@@ -866,12 +866,7 @@ arc*-*-elf*)
 	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
 	tmake_file="arc/t-arc-newlib arc/t-arc"
 	case x"${with_cpu}" in
-	  xarc600|xarc601|xarc700)
-		target_cpu_default="TARGET_CPU_$with_cpu"
-		;;
-	  xEM)
-		echo "Select ARCv2EM"
-		tm_defines="${tm_defines} ARC_DEFAULT_CPU_EM"
+	  xarc600|xarc601|xarc700|xEM)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
 	esac
@@ -896,7 +891,7 @@ arc*-*-linux-uclibc*)
 	tm_defines="${tm_defines} TARGET_SDATA_DEFAULT=0"
 	tm_defines="${tm_defines} TARGET_MMEDIUM_CALLS_DEFAULT=1"
 	case x"${with_cpu}" in
-	  xarc600|xarc601|xarc700)
+	  xarc600|xarc601|xarc700|xEM)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
 	esac

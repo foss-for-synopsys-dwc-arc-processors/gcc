@@ -108,7 +108,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
 #define DEFAULT_NO_SDATA (TARGET_SDATA_DEFAULT ? 0 : MASK_NO_SDATA_SET)
 
-#ifdef ARC_DEFAULT_CPU_EM
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 /* Default for EM: no barrel shifter*/
 #define TARGET_DEFAULT_TARGET_FLAGS \
   (MASK_VOLATILE_CACHE_SET|DEFAULT_NO_SDATA)
