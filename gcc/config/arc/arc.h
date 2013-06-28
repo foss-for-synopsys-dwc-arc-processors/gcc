@@ -133,7 +133,8 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:%{EL:%emay not use both -EB and -EL}} \
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
-#ifdef ARC_DEFAULT_CPU_EM
+
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define ASM_DEFAULT "-mEM"
 #else
 #define ASM_DEFAULT "-mARC700 -mEA"
@@ -297,7 +298,7 @@ along with GCC; see the file COPYING3.  If not see
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
 
 #ifndef MULTILIB_DEFAULTS
-#ifdef ARC_DEFAULT_CPU_EM
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define MULTILIB_DEFAULTS { "mav2em" }
 #else
 #define MULTILIB_DEFAULTS { "mARC700" }
