@@ -1,3 +1,11 @@
+2013-06-28 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c : Use TARGET_CPU_DEFAULT macro to select
+	the default processor
+	* config.gcc : Likewise
+	* config/arc/arc.c : Likewise
+	* config/arc/arc.h : LIkewise
+
 2013-06-24	Anton Kolesov	<anton.kolesov@synopsys.com>
 
 	* testsuite/lib/c-torture.exp: Setup linker environemnt variables before

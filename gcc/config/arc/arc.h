@@ -34,6 +34,15 @@ along with GCC; see the file COPYING3.  If not see
    - incscc, decscc?
 
 */
+#define TARGET_CPU_arc600  1
+#define TARGET_CPU_arc601  2
+#define TARGET_CPU_arc700  3
+#define TARGET_CPU_EM      4
+#define TARGET_CPU_generic 5
+
+#ifndef TARGET_CPU_DEFAULT
+#define TARGET_CPU_DEFAULT	TARGET_CPU_generic
+#endif
 
 #define SYMBOL_FLAG_SHORT_CALL	(SYMBOL_FLAG_MACH_DEP << 0)
 #define SYMBOL_FLAG_MEDIUM_CALL	(SYMBOL_FLAG_MACH_DEP << 1)
@@ -133,7 +142,8 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:%{EL:%emay not use both -EB and -EL}} \
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
-#ifdef ARC_DEFAULT_CPU_EM
+
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define ASM_DEFAULT "-mEM"
 #else
 #define ASM_DEFAULT "-mARC700 -mEA"
@@ -297,7 +307,7 @@ along with GCC; see the file COPYING3.  If not see
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
 
 #ifndef MULTILIB_DEFAULTS
-#ifdef ARC_DEFAULT_CPU_EM
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define MULTILIB_DEFAULTS { "mav2em" }
 #else
 #define MULTILIB_DEFAULTS { "mARC700" }
