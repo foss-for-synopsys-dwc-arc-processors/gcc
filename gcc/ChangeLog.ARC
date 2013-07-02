@@ -1,3 +1,12 @@
+2013-07-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c : generate EM specific builtins
+	* gcc/testsuite/gcc.target/arc/builtin_clri.c: added builtin test
+	* gcc/testsuite/gcc.target/arc/builtin_ffs.c: Likewise
+	* gcc/testsuite/gcc.target/arc/builtin_fls.c: Likewise
+	* gcc/testsuite/gcc.target/arc/builtin_kflag.c: Likewise
+	* gcc/testsuite/gcc.target/arc/builtin_seti.c: Likewise
+
 2013-06-28 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c : Use TARGET_CPU_DEFAULT macro to select
