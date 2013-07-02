@@ -5088,7 +5088,7 @@ arc_init_builtins (void)
     def_mbuiltin (1,"__builtin_arc_lr", usint_ftype_usint, ARC_BUILTIN_LR);
     def_mbuiltin (1,"__builtin_arc_sr", void_ftype_usint_usint, ARC_BUILTIN_SR);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
-    def_mbuiltin (TARGET_ARC700,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
+    def_mbuiltin (TARGET_ARC700 || TARGET_EM,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
     def_mbuiltin (1,"__builtin_arc_aligned", int_ftype_pcvoid_int, ARC_BUILTIN_ALIGNED);
 
     def_mbuiltin (TARGET_EM,"__builtin_arc_kflag", void_ftype_usint, ARC_BUILTIN_KFLAG);
@@ -5417,6 +5417,63 @@ arc_expand_builtin (tree exp,
 	}
 
 	return target;
+
+    case ARC_BUILTIN_KFLAG:
+        icode = CODE_FOR_kflag;
+	arg0 = CALL_EXPR_ARG (exp, 0);
+	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+	mode0 =  insn_data[icode].operand[0].mode;
+
+	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
+	  op0 = copy_to_mode_reg (mode0, op0);
+
+	emit_insn (gen_kflag (op0));
+	return NULL_RTX;
+
+    case ARC_BUILTIN_CLRI:
+        icode = CODE_FOR_clri;
+	target = gen_reg_rtx (SImode);
+	emit_insn (gen_clri (target, const1_rtx));
+	return target;
+
+    case ARC_BUILTIN_FFS:
+        icode = CODE_FOR_ffs;
+	arg0 = CALL_EXPR_ARG (exp, 0);
+	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+	mode0 =  insn_data[icode].operand[1].mode;
+	target = gen_reg_rtx (SImode);
+
+	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+	  op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
+
+	emit_insn (gen_ffs (target, op0));
+	return target;
+
+    case ARC_BUILTIN_FLS:
+        icode = CODE_FOR_fls;
+	arg0 = CALL_EXPR_ARG (exp, 0);
+	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+	mode0 =  insn_data[icode].operand[1].mode;
+	target = gen_reg_rtx (SImode);
+
+	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+	  op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
+
+	emit_insn (gen_fls (target, op0));
+	return target;
+
+    case ARC_BUILTIN_SETI:
+        icode = CODE_FOR_seti;
+	arg0 = CALL_EXPR_ARG (exp, 0);
+	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+	mode0 =  insn_data[icode].operand[1].mode;
+	target = gen_reg_rtx (SImode);
+
+	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+	  op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
+
+	emit_insn (gen_seti (op0));
+	return NULL_RTX;
 
     default:
 	break;
