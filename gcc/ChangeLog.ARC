@@ -4,7 +4,8 @@
 	the default processor
 	* config.gcc : Likewise
 	* config/arc/arc.c : Likewise
-	* config/arc/arc.h : LIkewise
+	* config/arc/arc.h : Likewise
+	* config.gcc: Likewise
 
 2013-06-24	Anton Kolesov	<anton.kolesov@synopsys.com>
 
