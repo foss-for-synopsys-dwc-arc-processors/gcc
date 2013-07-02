@@ -1,3 +1,11 @@
+2013-07-03 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* gcc/testsuite/gcc.target/arc/builtin_clri.c: Ignore test for arcV1
+	* gcc/testsuite/gcc.target/arc/builtin_ffs.c: Likewise
+	* gcc/testsuite/gcc.target/arc/builtin_fls.c: Likewise
+	* gcc/testsuite/gcc.target/arc/builtin_kflag.c: Likewise
+	* gcc/testsuite/gcc.target/arc/builtin_seti.c: Likewise
+
 2013-07-02 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c : generate EM specific builtins
