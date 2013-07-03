@@ -1,19 +1,20 @@
 2013-07-03 Claudiu Zissulescu <claziss@synopsys.com>
 
-	* gcc/testsuite/gcc.target/arc/builtin_clri.c: Ignore test for arcV1
-	* gcc/testsuite/gcc.target/arc/builtin_ffs.c: Likewise
-	* gcc/testsuite/gcc.target/arc/builtin_fls.c: Likewise
-	* gcc/testsuite/gcc.target/arc/builtin_kflag.c: Likewise
-	* gcc/testsuite/gcc.target/arc/builtin_seti.c: Likewise
+	* config/arc/arc.c: Fixed indentation.
+	* gcc/testsuite/gcc.target/arc/builtin_clri.c: Ignore test for arcV1.
+	* gcc/testsuite/gcc.target/arc/builtin_ffs.c: Likewise.
+	* gcc/testsuite/gcc.target/arc/builtin_fls.c: Likewise.
+	* gcc/testsuite/gcc.target/arc/builtin_kflag.c: Likewise.
+	* gcc/testsuite/gcc.target/arc/builtin_seti.c: Likewise.
 
 2013-07-02 Claudiu Zissulescu <claziss@synopsys.com>
 
-        * config/arc/arc.c : generate EM specific builtins
-	* gcc/testsuite/gcc.target/arc/builtin_clri.c: added builtin test
-	* gcc/testsuite/gcc.target/arc/builtin_ffs.c: Likewise
-	* gcc/testsuite/gcc.target/arc/builtin_fls.c: Likewise
-	* gcc/testsuite/gcc.target/arc/builtin_kflag.c: Likewise
-	* gcc/testsuite/gcc.target/arc/builtin_seti.c: Likewise
+	* config/arc/arc.c: Generate EM specific builtins.
+	* gcc/testsuite/gcc.target/arc/builtin_clri.c: Added builtin test.
+	* gcc/testsuite/gcc.target/arc/builtin_ffs.c: Likewise.
+	* gcc/testsuite/gcc.target/arc/builtin_fls.c: Likewise.
+	* gcc/testsuite/gcc.target/arc/builtin_kflag.c: Likewise.
+	* gcc/testsuite/gcc.target/arc/builtin_seti.c: Likewise.
 
 2013-06-28 Claudiu Zissulescu <claziss@synopsys.com>
 
@@ -332,7 +333,7 @@
 2013-04-05 Claudiu Zissulescu <claziss@synopsys.com>
 	* doc/invoke.texi: Add gcc-EM options to the documentation
 	* config/arc/arcEM.md: add ARC-EM pipeline description
-	* config/arc/arc.c: Add ARCompactV2 instructions. 
+	* config/arc/arc.c: Add ARCompactV2 instructions.
 	* config/arc/arc.h: Likewise
 	* config/arc/arc.opt: Likewise
 	* config/arc/arc.md: Likewise
@@ -742,7 +743,7 @@
 	* config/arc/constraints.md: Remove "J".
 	* config/arc/arc.md: Replace Ji with i.
 	Replace "J" constraint with "n" or "Cal" as
-	appropriate. 
+	appropriate.
 	(mulsidi_600, umulsidi_600): Use C32 for asm-bug workaround.
 	(shift_si3_loop): Add second alternative to refine length calculation.
 	* config/arc/fpx.md (addsf3, subsf3, mulsf3): Replace "J" with "Cal".
@@ -885,7 +886,7 @@
 	(arc_rewrite_small_data_1): Remove ATTRIBUTE_UNUSED from data.
 	(small_data_pattern): Remove name from last parameter.
 	(arc_init_simd_builtins): Formatting fixes.
-	(arc_expand_simd_builtin): Likewise.  
+	(arc_expand_simd_builtin): Likewise.
 	Remove '.' from end of diagnostics.
 	(arc_register_move_cost): Remove name from first parameter.
 	Formatting fixes.
@@ -1012,7 +1013,7 @@
 
 2012-10-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
-	* config/arc/arc.c (local_obstack, arc_assemble_integer): Delete.  
+	* config/arc/arc.c (local_obstack, arc_assemble_integer): Delete.
 	(arc_asm_file_start, arc_asm_file_end): Likewise.
 	(arc_strip_name_encoding, arc_encode_symbol): Likewise.
 	(TARGET_ASM_INTEGER, TARGET_ASM_FILE_END): Don't redefine.
@@ -1095,7 +1096,7 @@
 	(attribute "cpu"): Replace "A4" with "none".
 	(attributes "cond", "length"): Remove "A4" case.
 	* config/arc/arc.opt (-mA4): Remove -mA4 option.
-	
+
 2012-10-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	From Vineet Gupta:
@@ -1520,7 +1521,7 @@
 2011-01-07  Michael Eager  <eager@eagercon.com>
 
 	* config/arc/arc.h (TARGET_OPTFPE): Set for ARC601.
-	
+
 2011-01-05  Brendan Kehoe  <brendan@zen.org>
 
 	* config/arc/arc.c (get_arc_condition_code, case CC_FP_GTmode):
@@ -1596,12 +1597,12 @@
 	* config/arc/arc.c (output_shift): Add nop in shift loop.
 	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Define __ARC601__.
 	* config/arc/arc.md (*commutative_binary_comparison_result_used,
-	*noncommutative_binary_comparison_result_used, 
-	*noncommutative_binary_comparison): patterns valid only with 
+	*noncommutative_binary_comparison_result_used,
+	*noncommutative_binary_comparison): patterns valid only with
 	TARGET_SHIFTER.
 	* config/arc/lib1funcs.asm (__mulsi3, __udivmodsi4, __clzsi2):
 	Add support for ARC601.
-	
+
 2010-11-09  Brendan Kehoe  <brendan@zen.org>
 
 	* config/arc/predicates.md (proper_comparison_operator): Add
@@ -1616,7 +1617,7 @@
 	* config/arc/arc.md (cmpdf): Don't conditionalize on
 	TARGET_DPFP, or we'll end up with a libcall instead of
 	actually using the FPX patterns.
-	
+
 	* config/arc/arc-protos.h (arc_secondary_reload): Delete
 	unnecessary decl.
 
@@ -1629,7 +1630,7 @@
 	(TARGET_SECONDARY_RELOAD): Refer to arc_secondary_reload_class.
 	(arc_conditional_register_usage): Make sure the d1/d2 registers
 	don't get used for 'c' or 'Rac' constraints.
-	
+
 	* config/arc/arc.md (movdf): Make op0 be nonimmediate_operand
 	instead of general_operand, to match the style of other ports.
 	(*movdf_insn): Use gcc_unreachable.
@@ -1731,22 +1732,22 @@
 
 	* config/arc/t-arc-newlib (MULTILIB_OPTIONS, MULTILIB_DIRNAMES,
 	MULTILIB_EXCLUSIONS): Add arc601 multilib.
-	
+
 	* config/arc/arc.c: Prototype for arc_cpu_set(). New: arc_cpu,
 	TARGET_601, TARGET_SHIFTER, barrel_shifter.
 	(arc_init): Set TARGET_SHIFTER, check ARC601 & mmul32x16,
-	check ARC601 & -mspfp_fast, check ARC601 & FPX.  
+	check ARC601 & -mspfp_fast, check ARC601 & FPX.
 	(arc_cpu_types): Default PROCESSOR_NONE.
 	(arc_cpu_set): Remove TARGET_A4, allow upper/lower case CPU type.
 	(arc_handle_option): Handle -mbarrel-shifter, -mno-barrel-shifter.
 	(output_shift): Generate correct load addr for loop start.
 
 	* config/arc/arc.h (ASM_SPEC): Pass -mARC700 by default.
-	ARCOMPACT always 1.  Remove: #define TARGET_SHIFTER.  
+	ARCOMPACT always 1.  Remove: #define TARGET_SHIFTER.
 	(processor_type): Define PROCESSOR_NONE.
-	New: TARGET_ARC601, TARGET_SHIFTER. 
+	New: TARGET_ARC601, TARGET_SHIFTER.
 
-	* config/arc/arc.md: Remove define_delay for TARGET_A4. 
+	* config/arc/arc.md: Remove define_delay for TARGET_A4.
 
 	* config/arc/constraints.md (constraint I): remove TARGET_A4.
 
@@ -1770,7 +1771,7 @@
 	Remove PROCESSOR_A4, add PROCESSOR_ARC601 to processor_type.
 
 	* config/arc/arc.md: Remove support for A4 processor.
-	Remove unused code.  
+	Remove unused code.
 
 	* config/arc/arc.opt: Remove support for A4 processor.
 	Eliminate auto-generated flags for -mA5, -mARC600, -mARC700.
@@ -1809,7 +1810,7 @@
 	* config/arc/arc.md (define_peephole2): Restrict pattern to
 	only use CC_REG instead of letting anything else get in.
 	(negdi2): Fix mode for CC_REG to be CC not SI.
-	
+
 	* config/arc/arc.md: Replace all use of the specific register
 	number 66 with the define_constants symbol CC_REG.
 
@@ -1850,7 +1851,7 @@
 	and length to start with 244 instead of 248 to avoid tickling
 	the edge of -256:255 with 256.  Move is_compact attr to the
 	end to match *bbit, et al.  Add verify_short checks.
-	
+
 	* config.gcc (arc-*-elf*): Default to ARC700 instead of A6.
 	(arc*-*-*): Likewise, not just for uclibc.
 
@@ -1894,7 +1895,7 @@
 
 2010-01-27  Brendan Kehoe  <brendan.kehoe@viragelogic.com>
 
-	* config/arc/arc.md ("*commutative_binary_comparison_result_used"): 
+	* config/arc/arc.md ("*commutative_binary_comparison_result_used"):
 	Use the 'W' constraint since MULT is one of the possible
 	commutative operators.
 	* config/arc/fpx.md: In both define_peephole2 using
@@ -2890,7 +2891,7 @@ FIXME: Document changes since rev 59970
 
 2008-09-24  Muhammad Khurram Riaz <khurram.riaz@arc.com>
 
-	* config/arc/predicates.md: (move_dest_operand) for MUL64 target 
+	* config/arc/predicates.md: (move_dest_operand) for MUL64 target
 	r57-r59 cannot be destination, the manual says they are read only.
 
 2008-09-23  J"orn Rennecke  <joern.rennecke@arc.com>
@@ -2904,12 +2905,12 @@ FIXME: Document changes since rev 59970
 
 2008-09-19  Muhammad Khurram Riaz <khurram.riaz@arc.com>
 
-	* config/arc/arc.md : 
-	(mulsi3): for MULMAC32x16 unsigned range can be upto 65535, and 
+	* config/arc/arc.md :
+	(mulsi3): for MULMAC32x16 unsigned range can be upto 65535, and
 	mululw in enough (alongwith mov from acc2) to get the result (no
-	need for use mac instruction) ; note that single mul instruction can not 
-	be used with immediates less then 0 because 
-	mululw 0,reg,limm ( and also mullw ) treats lower 16bits of imm operand 
+	need for use mac instruction) ; note that single mul instruction can not
+	be used with immediates less then 0 because
+	mululw 0,reg,limm ( and also mullw ) treats lower 16bits of imm operand
 	as unsigned, So in this case mac instruction is also required.
 	(umul_600) : limm can be the last operand in dsp-mul instructions
 	(mac_600, mul64_600, mac64_600, umul64_600, umac64_600) : Likewise
@@ -3097,14 +3098,14 @@ FIXME: Document changes since rev 59970
 
 2008-09-02  Muhammad Khurram Riaz <khurram.riaz@arc.com>
 
-	* config/arc/arc.c (arc600_corereg_hazard): mul/mac and mul64 set the accum registers 
+	* config/arc/arc.c (arc600_corereg_hazard): mul/mac and mul64 set the accum registers
 	and are not a hazard.
 	* config/arc/arc.md :
 	(*unary_comparison_result_used): added for flag setting instructions(unary) that also use result.
 	(*addsi_compare): added for add.f ; needed by combiner.
-	(*commutative_binary_comparison_result_used): added for flag setting instructions(binary,commutative) 
+	(*commutative_binary_comparison_result_used): added for flag setting instructions(binary,commutative)
 	that also use result.
-	(*noncommutative_binary_comparison_result_used): added for flag setting instructions(binary,commutative) 
+	(*noncommutative_binary_comparison_result_used): added for flag setting instructions(binary,commutative)
 	that also use result.
 
 2008-09-01  J"orn Rennecke  <joern.rennecke@arc.com>
@@ -4319,7 +4320,7 @@ FIXME: Document changes since rev 59970
 	(EXTRA_MULTILIB_PARTS): Add mcount.o, gmon.o, prof-freq.o, libgmon.a
 	and crtg.o .
 	* config/arc/asm.h, config/arc/crtg.asm: New files.
-	
+
 
 2007-05-29  J"orn Rennecke  <joern.rennecke@arc.com>
 
