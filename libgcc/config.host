@@ -336,9 +336,20 @@ arc*-*-elf*)
         esac
 	;;
 arc*-*-linux-uclibc*)
-	tmake_file="${tmake_file} t-slibgcc-libgcc t-slibgcc-nolc-override arc/t-arc700-uClibc arc/t-arc"
-	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
-	;;
+        case x"${with_cpu}" in
+             xarc600|xarc601|xarc700)
+                tmake_file="${tmake_file} t-slibgcc-libgcc t-slibgcc-nolc-override arc/t-arc700-uClibc arc/t-arc"
+                extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
+                ;;
+             xEM)
+                tmake_file="${tmake_file} t-slibgcc-libgcc t-slibgcc-nolc-override arc/t-arcv2-uClibc arc/t-arc-em t-fdpbit"
+                extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o crtg.o crtgend.o"
+                ;;
+             *) echo "Unknown cpu type"
+                exit 1
+                ;;
+        esac
+        ;;
 arm-wrs-vxworks)
 	tmake_file="$tmake_file arm/t-arm arm/t-vxworks t-fdpbit"
 	extra_parts="$extra_parts crti.o crtn.o"

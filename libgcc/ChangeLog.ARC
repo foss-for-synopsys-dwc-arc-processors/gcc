@@ -1,3 +1,9 @@
+2013-07-03  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/t-arcv2-uClibc: Add ARC v2 specific make fragment
+	for uClibc tool chain.
+	* condig.host: Likewise.
+
 2013-06-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/dp-hack.h
