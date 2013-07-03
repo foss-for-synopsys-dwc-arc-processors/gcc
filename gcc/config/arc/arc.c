@@ -5088,7 +5088,7 @@ arc_init_builtins (void)
     def_mbuiltin (1,"__builtin_arc_lr", usint_ftype_usint, ARC_BUILTIN_LR);
     def_mbuiltin (1,"__builtin_arc_sr", void_ftype_usint_usint, ARC_BUILTIN_SR);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
-    def_mbuiltin (TARGET_ARC700,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
+    def_mbuiltin (TARGET_ARC700 || TARGET_EM,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
     def_mbuiltin (1,"__builtin_arc_aligned", int_ftype_pcvoid_int, ARC_BUILTIN_ALIGNED);
 
     def_mbuiltin (TARGET_EM,"__builtin_arc_kflag", void_ftype_usint, ARC_BUILTIN_KFLAG);
@@ -5150,276 +5150,333 @@ arc_expand_builtin (tree exp,
 
     case ARC_BUILTIN_NORMW:
 
-	/* FIXME : This should all be HImode, not SImode.  */
-	icode = CODE_FOR_normw;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	mode0 =  insn_data[icode].operand[1].mode;
-	target = gen_reg_rtx (SImode);
+      /* FIXME : This should all be HImode, not SImode.  */
+      icode = CODE_FOR_normw;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 =  insn_data[icode].operand[1].mode;
+      target = gen_reg_rtx (SImode);
 
-	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
-	  op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
+      if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+	op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
 
-	emit_insn (gen_normw (target, op0));
-	return target;
+      emit_insn (gen_normw (target, op0));
+      return target;
 
     case ARC_BUILTIN_MUL64:
-	icode = CODE_FOR_mul64;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	arg1 = CALL_EXPR_ARG (exp, 1);
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      icode = CODE_FOR_mul64;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 
-	mode0 =  insn_data[icode].operand[0].mode;
-	mode1 =  insn_data[icode].operand[1].mode;
+      mode0 =  insn_data[icode].operand[0].mode;
+      mode1 =  insn_data[icode].operand[1].mode;
 
-	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
+      if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
 
-	if (! (*insn_data[icode].operand[1].predicate) (op1, mode1))
+      if (! (*insn_data[icode].operand[1].predicate) (op1, mode1))
 	op1 = copy_to_mode_reg (mode1, op1);
 
-	emit_insn (gen_mul64 (op0,op1));
-	return NULL_RTX;
+      emit_insn (gen_mul64 (op0,op1));
+      return NULL_RTX;
 
     case ARC_BUILTIN_MULU64:
-	icode = CODE_FOR_mulu64;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	arg1 = CALL_EXPR_ARG (exp, 1);
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      icode = CODE_FOR_mulu64;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 
-	mode0 =  insn_data[icode].operand[0].mode;
-	mode1 =  insn_data[icode].operand[1].mode;
+      mode0 =  insn_data[icode].operand[0].mode;
+      mode1 =  insn_data[icode].operand[1].mode;
 
-	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
+      if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
 
-	if (! (*insn_data[icode].operand[0].predicate) (op1, mode1))
+      if (! (*insn_data[icode].operand[0].predicate) (op1, mode1))
 	op1 = copy_to_mode_reg (mode1, op1);
 
-	emit_insn (gen_mulu64 (op0,op1));
-	return NULL_RTX;
+      emit_insn (gen_mulu64 (op0,op1));
+      return NULL_RTX;
 
     case ARC_BUILTIN_RTIE:
-	icode = CODE_FOR_rtie;
-	emit_insn (gen_rtie (const1_rtx));
-	return NULL_RTX;
+      icode = CODE_FOR_rtie;
+      emit_insn (gen_rtie (const1_rtx));
+      return NULL_RTX;
 
     case ARC_BUILTIN_SYNC:
-	icode = CODE_FOR_sync;
-	emit_insn (gen_sync (const1_rtx));
-	return NULL_RTX;
+      icode = CODE_FOR_sync;
+      emit_insn (gen_sync (const1_rtx));
+      return NULL_RTX;
 
     case ARC_BUILTIN_SWAP:
-	icode = CODE_FOR_swap;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	mode0 =  insn_data[icode].operand[1].mode;
-	target = gen_reg_rtx (SImode);
+      icode = CODE_FOR_swap;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 =  insn_data[icode].operand[1].mode;
+      target = gen_reg_rtx (SImode);
 
-	if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+      if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, op0);
 
-	emit_insn (gen_swap (target, op0));
-	return target;
+      emit_insn (gen_swap (target, op0));
+      return target;
 
     case ARC_BUILTIN_DIVAW:
-	icode = CODE_FOR_divaw;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	arg1 = CALL_EXPR_ARG (exp, 1);
+      icode = CODE_FOR_divaw;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
 
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	target = gen_reg_rtx (SImode);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      target = gen_reg_rtx (SImode);
 
-	mode0 =  insn_data[icode].operand[0].mode;
-	mode1 =  insn_data[icode].operand[1].mode;
+      mode0 =  insn_data[icode].operand[0].mode;
+      mode1 =  insn_data[icode].operand[1].mode;
 
-	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
-	    op0 = copy_to_mode_reg (mode0, op0);
+      if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
+	op0 = copy_to_mode_reg (mode0, op0);
 
-	if (! (*insn_data[icode].operand[1].predicate) (op1, mode1))
-	    op1 = copy_to_mode_reg (mode1, op1);
+      if (! (*insn_data[icode].operand[1].predicate) (op1, mode1))
+	op1 = copy_to_mode_reg (mode1, op1);
 
-	emit_insn (gen_divaw (target, op0, op1));
-	return target;
+      emit_insn (gen_divaw (target, op0, op1));
+      return target;
 
     case ARC_BUILTIN_BRK:
-	icode = CODE_FOR_brk;
-	emit_insn (gen_brk (const1_rtx));
-	return NULL_RTX;
+      icode = CODE_FOR_brk;
+      emit_insn (gen_brk (const1_rtx));
+      return NULL_RTX;
 
     case ARC_BUILTIN_SLEEP:
-	icode = CODE_FOR_sleep;
-	arg0 = CALL_EXPR_ARG (exp, 0);
+      icode = CODE_FOR_sleep;
+      arg0 = CALL_EXPR_ARG (exp, 0);
 
-	fold (arg0);
+      fold (arg0);
 
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	mode0 = insn_data[icode].operand[1].mode;
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 = insn_data[icode].operand[1].mode;
 
-	emit_insn (gen_sleep (op0));
-	return NULL_RTX;
+      emit_insn (gen_sleep (op0));
+      return NULL_RTX;
 
     case ARC_BUILTIN_SWI:
-	icode = CODE_FOR_swi;
-	emit_insn (gen_swi (const1_rtx));
-	return NULL_RTX;
+      icode = CODE_FOR_swi;
+      emit_insn (gen_swi (const1_rtx));
+      return NULL_RTX;
 
     case ARC_BUILTIN_FLAG:
-	icode = CODE_FOR_flag;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	mode0 =  insn_data[icode].operand[0].mode;
+      icode = CODE_FOR_flag;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 =  insn_data[icode].operand[0].mode;
 
-	if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
-	  op0 = copy_to_mode_reg (mode0, op0);
+      if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
+	op0 = copy_to_mode_reg (mode0, op0);
 
-	emit_insn (gen_flag (op0));
-	return NULL_RTX;
+      emit_insn (gen_flag (op0));
+      return NULL_RTX;
 
     case ARC_BUILTIN_CORE_READ:
-	icode = CODE_FOR_core_read;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	target = gen_reg_rtx (SImode);
+      icode = CODE_FOR_core_read;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      target = gen_reg_rtx (SImode);
 
-	fold (arg0);
+      fold (arg0);
 
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	mode0 = insn_data[icode].operand[1].mode;
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 = insn_data[icode].operand[1].mode;
 
-	emit_insn (gen_core_read (target, op0));
-	return target;
+      emit_insn (gen_core_read (target, op0));
+      return target;
 
     case ARC_BUILTIN_CORE_WRITE:
-	icode = CODE_FOR_core_write;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	arg1 = CALL_EXPR_ARG (exp, 1);
+      icode = CODE_FOR_core_write;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
 
-	fold (arg1);
+      fold (arg1);
 
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 
-	mode0 = insn_data[icode].operand[0].mode;
-	mode1 = insn_data[icode].operand[1].mode;
+      mode0 = insn_data[icode].operand[0].mode;
+      mode1 = insn_data[icode].operand[1].mode;
 
-	emit_insn (gen_core_write (op0, op1));
-	return NULL_RTX;
+      emit_insn (gen_core_write (op0, op1));
+      return NULL_RTX;
 
     case ARC_BUILTIN_LR:
-	icode = CODE_FOR_lr;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	target = gen_reg_rtx (SImode);
+      icode = CODE_FOR_lr;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      target = gen_reg_rtx (SImode);
 
-	fold (arg0);
+      fold (arg0);
 
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	mode0 = insn_data[icode].operand[1].mode;
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 = insn_data[icode].operand[1].mode;
 
-	emit_insn (gen_lr (target, op0));
-	return target;
+      emit_insn (gen_lr (target, op0));
+      return target;
 
     case ARC_BUILTIN_SR:
-	icode = CODE_FOR_sr;
-	arg0 = CALL_EXPR_ARG (exp, 0);
-	arg1 = CALL_EXPR_ARG (exp, 1);
+      icode = CODE_FOR_sr;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
 
-	fold (arg1);
+      fold (arg1);
 
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
 
-	mode0 = insn_data[icode].operand[0].mode;
-	mode1 = insn_data[icode].operand[1].mode;
+      mode0 = insn_data[icode].operand[0].mode;
+      mode1 = insn_data[icode].operand[1].mode;
 
-	emit_insn (gen_sr (op0, op1));
-	return NULL_RTX;
+      emit_insn (gen_sr (op0, op1));
+      return NULL_RTX;
 
     case ARC_BUILTIN_TRAP_S:
-	icode = CODE_FOR_trap_s;
-	arg0 = CALL_EXPR_ARG (exp, 0);
+      icode = CODE_FOR_trap_s;
+      arg0 = CALL_EXPR_ARG (exp, 0);
 
-	fold (arg0);
+      fold (arg0);
 
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	mode0 = insn_data[icode].operand[1].mode;
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 = insn_data[icode].operand[1].mode;
 
-	/* We don't give an error for non-cost values here because
-	   we still want to allow things to be fixed up by later inlining /
-	   constant folding / dead code elimination.  */
-	if  (CONST_INT_P (op0) && !satisfies_constraint_L (op0))
-	  {
-	    /* Keep this message in sync with the one in arc.md:trap_s,
-	       because *.md files don't get scanned by exgettext.  */
-	    error ("operand to trap_s should be an unsigned 6-bit value");
-	  }
-	emit_insn (gen_trap_s (op0));
-	return NULL_RTX;
+      /* We don't give an error for non-cost values here because
+	 we still want to allow things to be fixed up by later inlining /
+	 constant folding / dead code elimination.  */
+      if  (CONST_INT_P (op0) && !satisfies_constraint_L (op0))
+	{
+	  /* Keep this message in sync with the one in arc.md:trap_s,
+	     because *.md files don't get scanned by exgettext.  */
+	  error ("operand to trap_s should be an unsigned 6-bit value");
+	}
+      emit_insn (gen_trap_s (op0));
+      return NULL_RTX;
 
     case ARC_BUILTIN_UNIMP_S:
-	icode = CODE_FOR_unimp_s;
-	emit_insn (gen_unimp_s (const1_rtx));
-	return NULL_RTX;
+      icode = CODE_FOR_unimp_s;
+      emit_insn (gen_unimp_s (const1_rtx));
+      return NULL_RTX;
 
     case ARC_BUILTIN_ALIGNED:
-	/* __builtin_arc_aligned (void* val, int alignval) */
+      /* __builtin_arc_aligned (void* val, int alignval) */
 #ifdef CALL_EXPR_ARG
-    	arg0 = CALL_EXPR_ARG (exp, 0);
-    	arg1 = CALL_EXPR_ARG (exp, 1);
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
 #else
-	arg0 = TREE_VALUE (arglist);
-	arg1 = TREE_VALUE (TREE_CHAIN (arglist));
+      arg0 = TREE_VALUE (arglist);
+      arg1 = TREE_VALUE (TREE_CHAIN (arglist));
 #endif
-	fold (arg1);
-	op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-	target = gen_reg_rtx (SImode);
+      fold (arg1);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      op1 = expand_expr (arg1, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      target = gen_reg_rtx (SImode);
 
-	/* Default to false.  */
-	emit_insn (gen_movsi (target, const0_rtx));
+      /* Default to false.  */
+      emit_insn (gen_movsi (target, const0_rtx));
 
-	if (GET_CODE (op0) == CONST_INT)
+      if (GET_CODE (op0) == CONST_INT)
 	{
-	    HOST_WIDE_INT align = INTVAL (op0);
+	  HOST_WIDE_INT align = INTVAL (op0);
 
-	    int alignTest = 0x00;
-	    switch (INTVAL (op1))
+	  int alignTest = 0x00;
+	  switch (INTVAL (op1))
 	    {
-	    /* Test each based on N-byte alignment.  */
+	      /* Test each based on N-byte alignment.  */
 	    case 32: alignTest = 0xFF ; break ;;
 	    case 16: alignTest = 0x7F ; break ;;
 	    case 8:  alignTest = 0x3F ; break ;;
 	    default:
-		error ("invalid alignment value for __builtin_arc_aligned");
-		return NULL_RTX;
-		break
+	      error ("invalid alignment value for __builtin_arc_aligned");
+	      return NULL_RTX;
+	      break
 		;;
 	    }
 
-	    if ((align & alignTest) == 0)
+	  if ((align & alignTest) == 0)
 	    {
-		emit_insn (gen_movsi (target, const1_rtx));
+	      emit_insn (gen_movsi (target, const1_rtx));
 	    }
 	}
-	else
+      else
 	{
-	    int align = get_pointer_alignment (arg0);
-	    if (align)
+	  int align = get_pointer_alignment (arg0);
+	  if (align)
 	    {
-		int numBits = INTVAL (op1) * BITS_PER_UNIT;
-		if (align == numBits)
+	      int numBits = INTVAL (op1) * BITS_PER_UNIT;
+	      if (align == numBits)
 		{
-			emit_insn (gen_movsi (target, const1_rtx));
+		  emit_insn (gen_movsi (target, const1_rtx));
 	    	}
 	    }
 	}
 
-	return target;
+      return target;
+
+    case ARC_BUILTIN_KFLAG:
+      icode = CODE_FOR_kflag;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 =  insn_data[icode].operand[0].mode;
+
+      if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
+	op0 = copy_to_mode_reg (mode0, op0);
+
+      emit_insn (gen_kflag (op0));
+      return NULL_RTX;
+
+    case ARC_BUILTIN_CLRI:
+      icode = CODE_FOR_clri;
+      target = gen_reg_rtx (SImode);
+      emit_insn (gen_clri (target, const1_rtx));
+      return target;
+
+    case ARC_BUILTIN_FFS:
+      icode = CODE_FOR_ffs;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 =  insn_data[icode].operand[1].mode;
+      target = gen_reg_rtx (SImode);
+
+      if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+	op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
+
+      emit_insn (gen_ffs (target, op0));
+      return target;
+
+    case ARC_BUILTIN_FLS:
+      icode = CODE_FOR_fls;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 =  insn_data[icode].operand[1].mode;
+      target = gen_reg_rtx (SImode);
+
+      if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+	op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
+
+      emit_insn (gen_fls (target, op0));
+      return target;
+
+    case ARC_BUILTIN_SETI:
+      icode = CODE_FOR_seti;
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
+      mode0 =  insn_data[icode].operand[1].mode;
+      target = gen_reg_rtx (SImode);
+
+      if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+	op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
+
+      emit_insn (gen_seti (op0));
+      return NULL_RTX;
 
     default:
-	break;
+      break;
     }
 
   /* @@@ Should really do something sensible here.  */
