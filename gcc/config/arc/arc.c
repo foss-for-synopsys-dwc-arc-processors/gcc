@@ -5077,7 +5077,7 @@ arc_init_builtins (void)
     def_mbuiltin (TARGET_MUL64_SET,"__builtin_arc_mul64", void_ftype_int_int, ARC_BUILTIN_MUL64);
     def_mbuiltin (TARGET_MUL64_SET,"__builtin_arc_mulu64", void_ftype_usint_usint, ARC_BUILTIN_MULU64);
     def_mbuiltin (1,"__builtin_arc_rtie", void_ftype_void, ARC_BUILTIN_RTIE);
-    def_mbuiltin (TARGET_ARC700,"__builtin_arc_sync", void_ftype_void, ARC_BUILTIN_SYNC);
+    def_mbuiltin (TARGET_ARC700 || TARGET_EM,"__builtin_arc_sync", void_ftype_void, ARC_BUILTIN_SYNC);
     def_mbuiltin ((TARGET_EA_SET && !TARGET_EM),"__builtin_arc_divaw", int_ftype_int_int, ARC_BUILTIN_DIVAW);
     def_mbuiltin (1,"__builtin_arc_brk", void_ftype_void, ARC_BUILTIN_BRK);
     def_mbuiltin (1,"__builtin_arc_flag", void_ftype_usint, ARC_BUILTIN_FLAG);
