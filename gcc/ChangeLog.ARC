@@ -1,3 +1,8 @@
+2013-07-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Enable sync builtin for EM.
+	* gcc/testsuite/gcc.target/arc/builtin_sync.c: Add sync builtin test.
+
 2013-07-03 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Fixed indentation.
