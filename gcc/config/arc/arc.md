@@ -5590,7 +5590,7 @@
   "reload_completed"
   [(const_int 0)]
   "{
-   if (CONST_INT_P(operands[2]) && satisfies_constraint_L(operands[2]))
+   if (CONST_INT_P(operands[2]) && satisfies_constraint_C62(operands[2]))
       {
        /*sethi a,b,u6 => seths a,b,u6+1*/
        operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
@@ -5616,7 +5616,7 @@
   "reload_completed"
   [(const_int 0)]
   "{
-   if (CONST_INT_P(operands[2]) && satisfies_constraint_L(operands[2]))
+   if (CONST_INT_P(operands[2]) && satisfies_constraint_C62(operands[2]))
       {
        /*setls a,b,u6 => setlo a,b,u6+1*/
        operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
