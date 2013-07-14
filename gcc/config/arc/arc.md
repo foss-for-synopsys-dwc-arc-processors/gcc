@@ -3317,37 +3317,20 @@
 ;; Next come the scc insns.
 
 (define_expand "cstoresi4"
-  [(set (reg:CC CC_REG)
-	(compare:CC (match_operand:SI 2 "nonmemory_operand" "")
-		    (match_operand:SI 3 "nonmemory_operand" "")))
-   (set (match_operand:SI 0 "dest_reg_operand" "")
-	(match_operator:SI 1 "ordered_comparison_operator" [(reg CC_REG)
-							    (const_int 0)]))]
+  [(set (match_operand:SI 0 "dest_reg_operand" "")
+	(match_operator:SI 1 "ordered_comparison_operator" [(match_operand:SI 2 "nonmemory_operand" "")
+							    (match_operand:SI 3 "nonmemory_operand" "")]))]
   ""
 {
-  gcc_assert (XEXP (operands[1], 0) == operands[2]);
-  gcc_assert (XEXP (operands[1], 1) == operands[3]);
-  operands[1] = gen_compare_reg (operands[1], SImode);
-  emit_insn (gen_scc_insn (operands[0], operands[1]));
-  DONE;
+  if (!TARGET_CODE_DENSITY)
+  {
+   gcc_assert (XEXP (operands[1], 0) == operands[2]);
+   gcc_assert (XEXP (operands[1], 1) == operands[3]);
+   operands[1] = gen_compare_reg (operands[1], SImode);
+   emit_insn (gen_scc_insn (operands[0], operands[1]));
+   DONE;
+  }
 })
-
-;; Preparation for SETcc
-;SETcc;(define_expand "cstoresi4"
-;SETcc;  [(set (match_operand:SI 0 "dest_reg_operand" "")
-;SETcc;	(match_operator:SI 1 "ordered_comparison_operator" [(match_operand:SI 2 "nonmemory_operand" "")
-;SETcc;							    (match_operand:SI 3 "nonmemory_operand" "")]))]
-;SETcc;  ""
-;SETcc;{
-;SETcc;  if (!TARGET_CODE_DENSITY)
-;SETcc;  {
-;SETcc;  gcc_assert (XEXP (operands[1], 0) == operands[2]);
-;SETcc;  gcc_assert (XEXP (operands[1], 1) == operands[3]);
-;SETcc;  operands[1] = gen_compare_reg (operands[1], SImode);
-;SETcc;  emit_insn (gen_scc_insn (operands[0], operands[1]));
-;SETcc;  DONE;
-;SETcc;  }
-;SETcc;})
 
 (define_mode_iterator SDF [SF DF])
 
@@ -5556,99 +5539,99 @@
 
 ;; SETcc instructions
 
-;SETcc;(define_code_iterator arcCC_cond [eq ne gt lt ge le])
-;SETcc;
-;SETcc;(define_insn "arcset<code>"
-;SETcc;  [(set (match_operand:SI 0 "register_operand"                "=r,r,  r,r,r,r,  r,  r")
-;SETcc;	(arcCC_cond:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
-;SETcc;		       (match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
-;SETcc;  "TARGET_EM && TARGET_CODE_DENSITY"
-;SETcc;  "set<code>%? %0, %1, %2"
-;SETcc;  [(set_attr "length" "4,4,8,4,4,4,8,8")
-;SETcc;   (set_attr "iscompact" "false")
-;SETcc;   (set_attr "type" "compare")
-;SETcc;   (set_attr "predicable" "yes,no,no,yes,no,no,yes,no")
-;SETcc;   (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
-;SETcc;   ])
-;SETcc;
-;SETcc;(define_insn "arcsetltu"
-;SETcc;  [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
-;SETcc;	(ltu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
-;SETcc;		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
-;SETcc;  "TARGET_EM && TARGET_CODE_DENSITY"
-;SETcc;  "setlo%? %0, %1, %2"
-;SETcc;  [(set_attr "length" "4,4,8,4,4,4,8,8")
-;SETcc;   (set_attr "iscompact" "false")
-;SETcc;   (set_attr "type" "compare")
-;SETcc;   (set_attr "predicable" "yes,no,no,yes,no,no,yes,no")
-;SETcc;   (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
-;SETcc;   ])
-;SETcc;
-;SETcc;(define_insn "arcsetgeu"
-;SETcc;  [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
-;SETcc;	(geu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
-;SETcc;		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
-;SETcc;  "TARGET_EM && TARGET_CODE_DENSITY"
-;SETcc;  "seths%? %0, %1, %2"
-;SETcc;  [(set_attr "length" "4,4,8,4,4,4,8,8")
-;SETcc;   (set_attr "iscompact" "false")
-;SETcc;   (set_attr "type" "compare")
-;SETcc;   (set_attr "predicable" "yes,no,no,yes,no,no,yes,no")
-;SETcc;   (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
-;SETcc;   ])
-;SETcc;
-;SETcc;;; Special cases of SETCC
-;SETcc;(define_insn_and_split "arcsethi"
-;SETcc;  [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r")
-;SETcc;	(gtu:SI (match_operand:SI 1 "nonmemory_operand" "r,r,  r,Cal")
-;SETcc;		(match_operand:SI 2 "nonmemory_operand" "r,L,Cal,r")))]
-;SETcc;  "TARGET_EM && TARGET_CODE_DENSITY"
-;SETcc;  "#"
-;SETcc;  "reload_completed"
-;SETcc;  [(const_int 0)]
-;SETcc;  "{
-;SETcc;   if (CONST_INT_P(operands[2]) && satisfies_constraint_L(operands[2]))
-;SETcc;      {
-;SETcc;       /*sethi a,b,u6 => seths a,b,u6+1*/
-;SETcc;       operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
-;SETcc;       emit_insn(gen_arcsetgeu(operands[0], operands[1], operands[2]));
-;SETcc;       DONE;
-;SETcc;      }
-;SETcc;   else
-;SETcc;      {
-;SETcc;       emit_insn(gen_arcsetltu(operands[0], operands[2], operands[1]));
-;SETcc;       DONE;
-;SETcc;      }
-;SETcc; }"
-;SETcc; [(set_attr "length" "4,4,8,8")
-;SETcc;   (set_attr "type" "compare")]
-;SETcc;)
-;SETcc;
-;SETcc;(define_insn_and_split "arcsetls"
-;SETcc;  [(set (match_operand:SI 0 "register_operand"         "=r,r,r,r")
-;SETcc;	(leu:SI (match_operand:SI 1 "nonmemory_operand" "r,r,r,Cal")
-;SETcc;		(match_operand:SI 2 "nonmemory_operand" "r,L,Cal,r")))]
-;SETcc;  "TARGET_EM && TARGET_CODE_DENSITY"
-;SETcc;  "#"
-;SETcc;  "reload_completed"
-;SETcc;  [(const_int 0)]
-;SETcc;  "{
-;SETcc;   if (CONST_INT_P(operands[2]) && satisfies_constraint_L(operands[2]))
-;SETcc;      {
-;SETcc;       /*setls a,b,u6 => setlo a,b,u6+1*/
-;SETcc;       operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
-;SETcc;       emit_insn(gen_arcsetltu(operands[0], operands[1], operands[2]));
-;SETcc;       DONE;
-;SETcc;      }
-;SETcc;   else
-;SETcc;      {
-;SETcc;       emit_insn(gen_arcsetgeu(operands[0], operands[2], operands[1]));
-;SETcc;       DONE;
-;SETcc;      }
-;SETcc; }"
-;SETcc; [(set_attr "length" "4,4,8,8")
-;SETcc;   (set_attr "type" "compare")]
-;SETcc;)
+(define_code_iterator arcCC_cond [eq ne gt lt ge le])
+
+(define_insn "arcset<code>"
+  [(set (match_operand:SI 0 "register_operand"                "=r,r,  r,r,r,r,  r,  r")
+	(arcCC_cond:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
+		       (match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
+  "TARGET_EM && TARGET_CODE_DENSITY"
+  "set<code>%? %0, %1, %2"
+  [(set_attr "length" "4,4,8,4,4,4,8,8")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "compare")
+   (set_attr "predicable" "yes,no,no,yes,no,no,yes,no")
+   (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
+   ])
+
+(define_insn "arcsetltu"
+  [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
+	(ltu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
+		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
+  "TARGET_EM && TARGET_CODE_DENSITY"
+  "setlo%? %0, %1, %2"
+  [(set_attr "length" "4,4,8,4,4,4,8,8")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "compare")
+   (set_attr "predicable" "yes,no,no,yes,no,no,yes,no")
+   (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
+   ])
+
+(define_insn "arcsetgeu"
+  [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
+	(geu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
+		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
+  "TARGET_EM && TARGET_CODE_DENSITY"
+  "seths%? %0, %1, %2"
+  [(set_attr "length" "4,4,8,4,4,4,8,8")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "compare")
+   (set_attr "predicable" "yes,no,no,yes,no,no,yes,no")
+   (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
+   ])
+
+;; Special cases of SETCC
+(define_insn_and_split "arcsethi"
+  [(set (match_operand:SI 0 "register_operand"         "=r,  r,  r,r")
+	(gtu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,  r,Cal")
+		(match_operand:SI 2 "nonmemory_operand" "r,C62,Cal,r")))]
+  "TARGET_EM && TARGET_CODE_DENSITY"
+  "#"
+  "reload_completed"
+  [(const_int 0)]
+  "{
+   if (CONST_INT_P(operands[2]) && satisfies_constraint_L(operands[2]))
+      {
+       /*sethi a,b,u6 => seths a,b,u6+1*/
+       operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
+       emit_insn(gen_arcsetgeu(operands[0], operands[1], operands[2]));
+       DONE;
+      }
+   else
+      {
+       emit_insn(gen_arcsetltu(operands[0], operands[2], operands[1]));
+       DONE;
+      }
+ }"
+ [(set_attr "length" "4,4,8,8")
+   (set_attr "type" "compare")]
+)
+
+(define_insn_and_split "arcsetls"
+  [(set (match_operand:SI 0 "register_operand"         "=r,  r,r,r")
+	(leu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,r,Cal")
+		(match_operand:SI 2 "nonmemory_operand" "r,C62,Cal,r")))]
+  "TARGET_EM && TARGET_CODE_DENSITY"
+  "#"
+  "reload_completed"
+  [(const_int 0)]
+  "{
+   if (CONST_INT_P(operands[2]) && satisfies_constraint_L(operands[2]))
+      {
+       /*setls a,b,u6 => setlo a,b,u6+1*/
+       operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
+       emit_insn(gen_arcsetltu(operands[0], operands[1], operands[2]));
+       DONE;
+      }
+   else
+      {
+       emit_insn(gen_arcsetgeu(operands[0], operands[2], operands[1]));
+       DONE;
+      }
+ }"
+ [(set_attr "length" "4,4,8,8")
+   (set_attr "type" "compare")]
+)
 
 
 ;; include the arc-FPX instructions

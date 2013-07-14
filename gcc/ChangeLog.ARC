@@ -1,5 +1,10 @@
 2013-07-03 Claudiu Zissulescu <claziss@synopsys.com>
 
+	* config/arc/arc.md: Add SET<cc> instructions for ARCv2.
+	* config/arc/constraints.md: Add C62 constaint used in SET<cc>.
+
+2013-07-03 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc.c: Fixed indentation.
 	* gcc/testsuite/gcc.target/arc/builtin_clri.c: Ignore test for arcV1.
 	* gcc/testsuite/gcc.target/arc/builtin_ffs.c: Likewise.

@@ -409,3 +409,9 @@
    A signed 6-bit integer constant."
   (and (match_code "const_int")
        (match_test "(ival >= -32) && (ival <=31)")))
+
+(define_constraint "C62"
+  "@internal
+   An unsigned 6-bit integer constant, up to 62."
+  (and (match_code "const_int")
+       (match_test "UNSIGNED_INT6 (ival - 1)")))
