@@ -5590,16 +5590,16 @@
   "reload_completed"
   [(const_int 0)]
   "{
-   if (CONST_INT_P(operands[2]) && satisfies_constraint_C62(operands[2]))
+   if (CONST_INT_P (operands[2]) && satisfies_constraint_C62 (operands[2]))
       {
-       /*sethi a,b,u6 => seths a,b,u6+1*/
-       operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
-       emit_insn(gen_arcsetgeu(operands[0], operands[1], operands[2]));
+       /* sethi a,b,u6 => seths a,b,u6+1 */
+       operands[2] = GEN_INT (INTVAL (operands[2]) + 1);
+       emit_insn (gen_arcsetgeu (operands[0], operands[1], operands[2]));
        DONE;
       }
    else
       {
-       emit_insn(gen_arcsetltu(operands[0], operands[2], operands[1]));
+       emit_insn (gen_arcsetltu (operands[0], operands[2], operands[1]));
        DONE;
       }
  }"
@@ -5616,16 +5616,16 @@
   "reload_completed"
   [(const_int 0)]
   "{
-   if (CONST_INT_P(operands[2]) && satisfies_constraint_C62(operands[2]))
+   if (CONST_INT_P (operands[2]) && satisfies_constraint_C62 (operands[2]))
       {
-       /*setls a,b,u6 => setlo a,b,u6+1*/
-       operands[2] = GEN_INT(INTVAL(operands[2]) + 1);
-       emit_insn(gen_arcsetltu(operands[0], operands[1], operands[2]));
+       /* setls a,b,u6 => setlo a,b,u6+1 */
+       operands[2] = GEN_INT (INTVAL (operands[2]) + 1);
+       emit_insn (gen_arcsetltu (operands[0], operands[1], operands[2]));
        DONE;
       }
    else
       {
-       emit_insn(gen_arcsetgeu(operands[0], operands[2], operands[1]));
+       emit_insn (gen_arcsetgeu (operands[0], operands[2], operands[1]));
        DONE;
       }
  }"
