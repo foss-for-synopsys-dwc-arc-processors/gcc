@@ -1,3 +1,8 @@
+2013-07-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Refurbish multiplier patterns for EM. Use mpy
+	instead of mpyu for its short variant.
+
 2013-07-14 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Add SET<cc> instructions for ARCv2.

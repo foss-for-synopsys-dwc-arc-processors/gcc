@@ -1638,19 +1638,19 @@
 ])
 
 ;; ARCv2 MPYW and MPYUW
-;; FIXME: give appropriate type for these instructions
 (define_expand "mulhisi3"
   [(set (match_operand:SI 0 "register_operand"                           "")
 	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand"  ""))
 		 (sign_extend:SI (match_operand:HI 2 "nonmemory_operand" ""))))]
   "EM_MUL_MPYW"
   "{
-  if (GET_CODE(operands[2]) == CONST_INT)
-   {
-      emit_insn(gen_mulhisi3_imm(operands[0], operands[1], operands[2]));
+    if (GET_CODE (operands[2]) == CONST_INT)
+    {
+      emit_insn (gen_mulhisi3_imm (operands[0], operands[1], operands[2]));
       DONE;
-   }
-}")
+    }
+   }"
+)
 
 (define_insn "mulhisi3_imm"
   [(set (match_operand:SI 0 "register_operand"                         "=r,r,r,  r,  r")
@@ -1666,9 +1666,9 @@
    ])
 
 (define_insn "mulhisi3_reg"
-  [(set (match_operand:SI 0 "register_operand"                          "=q,r,r")
-	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand"  "0,0,r"))
-		 (sign_extend:SI (match_operand:HI 2 "nonmemory_operand" "q,r,r"))))]
+  [(set (match_operand:SI 0 "register_operand"                          "=Rcqq,r,r")
+	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand"  "   0,0,r"))
+		 (sign_extend:SI (match_operand:HI 2 "nonmemory_operand" "Rcqq,r,r"))))]
   "EM_MUL_MPYW"
   "mpyw%? %0,%1,%2"
   [(set_attr "length" "*,4,4")
@@ -1685,12 +1685,13 @@
 		 (zero_extend:SI (match_operand:HI 2 "nonmemory_operand" ""))))]
   "EM_MUL_MPYW"
   "{
-  if (GET_CODE(operands[2]) == CONST_INT)
-   {
-      emit_insn(gen_umulhisi3_imm(operands[0], operands[1], operands[2]));
+    if (GET_CODE (operands[2]) == CONST_INT)
+    {
+      emit_insn (gen_umulhisi3_imm (operands[0], operands[1], operands[2]));
       DONE;
-   }
-}")
+    }
+  }"
+)
 
 (define_insn "umulhisi3_imm"
   [(set (match_operand:SI 0 "register_operand"                          "=r, r,r,  r,  r")
@@ -1706,9 +1707,9 @@
    ])
 
 (define_insn "umulhisi3_reg"
-  [(set (match_operand:SI 0 "register_operand"                          "=q, r, r")
-	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" " 0, 0, r"))
-		 (zero_extend:SI (match_operand:HI 2 "register_operand" " q, r, r"))))]
+  [(set (match_operand:SI 0 "register_operand"                          "=Rcqq, r, r")
+	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" "    0, 0, r"))
+		 (zero_extend:SI (match_operand:HI 2 "register_operand" " Rcqq, r, r"))))]
   "EM_MUL_MPYW"
   "mpyuw%? %0,%1,%2"
   [(set_attr "length" "*,4,4")
@@ -1909,12 +1910,27 @@
  [(set (match_operand:SI 0 "mpy_dest_reg_operand"        "=Rcr,r,r,Rcr,r")
 	(mult:SI (match_operand:SI 1 "register_operand"  " 0,c,0,0,c")
 		 (match_operand:SI 2 "nonmemory_operand" "cL,cL,I,Cal,Cal")))]
-"(TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI"
-  "mpyu%? %0,%1,%2"
-  [(set_attr "length" "4,4,4,8,8")
-   (set_attr "type" "umulti")
-   (set_attr "predicable" "yes,no,no,yes,no")
-   (set_attr "cond" "canuse,nocond,canuse_limm,canuse,nocond")])
+ "(TARGET_ARC700 && !TARGET_NOMPY_SET)"
+ "mpyu%? %0,%1,%2"
+ [(set_attr "length" "4,4,4,8,8")
+  (set_attr "type" "umulti")
+  (set_attr "predicable" "yes,no,no,yes,no")
+  (set_attr "cond" "canuse,nocond,canuse_limm,canuse,nocond")])
+
+; ARCv2 has no penalties between mpy and mpyu. So, we use mpy because of its
+; short variant. LP_COUNT constraints are still valid.
+(define_insn "mulsi3_v2"
+ [(set (match_operand:SI 0 "mpy_dest_reg_operand"        "=Rcqq,Rcr, r,r,Rcr,  r")
+	(mult:SI (match_operand:SI 1 "register_operand"  "    0,  0, c,0,  0,  c")
+		 (match_operand:SI 2 "nonmemory_operand" " Rcqq, cL,cL,I,Cal,Cal")))]
+ "EM_MULTI"
+ "mpy%? %0,%1,%2"
+ [(set_attr "length" "*,4,4,4,8,8")
+  (set_attr "iscompact" "maybe,false,false,false,false,false")
+  (set_attr "type" "umulti")
+  (set_attr "predicable" "no,yes,no,no,yes,no")
+  (set_attr "cond" "nocond,canuse,nocond,canuse_limm,canuse,nocond")])
+
 
 (define_expand "mulsidi3"
   [(set (match_operand:DI 0 "nonimmediate_operand" "")
@@ -2018,7 +2034,7 @@
   rtx l0 = simplify_gen_subreg (word_mode, operands[0], DImode, lo);
   rtx h0 = simplify_gen_subreg (word_mode, operands[0], DImode, hi);
   emit_insn (gen_mulsi3_highpart (h0, operands[1], operands[2]));
-  emit_insn (gen_mulsi3_700 (l0, operands[1], operands[2]));
+  emit_insn (gen_mulsi3 (l0, operands[1], operands[2]));
   DONE;
 }
   [(set_attr "type" "multi")
@@ -2268,7 +2284,7 @@
   rtx l0 = operand_subword (operands[0], lo, 0, DImode);
   rtx h0 = operand_subword (operands[0], hi, 0, DImode);
   emit_insn (gen_umulsi3_highpart (h0, operands[1], operands[2]));
-  emit_insn (gen_mulsi3_700 (l0, operands[1], operands[2]));
+  emit_insn (gen_mulsi3 (l0, operands[1], operands[2]));
   DONE;
 }
   [(set_attr "type" "umulti")
