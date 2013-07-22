@@ -1,3 +1,9 @@
+2013-07-22 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Add bmskn pattern to addsi3_i.
+	* config/arc/constraints.md: Add C2p constraint letter
+	needed by bmskn instruction.
+
 2013-07-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Refurbish multiplier patterns for EM. Use mpy

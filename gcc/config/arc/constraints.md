@@ -206,6 +206,14 @@
   (and (match_code "const_int")
        (match_test "ival && IS_POWEROF2_P (ival + 1)")))
 
+(define_constraint "C2p"
+ "@internal
+  constant such that (~x)+1 is a power of two, and x < 0"
+  (and (match_code "const_int")
+       (match_test "TARGET_EM
+                    && ((ival < 0) || (ival >= 0x80000000))
+                    && IS_POWEROF2_P ((~ival) + 1)")))
+
 (define_constraint "Ccp"
  "@internal
   constant such that ~x (one's Complement) is a power of two"

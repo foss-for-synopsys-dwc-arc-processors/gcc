@@ -2913,9 +2913,9 @@
      operands[1] = arc_rewrite_small_data (operands[1]);")
 
 (define_insn "andsi3_i"
-  [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcq,Rcqq,Rcqq,Rcqq,Rcw,Rcw,Rcw,Rcw,Rcw,Rcw,  w,  w,  w,  w,w,Rcw,  w,  W")
-	(and:SI (match_operand:SI 1 "nonimmediate_operand" "%0,Rcq,   0,   0,Rcqq,  0,  c,  0,  0,  0,  0,  c,  c,  c,  c,0,  0,  c,  o")
-		(match_operand:SI 2 "nonmemory_operand" " Rcqq,  0, C1p, Ccp, Cux, cL,  0,C1p,Ccp,CnL,  I, Lc,C1p,Ccp,CnL,I,Cal,Cal,Cux")))]
+  [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcq,Rcqq,Rcqq,Rcqq,Rcw,Rcw,   Rcw,Rcw,Rcw,Rcw,  w,     w,  w,  w,w,Rcw,  w,  W")
+	(and:SI (match_operand:SI 1 "nonimmediate_operand" "%0,Rcq,   0,   0,Rcqq,  0,  c,     0,  0,  0,  0,  c,     c,  c,  c,0,  0,  c,  o")
+		(match_operand:SI 2 "nonmemory_operand" " Rcqq,  0, C1p, Ccp, Cux, cL,  0,C2pC1p,Ccp,CnL,  I, Lc,C2pC1p,Ccp,CnL,I,Cal,Cal,Cux")))]
   "(register_operand (operands[1], SImode)
     && nonmemory_operand (operands[2], SImode))
    || (memory_operand (operands[1], SImode)
@@ -2928,8 +2928,18 @@
       return \"and%? %0,%1,%2%&\";
     case 1: case 6:
       return \"and%? %0,%2,%1%&\";
-    case 2: case 7: case 12:
+    case 2:
       return \"bmsk%? %0,%1,%Z2%&\";
+    case 7: case 12:
+      if (satisfies_constraint_C2p (operands[2]))
+        {
+	 operands[2] = GEN_INT ((~INTVAL (operands[2])));
+	 return \"bmskn%? %0,%1,%Z2%& ; %2\";
+	}
+      else
+        {
+	 return \"bmsk%? %0,%1,%Z2%&\";
+	}
     case 3: case 8: case 13:
       return \"bclr%? %0,%1,%M2%&\";
     case 4:
