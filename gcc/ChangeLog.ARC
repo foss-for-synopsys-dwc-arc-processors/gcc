@@ -1,3 +1,8 @@
+2013-07-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/predicates.md (proper_comparison_operator):
+	Take the mode from either one of the source registers.
+
 2013-07-22 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Add bmskn pattern to addsi3_i.

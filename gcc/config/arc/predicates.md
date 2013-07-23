@@ -519,7 +519,9 @@
      There are some creative uses for hi / ls after shifts, but these are
      hard to understand for the compiler and could be at best the target of
      a peephole.  */
-  switch (GET_MODE (XEXP (op, 0)))
+  enum machine_mode modeCmp = (GET_MODE (XEXP (op, 0)) == VOIDmode) ?
+                                  GET_MODE (XEXP (op, 1)) : GET_MODE (XEXP (op, 0));
+  switch (modeCmp)
     {
     case CC_ZNmode:
       return (code == EQ || code == NE || code == GE || code == LT
@@ -545,6 +547,8 @@
       return 1;
     /* From combiner.  */
     case QImode: case HImode: case DImode: case SFmode: case DFmode:
+      return 0;
+    case VOIDmode: /* Two constants comparison. */
       return 0;
     default:
       gcc_unreachable ();
