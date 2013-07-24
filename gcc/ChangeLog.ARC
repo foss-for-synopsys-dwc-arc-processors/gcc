@@ -1,3 +1,8 @@
+2013-07-24 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Add code density short sub instruction. Add cd
+	(code density) as a cpu facility option.
+
 2013-07-23 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/predicates.md (proper_comparison_operator):

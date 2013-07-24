@@ -237,7 +237,7 @@
 		     - get_attr_length (insn)")))
 
 ; for ARCv2 we need to disable/enable different instruction alternatives
-(define_attr "cpu_facility" "standard,arcv1,em"
+(define_attr "cpu_facility" "standard,arcv1,em,cd"
   (const_string "standard"))
 
 ; We should consider all the instructions enabled until otherwise
@@ -249,7 +249,13 @@
 
 	 (and (eq_attr "cpu_facility" "em")
 	      (not (match_test "TARGET_EM")))
-	 (const_string "no")]
+	 (const_string "no")
+
+	 (and (eq_attr "cpu_facility" "cd")
+	      (not (and (match_test "TARGET_EM")
+			(match_test "TARGET_CODE_DENSITY"))))
+	 (const_string "no")
+	 ]
 	(const_string "yes")))
 
 (define_attr "predicable" "no,yes" (const_string "no"))
@@ -2574,12 +2580,13 @@
 ; the casesi expander might generate a sub of zero, so we have to recognize it.
 ; combine should make such an insn go away.
 (define_insn_and_split "subsi3_insn"
-  [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcw,Rcw,w,w,w,  w,  w,  w")
-	(minus:SI (match_operand:SI 1 "nonmemory_operand"   "0,  0, cL,c,L,I,Cal,Cal,  c")
-		  (match_operand:SI 2 "nonmemory_operand" "Rcqq, c,  0,c,c,0,  0,  c,Cal")))]
+  [(set (match_operand:SI 0 "dest_reg_operand"           "=Rcqq,Rcqq,Rcw,Rcw,w,w,w,  w,  w,  w")
+	(minus:SI (match_operand:SI 1 "nonmemory_operand"    "0,Rcqq,  0, cL,c,L,I,Cal,Cal,  c")
+		  (match_operand:SI 2 "nonmemory_operand" "Rcqq,Rcqq,  c,  0,c,c,0,  0,  c,Cal")))]
   "register_operand (operands[1], SImode)
    || register_operand (operands[2], SImode)"
   "@
+    sub%? %0,%1,%2%&
     sub%? %0,%1,%2%&
     sub%? %0,%1,%2
     rsub%? %0,%2,%1
@@ -2594,10 +2601,12 @@
    && GET_CODE (PATTERN (insn)) != COND_EXEC"
   [(set (match_dup 0) (match_dup 3)) (set (match_dup 0) (match_dup 4))]
   "split_subsi (operands);"
-  [(set_attr "iscompact" "maybe,false,false,false,false,false,false,false, false")
-  (set_attr "length" "*,4,4,4,4,4,8,8,8")
-  (set_attr "predicable" "yes,yes,yes,no,no,no,yes,no,no")
-  (set_attr "cond" "canuse,canuse,canuse,nocond,nocond,canuse_limm,canuse,nocond,nocond")])
+  [(set_attr "iscompact" "maybe,maybe,false,false,false,false,false,false,false, false")
+  (set_attr "length" "*,*,4,4,4,4,4,8,8,8")
+  (set_attr "predicable" "yes,yes,yes,yes,no,no,no,yes,no,no")
+  (set_attr "cond" "canuse,canuse,canuse,canuse,nocond,nocond,canuse_limm,canuse,nocond,nocond")
+  (set_attr "cpu_facility" "*,cd,*,*,*,*,*,*,*,*")
+  ])
 
 (define_expand "subdi3"
   [(parallel [(set (match_operand:DI 0 "dest_reg_operand" "")
