@@ -1,3 +1,16 @@
+2013-07-25 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h: Add compact_memory_operand_p prototype.
+	* config/arc/arc.c: Add compact_memory_operand_p function that returns
+	true if a memory address can be used with a short instruction.
+	* config/arc/arc.h: Add R0R3_CODE_DENSITY_REGS register class for
+	code density short instructions.
+	* config/arc/arc.md: Add ld_s code density mnemonics.
+	* config/arc/constraints.md: Define Rcd, Ucd constraints for short
+	code density load instructions.
+	* config/arc/predicates.md: compact_load_memory_operand predicate uses
+	conmpact_memory_operand_p function.
+
 2013-07-24 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Add code density short sub instruction. Add cd

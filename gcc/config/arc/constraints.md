@@ -289,6 +289,13 @@
        (match_test "REG_P (XEXP (XEXP (op, 0), 0))")
        (match_test "REGNO (XEXP (XEXP (op, 0), 0)) == SP_REG")))
 
+; Memory addresses suited for code density load ops
+(define_memory_constraint "Ucd"
+  "@internal
+   A valid memory operand for use with code density load ops"
+  (and (match_code "mem")
+       (match_test "compact_memory_operand_p (op, mode, true)")))
+
 ;; General constraints
 
 (define_constraint "Cbr"
@@ -423,3 +430,8 @@
    An unsigned 6-bit integer constant, up to 62."
   (and (match_code "const_int")
        (match_test "UNSIGNED_INT6 (ival - 1)")))
+
+; Code density registers
+(define_register_constraint "Rcd" "R0R3_CODE_DENSITY_REGS"
+  "@internal
+   core register @code{r0}-@code{r3}")

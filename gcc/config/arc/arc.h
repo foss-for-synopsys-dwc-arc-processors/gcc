@@ -602,9 +602,9 @@ extern unsigned int arc_mode_class[];
    stack pointer (r28).  */
 
 #define COMPACT_GP_REG_P(REGNO) \
-   (((signed)(REGNO) >= 0 && (REGNO) <= 3) || ((REGNO) >= 12 && (REGNO) <= 15))
+  (((signed)(REGNO) >= 0 && (REGNO) <= 3) || ((REGNO) >= 12 && (REGNO) <= 15))
 #define SP_REG_P(REGNO)  ((REGNO) == 28)
-
+#define CODE_DENSITY_REG_P(REGNO) ((signed)(REGNO) >= 0 && (REGNO) <= 3)
 
 
 /* Register classes and constants.  */
@@ -652,6 +652,7 @@ enum reg_class
    WRITABLE_CORE_REGS,		/* 'w' */
    CHEAP_CORE_REGS,		/* 'c' */
    ALL_CORE_REGS,		/* 'Rac' */
+   R0R3_CODE_DENSITY_REGS,      /* 'Rcd' */
    ALL_REGS,
    LIM_REG_CLASSES
 };
@@ -659,27 +660,28 @@ enum reg_class
 #define N_REG_CLASSES (int) LIM_REG_CLASSES
 
 /* Give names of register classes as strings for dump file.   */
-#define REG_CLASS_NAMES	  \
-{                         \
-  "NO_REGS",           	  \
-  "R0_REGS",            	  \
-  "GP_REG",            	  \
-  "FP_REG",            	  \
-  "SP_REGS",		  \
-  "LPCOUNT_REG",	  \
-  "LINK_REGS",         	  \
-  "DOUBLE_REGS",          \
-  "SIMD_VR_REGS",         \
-  "SIMD_DMA_CONFIG_REGS", \
-  "ARCOMPACT16_REGS",  	  \
-  "AC16_BASE_REGS",       \
-  "SIBCALL_REGS",	  \
-  "GENERAL_REGS",      	  \
-  "MPY_WRITABLE_CORE_REGS",   \
-  "WRITABLE_CORE_REGS",   \
-  "CHEAP_CORE_REGS",	  \
-  "ALL_CORE_REGS",	  \
-  "ALL_REGS"          	  \
+#define REG_CLASS_NAMES	    \
+{                           \
+  "NO_REGS",           	    \
+  "R0_REGS",                \
+  "GP_REG",            	    \
+  "FP_REG",            	    \
+  "SP_REGS",		    \
+  "LPCOUNT_REG",	    \
+  "LINK_REGS",         	    \
+  "DOUBLE_REGS",            \
+  "SIMD_VR_REGS",           \
+  "SIMD_DMA_CONFIG_REGS",   \
+  "ARCOMPACT16_REGS",  	    \
+  "AC16_BASE_REGS",         \
+  "SIBCALL_REGS",	    \
+  "GENERAL_REGS",      	    \
+  "MPY_WRITABLE_CORE_REGS", \
+  "WRITABLE_CORE_REGS",     \
+  "CHEAP_CORE_REGS",	    \
+  "R0R3_CODE_DENSITY_REGS", \
+  "ALL_CORE_REGS",	    \
+  "ALL_REGS"          	    \
 }
 
 /* Define which registers fit in which classes.
@@ -700,7 +702,7 @@ enum reg_class
   {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000ffff},      /* 'V', DI0-7,DO0-7 Registers */	\
   {0x0000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'q', r0-r3, r12-r15 */		\
   {0x1000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'e', r0-r3, r12-r15, sp */	\
-  {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},    /* "Rsc", r0-r12 */ \
+  {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* "Rsc", r0-r12 */ \
   {0x9fffffff, 0xc0000000, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r28, blink, ap and pcl */	\
   {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'W',  r0-r31 */ \
   /* Include ap / pcl in WRITABLE_CORE_REGS for sake of symmetry.  As these \
@@ -710,6 +712,7 @@ enum reg_class
   {0xffffffff, 0xd0000000, 0x00000000, 0x00000000, 0x00000000},      /* 'w', r0-r31, r60 */ \
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
+  {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 

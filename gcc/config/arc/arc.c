@@ -9258,6 +9258,94 @@ arc_spill_class (reg_class_t /* orig_class */, enum machine_mode)
   return GENERAL_REGS;
 }
 
+bool
+compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density)
+{
+  rtx addr, plus0, plus1;
+  int size, off;
+
+  /* .di instructions have no 16-bit form.  */
+  if (MEM_VOLATILE_P (op) && !TARGET_VOLATILE_CACHE_SET)
+    return 0;
+
+  if (mode == VOIDmode)
+    mode = GET_MODE (op);
+
+  size = GET_MODE_SIZE (mode);
+
+  /* dword operations really put out 2 instructions, so eliminate them.  */
+  if (size > UNITS_PER_WORD)
+    return 0;
+
+  /* Decode the address now.  */
+  addr = XEXP (op, 0);
+  switch (GET_CODE (addr))
+    {
+    case REG:
+      return (REGNO (addr) >= FIRST_PSEUDO_REGISTER
+	      || COMPACT_GP_REG_P (REGNO (addr))
+	      || (SP_REG_P (REGNO (addr)) && (size != 2)));
+      /* Reverting for the moment since ldw_s does not have sp as a valid
+	 parameter.  */
+    case PLUS:
+      plus0 = XEXP (addr, 0);
+      plus1 = XEXP (addr, 1);
+
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || COMPACT_GP_REG_P (REGNO (plus0)))
+          && ((GET_CODE (plus1) == REG)
+              && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
+                  || COMPACT_GP_REG_P (REGNO (plus1)))))
+        {
+          return !code_density;
+        }
+
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || (COMPACT_GP_REG_P (REGNO (plus0)) && !code_density)
+	      || (REGNO (plus0) >= 0 && REGNO (plus0) <= 31 && code_density))
+          && (GET_CODE (plus1) == CONST_INT))
+        {
+          off = INTVAL (plus1);
+
+          /* Negative offset is not supported in 16-bit load/store insns.  */
+          if (off < 0)
+            return 0;
+
+	  /* Only u5 immediates allowed in code density instructions. */
+	  if (code_density)
+	    return ((size == 4) && (off < 32) && (off % 4 == 0));
+
+          switch (size)
+            {
+            case 1:
+              return (off < 32);
+            case 2:
+              return ((off < 64) && (off % 2 == 0));
+            case 4:
+              return ((off < 128) && (off % 4 == 0));
+            }
+        }
+
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || SP_REG_P (REGNO (plus0)))
+          && (GET_CODE (plus1) == CONST_INT)
+	  && !code_density)
+        {
+          off = INTVAL (plus1);
+          return ((size != 2) && (off >= 0 && off < 128) && (off % 4 == 0));
+        }
+    default:
+      break ;
+      /* TODO: 'gp' and 'pcl' are to supported as base address operand
+	 for 16-bit load instructions.  */
+    }
+  return 0;
+
+}
+
 struct gcc_target targetm = TARGET_INITIALIZER;
 
 #include "gt-arc.h"
