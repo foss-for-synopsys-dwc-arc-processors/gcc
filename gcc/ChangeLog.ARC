@@ -1,5 +1,12 @@
 2013-08-01 Claudiu Zissulescu <claziss@synopsys.com>
 
+	* config/arc/arc.h: Add R0R1_CODE_DENSITY register class.
+	* config/arc/arc.md: Add ld_s r1,[gp,s11] instruction.
+	* config/arc/constraints.md: Add Rsd constraint used by above
+	* instruction.
+
+2013-08-01 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arcEM.md: Add pipeline information for DIV_REM
           ops. Refurbish load/store and multiplier instruction
           reservations.

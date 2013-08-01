@@ -435,3 +435,7 @@
 (define_register_constraint "Rcd" "R0R3_CODE_DENSITY_REGS"
   "@internal
    core register @code{r0}-@code{r3}")
+
+(define_register_constraint "Rsd" "R0R1_CODE_DENSITY_REGS"
+  "@internal
+   core register @code{r0}-@code{r1}")

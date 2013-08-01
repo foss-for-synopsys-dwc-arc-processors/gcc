@@ -653,6 +653,7 @@ enum reg_class
    CHEAP_CORE_REGS,		/* 'c' */
    ALL_CORE_REGS,		/* 'Rac' */
    R0R3_CODE_DENSITY_REGS,      /* 'Rcd' */
+   R0R1_CODE_DENSITY_REGS,      /* 'Rsd' */
    ALL_REGS,
    LIM_REG_CLASSES
 };
@@ -680,6 +681,7 @@ enum reg_class
   "WRITABLE_CORE_REGS",     \
   "CHEAP_CORE_REGS",	    \
   "R0R3_CODE_DENSITY_REGS", \
+  "R0R1_CODE_DENSITY_REGS", \
   "ALL_CORE_REGS",	    \
   "ALL_REGS"          	    \
 }
@@ -713,6 +715,7 @@ enum reg_class
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
   {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
+  {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
