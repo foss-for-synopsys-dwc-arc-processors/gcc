@@ -1,3 +1,9 @@
+2013-08-01 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arcEM.md: Add pipeline information for DIV_REM
+          ops. Refurbish load/store and multiplier instruction
+          reservations.
+
 2013-07-25 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h: Add compact_memory_operand_p prototype.

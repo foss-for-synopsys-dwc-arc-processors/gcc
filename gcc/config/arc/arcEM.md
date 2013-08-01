@@ -21,17 +21,17 @@
 
 (define_automaton "ARCEM")
 
-(define_cpu_unit "em_issue, ld_st, mul_em" "ARCEM")
+(define_cpu_unit "em_issue, ld_st, mul_em, divrem_em" "ARCEM")
 
 (define_insn_reservation "em_data_load" 2
   (and (match_test "TARGET_EM")
        (eq_attr "type" "load"))
-  "em_issue, ld_st")
+  "em_issue+ld_st,nothing")
 
 (define_insn_reservation "em_data_store" 2
   (and (match_test "TARGET_EM")
        (eq_attr "type" "store"))
-  "em_issue, ld_st")
+  "em_issue+ld_st,nothing")
 
 ;; Multipliers options
 (define_insn_reservation "mul_em_mpyw_1" 1
@@ -46,7 +46,7 @@
        (match_test "arc_mpy_option > 2")
        (match_test "arc_mpy_option <= 5")
        (eq_attr "type" "mul16_em"))
-  "em_issue+mul_em, mul_em")
+  "em_issue+mul_em, nothing")
 
 (define_insn_reservation "mul_em_mpyw_4" 4
   (and (match_test "TARGET_EM")
@@ -64,7 +64,7 @@
   (and (match_test "TARGET_EM")
        (match_test "arc_mpy_option == 3")
        (eq_attr "type" "multi,umulti"))
-  "em_issue+mul_em, mul_em")
+  "em_issue+mul_em, nothing")
 
 (define_insn_reservation "mul_em_multi_wlh3" 3
   (and (match_test "TARGET_EM")
@@ -85,4 +85,9 @@
        (eq_attr "type" "multi,umulti"))
   "em_issue+mul_em, mul_em*8")
 
-
+;; Radix-4 divider timing
+(define_insn_reservation "em_divrem" 3
+  (and (match_test "TARGET_EM")
+       (match_test "TARGET_DIVREM")
+       (eq_attr "type" "div_rem"))
+  "em_issue+mul_em+divrem_em, (mul_em+divrem_em)*2")
