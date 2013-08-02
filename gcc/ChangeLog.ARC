@@ -1,3 +1,7 @@
+2013-08-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Add st_s r0,[gp,s11] instruction.
+
 2013-08-01 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Add R0R1_CODE_DENSITY register class.
