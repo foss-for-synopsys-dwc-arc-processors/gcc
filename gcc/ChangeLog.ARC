@@ -1,3 +1,8 @@
+2013-08-05 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Add add_s code denisity instructions.
+	* config/arc/arc.md: Likewise.
+
 2013-08-02 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Add st_s r0,[gp,s11] instruction.

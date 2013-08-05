@@ -1619,10 +1619,10 @@
 ; We avoid letting this pattern use LP_COUNT as a register by specifying
 ;  register class 'W' instead of 'w'.
 (define_insn_and_split "*addsi3_mixed"
-  ;;                                                      0       1    2   3   4   5   6   7    8     9    a     b   c d   e    f  10  11
-  [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcq#q,Rcq,   c,Rcw,Rcw,Rcq,Rcb,Rcq, Rcw, Rcqq,Rcqq,    W,  W,W,  W,Rcqq,Rcw,  W")
-	(plus:SI (match_operand:SI 1 "register_operand" "%0,      c,   0,  0,  c,  0,  0,Rcb,   0, Rcqq,   0,    c,  c,0,  0,   0,  0,  c")
-		 (match_operand:SI 2 "nonmemory_operand" "cL,     0, Cm1, cL,  0,CL2,Csp,CM4,cCca,RcqqK,  cO,cLCmL,Cca,I,C2a, Cal,Cal,Cal")))]
+  ;;                                                      0       1    2    3   4   5   6   7    8     9    a     b   c d   e    f  10  11  12
+  [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcq#q,Rcq,   c, Rsd,Rcw,Rcw,Rcq,Rcb,Rcq, Rcw, Rcqq,Rcqq,    W,  W,W,  W,Rcqq,Rcw,  W")
+	(plus:SI (match_operand:SI 1 "register_operand" "%0,      c,   0,Rcqq,  0,  c,  0,  0,Rcb,   0, Rcqq,   0,    c,  c,0,  0,   0,  0,  c")
+		 (match_operand:SI 2 "nonmemory_operand" "cL,     0, Cm1,   L, cL,  0,CL2,Csp,CM4,cCca,RcqqK,  cO,cLCmL,Cca,I,C2a, Cal,Cal,Cal")))]
   ""
 {
   arc_output_addsi (operands, arc_ccfsm_cond_exec_p (), true);
@@ -1633,17 +1633,17 @@
    && GET_CODE (PATTERN (insn)) != COND_EXEC"
   [(set (match_dup 0) (match_dup 3)) (set (match_dup 0) (match_dup 4))]
   "split_addsi (operands);"
-  [(set_attr "type" "*,*,*,*,*,two_cycle_core,two_cycle_core,*,two_cycle_core,*,*,*,two_cycle_core,*,two_cycle_core,*,*,*")
+  [(set_attr "type" "*,*,*,*,*,*,two_cycle_core,two_cycle_core,*,two_cycle_core,*,*,*,two_cycle_core,*,two_cycle_core,*,*,*")
    (set (attr "iscompact")
 	(cond [(match_test "~arc_output_addsi (operands, false, false) & 2")
 	       (const_string "false")
 	       (match_operand 2 "long_immediate_operand" "")
 	       (const_string "maybe_limm")]
 	      (const_string "maybe")))
-   (set_attr "length" "*,*,*,4,4,*,*,*,4,*,*,4,4,4,4,*,8,8")
-   (set_attr "predicable" "no,no,no,yes,yes,no,no,no,yes,no,no,no,no,no,no,no,yes,no")
-   (set_attr "cond" "canuse,canuse,canuse,canuse,canuse,canuse,canuse,nocond,canuse,nocond,nocond,nocond,nocond,canuse_limm,canuse_limm,canuse,canuse,nocond")
-   (set_attr "cpu_facility" "*,*,em,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*")
+   (set_attr "length" "*,*,*,*,4,4,*,*,*,4,*,*,4,4,4,4,*,8,8")
+   (set_attr "predicable" "no,no,no,no,yes,yes,no,no,no,yes,no,no,no,no,no,no,no,yes,no")
+   (set_attr "cond" "canuse,canuse,canuse,nocond,canuse,canuse,canuse,canuse,nocond,canuse,nocond,nocond,nocond,nocond,canuse_limm,canuse_limm,canuse,canuse,nocond")
+   (set_attr "cpu_facility" "*,*,em,cd,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*")
 ])
 
 ;; ARCv2 MPYW and MPYUW
