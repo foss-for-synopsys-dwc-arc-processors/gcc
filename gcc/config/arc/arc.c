@@ -2938,8 +2938,8 @@ arc_print_operand (FILE *file, rtx x, int code)
 	output_operand_lossage ("invalid operand to %%R code");
       return;
     case 'S' :
-	/* FIXME: remove %S option.  */
-	break;
+      /* FIXME: remove %S option.  */
+      break;
     case 'B' /* Branch or other LIMM ref - must not use sda references.  */ :
       if (CONSTANT_P (x))
 	{
@@ -7613,6 +7613,51 @@ arc_expand_movmem (rtx *operands)
   return true;
 }
 
+/*
+ * This function is given an rtx which is a subreg of a spilled pseudo
+ * it returns the memory rtx which refers to this subreg.
+ */
+static rtx
+arc_get_spilled_pseudo_subreg(rtx opnd)
+{
+   // We are supposed to call this function only during reload
+   gcc_assert (reload_in_progress) ;
+   gcc_assert (GET_CODE (opnd) == SUBREG) ;
+
+   rtx inner_reg, addr, mem = 0 ;
+   rtx result = 0 ;
+   int offset ;
+
+   inner_reg = SUBREG_REG (opnd);
+   offset = SUBREG_BYTE (opnd);
+
+   if (REG_P (inner_reg))
+     {
+       /* 'inner_reg' is a pseudo which has been spilled onto the stack; there
+	* are following cases here:
+	* -- inner_reg is a stack-slot
+	* -- inner_reg is a stack-slot with offset out of range or
+	*/
+       if (reg_equiv_mem (REGNO (inner_reg)))
+	 {
+	   mem = reg_equiv_mem (REGNO (inner_reg));
+	   addr = find_replacement (&XEXP (mem, 0));
+	 }
+       else
+	 {
+	   /* The slot is out of range, or was dressed up in a SUBREG.  */
+	   gcc_unreachable ();
+	 }
+
+       gcc_assert (mem) ;
+       result  = adjust_address_nv (mem, GET_MODE (opnd), offset) ;
+       return result;
+     }
+
+   return opnd;
+}
+
+
 /* Prepare operands for move in MODE.  Return true iff the move has
    been emitted.  */
 
@@ -7694,6 +7739,44 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
 	  pat = change_address (operands[1], mode, pat);
 	  MEM_COPY_ATTRIBUTES (pat, operands[1]);
 	  operands[1] = pat;
+	}
+    }
+
+  if (reload_in_progress)
+    {
+     /* We will get here only during the reload when generating moves
+      * to/from reload regs.  Reload regs are hard regs, hence at
+      * least one of them should have true_regnum >= 0 The code below
+      * is written under this assumption
+      */
+      rtx op0 = operands[0];
+      rtx op1 = operands[1];
+
+      gcc_assert ((true_regnum (op0) > -1) || (true_regnum (op1) > -1)) ;
+
+      if ((GET_CODE (op0) == SUBREG) ^ (GET_CODE (op1) == SUBREG))
+	{
+	  /* at this point we know that one (and only one) of the
+	   * operands is a spilled pseudo The other operand is a
+	   * 'reload reg', i,e, a hard reg
+	   */
+	    rtx  hardreg_opnd  = (true_regnum (op0) > -1) ? op0 : op1 ;
+	    rtx  spilled_opnd  = (true_regnum (op0) > -1) ? op1 : op0 ;
+
+	    /* double check that 'spilled_opnd' is indeed a pseudo. */
+	    gcc_assert (true_regnum (spilled_opnd) == -1) ;
+
+	    /* According to our understanding of the reload pass, hard
+	     * reg operand will never be a subreg. Double check this.
+	     */
+	    gcc_assert (GET_CODE (hardreg_opnd) == REG) ;
+
+	    rtx spilled_opnd_subreg = arc_get_spilled_pseudo_subreg (spilled_opnd) ;
+
+	    rtx new_op0 = (true_regnum (op0) > -1) ? copy_rtx (op0) : spilled_opnd_subreg ;
+	    rtx new_op1 = (true_regnum (op1) > -1) ? copy_rtx (op1) : spilled_opnd_subreg ;
+	    operands[0] = new_op0;
+	    operands[1] = new_op1;
 	}
     }
 
