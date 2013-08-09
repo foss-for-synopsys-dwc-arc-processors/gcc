@@ -631,6 +631,33 @@
    (set_attr "predicable" "yes,no,yes,no,yes,no,yes,yes,yes,no,no,no,no,no,no")
    (set_attr "cpu_facility" "*,*,arcv1,em,*,*,*,*,*,*,*,*,*,*,*")])
 
+;; These instruction patterns are generated only by reload when a
+;; pseudo is spilled.  N.B. legitimate_address does not accept
+;; base+limm addresses.
+(define_insn "*movhi_longlimm"
+  [(set (match_operand:HI 0 "move_dest_operand" "=r")
+	(mem:HI (plus:SI (match_operand:SI 1 "register_operand"     "r")
+			 (match_operand:SI 2 "nonmemory_operand" "rCal"))))]
+  ""
+  "*{
+    return TARGET_EM ? \"ldh %0,[%1,%2]\" : \"ldw %0,[%1,%2]\";
+   }"
+  [(set_attr "type" "load")
+   (set_attr "iscompact" "false")
+   (set_attr "predicable" "no")
+   (set_attr "length" "8")])
+
+(define_insn "*movqi_longlimm"
+  [(set (match_operand:QI 0 "move_dest_operand" "=r")
+	(mem:QI (plus:SI (match_operand:SI 1 "register_operand"     "r")
+			 (match_operand:SI 2 "nonmemory_operand" "rCal"))))]
+  ""
+  "ldb %0,[%1,%2]"
+  [(set_attr "type" "load")
+   (set_attr "iscompact" "false")
+   (set_attr "predicable" "no")
+   (set_attr "length" "8")])
+
 (define_expand "movsi"
   [(set (match_operand:SI 0 "move_dest_operand" "")
 	(match_operand:SI 1 "general_operand" ""))]
