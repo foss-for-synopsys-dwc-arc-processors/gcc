@@ -1071,66 +1071,10 @@ extern int arc_initial_elimination_offset(int from, int to);
    of the address.  That will allow inheritance of the address reloads.  */
 
 #define LEGITIMIZE_RELOAD_ADDRESS(X,MODE,OPNUM,TYPE,IND_LEVELS,WIN)	\
-{									\
-  if (GET_CODE (X) == PLUS						\
-      && CONST_INT_P (XEXP (X, 1))					\
-      && (RTX_OK_FOR_BASE_P (XEXP (X, 0), true)				\
-	  || (REG_P (XEXP (X, 0))					\
-	      && reg_equiv_constant (REGNO (XEXP (X, 0))))))		\
-    {									\
-      int scale = GET_MODE_SIZE (MODE);					\
-      int shift;							\
-      rtx index_rtx = XEXP (X, 1);					\
-      HOST_WIDE_INT offset = INTVAL (index_rtx), offset_base;		\
-      rtx reg, sum, sum2;						\
-									\
-      if (scale > 4)							\
-	scale = 4;							\
-      if ((scale-1) & offset)						\
-	scale = 1;							\
-      shift = scale >> 1;						\
-      offset_base = (offset + (256 << shift)) & (-512 << shift);	\
-      /* Sometimes the normal form does not suit DImode.  We		\
-	 could avoid that by using smaller ranges, but that		\
-	 would give less optimized code when SImode is			\
-	 prevalent.  */							\
-      if (GET_MODE_SIZE (MODE) + offset - offset_base <= (256 << shift))\
-	{								\
-	  int regno;							\
-									\
-	  reg = XEXP (X, 0);						\
-	  regno = REGNO (reg);						\
-	  sum2 = sum = plus_constant (Pmode, reg, offset_base);		\
-									\
-	  if (reg_equiv_constant (regno))				\
-	    {								\
-	      sum2 = plus_constant (Pmode, reg_equiv_constant (regno),	\
-				    offset_base);			\
-	      if (GET_CODE (sum2) == PLUS)				\
-		sum2 = gen_rtx_CONST (Pmode, sum2);			\
-	    }								\
-	  X = gen_rtx_PLUS (Pmode, sum, GEN_INT (offset - offset_base));\
-	  push_reload (sum2, NULL_RTX, &XEXP (X, 0), NULL,		\
-		       BASE_REG_CLASS, Pmode, VOIDmode, 0, 0, (OPNUM),	\
-		       (TYPE));						\
-	  goto WIN;							\
-	}								\
-    }									\
-  /* We must re-recognize what we created before.  */			\
-  else if (GET_CODE (X) == PLUS						\
-	   && GET_CODE (XEXP (X, 0)) == PLUS				\
-	   && CONST_INT_P (XEXP (XEXP (X, 0), 1))			\
-	   && REG_P  (XEXP (XEXP (X, 0), 0))				\
-	   && CONST_INT_P (XEXP (X, 1)))				\
-    {									\
-      /* Because this address is so complex, we know it must have	\
-	 been created by LEGITIMIZE_RELOAD_ADDRESS before; thus,	\
-	 it is already unshared, and needs no further unsharing.  */	\
-      push_reload (XEXP ((X), 0), NULL_RTX, &XEXP ((X), 0), NULL,	\
-		   BASE_REG_CLASS, Pmode, VOIDmode, 0, 0, (OPNUM), (TYPE));\
+  do {									\
+    if (arc_legitimize_reload_address (&(X), (MODE), (OPNUM), (TYPE)))	\
       goto WIN;								\
-    }									\
-}
+  } while (0)
 
 /* Reading lp_count for anything but the lp instruction is very slow on the
    ARC700.  */

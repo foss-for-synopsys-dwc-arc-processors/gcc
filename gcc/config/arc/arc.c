@@ -9258,6 +9258,74 @@ arc_spill_class (reg_class_t /* orig_class */, enum machine_mode)
   return GENERAL_REGS;
 }
 
+bool
+arc_legitimize_reload_address (rtx *p, enum machine_mode mode, int opnum,
+			       int itype)
+{
+  rtx x = *p;
+  enum reload_type type = (enum reload_type) itype;
+
+  if (GET_CODE (x) == PLUS
+      && CONST_INT_P (XEXP (x, 1))
+      && (RTX_OK_FOR_BASE_P (XEXP (x, 0), true)
+	  || (REG_P (XEXP (x, 0))
+	      && reg_equiv_constant (REGNO (XEXP (x, 0))))))
+    {
+      int scale = GET_MODE_SIZE (mode);
+      int shift;
+      rtx index_rtx = XEXP (x, 1);
+      HOST_WIDE_INT offset = INTVAL (index_rtx), offset_base;
+      rtx reg, sum, sum2;
+
+      if (scale > 4)
+	scale = 4;
+      if ((scale-1) & offset)
+	scale = 1;
+      shift = scale >> 1;
+      offset_base = (offset + (256 << shift)) & (-512 << shift);
+      /* Sometimes the normal form does not suit DImode.  We
+	 could avoid that by using smaller ranges, but that
+	 would give less optimized code when SImode is
+	 prevalent.  */
+      if (GET_MODE_SIZE (mode) + offset - offset_base <= (256 << shift))
+	{
+	  int regno;
+
+	  reg = XEXP (x, 0);
+	  regno = REGNO (reg);
+	  sum2 = sum = plus_constant (Pmode, reg, offset_base);
+
+	  if (reg_equiv_constant (regno))
+	    {
+	      sum2 = plus_constant (Pmode, reg_equiv_constant (regno),
+				    offset_base);
+	      if (GET_CODE (sum2) == PLUS)
+		sum2 = gen_rtx_CONST (Pmode, sum2);
+	    }
+	  *p = gen_rtx_PLUS (Pmode, sum, GEN_INT (offset - offset_base));
+	  push_reload (sum2, NULL_RTX, &XEXP (*p, 0), NULL,
+		       BASE_REG_CLASS, Pmode, VOIDmode, 0, 0, opnum,
+		       type);
+	  return true;
+	}
+    }
+  /* We must re-recognize what we created before.  */
+  else if (GET_CODE (x) == PLUS
+	   && GET_CODE (XEXP (x, 0)) == PLUS
+	   && CONST_INT_P (XEXP (XEXP (x, 0), 1))
+	   && REG_P  (XEXP (XEXP (x, 0), 0))
+	   && CONST_INT_P (XEXP (x, 1)))
+    {
+      /* Because this address is so complex, we know it must have
+	 been created by LEGITIMIZE_RELOAD_ADDRESS before; thus,
+	 it is already unshared, and needs no further unsharing.  */
+      push_reload (XEXP (x, 0), NULL_RTX, &XEXP (x, 0), NULL,
+		   BASE_REG_CLASS, Pmode, VOIDmode, 0, 0, opnum, type);
+      return true;
+    }
+  return false;
+}
+
 struct gcc_target targetm = TARGET_INITIALIZER;
 
 #include "gt-arc.h"
