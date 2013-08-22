@@ -319,21 +319,8 @@ alpha*-dec-*vms*)
 	md_unwind_header=alpha/vms-unwind.h
 	;;
 arc*-*-elf*)
-	case x"${with_cpu}" in
-	     xarc600|xarc601|xarc700)
-	     	echo "Configure for ARCv1"
-	     	tmake_file="arc/t-arc-newlib arc/t-arc"
-		extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
-		;;
-	     xEM)
-	     	echo "Configure for ARCv2"
-		tmake_file="arc/t-arc-em t-fdpbit"
-		extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o crtg.o crtgend.o"
-                ;;
-	     *) echo "Unknown cpu type"
-	     	exit 1
-		;;
-        esac
+	tmake_file="arc/t-arc-newlib arc/t-arc"
+	extra_parts="crti.o crtn.o crtend.o crtbegin.o crtendS.o crtbeginS.o libgmon.a crtg.o crtgend.o"
 	;;
 arc*-*-linux-uclibc*)
 	tmake_file="${tmake_file} t-slibgcc-libgcc t-slibgcc-nolc-override arc/t-arc700-uClibc arc/t-arc"
