@@ -18,6 +18,11 @@
           to select the muliplier instructions for ARCv2 as well.
 	* config/arc/arcEM.md: Likewise.
 
+2013-08-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* gcc/config/arc/arc.h: Fix multilib defaults.
+	* gcc/config/arc/t-arc-newlib: Add multilib support for EM.
+
 2013-08-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (arc_legitimize_reload_address): Declare.

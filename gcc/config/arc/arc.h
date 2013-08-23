@@ -308,9 +308,9 @@ along with GCC; see the file COPYING3.  If not see
 
 #ifndef MULTILIB_DEFAULTS
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-#define MULTILIB_DEFAULTS { "mav2em" }
+#define MULTILIB_DEFAULTS { "mcpu=ARCv2EM" }
 #else
-#define MULTILIB_DEFAULTS { "mARC700" }
+#define MULTILIB_DEFAULTS { "mcpu=ARC700" }
 #endif
 #endif
 
