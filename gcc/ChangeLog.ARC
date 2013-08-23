@@ -1,3 +1,8 @@
+2013-08-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* gcc/config/arc/arc.h: Fix multilib defaults.
+	* gcc/config/arc/t-arc-newlib: Add multilib support for EM.
+
 2013-07-14 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Add SET<cc> instructions for ARCv2.
