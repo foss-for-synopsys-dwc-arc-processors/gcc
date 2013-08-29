@@ -1,3 +1,9 @@
+2013-08-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_legitimize_reload_address): Declare.
+	* config/arc/arc.c (arc_legitimize_reload_address): New function.
+	* config/arc/arc.h (LEGITIMIZE_RELOAD_ADDRESS): Use it.
+
 2013-08-05 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Add add_s code denisity instructions.
