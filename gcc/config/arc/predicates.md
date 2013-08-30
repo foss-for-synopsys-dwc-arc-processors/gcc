@@ -588,7 +588,7 @@
        (match_operand 0 "shiftr4_operator")))
 
 (define_predicate "mult_operator"
-    (and (match_code "mult") (match_test "TARGET_ARC700 && !TARGET_NOMPY_SET"))
+    (and (match_code "mult") (match_test "TARGET_ARC700 && TARGET_MPY_SET"))
 )
 
 (define_predicate "commutative_operator"

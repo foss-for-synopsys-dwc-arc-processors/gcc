@@ -1709,6 +1709,6 @@ enum
 
 /* EM defines*/
 #define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_EM)
-#define EM_MULTI ((arc_mpy_option > 1) && TARGET_EM)
+#define EM_MULTI    ((arc_mpy_option > 1) && TARGET_EM)
 
 #endif /* GCC_ARC_H */

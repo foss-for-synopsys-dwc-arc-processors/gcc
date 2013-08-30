@@ -61,7 +61,11 @@ Generate ARCv2 code for EM processor
 
 mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
--mmpy-option={0,1,2,3,4,5,6} Compile ARC EM code with a multiplier design option. WLH1 is default on
+-mmpy-option={0,1,2,3,4,5,6} Compile ARCv2 code with a multiplier design option. WLH1 is default on
+
+mmpy16
+Target Report Mask(MPY16_SET)
+Enable MPYW,MPYUW instructions.
 
 mdiv-rem
 Target Report Mask(DIVREM)
@@ -70,6 +74,14 @@ Enable DIV-REM instructions for ARCv2
 mcode-density
 Target Report Mask(CODE_DENSITY)
 Enable code density instructions for ARCv2
+
+mshift-assist
+Target Report Mask(SHIFT_ASSIST)
+Enable shift assist instructions for ARCv2
+
+matomic
+Target Report Mask(ATOMIC)
+Enable atomic instructions for ARCv2
 
 mmixed-code
 Target Report Mask(MIXED_CODE_SET)
@@ -103,9 +115,9 @@ mmul64
 Target Report Mask(MUL64_SET)
 Generate mul64 and mulu64 instructions
 
-mno-mpy
-Target Report Mask(NOMPY_SET)
-Do not generate mpy instructions for ARC700
+mmpy
+Target Report Mask(MPY_SET)
+Generate MPY instructions. Default for ARC700, and ARCv2. For ARC600 is not valid.
 
 mEA
 Target Report Mask(EA_SET)

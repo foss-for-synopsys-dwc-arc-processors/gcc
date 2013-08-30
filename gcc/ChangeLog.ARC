@@ -1,3 +1,18 @@
+2013-08-30 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Handle -mmpy, -mmpy16, and
+          -mmpy-option architecture dependent.
+	* config/arc/arc.opt: Remove -mno-mpy option, introduce
+          instead -mmpy. Introduce -mshift-assist, -matomic options
+          for V2.
+	* config/arc/arc.h: Cosmetic change.
+	* config/arc/arc.md: Use TARGET_MPY_SET instead of TARGET_NOMPY_SET.
+	* config/arc/predicates.md: Likewise.
+	* config/arc/arc.c: Use TARGET_MPY_SET instead of
+          TARGET_NOMPY_SET. Use TARGET_MPY_SET, and TARGET_MPY16_SET
+          to select the muliplier instructions for ARCv2 as well.
+	* config/arc/arcEM.md: Likewise.
+
 2013-08-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (arc_legitimize_reload_address): Declare.

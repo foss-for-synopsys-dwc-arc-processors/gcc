@@ -36,7 +36,8 @@
 ;; Multipliers options
 (define_insn_reservation "mul_em_mpyw_1" 1
   (and (match_test "TARGET_EM")
-       (match_test "arc_mpy_option > 0")
+       (ior (match_test "arc_mpy_option > 0")
+	    (match_test "TARGET_MPY16_SET"))
        (match_test "arc_mpy_option <= 2")
        (eq_attr "type" "mul16_em"))
   "em_issue+mul_em")
@@ -56,7 +57,8 @@
 
 (define_insn_reservation "mul_em_multi_wlh1" 1
   (and (match_test "TARGET_EM")
-       (match_test "arc_mpy_option == 2")
+       (ior (match_test "arc_mpy_option == 2")
+	    (match_test "TARGET_MPY_SET"))
        (eq_attr "type" "multi,umulti"))
   "em_issue+mul_em")
 
@@ -73,15 +75,15 @@
   "em_issue+mul_em, mul_em*2")
 
 ;; FIXME! Make the difference between MPY and MPYM for WLH4
-(define_insn_reservation "mul_em_multi_wlh4" 5
+(define_insn_reservation "mul_em_multi_wlh4" 4
   (and (match_test "TARGET_EM")
-       (match_test "arc_mpy_option == 4")
+       (match_test "arc_mpy_option == 5")
        (eq_attr "type" "multi,umulti"))
   "em_issue+mul_em, mul_em*4")
 
 (define_insn_reservation "mul_em_multi_wlh5" 9
   (and (match_test "TARGET_EM")
-       (match_test "arc_mpy_option == 5")
+       (match_test "arc_mpy_option == 6")
        (eq_attr "type" "multi,umulti"))
   "em_issue+mul_em, mul_em*8")
 

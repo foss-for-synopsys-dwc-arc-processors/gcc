@@ -644,7 +644,7 @@ arc_init (void)
     {
       arc_cpu_string = "EM";
       /* I have the multiplier, then use it*/
-      if (arc_mpy_option)
+      if (EM_MUL_MPYW || EM_MULTI)
 	{
 	  arc_multcost = COSTS_N_INSNS (1);
 	}
@@ -661,14 +661,14 @@ arc_init (void)
 	/* latency 7;
 	   max throughput (1 multiply + 4 other insns) / 5 cycles.  */
 	arc_multcost = COSTS_N_INSNS (4);
-	if (TARGET_NOMPY_SET)
+	if (!TARGET_MPY_SET)
 	  arc_multcost = COSTS_N_INSNS (30);
 	break;
       case TUNE_ARC700_4_2_XMAC:
 	/* latency 5;
 	   max throughput (1 multiply + 2 other insns) / 3 cycles.  */
 	arc_multcost = COSTS_N_INSNS (3);
-	if (TARGET_NOMPY_SET)
+	if (!TARGET_MPY_SET)
 	  arc_multcost = COSTS_N_INSNS (30);
 	break;
       case TUNE_ARC600:
@@ -687,9 +687,9 @@ arc_init (void)
   if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_EM))
       error ("-mmul64 not supported for ARC700 or ARCv2");
 
-  /* MPY instructions valid only for ARC700.  */
-  if (TARGET_NOMPY_SET && (!TARGET_ARC700))
-      error ("-mno-mpy supported only for ARC700");
+  /* MPY instructions valid only for ARC700, and ARCv2  */
+  if (TARGET_MPY_SET && !TARGET_ARC700 & !TARGET_EM)
+      error ("-mmpy supported only for ARC700 or ARCv2");
 
   /* mul/mac instructions only for ARC600.  */
   if (TARGET_MULMAC_32BY16_SET && !(TARGET_ARC600 || TARGET_ARC601))
@@ -4204,7 +4204,8 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
 	*total= arc_multcost;
       /* We do not want synth_mult sequences when optimizing
 	 for size.  */
-      else if (TARGET_MUL64_SET || (TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MUL_MPYW)
+      else if (TARGET_MUL64_SET || (TARGET_ARC700 && TARGET_MPY_SET)
+	       || ((arc_mpy_option > 0) && TARGET_EM))
 	*total = COSTS_N_INSNS (1);
       else
 	*total = COSTS_N_INSNS (2);

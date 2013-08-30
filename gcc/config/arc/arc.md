@@ -1737,7 +1737,7 @@
 		 (match_operand:SI 2 "nonmemory_operand" "")))]
   ""
 {
-  if ((TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI)
+  if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
     {
       if (!register_operand (operands[0], SImode))
 	{
@@ -1868,7 +1868,7 @@
    (clobber (reg:SI LP_END))
    (clobber (reg:CC CC_REG))]
   "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && (!TARGET_ARC700 || !TARGET_MPY_SET)
    && SFUNC_CHECK_PREDICABLE
    && (!EM_MULTI)"
   "*return arc_output_libcall (\"__mulsi3\");"
@@ -1919,7 +1919,7 @@
  [(set (match_operand:SI 0 "mpy_dest_reg_operand"        "=Rcr,r,r,Rcr,r")
 	(mult:SI (match_operand:SI 1 "register_operand"  " 0,c,0,0,c")
 		 (match_operand:SI 2 "nonmemory_operand" "cL,cL,I,Cal,Cal")))]
- "(TARGET_ARC700 && !TARGET_NOMPY_SET)"
+ "(TARGET_ARC700 && TARGET_MPY_SET)"
  "mpyu%? %0,%1,%2"
  [(set_attr "length" "4,4,4,8,8")
   (set_attr "type" "umulti")
@@ -1945,13 +1945,13 @@
   [(set (match_operand:DI 0 "nonimmediate_operand" "")
 	(mult:DI (sign_extend:DI(match_operand:SI 1 "register_operand" ""))
 		 (sign_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET)
+  "(TARGET_ARC700 && TARGET_MPY_SET)
    || EM_MULTI
    || TARGET_MUL64_SET
    || TARGET_MULMAC_32BY16_SET"
 "
 {
-  if ((TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI)
+  if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -2033,7 +2033,7 @@
   [(set (match_operand:DI 0 "register_operand" "=&r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "%c"))
 		 (sign_extend:DI (match_operand:SI 2 "register_operand" "cL"))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI"
+  "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "#"
   "&& reload_completed"
   [(const_int 0)]
@@ -2057,7 +2057,7 @@
 	   (sign_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
 	   (sign_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
 	  (const_int 32))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI"
+  "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "* return TARGET_ARC700 ? \"mpyh%? %0,%1,%2\" : \"mpym%? %0,%1,%2\"; "
   [(set_attr "length" "4,4,8,8")
    (set_attr "type" "multi")
@@ -2074,7 +2074,7 @@
 	   (zero_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
 	   (zero_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
 	  (const_int 32))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI"
+  "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "* return TARGET_ARC700 ? \"mpyhu%? %0,%1,%2\" : \"mpymu%? %0,%1,%2\"; "
   [(set_attr "length" "4,4,8,8")
    (set_attr "type" "multi")
@@ -2098,7 +2098,7 @@
    (clobber (reg:CC CC_REG))]
   "!TARGET_BIG_ENDIAN
    && !TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && (!TARGET_ARC700 || !TARGET_MPY_SET)
    && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__umulsi3_highpart\");"
   [(set_attr "is_sfunc" "yes")
@@ -2119,7 +2119,7 @@
    (clobber (reg:CC CC_REG))]
   "TARGET_BIG_ENDIAN
    && !TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && (!TARGET_ARC700 || !TARGET_MPY_SET)
    && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__umulsi3_highpart\");"
   [(set_attr "is_sfunc" "yes")
@@ -2136,7 +2136,7 @@
 	   (zero_extend:DI (match_operand:SI 1 "register_operand"  " 0, c, 0,  0,  c"))
 	   (match_operand:DI 2 "immediate_usidi_operand" "L, L, I, Cal, Cal"))
 	  (const_int 32))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI"
+  "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "* return TARGET_ARC700 ? \"mpyhu%? %0,%1,%2\" : \"mpymu%? %0,%1,%2\"; "
   [(set_attr "length" "4,4,4,8,8")
    (set_attr "type" "multi")
@@ -2156,7 +2156,7 @@
 {
   rtx target = operands[0];
 
-  if ((!TARGET_ARC700 || TARGET_NOMPY_SET) && !EM_MULTI)
+  if ((!TARGET_ARC700 || !TARGET_MPY_SET) && !EM_MULTI)
     {
       emit_move_insn (gen_rtx_REG (SImode, 0), operands[1]);
       emit_move_insn (gen_rtx_REG (SImode, 1), operands[2]);
@@ -2188,7 +2188,7 @@
 		 (zero_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
   ""
 {
-  if ((TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI)
+  if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -2283,7 +2283,7 @@
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "%c"))
 		 (zero_extend:DI (match_operand:SI 2 "register_operand" "c"))))]
 ;;		 (zero_extend:DI (match_operand:SI 2 "register_operand" "rL"))))]
-  "(TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MULTI"
+  "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "#"
   "reload_completed"
   [(const_int 0)]
@@ -2309,7 +2309,7 @@
    (clobber (reg:DI MUL64_OUT_REG))
    (clobber (reg:CC CC_REG))]
    "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && (!TARGET_ARC700 || !TARGET_MPY_SET)
    && SFUNC_CHECK_PREDICABLE"
   "*return arc_output_libcall (\"__umulsidi3\");"
   [(set_attr "is_sfunc" "yes")
@@ -2326,7 +2326,7 @@
       (clobber (reg:DI MUL64_OUT_REG))
       (clobber (reg:CC CC_REG))])]
   "!TARGET_MUL64_SET && !TARGET_MULMAC_32BY16_SET
-   && (!TARGET_ARC700 || TARGET_NOMPY_SET)
+   && (!TARGET_ARC700 || !TARGET_MPY_SET)
    && !EM_MULTI
    && peep2_regno_dead_p (1, TARGET_BIG_ENDIAN ? R1_REG : R0_REG)"
   [(pc)]
@@ -4146,7 +4146,7 @@
    (set (match_operand:SI 4 "register_operand" "")
   	(mult:SI (match_operand:SI 2 "register_operand")
 		 (match_operand:SI 3 "nonmemory_operand" "")))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET
+  "TARGET_ARC700 && TARGET_MPY_SET
    && (rtx_equal_p (operands[0], operands[2])
        || rtx_equal_p (operands[0], operands[3]))
    && peep2_regno_dead_p (0, CC_REG)
@@ -4176,7 +4176,7 @@
    (set (match_operand:SI 4 "register_operand" "")
   	(mult:SI (match_operand:SI 2 "register_operand")
 		 (match_operand:SI 3 "nonmemory_operand" "")))]
-  "TARGET_ARC700 && !TARGET_NOMPY_SET
+  "TARGET_ARC700 && TARGET_MPY_SET
    && (rtx_equal_p (operands[0], operands[2])
        || rtx_equal_p (operands[0], operands[3]))
    && peep2_regno_dead_p (2, CC_REG)"
