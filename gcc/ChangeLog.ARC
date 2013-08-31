@@ -1,3 +1,7 @@
+2013-08-31  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* testsuite/gcc.target/arc/cond-set-use.c: New test.
+
 2013-08-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (arc_legitimize_reload_address): Declare.
