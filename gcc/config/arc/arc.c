@@ -7500,6 +7500,11 @@ arc_output_commutative_cond_exec (rtx *operands, bool output_p)
       case AND:
 	if (satisfies_constraint_C1p (operands[2]))
 	  pat = "bmsk%? %0,%1,%Z2";
+	else if (satisfies_constraint_C2p (operands[2]))
+	  {
+	    operands[2] = GEN_INT ((~INTVAL (operands[2])));
+	    pat = "bmskn%? %0,%1,%Z2";
+	  }
 	else if (satisfies_constraint_Ccp (operands[2]))
 	  pat = "bclr%? %0,%1,%M2";
 	else if (satisfies_constraint_CnL (operands[2]))

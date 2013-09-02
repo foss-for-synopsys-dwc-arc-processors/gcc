@@ -1,3 +1,8 @@
+2013-09-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* gcc/config/arc/arc.c: In arc_output_commutative_cond_exec handle
+	bmaskn instructions.
+
 2013-08-30 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Handle -mmpy, -mmpy16, and
