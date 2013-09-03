@@ -109,9 +109,14 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	    }
 	  if (mmpy_seen)
 	    opts->x_target_flags |= MASK_MPY16_SET;
+	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
+	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
+	  break;
 	case PROCESSOR_ARC601:
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
+	  /* This option makes no sense for ARC60x. */
+	  opts->x_target_flags &= ~MASK_MPY_SET;
 	  break;
 	default:
 	  gcc_unreachable ();

@@ -1,6 +1,10 @@
 2013-09-02 Claudiu Zissulescu <claziss@synopsys.com>
 
-	* gcc/config/arc/arc.c: In arc_output_commutative_cond_exec handle
+	* common/config/arc/arc-common.c: Disable mpy option for ARC601.
+
+2013-09-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: In arc_output_commutative_cond_exec handle
 	bmaskn instructions.
 
 2013-08-31  Joern Rennecke  <joern.rennecke@embecosm.com>
