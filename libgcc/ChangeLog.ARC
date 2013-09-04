@@ -1,3 +1,7 @@
+2013-09-04  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/t-arc700-uClibc: Remove -mA7 flag
+
 2013-08-22  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* libgcc/config.host: Unique build configuration settings for ARC
