@@ -1169,9 +1169,6 @@ arc_conditional_register_usage (void)
     {
       strcpy(rname29, "ilink");
       strcpy(rname30, "r30");
-      /* Cheap core regs can do from r0-r31 mapped on g/h */
-      CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], 62); /*ap*/
-      CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], 63); /*pcl*/
     }
   if (TARGET_MUL64_SET)
     {
@@ -1204,20 +1201,42 @@ arc_conditional_register_usage (void)
     }
   if (TARGET_Q_CLASS)
     {
-      reg_alloc_order[2] = 12;
-      reg_alloc_order[3] = 13;
-      reg_alloc_order[4] = 14;
-      reg_alloc_order[5] = 15;
-      reg_alloc_order[6] = 1;
-      reg_alloc_order[7] = 0;
-      reg_alloc_order[8] = 4;
-      reg_alloc_order[9] = 5;
-      reg_alloc_order[10] = 6;
-      reg_alloc_order[11] = 7;
-      reg_alloc_order[12] = 8;
-      reg_alloc_order[13] = 9;
-      reg_alloc_order[14] = 10;
-      reg_alloc_order[15] = 11;
+      if (optimize_size)
+	{
+	  reg_alloc_order[0] = 0;
+	  reg_alloc_order[1] = 1;
+	  reg_alloc_order[2] = 2;
+	  reg_alloc_order[3] = 3;
+	  reg_alloc_order[4] = 12;
+	  reg_alloc_order[5] = 13;
+	  reg_alloc_order[6] = 14;
+	  reg_alloc_order[7] = 15;
+	  reg_alloc_order[8] = 4;
+	  reg_alloc_order[9] = 5;
+	  reg_alloc_order[10] = 6;
+	  reg_alloc_order[11] = 7;
+	  reg_alloc_order[12] = 8;
+	  reg_alloc_order[13] = 9;
+	  reg_alloc_order[14] = 10;
+	  reg_alloc_order[15] = 11;
+	}
+      else
+	{
+	  reg_alloc_order[2] = 12;
+	  reg_alloc_order[3] = 13;
+	  reg_alloc_order[4] = 14;
+	  reg_alloc_order[5] = 15;
+	  reg_alloc_order[6] = 1;
+	  reg_alloc_order[7] = 0;
+	  reg_alloc_order[8] = 4;
+	  reg_alloc_order[9] = 5;
+	  reg_alloc_order[10] = 6;
+	  reg_alloc_order[11] = 7;
+	  reg_alloc_order[12] = 8;
+	  reg_alloc_order[13] = 9;
+	  reg_alloc_order[14] = 10;
+	  reg_alloc_order[15] = 11;
+	}
     }
   if (TARGET_SIMD_SET)
     {
@@ -4955,6 +4974,24 @@ arc_legitimate_address_p (enum machine_mode mode, rtx x, bool strict)
      return true;
   if (GET_CODE (x) == CONST_INT && LARGE_INT (INTVAL (x)))
      return true;
+
+  /* When we compiler for size avoid const(@sym + offset)
+     addresses. */
+  if (!flag_pic && optimize_size && !reload_completed
+      && (GET_CODE (x) == CONST)
+      && (GET_CODE (XEXP (x, 0)) == PLUS)
+      && (GET_CODE (XEXP (XEXP (x, 0), 0)) == SYMBOL_REF)
+      && !SYMBOL_REF_FUNCTION_P (XEXP (XEXP (x, 0), 0)))
+    {
+      rtx addend = XEXP (XEXP (x, 0), 1);
+      gcc_assert (CONST_INT_P (addend));
+      HOST_WIDE_INT offset = INTVAL (addend);
+
+      /* Allow addresses having a large offset to pass. Anyhow they
+	 will end in a limm. */
+      return !(offset > -1024 && offset < 1020);
+    }
+
   if ((GET_MODE_SIZE (mode) != 16)
       && (GET_CODE (x) == SYMBOL_REF
 	  || GET_CODE (x) == LABEL_REF
@@ -7390,12 +7427,17 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
      the previous computed return value. Hence, we avoid problems like
      add3 r0,sp,8 to be matched in the second round as add_s
      r0,sp,64*/
+#if 0
+  /* CZI: this "shortcut" is buggy as this procedure is not called
+     successively with constant arguments and output_p set to true
+     and then set to false. */
   if (!cond_p && !output_p && (ret != 0))
     {
       int tmp = ret;
       ret = 0;
       return tmp;
     }
+#endif
 
   /* First try to emit a 16 bit insn.  */
   ret = 2;
@@ -9271,7 +9313,7 @@ arc_spill_class (reg_class_t /* orig_class */, enum machine_mode)
 }
 
 bool
-compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density)
+compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, bool scaled)
 {
   rtx addr, plus0, plus1;
   int size, off;
@@ -9349,6 +9391,15 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density)
           off = INTVAL (plus1);
           return ((size != 2) && (off >= 0 && off < 128) && (off % 4 == 0));
         }
+
+      if ((GET_CODE (plus0) == MULT)
+	  && (GET_CODE (XEXP (plus0, 0)) == REG)
+	  && ((REGNO (XEXP (plus0, 0)) >= FIRST_PSEUDO_REGISTER)
+	      || COMPACT_GP_REG_P (REGNO (XEXP (plus0, 0))))
+	  && (GET_CODE (plus1) == REG)
+	  && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
+	      || COMPACT_GP_REG_P (REGNO (plus1))))
+	  return scaled;
     default:
       break ;
       /* TODO: 'gp' and 'pcl' are to supported as base address operand

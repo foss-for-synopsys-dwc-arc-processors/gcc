@@ -1014,8 +1014,9 @@ extern int arc_initial_elimination_offset(int from, int to);
 /* Recognize any constant value that is a valid address.  */
 #define CONSTANT_ADDRESS_P(X) \
 (flag_pic?arc_legitimate_pic_addr_p (X): \
-(GET_CODE (X) == LABEL_REF || GET_CODE (X) == SYMBOL_REF	\
- || GET_CODE (X) == CONST_INT || GET_CODE (X) == CONST))
+ (GET_CODE (X) == LABEL_REF || GET_CODE (X) == SYMBOL_REF	\
+  || GET_CODE (X) == CONST_INT \
+  || ((GET_CODE (X) == CONST) && !optimize_size)))
 
 /* Is the argument a const_int rtx, containing an exact power of 2 */
 #define  IS_POWEROF2_P(X) (! ( (X) & ((X) - 1)) && (X))
@@ -1443,7 +1444,7 @@ do {							\
    to a multiple of 2**LOG bytes.  */
 #define ASM_OUTPUT_ALIGN(FILE,LOG) \
 do { \
-  if ((LOG) != 0) fprintf (FILE, "\t.align %d\n", 1 << (LOG)); \
+  if ((LOG) != 0) fprintf (FILE, "\t.align %d\n", 1 << (LOG));	\
   if ((LOG)  > 1) \
     arc_clear_unalign (); \
 } while (0)

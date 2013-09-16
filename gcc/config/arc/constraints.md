@@ -253,6 +253,12 @@
   (and (match_code "mem")
        (match_test "compact_load_memory_operand (op, VOIDmode)")))
 
+(define_memory_constraint "Uts"
+  "@internal
+   A valid memory operand for ARCompact load instructions scaled"
+  (and (match_code "mem")
+       (match_test "compact_memory_operand_p (op, mode, false, TARGET_EM & TARGET_CODE_DENSITY)")))
+
 (define_memory_constraint "S"
   "@internal
    A valid memory operand for ARCompact store instructions"
@@ -267,7 +273,7 @@
 
 (define_memory_constraint "Usc"
   "@internal
-   A valid memory operand for storing constants"
+   A valid memory operand for storing long immediate constants"
   (and (match_code "mem")
        (match_test "!CONSTANT_P (XEXP (op,0))")
 ;; ??? the assembler rejects stores of immediates to small data.
@@ -294,7 +300,7 @@
   "@internal
    A valid memory operand for use with code density load ops"
   (and (match_code "mem")
-       (match_test "compact_memory_operand_p (op, mode, true)")))
+       (match_test "compact_memory_operand_p (op, mode, true, false)")))
 
 ;; General constraints
 

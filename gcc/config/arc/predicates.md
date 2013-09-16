@@ -187,7 +187,7 @@
 (define_predicate "compact_load_memory_operand"
   (match_code "mem")
   {
-   return compact_memory_operand_p (op, mode, false);
+   return compact_memory_operand_p (op, mode, false, false);
   }
 )
 

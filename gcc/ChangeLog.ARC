@@ -1,3 +1,25 @@
+2013-09-13 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h: Change compact_memory_operand_p
+          function prototype.
+	* config/arc/predicates.md: Likewise.
+	* config/arc/constraints.md: Add Uts constraint. Update all
+          compact_memory_operand_p calls to match the new function
+          prototype.
+	* config/arc/arc.h: Change CONSTANT_ADDRESS_P: Force no
+          const(@symb+off) addresses when we compile for size.
+	* config/arc/arc.c: reg_alloc_order is changed to favorize
+          more short instructions when we compile for size. Also,
+          reject addresses that are const(@symb+off) as valid
+          addresses (only when we compile for size). Update
+          compact_memory_operand_p to accept ld_s.as instructions.
+	* config/arc/arc.md: All em type instructions use for 'h'
+          register class the 'W' constraint letter. Change movhi_insn
+          and movsi_insn to accept long immediate variants, movsi_hi
+          can generate ld_s.as instructions. Add to movsf_insn a short
+          move instruction variant. Change order in addsi_mixed such
+          that short instructions are favorized.
+
 2013-09-02 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Disable mpy option for ARC601.
