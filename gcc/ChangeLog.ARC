@@ -1,5 +1,10 @@
 2013-09-13 Claudiu Zissulescu <claziss@synopsys.com>
 
+	* config/arc/arc.md: Fix addsi variant by prohibiting
+          predication.
+
+2013-09-13 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc-protos.h: Change compact_memory_operand_p
           function prototype.
 	* config/arc/predicates.md: Likewise.
