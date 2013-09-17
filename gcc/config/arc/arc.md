@@ -3807,7 +3807,7 @@
 	 2 of these are for alignment, and are anticipated in the length
 	 of the ADDR_DIFF_VEC.  */
       if (unalign && !satisfies_constraint_Rcq (xop[0]))
-	s = \"add2 %2,pcl,%0\n\tld_s%2,[%2,12]\";
+	s = \"add2 %2,pcl,%0\n\tld_s %2,[%2,12]\";
       else if (unalign)
 	s = \"add_s %2,%0,2\n\tld.as %2,[pcl,%2]\";
       else

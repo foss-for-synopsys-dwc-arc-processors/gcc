@@ -1,5 +1,9 @@
 2013-09-17 Claudiu Zissulescu <claziss@synopsys.com>
 
+	* config/arc/arc.md: Typo fixed.
+
+2013-09-17 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc.opt: Add -mARC601 option.
 
 2013-09-16 Claudiu Zissulescu <claziss@synopsys.com>
