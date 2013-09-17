@@ -45,6 +45,10 @@ mARC600
 Target Report
 Same as -mA6
 
+mARC601
+Target Report
+Generate ARCompact 32-bit code for ARCtangent-ARC601 processor
+
 mA7
 Target Report
 Generate ARCompact 32-bit code for ARCtangent-ARC700 processor
