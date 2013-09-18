@@ -580,9 +580,11 @@ arc_sched_adjust_priority (rtx insn, int priority)
 }
 
 static reg_class_t
-arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode,
-		      secondary_reload_info *)
+arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
+		      secondary_reload_info *sri)
 {
+  enum rtx_code code = GET_CODE (x);
+
   if (cl == DOUBLE_REGS)
     return GENERAL_REGS;
 
@@ -590,8 +592,86 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode,
   if ((cl == LPCOUNT_REG || cl == WRITABLE_CORE_REGS)
       && in_p && MEM_P (x))
     return GENERAL_REGS;
+
+ /* if we have a subreg(reg), where reg is a pseudo (that will end in a
+     memory location), then we may need a scratch register to handle
+     the fp/sp+largeoffset address. */
+  if (code == SUBREG)
+    {
+      int offset = SUBREG_BYTE (x);
+      x = SUBREG_REG(x);
+
+      if (REG_P (x))
+	{
+	  int regno = REGNO (x);
+	  if (regno >= FIRST_PSEUDO_REGISTER)
+	    regno = reg_renumber[regno];
+
+	  if (regno != -1)
+	    return NO_REGS;
+
+	  /* It is a pseudo that ends in a stack location. */
+	  rtx mem, addr;
+	  if (reg_equiv_mem (REGNO (x)))
+	    {
+	      /* Get the equivalent address and check the range of the
+		 offset. */
+	      mem = reg_equiv_mem (REGNO (x));
+	      addr = find_replacement (&XEXP (mem, 0));
+
+	      if (GET_CODE (addr) == PLUS
+		  && CONST_INT_P (XEXP (addr, 1))
+		  && (INTVAL(XEXP (addr, 1)) < -256 || INTVAL(XEXP (addr, 1)) > 255))
+		{
+		  switch (mode)
+		    {
+		    default:
+		      gcc_unreachable ();
+
+		    case QImode:
+		      sri->icode = in_p ? CODE_FOR_reload_qi_load : CODE_FOR_reload_qi_store;
+		      break;
+		    case HImode:
+		      sri->icode = in_p ? CODE_FOR_reload_hi_load : CODE_FOR_reload_hi_store;
+		      break;
+		    }
+		}
+	    }
+	}
+    }
   return NO_REGS;
 }
+
+/* Convert reloads using offsets that are too large to use indirect addressing. */
+void
+arc_secondary_reload_conv (rtx reg, rtx mem, rtx scratch, bool store_p)
+{
+  int regno = true_regnum (reg);
+  rtx addr;
+
+  gcc_assert (GET_CODE (mem) == MEM);
+  addr = XEXP (mem, 0);
+
+  if (GET_CODE (addr) == PLUS
+      && CONST_INT_P (XEXP (addr, 1))
+      && (INTVAL(XEXP (addr, 1)) < -256 || INTVAL(XEXP (addr, 1)) > 255))
+    {
+      /* Large offset: use a move. FIXME: ld ops accepts limms as
+	 offsets. Hence, the following move insn is not required. We
+	 can consider to skip here also offsets that can be scaled. */
+      emit_move_insn (scratch, addr);
+      mem = replace_equiv_address_nv (mem, scratch);
+    }
+
+  /* Now create the move.  */
+  if (store_p)
+    emit_insn (gen_rtx_SET (VOIDmode, mem, reg));
+  else
+    emit_insn (gen_rtx_SET (VOIDmode, reg, mem));
+
+  return;
+}
+
 
 static unsigned arc_ifcvt (void);
 struct rtl_opt_pass pass_arc_ifcvt =

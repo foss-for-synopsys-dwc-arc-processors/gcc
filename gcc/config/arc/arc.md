@@ -5665,6 +5665,29 @@
    (set_attr "type" "compare")]
 )
 
+; Any mode that needs to be solved by secondary reload
+(define_mode_iterator SRI [QI HI])
+
+(define_expand "reload_<mode>_load"
+  [(parallel [(match_operand:SRI 0 "register_operand" "=r")
+	      (match_operand:SRI 1 "memory_operand" "m")
+	      (match_operand:SI 2 "register_operand" "=&r")])]
+  ""
+{
+ arc_secondary_reload_conv (operands[0], operands[1], operands[2], false);
+ DONE;
+})
+
+(define_expand "reload_<mode>_store"
+  [(parallel [(match_operand:SRI 0 "memory_operand" "=m")
+	      (match_operand:SRI 1 "register_operand" "r")
+	      (match_operand:SI 2 "register_operand" "=&r")])]
+  ""
+{
+ arc_secondary_reload_conv (operands[1], operands[0], operands[2], true);
+ DONE;
+})
+
 
 ;; include the arc-FPX instructions
 (include "fpx.md")

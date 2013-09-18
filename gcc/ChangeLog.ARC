@@ -1,3 +1,11 @@
+2013-09-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h: Add arc_secondary_reload_conv
+          function prototype.
+	* config/arc/arc.c: Add arc_secondary_reload_conv
+          function. Update arc_secondary_reload function.
+	* config/arc/arc.md: Add reload patterns.
+
 2013-09-17 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Typo fixed.
