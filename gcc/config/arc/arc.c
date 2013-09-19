@@ -625,9 +625,6 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
 		{
 		  switch (mode)
 		    {
-		    default:
-		      gcc_unreachable ();
-
 		    case QImode:
 		      sri->icode = in_p ? CODE_FOR_reload_qi_load : CODE_FOR_reload_qi_store;
 		      break;
