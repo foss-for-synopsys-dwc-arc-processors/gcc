@@ -1,3 +1,8 @@
+2013-09-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Compute the correct length for
+          instructions having the attribute maybe_limm.
+
 2013-09-18 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h: Add arc_secondary_reload_conv

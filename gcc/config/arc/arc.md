@@ -366,8 +366,12 @@
 	(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 4)]
       (const_int 2))
 
-    (eq_attr "iscompact" "true_limm,maybe_limm")
+    (eq_attr "iscompact" "true_limm")
     (const_int 6)
+
+    (eq_attr "iscompact" "maybe_limm")
+    (cond [(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 8)]
+	  (const_int 6))
 
     (eq_attr "type" "load")
     (if_then_else
@@ -607,8 +611,8 @@
   "if (prepare_move_operands (operands, HImode)) DONE;")
 
 (define_insn "*movhi_insn"
-  [(set (match_operand:HI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,   W, w,w,???w,Rcq#q,w,Rcq,  S,r,m,???m,VUsc")
-	(match_operand:HI 1 "move_src_operand"    "cL,   cP,Rcq#q,WCm1,cL,I,?Rac,  ?i,?i,  T,Rcq,m,c,?Rac,   i"))]
+  [(set (match_operand:HI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,   W, w,w,???w,Rcq#q, w,Rcq,  S,r,m,???m,VUsc")
+	(match_operand:HI 1 "move_src_operand"    "cL,   cP,Rcq#q,WCm1,cL,I,?Rac,   ?i,?i,  T,Rcq,m,c,?Rac,   i"))]
   "register_operand (operands[0], HImode)
    || register_operand (operands[1], HImode)"
   "@
