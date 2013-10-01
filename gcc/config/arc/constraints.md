@@ -212,6 +212,7 @@
   (and (match_code "const_int")
        (match_test "TARGET_EM
                     && ((ival < 0) || (ival >= 0x80000000))
+                    && (ival != -1)
                     && IS_POWEROF2_P ((~ival) + 1)")))
 
 (define_constraint "Ccp"

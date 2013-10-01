@@ -1,3 +1,9 @@
+2013-09-30 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/constraints.md: Constant C2p rejects -1
+          constants, that leads to a wrong constant used by bmskn
+          instruction.
+
 2013-09-20 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Compute the correct length for
