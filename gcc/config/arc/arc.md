@@ -5578,9 +5578,9 @@
 (define_code_iterator arcCC_cond [eq ne gt lt ge le])
 
 (define_insn "arcset<code>"
-  [(set (match_operand:SI 0 "register_operand"                "=r,r,  r,r,r,r,  r,  r")
-	(arcCC_cond:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
-		       (match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
+  [(set (match_operand:SI 0 "register_operand"                "=r,r,r,r,r,r,r,r")
+	(arcCC_cond:SI (match_operand:SI 1 "nonmemory_operand" "0,r,n,0,r,0,0,r")
+		       (match_operand:SI 2 "nonmemory_operand" "r,r,r,L,L,I,n,n")))]
   "TARGET_EM && TARGET_CODE_DENSITY"
   "set<code>%? %0, %1, %2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
@@ -5592,8 +5592,8 @@
 
 (define_insn "arcsetltu"
   [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
-	(ltu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
-		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
+	(ltu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,  n,0,r,0,  0,  r")
+		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,  n,  n")))]
   "TARGET_EM && TARGET_CODE_DENSITY"
   "setlo%? %0, %1, %2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
@@ -5605,8 +5605,8 @@
 
 (define_insn "arcsetgeu"
   [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
-	(geu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
-		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
+	(geu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,  n,0,r,0,  0,  r")
+		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,  n,  n")))]
   "TARGET_EM && TARGET_CODE_DENSITY"
   "seths%? %0, %1, %2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
@@ -5619,8 +5619,8 @@
 ;; Special cases of SETCC
 (define_insn_and_split "arcsethi"
   [(set (match_operand:SI 0 "register_operand"         "=r,  r,  r,r")
-	(gtu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,  r,Cal")
-		(match_operand:SI 2 "nonmemory_operand" "r,C62,Cal,r")))]
+	(gtu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,  r,n")
+		(match_operand:SI 2 "nonmemory_operand" "r,C62,  n,r")))]
   "TARGET_EM && TARGET_CODE_DENSITY"
   "#"
   "reload_completed"
@@ -5645,8 +5645,8 @@
 
 (define_insn_and_split "arcsetls"
   [(set (match_operand:SI 0 "register_operand"         "=r,  r,r,r")
-	(leu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,r,Cal")
-		(match_operand:SI 2 "nonmemory_operand" "r,C62,Cal,r")))]
+	(leu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,r,n")
+		(match_operand:SI 2 "nonmemory_operand" "r,C62,n,r")))]
   "TARGET_EM && TARGET_CODE_DENSITY"
   "#"
   "reload_completed"

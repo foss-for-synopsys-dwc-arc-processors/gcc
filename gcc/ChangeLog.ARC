@@ -1,3 +1,8 @@
+2013-10-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md: Use constraint letter n instead of Cal in
+          set<cc> instructions. This avoids symbol_refs to be matched.
+
 2013-09-30 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/constraints.md: Constant C2p rejects -1
