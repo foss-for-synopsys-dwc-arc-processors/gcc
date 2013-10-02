@@ -69,10 +69,12 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 {
   size_t code = decoded->opt_index;
   int value = decoded->value;
+  const char *arg = decoded->arg;
+  static int mcpu_seen = PROCESSOR_NONE;
+  static int mmpy_seen  = 0;
 
   switch (code)
     {
-      static int mcpu_seen = PROCESSOR_NONE;
     case OPT_mcpu_:
       /* N.B., at this point arc_cpu has already been set to its new value by
 	 our caller, so comparing arc_cpu with PROCESSOR_NONE is pointless.  */
@@ -83,20 +85,75 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
       switch (value)
 	{
+	case PROCESSOR_ARC700:
+	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
+	    opts->x_target_flags |= MASK_MPY_SET;
+	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
+	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
+	  /* For ARC700, mpy16 makes no sense. */
+	  opts->x_target_flags &= ~MASK_MPY16_SET;
+	  break;
 	case PROCESSOR_A5:
 	case PROCESSOR_ARC600:
-	case PROCESSOR_ARC700:
-	  if (! (opts_set->x_target_flags & MASK_BARREL_SHIFTER) )
+	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
+	  /* This option makes no sense for ARC60x. */
+	  opts->x_target_flags &= ~MASK_MPY_SET;
 	  break;
+
 	case PROCESSOR_ARCv2EM:
-	case PROCESSOR_ARC601:
-	  if (! (opts_set->x_target_flags & MASK_BARREL_SHIFTER) )
+	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
+	    {
+	      opts->x_target_flags |= MASK_MPY_SET;
+	      opts->x_target_flags |= MASK_MPY16_SET;
+	    }
+	  if (mmpy_seen)
+	    opts->x_target_flags |= MASK_MPY16_SET;
+	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
+	  break;
+	case PROCESSOR_ARC601:
+	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
+	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
+	  /* This option makes no sense for ARC60x. */
+	  opts->x_target_flags &= ~MASK_MPY_SET;
 	  break;
 	default:
 	  gcc_unreachable ();
 	}
+      break;
+
+      /* In the case of ARCv2, -mmpy option sets also the -mmpy16 option. */
+    case OPT_mmpy:
+      mmpy_seen = 1;
+      if (mcpu_seen == PROCESSOR_ARCv2EM)
+	opts->x_target_flags |= MASK_MPY16_SET;
+      /* For V2 chain, by default turn on MPY16. */
+#ifdef TARGET_CPU_DEFAULT == TARGET_CPU_EM
+      opts->x_target_flags |= MASK_MPY16_SET;
+#endif
+      /* Demode any multiplier option given via -mmpy_option. */
+      if ((opts->x_arc_mpy_option > 0) && !value)
+	opts->x_arc_mpy_option = 1;
+      break;
+
+    case OPT_mmpy16:
+      if ((opts->x_arc_mpy_option > 0) && !value)
+	opts->x_arc_mpy_option = 0;
+      if ((opts->x_arc_mpy_option == 0) && value)
+	opts->x_arc_mpy_option = 1;
+      break;
+
+    case OPT_mmpy_option_:
+      if (value < 0 || value > 6)
+	error_at (loc, "bad value %qs for -mmpy-option switch", arg);
+
+      if (value > 0)
+	opts->x_target_flags |= MASK_MPY16_SET;
+      if (value > 1)
+	opts->x_target_flags |= MASK_MPY_SET;
+
+      break;
     }
 
   return true;
@@ -111,11 +168,11 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 /* Default for EM: no barrel shifter*/
 #define TARGET_DEFAULT_TARGET_FLAGS \
-  (MASK_VOLATILE_CACHE_SET|DEFAULT_NO_SDATA)
+  (MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA | MASK_MPY_SET | MASK_MPY16_SET)
 #else
 /* We default to ARC700, which has the barrel shifter enabled.  */
 #define TARGET_DEFAULT_TARGET_FLAGS \
-  (MASK_BARREL_SHIFTER|MASK_VOLATILE_CACHE_SET|DEFAULT_NO_SDATA)
+  (MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA | MASK_MPY_SET)
 #endif
 
 #include "common/common-target-def.h"

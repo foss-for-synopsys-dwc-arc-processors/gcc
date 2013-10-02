@@ -206,6 +206,15 @@
   (and (match_code "const_int")
        (match_test "ival && IS_POWEROF2_P (ival + 1)")))
 
+(define_constraint "C2p"
+ "@internal
+  constant such that (~x)+1 is a power of two, and x < 0"
+  (and (match_code "const_int")
+       (match_test "TARGET_EM
+                    && ((ival < 0) || (ival >= 0x80000000))
+                    && (ival != -1)
+                    && IS_POWEROF2_P ((~ival) + 1)")))
+
 (define_constraint "Ccp"
  "@internal
   constant such that ~x (one's Complement) is a power of two"
@@ -245,6 +254,12 @@
   (and (match_code "mem")
        (match_test "compact_load_memory_operand (op, VOIDmode)")))
 
+(define_memory_constraint "Uts"
+  "@internal
+   A valid memory operand for ARCompact load instructions scaled"
+  (and (match_code "mem")
+       (match_test "compact_memory_operand_p (op, mode, false, TARGET_EM & TARGET_CODE_DENSITY)")))
+
 (define_memory_constraint "S"
   "@internal
    A valid memory operand for ARCompact store instructions"
@@ -259,7 +274,7 @@
 
 (define_memory_constraint "Usc"
   "@internal
-   A valid memory operand for storing constants"
+   A valid memory operand for storing long immediate constants"
   (and (match_code "mem")
        (match_test "!CONSTANT_P (XEXP (op,0))")
 ;; ??? the assembler rejects stores of immediates to small data.
@@ -280,6 +295,13 @@
        (match_test "GET_CODE (XEXP (op, 0)) == POST_INC")
        (match_test "REG_P (XEXP (XEXP (op, 0), 0))")
        (match_test "REGNO (XEXP (XEXP (op, 0), 0)) == SP_REG")))
+
+; Memory addresses suited for code density load ops
+(define_memory_constraint "Ucd"
+  "@internal
+   A valid memory operand for use with code density load ops"
+  (and (match_code "mem")
+       (match_test "compact_memory_operand_p (op, mode, true, false)")))
 
 ;; General constraints
 
@@ -415,3 +437,12 @@
    An unsigned 6-bit integer constant, up to 62."
   (and (match_code "const_int")
        (match_test "UNSIGNED_INT6 (ival - 1)")))
+
+; Code density registers
+(define_register_constraint "Rcd" "R0R3_CODE_DENSITY_REGS"
+  "@internal
+   core register @code{r0}-@code{r3}")
+
+(define_register_constraint "Rsd" "R0R1_CODE_DENSITY_REGS"
+  "@internal
+   core register @code{r0}-@code{r1}")

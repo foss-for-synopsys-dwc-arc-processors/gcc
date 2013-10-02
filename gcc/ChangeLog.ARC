@@ -1,12 +1,156 @@
+2013-10-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md: Use constraint letter n instead of Cal in
+          set<cc> instructions. This avoids symbol_refs to be matched.
+
+2013-09-30 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/constraints.md: Constant C2p rejects -1
+          constants, that leads to a wrong constant used by bmskn
+          instruction.
+
+2013-09-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Compute the correct length for
+          instructions having the attribute maybe_limm.
+
+2013-09-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h: Add arc_secondary_reload_conv
+          function prototype.
+	* config/arc/arc.c: Add arc_secondary_reload_conv
+          function. Update arc_secondary_reload function.
+	* config/arc/arc.md: Add reload patterns.
+
+2013-09-17 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Typo fixed.
+
+2013-09-17 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.opt: Add -mARC601 option.
+
+2013-09-16 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Fix addsi variant by prohibiting
+          predication.
+
+2013-09-13 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h: Change compact_memory_operand_p
+          function prototype.
+	* config/arc/predicates.md: Likewise.
+	* config/arc/constraints.md: Add Uts constraint. Update all
+          compact_memory_operand_p calls to match the new function
+          prototype.
+	* config/arc/arc.h: Change CONSTANT_ADDRESS_P: Force no
+          const(@symb+off) addresses when we compile for size.
+	* config/arc/arc.c: reg_alloc_order is changed to favorize
+          more short instructions when we compile for size. Also,
+          reject addresses that are const(@symb+off) as valid
+          addresses (only when we compile for size). Update
+          compact_memory_operand_p to accept ld_s.as instructions.
+	* config/arc/arc.md: All em type instructions use for 'h'
+          register class the 'W' constraint letter. Change movhi_insn
+          and movsi_insn to accept long immediate variants, movsi_hi
+          can generate ld_s.as instructions. Add to movsf_insn a short
+          move instruction variant. Change order in addsi_mixed such
+          that short instructions are favorized.
+
+2013-09-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Disable mpy option for ARC601.
+
+2013-09-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: In arc_output_commutative_cond_exec handle
+	bmaskn instructions.
+
 2013-08-31  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* testsuite/gcc.target/arc/cond-set-use.c: New test.
+
+2013-08-30 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Handle -mmpy, -mmpy16, and
+          -mmpy-option architecture dependent.
+	* config/arc/arc.opt: Remove -mno-mpy option, introduce
+          instead -mmpy. Introduce -mshift-assist, -matomic options
+          for V2.
+	* config/arc/arc.h: Cosmetic change.
+	* config/arc/arc.md: Use TARGET_MPY_SET instead of TARGET_NOMPY_SET.
+	* config/arc/predicates.md: Likewise.
+	* config/arc/arc.c: Use TARGET_MPY_SET instead of
+          TARGET_NOMPY_SET. Use TARGET_MPY_SET, and TARGET_MPY16_SET
+          to select the muliplier instructions for ARCv2 as well.
+	* config/arc/arcEM.md: Likewise.
+
+2013-08-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* gcc/config/arc/arc.h: Fix multilib defaults.
+	* gcc/config/arc/t-arc-newlib: Add multilib support for EM.
 
 2013-08-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (arc_legitimize_reload_address): Declare.
 	* config/arc/arc.c (arc_legitimize_reload_address): New function.
 	* config/arc/arc.h (LEGITIMIZE_RELOAD_ADDRESS): Use it.
+
+2013-08-05 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Add add_s code denisity instructions.
+	* config/arc/arc.md: Likewise.
+
+2013-08-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Add st_s r0,[gp,s11] instruction.
+
+2013-08-01 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h: Add R0R1_CODE_DENSITY register class.
+	* config/arc/arc.md: Add ld_s r1,[gp,s11] instruction.
+	* config/arc/constraints.md: Add Rsd constraint used by above
+	* instruction.
+
+2013-08-01 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arcEM.md: Add pipeline information for DIV_REM
+          ops. Refurbish load/store and multiplier instruction
+          reservations.
+
+2013-07-25 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h: Add compact_memory_operand_p prototype.
+	* config/arc/arc.c: Add compact_memory_operand_p function that returns
+	true if a memory address can be used with a short instruction.
+	* config/arc/arc.h: Add R0R3_CODE_DENSITY_REGS register class for
+	code density short instructions.
+	* config/arc/arc.md: Add ld_s code density mnemonics.
+	* config/arc/constraints.md: Define Rcd, Ucd constraints for short
+	code density load instructions.
+	* config/arc/predicates.md: compact_load_memory_operand predicate uses
+	conmpact_memory_operand_p function.
+
+2013-07-24 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Add code density short sub instruction. Add cd
+	(code density) as a cpu facility option.
+
+2013-07-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/predicates.md (proper_comparison_operator):
+	Take the mode from either one of the source registers.
+
+2013-07-22 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Add bmskn pattern to addsi3_i.
+	* config/arc/constraints.md: Add C2p constraint letter
+	needed by bmskn instruction.
+
+2013-07-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Refurbish multiplier patterns for EM. Use mpy
+	instead of mpyu for its short variant.
 
 2013-07-14 Claudiu Zissulescu <claziss@synopsys.com>
 

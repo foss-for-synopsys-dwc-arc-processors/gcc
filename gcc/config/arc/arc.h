@@ -308,9 +308,9 @@ along with GCC; see the file COPYING3.  If not see
 
 #ifndef MULTILIB_DEFAULTS
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-#define MULTILIB_DEFAULTS { "mav2em" }
+#define MULTILIB_DEFAULTS { "mcpu=ARCv2EM" }
 #else
-#define MULTILIB_DEFAULTS { "mARC700" }
+#define MULTILIB_DEFAULTS { "mcpu=ARC700" }
 #endif
 #endif
 
@@ -602,9 +602,9 @@ extern unsigned int arc_mode_class[];
    stack pointer (r28).  */
 
 #define COMPACT_GP_REG_P(REGNO) \
-   (((signed)(REGNO) >= 0 && (REGNO) <= 3) || ((REGNO) >= 12 && (REGNO) <= 15))
+  (((signed)(REGNO) >= 0 && (REGNO) <= 3) || ((REGNO) >= 12 && (REGNO) <= 15))
 #define SP_REG_P(REGNO)  ((REGNO) == 28)
-
+#define CODE_DENSITY_REG_P(REGNO) ((signed)(REGNO) >= 0 && (REGNO) <= 3)
 
 
 /* Register classes and constants.  */
@@ -652,6 +652,8 @@ enum reg_class
    WRITABLE_CORE_REGS,		/* 'w' */
    CHEAP_CORE_REGS,		/* 'c' */
    ALL_CORE_REGS,		/* 'Rac' */
+   R0R3_CODE_DENSITY_REGS,      /* 'Rcd' */
+   R0R1_CODE_DENSITY_REGS,      /* 'Rsd' */
    ALL_REGS,
    LIM_REG_CLASSES
 };
@@ -659,27 +661,29 @@ enum reg_class
 #define N_REG_CLASSES (int) LIM_REG_CLASSES
 
 /* Give names of register classes as strings for dump file.   */
-#define REG_CLASS_NAMES	  \
-{                         \
-  "NO_REGS",           	  \
-  "R0_REGS",            	  \
-  "GP_REG",            	  \
-  "FP_REG",            	  \
-  "SP_REGS",		  \
-  "LPCOUNT_REG",	  \
-  "LINK_REGS",         	  \
-  "DOUBLE_REGS",          \
-  "SIMD_VR_REGS",         \
-  "SIMD_DMA_CONFIG_REGS", \
-  "ARCOMPACT16_REGS",  	  \
-  "AC16_BASE_REGS",       \
-  "SIBCALL_REGS",	  \
-  "GENERAL_REGS",      	  \
-  "MPY_WRITABLE_CORE_REGS",   \
-  "WRITABLE_CORE_REGS",   \
-  "CHEAP_CORE_REGS",	  \
-  "ALL_CORE_REGS",	  \
-  "ALL_REGS"          	  \
+#define REG_CLASS_NAMES	    \
+{                           \
+  "NO_REGS",           	    \
+  "R0_REGS",                \
+  "GP_REG",            	    \
+  "FP_REG",            	    \
+  "SP_REGS",		    \
+  "LPCOUNT_REG",	    \
+  "LINK_REGS",         	    \
+  "DOUBLE_REGS",            \
+  "SIMD_VR_REGS",           \
+  "SIMD_DMA_CONFIG_REGS",   \
+  "ARCOMPACT16_REGS",  	    \
+  "AC16_BASE_REGS",         \
+  "SIBCALL_REGS",	    \
+  "GENERAL_REGS",      	    \
+  "MPY_WRITABLE_CORE_REGS", \
+  "WRITABLE_CORE_REGS",     \
+  "CHEAP_CORE_REGS",	    \
+  "R0R3_CODE_DENSITY_REGS", \
+  "R0R1_CODE_DENSITY_REGS", \
+  "ALL_CORE_REGS",	    \
+  "ALL_REGS"          	    \
 }
 
 /* Define which registers fit in which classes.
@@ -700,7 +704,7 @@ enum reg_class
   {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000ffff},      /* 'V', DI0-7,DO0-7 Registers */	\
   {0x0000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'q', r0-r3, r12-r15 */		\
   {0x1000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'e', r0-r3, r12-r15, sp */	\
-  {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},    /* "Rsc", r0-r12 */ \
+  {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* "Rsc", r0-r12 */ \
   {0x9fffffff, 0xc0000000, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r28, blink, ap and pcl */	\
   {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'W',  r0-r31 */ \
   /* Include ap / pcl in WRITABLE_CORE_REGS for sake of symmetry.  As these \
@@ -710,6 +714,8 @@ enum reg_class
   {0xffffffff, 0xd0000000, 0x00000000, 0x00000000, 0x00000000},      /* 'w', r0-r31, r60 */ \
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
+  {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
+  {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
@@ -1008,8 +1014,9 @@ extern int arc_initial_elimination_offset(int from, int to);
 /* Recognize any constant value that is a valid address.  */
 #define CONSTANT_ADDRESS_P(X) \
 (flag_pic?arc_legitimate_pic_addr_p (X): \
-(GET_CODE (X) == LABEL_REF || GET_CODE (X) == SYMBOL_REF	\
- || GET_CODE (X) == CONST_INT || GET_CODE (X) == CONST))
+ (GET_CODE (X) == LABEL_REF || GET_CODE (X) == SYMBOL_REF	\
+  || GET_CODE (X) == CONST_INT \
+  || ((GET_CODE (X) == CONST) && !optimize_size)))
 
 /* Is the argument a const_int rtx, containing an exact power of 2 */
 #define  IS_POWEROF2_P(X) (! ( (X) & ((X) - 1)) && (X))
@@ -1437,7 +1444,7 @@ do {							\
    to a multiple of 2**LOG bytes.  */
 #define ASM_OUTPUT_ALIGN(FILE,LOG) \
 do { \
-  if ((LOG) != 0) fprintf (FILE, "\t.align %d\n", 1 << (LOG)); \
+  if ((LOG) != 0) fprintf (FILE, "\t.align %d\n", 1 << (LOG));	\
   if ((LOG)  > 1) \
     arc_clear_unalign (); \
 } while (0)
@@ -1703,6 +1710,6 @@ enum
 
 /* EM defines*/
 #define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_EM)
-#define EM_MULTI ((arc_mpy_option > 1) && TARGET_EM)
+#define EM_MULTI    ((arc_mpy_option > 1) && TARGET_EM)
 
 #endif /* GCC_ARC_H */

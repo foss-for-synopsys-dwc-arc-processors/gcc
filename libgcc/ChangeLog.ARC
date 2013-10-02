@@ -1,3 +1,19 @@
+2013-09-04  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/t-arc700-uClibc: Remove -mA7 flag
+
+2013-08-22  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* libgcc/config.host: Unique build configuration settings for ARC
+	processors.
+	* libgcc/config/arc/gmon/dcache_linesz.S: Disable reading the cache
+	configuration for EM.
+	* libgcc/config/arc/gmon/profil.S: Disable using profiling functions
+	for EM.
+	* libgcc/config/arc/lib1funcs.S: Use custom ASM code to emulate
+	div/rem, mult and floating point operations whenever these are not
+	available for the selected V2 architecture.
+
 2013-06-08  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/dp-hack.h

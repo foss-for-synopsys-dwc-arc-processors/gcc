@@ -580,9 +580,11 @@ arc_sched_adjust_priority (rtx insn, int priority)
 }
 
 static reg_class_t
-arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode,
-		      secondary_reload_info *)
+arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
+		      secondary_reload_info *sri)
 {
+  enum rtx_code code = GET_CODE (x);
+
   if (cl == DOUBLE_REGS)
     return GENERAL_REGS;
 
@@ -590,8 +592,83 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode,
   if ((cl == LPCOUNT_REG || cl == WRITABLE_CORE_REGS)
       && in_p && MEM_P (x))
     return GENERAL_REGS;
+
+ /* if we have a subreg(reg), where reg is a pseudo (that will end in a
+     memory location), then we may need a scratch register to handle
+     the fp/sp+largeoffset address. */
+  if (code == SUBREG)
+    {
+      int offset = SUBREG_BYTE (x);
+      x = SUBREG_REG(x);
+
+      if (REG_P (x))
+	{
+	  int regno = REGNO (x);
+	  if (regno >= FIRST_PSEUDO_REGISTER)
+	    regno = reg_renumber[regno];
+
+	  if (regno != -1)
+	    return NO_REGS;
+
+	  /* It is a pseudo that ends in a stack location. */
+	  rtx mem, addr;
+	  if (reg_equiv_mem (REGNO (x)))
+	    {
+	      /* Get the equivalent address and check the range of the
+		 offset. */
+	      mem = reg_equiv_mem (REGNO (x));
+	      addr = find_replacement (&XEXP (mem, 0));
+
+	      if (GET_CODE (addr) == PLUS
+		  && CONST_INT_P (XEXP (addr, 1))
+		  && (INTVAL(XEXP (addr, 1)) < -256 || INTVAL(XEXP (addr, 1)) > 255))
+		{
+		  switch (mode)
+		    {
+		    case QImode:
+		      sri->icode = in_p ? CODE_FOR_reload_qi_load : CODE_FOR_reload_qi_store;
+		      break;
+		    case HImode:
+		      sri->icode = in_p ? CODE_FOR_reload_hi_load : CODE_FOR_reload_hi_store;
+		      break;
+		    }
+		}
+	    }
+	}
+    }
   return NO_REGS;
 }
+
+/* Convert reloads using offsets that are too large to use indirect addressing. */
+void
+arc_secondary_reload_conv (rtx reg, rtx mem, rtx scratch, bool store_p)
+{
+  int regno = true_regnum (reg);
+  rtx addr;
+
+  gcc_assert (GET_CODE (mem) == MEM);
+  addr = XEXP (mem, 0);
+
+  if (GET_CODE (addr) == PLUS
+      && CONST_INT_P (XEXP (addr, 1))
+      && (INTVAL(XEXP (addr, 1)) < -256 || INTVAL(XEXP (addr, 1)) > 255))
+    {
+      /* Large offset: use a move. FIXME: ld ops accepts limms as
+	 offsets. Hence, the following move insn is not required. We
+	 can consider to skip here also offsets that can be scaled. */
+      emit_move_insn (scratch, addr);
+      mem = replace_equiv_address_nv (mem, scratch);
+    }
+
+  /* Now create the move.  */
+  if (store_p)
+    emit_insn (gen_rtx_SET (VOIDmode, mem, reg));
+  else
+    emit_insn (gen_rtx_SET (VOIDmode, reg, mem));
+
+  return;
+}
+
 
 static unsigned arc_ifcvt (void);
 struct rtl_opt_pass pass_arc_ifcvt =
@@ -644,7 +721,7 @@ arc_init (void)
     {
       arc_cpu_string = "EM";
       /* I have the multiplier, then use it*/
-      if (arc_mpy_option)
+      if (EM_MUL_MPYW || EM_MULTI)
 	{
 	  arc_multcost = COSTS_N_INSNS (1);
 	}
@@ -661,14 +738,14 @@ arc_init (void)
 	/* latency 7;
 	   max throughput (1 multiply + 4 other insns) / 5 cycles.  */
 	arc_multcost = COSTS_N_INSNS (4);
-	if (TARGET_NOMPY_SET)
+	if (!TARGET_MPY_SET)
 	  arc_multcost = COSTS_N_INSNS (30);
 	break;
       case TUNE_ARC700_4_2_XMAC:
 	/* latency 5;
 	   max throughput (1 multiply + 2 other insns) / 3 cycles.  */
 	arc_multcost = COSTS_N_INSNS (3);
-	if (TARGET_NOMPY_SET)
+	if (!TARGET_MPY_SET)
 	  arc_multcost = COSTS_N_INSNS (30);
 	break;
       case TUNE_ARC600:
@@ -687,9 +764,9 @@ arc_init (void)
   if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_EM))
       error ("-mmul64 not supported for ARC700 or ARCv2");
 
-  /* MPY instructions valid only for ARC700.  */
-  if (TARGET_NOMPY_SET && (!TARGET_ARC700))
-      error ("-mno-mpy supported only for ARC700");
+  /* MPY instructions valid only for ARC700, and ARCv2  */
+  if (TARGET_MPY_SET && !TARGET_ARC700 & !TARGET_EM)
+      error ("-mmpy supported only for ARC700 or ARCv2");
 
   /* mul/mac instructions only for ARC600.  */
   if (TARGET_MULMAC_32BY16_SET && !(TARGET_ARC600 || TARGET_ARC601))
@@ -1169,9 +1246,6 @@ arc_conditional_register_usage (void)
     {
       strcpy(rname29, "ilink");
       strcpy(rname30, "r30");
-      /* Cheap core regs can do from r0-r31 mapped on g/h */
-      CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], 62); /*ap*/
-      CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], 63); /*pcl*/
     }
   if (TARGET_MUL64_SET)
     {
@@ -1204,20 +1278,42 @@ arc_conditional_register_usage (void)
     }
   if (TARGET_Q_CLASS)
     {
-      reg_alloc_order[2] = 12;
-      reg_alloc_order[3] = 13;
-      reg_alloc_order[4] = 14;
-      reg_alloc_order[5] = 15;
-      reg_alloc_order[6] = 1;
-      reg_alloc_order[7] = 0;
-      reg_alloc_order[8] = 4;
-      reg_alloc_order[9] = 5;
-      reg_alloc_order[10] = 6;
-      reg_alloc_order[11] = 7;
-      reg_alloc_order[12] = 8;
-      reg_alloc_order[13] = 9;
-      reg_alloc_order[14] = 10;
-      reg_alloc_order[15] = 11;
+      if (optimize_size)
+	{
+	  reg_alloc_order[0] = 0;
+	  reg_alloc_order[1] = 1;
+	  reg_alloc_order[2] = 2;
+	  reg_alloc_order[3] = 3;
+	  reg_alloc_order[4] = 12;
+	  reg_alloc_order[5] = 13;
+	  reg_alloc_order[6] = 14;
+	  reg_alloc_order[7] = 15;
+	  reg_alloc_order[8] = 4;
+	  reg_alloc_order[9] = 5;
+	  reg_alloc_order[10] = 6;
+	  reg_alloc_order[11] = 7;
+	  reg_alloc_order[12] = 8;
+	  reg_alloc_order[13] = 9;
+	  reg_alloc_order[14] = 10;
+	  reg_alloc_order[15] = 11;
+	}
+      else
+	{
+	  reg_alloc_order[2] = 12;
+	  reg_alloc_order[3] = 13;
+	  reg_alloc_order[4] = 14;
+	  reg_alloc_order[5] = 15;
+	  reg_alloc_order[6] = 1;
+	  reg_alloc_order[7] = 0;
+	  reg_alloc_order[8] = 4;
+	  reg_alloc_order[9] = 5;
+	  reg_alloc_order[10] = 6;
+	  reg_alloc_order[11] = 7;
+	  reg_alloc_order[12] = 8;
+	  reg_alloc_order[13] = 9;
+	  reg_alloc_order[14] = 10;
+	  reg_alloc_order[15] = 11;
+	}
     }
   if (TARGET_SIMD_SET)
     {
@@ -4204,7 +4300,8 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
 	*total= arc_multcost;
       /* We do not want synth_mult sequences when optimizing
 	 for size.  */
-      else if (TARGET_MUL64_SET || (TARGET_ARC700 && !TARGET_NOMPY_SET) || EM_MUL_MPYW)
+      else if (TARGET_MUL64_SET || (TARGET_ARC700 && TARGET_MPY_SET)
+	       || ((arc_mpy_option > 0) && TARGET_EM))
 	*total = COSTS_N_INSNS (1);
       else
 	*total = COSTS_N_INSNS (2);
@@ -4954,6 +5051,24 @@ arc_legitimate_address_p (enum machine_mode mode, rtx x, bool strict)
      return true;
   if (GET_CODE (x) == CONST_INT && LARGE_INT (INTVAL (x)))
      return true;
+
+  /* When we compiler for size avoid const(@sym + offset)
+     addresses. */
+  if (!flag_pic && optimize_size && !reload_completed
+      && (GET_CODE (x) == CONST)
+      && (GET_CODE (XEXP (x, 0)) == PLUS)
+      && (GET_CODE (XEXP (XEXP (x, 0), 0)) == SYMBOL_REF)
+      && !SYMBOL_REF_FUNCTION_P (XEXP (XEXP (x, 0), 0)))
+    {
+      rtx addend = XEXP (XEXP (x, 0), 1);
+      gcc_assert (CONST_INT_P (addend));
+      HOST_WIDE_INT offset = INTVAL (addend);
+
+      /* Allow addresses having a large offset to pass. Anyhow they
+	 will end in a limm. */
+      return !(offset > -1024 && offset < 1020);
+    }
+
   if ((GET_MODE_SIZE (mode) != 16)
       && (GET_CODE (x) == SYMBOL_REF
 	  || GET_CODE (x) == LABEL_REF
@@ -7389,12 +7504,17 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
      the previous computed return value. Hence, we avoid problems like
      add3 r0,sp,8 to be matched in the second round as add_s
      r0,sp,64*/
+#if 0
+  /* CZI: this "shortcut" is buggy as this procedure is not called
+     successively with constant arguments and output_p set to true
+     and then set to false. */
   if (!cond_p && !output_p && (ret != 0))
     {
       int tmp = ret;
       ret = 0;
       return tmp;
     }
+#endif
 
   /* First try to emit a 16 bit insn.  */
   ret = 2;
@@ -7426,6 +7546,12 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
 	  && (REGNO(operands[0]) <= 31) && (REGNO(operands[0]) == REGNO(operands[1]))
 	  && CONST_INT_P (operands[2]) && ( (intval>= -1) && (intval <= 6)))
 	ADDSI_OUTPUT1 ("add%? %0,%1,%2");
+
+      if (TARGET_CODE_DENSITY && REG_P(operands[0]) && REG_P(operands[1])
+	  && ((REGNO(operands[0]) == 0) || (REGNO(operands[0]) == 1))
+	  && satisfies_constraint_Rcq (operands[1])
+	  && satisfies_constraint_L (operands[2]))
+	ADDSI_OUTPUT1 ("add%? %0,%1,%2 ;3");
     }
 
   /* Now try to emit a 32 bit insn without long immediate.  */
@@ -7493,6 +7619,11 @@ arc_output_commutative_cond_exec (rtx *operands, bool output_p)
       case AND:
 	if (satisfies_constraint_C1p (operands[2]))
 	  pat = "bmsk%? %0,%1,%Z2";
+	else if (satisfies_constraint_C2p (operands[2]))
+	  {
+	    operands[2] = GEN_INT ((~INTVAL (operands[2])));
+	    pat = "bmskn%? %0,%1,%Z2";
+	  }
 	else if (satisfies_constraint_Ccp (operands[2]))
 	  pat = "bclr%? %0,%1,%M2";
 	else if (satisfies_constraint_CnL (operands[2]))
@@ -9256,6 +9387,102 @@ static reg_class_t
 arc_spill_class (reg_class_t /* orig_class */, enum machine_mode)
 {
   return GENERAL_REGS;
+}
+
+bool
+compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, bool scaled)
+{
+  rtx addr, plus0, plus1;
+  int size, off;
+
+  /* .di instructions have no 16-bit form.  */
+  if (MEM_VOLATILE_P (op) && !TARGET_VOLATILE_CACHE_SET)
+    return 0;
+
+  if (mode == VOIDmode)
+    mode = GET_MODE (op);
+
+  size = GET_MODE_SIZE (mode);
+
+  /* dword operations really put out 2 instructions, so eliminate them.  */
+  if (size > UNITS_PER_WORD)
+    return 0;
+
+  /* Decode the address now.  */
+  addr = XEXP (op, 0);
+  switch (GET_CODE (addr))
+    {
+    case REG:
+      return (REGNO (addr) >= FIRST_PSEUDO_REGISTER
+	      || COMPACT_GP_REG_P (REGNO (addr))
+	      || (SP_REG_P (REGNO (addr)) && (size != 2)));
+      /* Reverting for the moment since ldw_s does not have sp as a valid
+	 parameter.  */
+    case PLUS:
+      plus0 = XEXP (addr, 0);
+      plus1 = XEXP (addr, 1);
+
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || COMPACT_GP_REG_P (REGNO (plus0)))
+          && ((GET_CODE (plus1) == REG)
+              && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
+                  || COMPACT_GP_REG_P (REGNO (plus1)))))
+        {
+          return !code_density;
+        }
+
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || (COMPACT_GP_REG_P (REGNO (plus0)) && !code_density)
+	      || (REGNO (plus0) >= 0 && REGNO (plus0) <= 31 && code_density))
+          && (GET_CODE (plus1) == CONST_INT))
+        {
+          off = INTVAL (plus1);
+
+          /* Negative offset is not supported in 16-bit load/store insns.  */
+          if (off < 0)
+            return 0;
+
+	  /* Only u5 immediates allowed in code density instructions. */
+	  if (code_density)
+	    return ((size == 4) && (off < 32) && (off % 4 == 0));
+
+          switch (size)
+            {
+            case 1:
+              return (off < 32);
+            case 2:
+              return ((off < 64) && (off % 2 == 0));
+            case 4:
+              return ((off < 128) && (off % 4 == 0));
+            }
+        }
+
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || SP_REG_P (REGNO (plus0)))
+          && (GET_CODE (plus1) == CONST_INT)
+	  && !code_density)
+        {
+          off = INTVAL (plus1);
+          return ((size != 2) && (off >= 0 && off < 128) && (off % 4 == 0));
+        }
+
+      if ((GET_CODE (plus0) == MULT)
+	  && (GET_CODE (XEXP (plus0, 0)) == REG)
+	  && ((REGNO (XEXP (plus0, 0)) >= FIRST_PSEUDO_REGISTER)
+	      || COMPACT_GP_REG_P (REGNO (XEXP (plus0, 0))))
+	  && (GET_CODE (plus1) == REG)
+	  && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
+	      || COMPACT_GP_REG_P (REGNO (plus1))))
+	  return scaled;
+    default:
+      break ;
+      /* TODO: 'gp' and 'pcl' are to supported as base address operand
+	 for 16-bit load instructions.  */
+    }
+  return 0;
 }
 
 bool

@@ -115,4 +115,6 @@ extern bool arc_epilogue_uses (int regno);
 /* insn-attrtab.c doesn't include reload.h, which declares regno_clobbered_p. */
 extern int regno_clobbered_p (unsigned int, rtx, enum machine_mode, int);
 extern int arc_return_slot_offset (void);
+extern bool compact_memory_operand_p (rtx, enum machine_mode, bool, bool);
 extern bool arc_legitimize_reload_address (rtx *, enum machine_mode, int, int);
+extern void arc_secondary_reload_conv (rtx, rtx, rtx, bool);
