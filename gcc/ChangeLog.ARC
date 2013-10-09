@@ -1,6 +1,9 @@
 2013-10-09 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Typo fix.
+	* configure.ac: Add arc as a valid target for gas that
+          supports dwarf2 options.
+	* configure: Likewise.
 
 2013-10-02 Claudiu Zissulescu <claziss@synopsys.com>
 
