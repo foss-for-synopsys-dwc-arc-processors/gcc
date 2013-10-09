@@ -1,3 +1,7 @@
+2013-10-09 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h: Typo fix.
+
 2013-10-02 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md: Use constraint letter n instead of Cal in
