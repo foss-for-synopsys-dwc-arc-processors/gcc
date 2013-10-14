@@ -1,3 +1,9 @@
+2013-10-14 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h: Remove CFA_FRAME_BASE_OFFSET and
+          ARG_POINTER_CFA_OFFSET macro definition.
+	* config/arc/arcEM.md: Fix store instruction reservation.
+
 2013-10-09 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Typo fix.

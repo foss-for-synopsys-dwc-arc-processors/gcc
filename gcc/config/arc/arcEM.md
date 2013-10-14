@@ -28,10 +28,10 @@
        (eq_attr "type" "load"))
   "em_issue+ld_st,nothing")
 
-(define_insn_reservation "em_data_store" 2
+(define_insn_reservation "em_data_store" 1
   (and (match_test "TARGET_EM")
        (eq_attr "type" "store"))
-  "em_issue+ld_st,nothing")
+  "em_issue+ld_st")
 
 ;; Multipliers options
 (define_insn_reservation "mul_em_mpyw_1" 1
