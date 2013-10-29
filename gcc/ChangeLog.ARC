@@ -1,3 +1,17 @@
+2013-10-29 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arcHS.md: New file
+	* common/config/arc/arc-common.c: Remove A5 processor variant.
+	* config/arc/arc-opts.h: Remove A5 variant. Add HS variant.
+	* config/arc/arc.c: Remove A5 variant. Add HS scheduler hooks
+	  (arc_sched_init_global, arc_sched_finish_global,
+	  arc_variable_issue, arc_sched_reorder,
+	  arc_sched_adjust_cost). Change TARGET_EM to TARGET_V2.
+	* config/arc/arc.h: Add HS variant, remove A5 variant.
+	* config/arc/arc.md: Add HS DFA.
+	* config/arc/arc.opt: Remove A5 variant, add HS variant.
+	* config/arc/constraints.md: Change TARGET_EM to TARGET_V2
+
 2013-10-14 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Remove CFA_FRAME_BASE_OFFSET and

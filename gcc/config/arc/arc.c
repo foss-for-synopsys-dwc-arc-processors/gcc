@@ -61,8 +61,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "reload.h" /* For operands_match_p */
 #include "df.h"
 #include "tree-pass.h"
+#include "sched-int.h"
 
-/* Which cpu we're compiling for (A5, ARC600, ARC601, ARC700).  */
+/* Which cpu we're compiling for (ARC600, ARC601, ARC700).  */
 static const char *arc_cpu_string = "";
 
 /* ??? Loads can handle any constant, stores can only handle small ones.  */
@@ -494,6 +495,21 @@ static void arc_finalize_pic (void);
 #undef  TARGET_SCHED_ADJUST_PRIORITY
 #define TARGET_SCHED_ADJUST_PRIORITY arc_sched_adjust_priority
 
+#undef TARGET_SCHED_INIT_GLOBAL
+#define TARGET_SCHED_INIT_GLOBAL arc_sched_init_global
+
+#undef TARGET_SCHED_FINISH_GLOBAL
+#define TARGET_SCHED_FINISH_GLOBAL arc_sched_finish_global
+
+#undef TARGET_SCHED_VARIABLE_ISSUE
+#define TARGET_SCHED_VARIABLE_ISSUE arc_variable_issue
+
+#undef TARGET_SCHED_REORDER
+#define TARGET_SCHED_REORDER arc_sched_reorder
+
+#undef  TARGET_SCHED_ADJUST_COST
+#define TARGET_SCHED_ADJUST_COST arc_sched_adjust_cost
+
 #undef TARGET_VECTOR_MODE_SUPPORTED_P
 #define TARGET_VECTOR_MODE_SUPPORTED_P arc_vector_mode_supported_p
 
@@ -698,36 +714,42 @@ arc_init (void)
 {
   enum attr_tune tune_dflt = TUNE_NONE;
 
-  if (TARGET_A5)
+  switch (arc_cpu)
     {
-      arc_cpu_string = "A5";
-    }
-  else if (TARGET_ARC600)
-    {
+    case PROCESSOR_ARC600:
       arc_cpu_string = "ARC600";
       tune_dflt = TUNE_ARC600;
-    }
-  else if (TARGET_ARC601)
-    {
+      break;
+
+    case PROCESSOR_ARC601:
       arc_cpu_string = "ARC601";
       tune_dflt = TUNE_ARC600;
-    }
-  else if (TARGET_ARC700)
-    {
+      break;
+
+    case PROCESSOR_ARC700:
       arc_cpu_string = "ARC700";
       tune_dflt = TUNE_ARC700_4_2_STD;
-    }
-  else if (TARGET_EM)
-    {
+      break;
+
+    case PROCESSOR_ARCv2EM:
       arc_cpu_string = "EM";
+      break;
+
+    case PROCESSOR_ARCv2HS:
+      arc_cpu_string = "HS";
+      break;
+
+    default:
+      gcc_unreachable ();
+    }
+
+  if (TARGET_V2)
+    {
       /* I have the multiplier, then use it*/
       if (EM_MUL_MPYW || EM_MULTI)
-	{
 	  arc_multcost = COSTS_N_INSNS (1);
-	}
     }
-  else
-    gcc_unreachable ();
+
   if (arc_tune == TUNE_NONE)
     arc_tune = tune_dflt;
   /* Note: arc_multcost is only used in rtx_cost if speed is true.  */
@@ -761,11 +783,11 @@ arc_init (void)
       }
 
   /* Support mul64 generation only for A5 and ARC600.  */
-  if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_EM))
+  if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_V2))
       error ("-mmul64 not supported for ARC700 or ARCv2");
 
   /* MPY instructions valid only for ARC700, and ARCv2  */
-  if (TARGET_MPY_SET && !TARGET_ARC700 & !TARGET_EM)
+  if (TARGET_MPY_SET && !TARGET_ARC700 & !TARGET_V2)
       error ("-mmpy supported only for ARC700 or ARCv2");
 
   /* mul/mac instructions only for ARC600.  */
@@ -790,14 +812,14 @@ arc_init (void)
     error ("FPX extensions not available on pre-ARC600 cores");
 
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
-  if (flag_pic && (!(TARGET_ARC700 || TARGET_EM)))
+  if (flag_pic && (!(TARGET_ARC700 || TARGET_V2)))
     {
       warning (DK_WARNING, "PIC is not supported for %s. Generating non-PIC code only..", arc_cpu_string);
       flag_pic = 0;
     }
 
   /* Warn for unimplemented profiler support for ARCv2-cores*/
-  if (profile_flag && TARGET_EM)
+  if (profile_flag && TARGET_V2)
     {
       warning (DK_WARNING, "No profiler support for %s.", arc_cpu_string);
       profile_flag = 0;
@@ -854,14 +876,14 @@ arc_override_options (void)
   if (flag_no_common == 255)
     flag_no_common = !TARGET_NO_SDATA_SET;
 
-  /* TARGET_COMPACT_CASESI needs the "q" register class.  */ \
+  /* TARGET_COMPACT_CASESI needs the "q" register class.  */
   if (TARGET_MIXED_CODE)
     TARGET_Q_CLASS = 1;
   if (!TARGET_Q_CLASS)
     TARGET_COMPACT_CASESI = 0;
 
-  /*For the time being don't support COMPACT_CASESI for EM*/
-  if (arc_cpu == PROCESSOR_ARCv2EM)
+  /* For the time being don't support COMPACT_CASESI for ARCv2. */
+  if (TARGET_V2)
     TARGET_COMPACT_CASESI = 0;
 
   if (TARGET_COMPACT_CASESI)
@@ -1242,7 +1264,7 @@ arc_conditional_register_usage (void)
   int fix_start = 60, fix_end = 55;
 
   /* For ARCv2 the core register set is changed.*/
-  if (TARGET_EM)
+  if (TARGET_V2)
     {
       strcpy(rname29, "ilink");
       strcpy(rname30, "r30");
@@ -1331,7 +1353,7 @@ arc_conditional_register_usage (void)
      machine_dependent_reorg.  */
   if (TARGET_ARC600)
     CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], LP_COUNT);
-  else if (!TARGET_ARC700 && !TARGET_EM)
+  else if (!TARGET_ARC700 && !TARGET_V2)
     fixed_regs[LP_COUNT] = 1;
   for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
     if (!call_used_regs[regno])
@@ -1339,7 +1361,7 @@ arc_conditional_register_usage (void)
   for (regno = 32; regno < 60; regno++)
     if (!fixed_regs[regno])
       SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], regno);
-  if (TARGET_ARC700 || TARGET_EM)
+  if (TARGET_ARC700 || TARGET_V2)
     {
       for (regno = 32; regno <= 60; regno++)
 	CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], regno);
@@ -1373,7 +1395,7 @@ arc_conditional_register_usage (void)
 	  = (fixed_regs[i]
 	     ? (TEST_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], i)
 		? CHEAP_CORE_REGS : ALL_CORE_REGS)
-	     : (((TARGET_ARC700 || TARGET_EM)
+	     : (((TARGET_ARC700 || TARGET_V2)
 		 && TEST_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], i))
 		? CHEAP_CORE_REGS : WRITABLE_CORE_REGS));
       else
@@ -1391,7 +1413,7 @@ arc_conditional_register_usage (void)
 
   /* Handle Special Registers.  */
   arc_regno_reg_class[29] = LINK_REGS; /* ilink1 register.  */
-  if (!TARGET_EM)
+  if (!TARGET_V2)
     arc_regno_reg_class[30] = LINK_REGS; /* ilink2 register.  */
   else
     {
@@ -1479,14 +1501,14 @@ arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
       *no_add_attrs = true;
     }
   else if (strcmp (TREE_STRING_POINTER (value), "ilink1")
-	   && strcmp (TREE_STRING_POINTER (value), "ilink2") && !TARGET_EM)
+	   && strcmp (TREE_STRING_POINTER (value), "ilink2") && !TARGET_V2)
     {
       warning (OPT_Wattributes,
                "argument of %qE attribute is not \"ilink1\" or \"ilink2\"",
                name);
       *no_add_attrs = true;
     }
-  else if (TARGET_EM && strcmp (TREE_STRING_POINTER (value), "ilink"))
+  else if (TARGET_V2 && strcmp (TREE_STRING_POINTER (value), "ilink"))
     {
       warning (OPT_Wattributes,
                "argument of %qE attribute is not \"ilink\"",
@@ -4305,7 +4327,7 @@ arc_rtx_costs (rtx x, int code, int outer_code, int opno ATTRIBUTE_UNUSED,
       /* We do not want synth_mult sequences when optimizing
 	 for size.  */
       else if (TARGET_MUL64_SET || (TARGET_ARC700 && TARGET_MPY_SET)
-	       || ((arc_mpy_option > 0) && TARGET_EM))
+	       || EM_MUL_MPYW)
 	*total = COSTS_N_INSNS (1);
       else
 	*total = COSTS_N_INSNS (2);
@@ -5197,7 +5219,7 @@ arc_init_builtins (void)
     def_mbuiltin (TARGET_MUL64_SET,"__builtin_arc_mulu64", void_ftype_usint_usint, ARC_BUILTIN_MULU64);
     def_mbuiltin (1,"__builtin_arc_rtie", void_ftype_void, ARC_BUILTIN_RTIE);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_sync", void_ftype_void, ARC_BUILTIN_SYNC);
-    def_mbuiltin ((TARGET_EA_SET && !TARGET_EM),"__builtin_arc_divaw", int_ftype_int_int, ARC_BUILTIN_DIVAW);
+    def_mbuiltin ((TARGET_EA_SET && !TARGET_V2),"__builtin_arc_divaw", int_ftype_int_int, ARC_BUILTIN_DIVAW);
     def_mbuiltin (1,"__builtin_arc_brk", void_ftype_void, ARC_BUILTIN_BRK);
     def_mbuiltin (1,"__builtin_arc_flag", void_ftype_usint, ARC_BUILTIN_FLAG);
     def_mbuiltin (1,"__builtin_arc_sleep", void_ftype_usint, ARC_BUILTIN_SLEEP);
@@ -5207,14 +5229,14 @@ arc_init_builtins (void)
     def_mbuiltin (1,"__builtin_arc_lr", usint_ftype_usint, ARC_BUILTIN_LR);
     def_mbuiltin (1,"__builtin_arc_sr", void_ftype_usint_usint, ARC_BUILTIN_SR);
     def_mbuiltin (TARGET_ARC700,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
-    def_mbuiltin (TARGET_ARC700 || TARGET_EM,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
+    def_mbuiltin (TARGET_ARC700 || TARGET_V2,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
     def_mbuiltin (1,"__builtin_arc_aligned", int_ftype_pcvoid_int, ARC_BUILTIN_ALIGNED);
 
-    def_mbuiltin (TARGET_EM,"__builtin_arc_kflag", void_ftype_usint, ARC_BUILTIN_KFLAG);
-    def_mbuiltin (TARGET_EM,"__builtin_arc_clri", int_ftype_void, ARC_BUILTIN_CLRI);
+    def_mbuiltin (TARGET_V2,"__builtin_arc_kflag", void_ftype_usint, ARC_BUILTIN_KFLAG);
+    def_mbuiltin (TARGET_V2,"__builtin_arc_clri", int_ftype_void, ARC_BUILTIN_CLRI);
     def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_ffs", int_ftype_int, ARC_BUILTIN_FFS);
     def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_fls", int_ftype_int, ARC_BUILTIN_FLS);
-    def_mbuiltin (TARGET_EM,"__builtin_arc_seti", void_ftype_int, ARC_BUILTIN_SETI);
+    def_mbuiltin (TARGET_V2,"__builtin_arc_seti", void_ftype_int, ARC_BUILTIN_SETI);
 
     if (TARGET_SIMD_SET)
       arc_init_simd_builtins ();
@@ -7460,7 +7482,7 @@ arc_register_move_cost (enum machine_mode,
     }
 
   /* The ARC700 stalls for 3 cycles when *reading* from lp_count.  */
-  if ((TARGET_ARC700 || TARGET_EM)
+  if ((TARGET_ARC700 || TARGET_V2)
       && (from_class == LPCOUNT_REG || from_class == ALL_CORE_REGS
 	  || from_class == WRITABLE_CORE_REGS))
     return 8;
@@ -9557,6 +9579,692 @@ arc_legitimize_reload_address (rtx *p, enum machine_mode mode, int opnum,
     }
   return false;
 }
+
+/** HS scheduler hooks
+ *
+ * The HS architecture has two ALUs: the Early ALU and the Late
+ * ALU. The Early ALU can execute all instructions, the Late ALU only
+ * a subset. The instructions that can be executed on both ALUs are
+ * called BALU ops. The selection on which ALU a BALU instruction is
+ * executed depends on the data avability of its operands. An
+ * instruction executed on Early ALU has different bypasses than the
+ * very same executed on Late ALU.
+ *
+ * The main idea is to correcly model where a BALU instruction
+ * ends. This is done using the following algorithm:
+ *
+ * 1. Each time when we start schedule a function (via
+ * TARGET_SCHED_INIT_GLOBAL), create the instruction info structure
+ * (i.e., insn_info);
+ *
+ * 2. Using a heuristics, initialize the cost of all the dependencies
+ * (via TARGET_SCHED_ADJUST_COST). Unfortunately, this hook is called
+ * only once for a given use/def chain. Latter, it uses the cached
+ * value.
+ *
+ * 3. Collect, via TARGET_SCHED_REORDER, the current emulated scheduler
+ * clock.
+ *
+ * 4. For each scheduled instruction (collected in
+ * TARGET_SCHED_VARIABLE_ISSUE), set the instruction clock (in
+ * insn_info) and compute what is the correct ALU on which this
+ * instruction is executed. Add this information to insn_info. Reset
+ * all the TRUE dependencies between this current instruction and its
+ * all forward dependencies. This retriggers the call of the
+ * TARGET_SCHED_ADJUST_COST hook, that should (dynamically) update the
+ * invalidated DEP_COST.
+ *
+ */
+
+typedef struct
+{
+  /* Clock cycle when the instruction is scheduled. */
+  int clock;
+  /* Unit on which the instruction is scheduled, relevant for BALU ops. */
+  int unit;
+
+#define VALID_UNIT  1
+#define VALID_CLOCK 2
+
+  /* Validity, one if the element is valid. */
+  unsigned int valid;
+} arc_sched_insn_info;
+
+/* Record a arc_sched_insn_info structure for every insn. */
+static vec<arc_sched_insn_info> insn_info;
+
+#define INSN_INFO_LENGTH (insn_info).length ()
+#define INSN_INFO_ENTRY(N) (insn_info[(N)])
+#define INSN_INFO_EXISTS(N) (((N) < insn_info.length ()) && insn_info[(N)].valid)
+
+static void
+insn_set_unit (rtx insn, int unit)
+{
+  unsigned uid = INSN_UID (insn);
+
+  if (uid >= INSN_INFO_LENGTH)
+    insn_info.safe_grow_cleared (uid * 5 / 4 + 10);
+
+  INSN_INFO_ENTRY (uid).unit  = unit;
+  INSN_INFO_ENTRY (uid).valid |= VALID_UNIT;
+}
+
+static int arc_sched_adjust_cost(rtx insn, rtx link, rtx dep_insn, int cost);
+
+/* Set the clock cycle of INSN to CYCLE.  Also clears the insn's entry in
+   new_conditions.  */
+static void
+insn_set_clock (rtx insn, int cycle)
+{
+  unsigned uid = INSN_UID (insn);
+
+  if (uid >= INSN_INFO_LENGTH)
+    insn_info.safe_grow_cleared (uid * 5 / 4 + 10);
+
+  INSN_INFO_ENTRY (uid).clock = cycle;
+  INSN_INFO_ENTRY (uid).valid |= VALID_CLOCK;
+}
+
+/* Given an insn, go on its dep and find its unit. */
+static void
+arc_guess_unit (rtx insn)
+{
+  int cost = 0;
+
+  if (!insn_info.exists ())
+    return;
+
+  sd_iterator_def sd_it;
+  dep_t dep;
+  FOR_EACH_DEP(insn, SD_LIST_RES_BACK, sd_it, dep)
+    {
+      rtx pro = DEP_PRO (dep);
+      int uid = INSN_UID (pro);
+      enum reg_note dep_type = DEP_TYPE (dep);
+      if (dep_type == REG_DEP_TRUE)
+	{
+	  rtx dep_cost_rtx_link = alloc_INSN_LIST (NULL_RTX, NULL_RTX);
+	  XEXP (dep_cost_rtx_link, 1) = dep_cost_rtx_link;
+	  PUT_REG_NOTE_KIND (dep_cost_rtx_link, DEP_TYPE (dep));
+
+	  cost = arc_sched_adjust_cost (insn, dep_cost_rtx_link, pro, DEP_COST(dep));
+	}
+    }
+  if (cost == 0)
+    insn_set_unit (insn, 1); /* net producer @ALU1 */
+}
+
+static int arc_sched_adjust_cost(rtx insn,
+				 rtx link,
+				 rtx dep_insn,
+				 int cost)
+{
+  int rcost = cost; /* return cost*/
+  int uid_c = INSN_UID (insn);
+  int uid_p = INSN_UID (dep_insn);
+
+  if (!TARGET_HS)
+    return cost; /* Do not use this hook if we compiler for a
+		    different architecture */
+
+  if (DEBUG_INSN_P (insn) ||
+      DEBUG_INSN_P (dep_insn))
+    return cost;
+
+  enum reg_note dep = REG_NOTE_KIND (link);
+
+  if (dep != REG_DEP_TRUE)
+    return cost;
+
+  if (!insn_info.exists ())
+    return cost;
+
+  /* Dependency x -> y */
+  switch (arc_attr_type (dep_insn))
+    {
+      /* from EALU */
+    case TYPE_CC_ARITH:
+    case TYPE_TWO_CYCLE_CORE:
+    case TYPE_SHIFT:
+    case TYPE_LR:
+    case TYPE_SR:
+      insn_set_unit (dep_insn, 0);
+
+      switch (arc_attr_type (insn))
+	{
+	  /* BALU */
+	case TYPE_MOVE:
+	case TYPE_CMOVE:
+	case TYPE_UNARY:
+	case TYPE_BINARY:
+	case TYPE_COMPARE:
+	case TYPE_MISC:
+	  rcost = 1;
+#if 1
+	  if (uid_c < INSN_INFO_LENGTH)
+	    {
+	      if (INSN_INFO_ENTRY (uid_c).unit == 1)
+		rcost = 2;
+	      else
+		insn_set_unit (insn, 2); /* make sure that this is on unit 2. */
+	    }
+	  else
+	    {
+	      /* New insn seen: consider the minimum latency. */
+	      insn_set_unit (insn, 2);
+	    }
+#else
+	  insn_set_unit (insn, 2);
+#endif
+	  break;
+
+	  /* LD */
+	case TYPE_LOAD:
+	  rcost = 2; /* default */
+	  break;
+
+	  /* MPY */
+	case TYPE_MUL16_EM:
+	case TYPE_MULTI:
+	case TYPE_UMULTI:
+	  rcost = 1; /* default via bypass */
+	  break;
+
+	  /* ST */
+	case TYPE_STORE:
+	  rcost = 2; /* default */
+	  break;
+	}
+      break;
+
+      /* from BALU */
+    case TYPE_MOVE:
+    case TYPE_CMOVE:
+    case TYPE_UNARY:
+    case TYPE_BINARY:
+    case TYPE_COMPARE:
+    case TYPE_MISC:
+      if ((uid_p >= INSN_INFO_LENGTH)
+	  || (INSN_INFO_ENTRY (uid_p).unit == 0))
+	{
+	  /* This BALU op is not mapped onto a unit yet. Do an
+	     educated guess. */
+#if 1
+	  insn_set_unit (dep_insn, 1); /* worst case @ALU2. */
+#else
+	  arc_guess_unit (dep_insn);
+#endif
+	}
+
+      if (INSN_INFO_ENTRY (uid_p).unit == 1)
+	{
+	  /* Early ALU */
+	  switch (arc_attr_type (insn))
+	    {
+	      /* EALU */
+	    case TYPE_CC_ARITH:
+	    case TYPE_TWO_CYCLE_CORE:
+	    case TYPE_SHIFT:
+	    case TYPE_LR:
+	    case TYPE_SR:
+	      rcost = 1;
+	      break;
+
+	      /* BALU */
+	    case TYPE_MOVE:
+	    case TYPE_CMOVE:
+	    case TYPE_UNARY:
+	    case TYPE_BINARY:
+	    case TYPE_COMPARE:
+	    case TYPE_MISC:
+	      rcost = 1;
+	      /* it is not possible to go from early alu to late alu */
+	      insn_set_unit (insn, 1);
+	      break;
+
+	      /* LD */
+	    case TYPE_LOAD:
+	      rcost = 1;
+	      break;
+
+	      /* MPY */
+	    case TYPE_MUL16_EM:
+	    case TYPE_MULTI:
+	    case TYPE_UMULTI:
+	      rcost = 1;
+	      break;
+
+	      /* ST */
+	    case TYPE_STORE:
+	      rcost = 1;
+	      break;
+	    }
+	}
+      else
+	{
+	  /* Late ALU */
+	  switch (arc_attr_type (insn))
+	    {
+	      /* EALU */
+	    case TYPE_CC_ARITH:
+	    case TYPE_TWO_CYCLE_CORE:
+	    case TYPE_SHIFT:
+	    case TYPE_LR:
+	    case TYPE_SR:
+	      rcost = 4; /* default */
+	      break;
+
+	      /* BALU */
+	    case TYPE_MOVE:
+	    case TYPE_CMOVE:
+	    case TYPE_UNARY:
+	    case TYPE_BINARY:
+	    case TYPE_COMPARE:
+	    case TYPE_MISC:
+	      rcost = 1;
+#if 1
+	      if (uid_c < INSN_INFO_LENGTH)
+		{
+		  if (INSN_INFO_ENTRY (uid_c).unit == 1)
+		    rcost = 4;
+		  else
+		    insn_set_unit (insn, 2);
+		}
+	      else
+		{
+		  insn_set_unit (insn, 2);
+		}
+#else
+	      insn_set_unit (insn, 2);
+#endif
+	      break;
+
+	      /* LD */
+	    case TYPE_LOAD:
+	      rcost = 4;
+	      break;
+
+	      /* MPY */
+	    case TYPE_MUL16_EM:
+	    case TYPE_MULTI:
+	    case TYPE_UMULTI:
+	      rcost = 3;
+	      break;
+
+	      /* ST */
+	    case TYPE_STORE:
+	      rcost = 1;
+	      if (!store_data_bypass_p (dep_insn, insn))
+		{
+		  rcost = 4; /* Address dep. */
+		}
+	      break;
+	    }
+	}
+      break;
+
+      /* from LD */
+    case TYPE_LOAD:
+      switch (arc_attr_type (insn))
+	{
+	  /* EALU */
+	case TYPE_CC_ARITH:
+	case TYPE_TWO_CYCLE_CORE:
+	case TYPE_SHIFT:
+	case TYPE_LR:
+	case TYPE_SR:
+	  rcost = 4; /* default */
+	  break;
+
+	  /* BALU */
+	case TYPE_MOVE:
+	case TYPE_CMOVE:
+	case TYPE_UNARY:
+	case TYPE_BINARY:
+	case TYPE_COMPARE:
+	case TYPE_MISC:
+	  rcost = 1;
+	  insn_set_unit (insn, 2); /* Force */
+	  break;
+
+	  /* LD */
+	case TYPE_LOAD:
+	  rcost = 3; /* default via bypass */
+	  break;
+
+	  /* MPY */
+	case TYPE_MUL16_EM:
+	case TYPE_MULTI:
+	case TYPE_UMULTI:
+	  rcost = 3; /* default via bypass */
+	  break;
+
+	  /* ST */
+	case TYPE_STORE:
+	  rcost = 1;
+	  if (!store_data_bypass_p (dep_insn, insn))
+	    {
+	      rcost = 4; /* Address dep. */
+	    }
+	  break;
+	}
+      break;
+
+      /* from MPY */
+    case TYPE_MUL16_EM:
+    case TYPE_MULTI:
+    case TYPE_UMULTI:
+      switch (arc_attr_type (insn))
+	{
+	  /* EALU */
+	case TYPE_CC_ARITH:
+	case TYPE_TWO_CYCLE_CORE:
+	case TYPE_SHIFT:
+	case TYPE_LR:
+	case TYPE_SR:
+	  rcost = 4; /* default */
+	  break;
+
+	  /* BALU */
+	case TYPE_MOVE:
+	case TYPE_CMOVE:
+	case TYPE_UNARY:
+	case TYPE_BINARY:
+	case TYPE_COMPARE:
+	case TYPE_MISC:
+	  rcost = 1;
+	  insn_set_unit (insn, 2); /* Force */
+	  break;
+
+	  /* LD */
+	case TYPE_LOAD:
+	  rcost = 3; /* default */
+	  break;
+
+	  /* MPY */
+	case TYPE_MUL16_EM:
+	case TYPE_MULTI:
+	case TYPE_UMULTI:
+	  rcost = 3; /* default via bypass */
+	  break;
+
+	  /* ST */
+	case TYPE_STORE:
+	  rcost = 1;
+	  if (!store_data_bypass_p (dep_insn, insn))
+	    {
+	      rcost = 3; /* Address dep. */
+	    }
+	  break;
+	}
+      break;
+    }
+  return rcost;
+}
+
+static void
+arc_sched_init_global (FILE *dump,
+		       int verbose,
+		       int old_max_uid)
+{
+  if (!TARGET_HS)
+    return; /* Do not use this hook if we compiler for a different
+	       architecture */
+
+  insn_info.create (old_max_uid);
+  if (verbose)
+    fprintf (dump, "Initialize insn info with size %d\n",
+	     old_max_uid);
+
+}
+
+static void
+arc_sched_finish_global (FILE *dump,
+			 int verbose)
+{
+  if (!TARGET_HS)
+    return; /* Do not use this hook if we compiler for a different
+	       architecture */
+
+  insn_info.release ();
+  if (verbose)
+    fprintf (dump, "Release insn info.\n");
+}
+
+/* Place holder for the clock of the current scheduled instruction. */
+static int curr_sched_clock;
+
+static int
+arc_sched_reorder (FILE *dump ATTRIBUTE_UNUSED,
+		   int sched_verbose ATTRIBUTE_UNUSED,
+		   rtx *ready ATTRIBUTE_UNUSED,
+		   int *pn_ready ATTRIBUTE_UNUSED, int clock_var)
+{
+  curr_sched_clock = clock_var;
+
+  if (ready == NULL)
+    return 0;
+  return 1;
+}
+
+/* Given an insn, return the number of cycles until BB_END. */
+static int
+insn_cycle_count (rtx insn)
+{
+  int cycles = 0;
+  basic_block bb = BLOCK_FOR_INSN (insn);
+  int uid0 = INSN_UID (insn);
+  int uid1 = INSN_UID (BB_END (bb));
+
+  if (uid0 < INSN_INFO_LENGTH
+      && uid1 < INSN_INFO_LENGTH)
+    cycles = INSN_INFO_ENTRY (uid1).clock - INSN_INFO_ENTRY (uid0).clock;
+  else
+    {
+      /* Guesstimate */
+      while (insn)
+	{
+	  insn = NEXT_INSN (insn);
+	  if ((insn == 0) || (insn == BB_END (bb)))
+	    break;
+	  if (INSN_P (insn))
+	    cycles ++;
+	}
+    }
+  return cycles+1;
+}
+
+/* Given a BALU instructions and the current clock tick, compute the
+   correct execution unit. Assumption: all the default latencies are
+   the minimum ones. */
+static int
+arc_sched_correct_unit (rtx insn, int clock)
+{
+  int latency = 0;
+  int unit = 0;
+
+  if (!insn_info.exists ())
+    return -1;
+
+  /* go on dependencies and figure out the unit. */
+  basic_block bbc = BLOCK_FOR_INSN (insn);
+  sd_iterator_def sd_it;
+  dep_t dep;
+  FOR_EACH_DEP(insn, SD_LIST_RES_BACK, sd_it, dep)
+    {
+      rtx pro = DEP_PRO (dep);
+      int uid = INSN_UID (pro);
+      enum reg_note dep_type = DEP_TYPE (dep);
+
+      if ((uid < INSN_INFO_LENGTH)
+	  && (dep_type == REG_DEP_TRUE))
+	{
+	  int pro_clock = INSN_INFO_ENTRY (uid).clock;
+	  int effective_latency = clock - pro_clock;
+	  basic_block bbp = BLOCK_FOR_INSN (pro);
+	  if (bbp->index != bbc->index)
+	    {
+	      /* Different BBs: compute offset */
+	      int offset = insn_cycle_count (pro);
+	      effective_latency = clock + offset;
+	    }
+	  gcc_assert (effective_latency > 0);
+	  switch (arc_attr_type (pro))
+	    {
+	      /* EALU */
+	    case TYPE_CC_ARITH:
+	    case TYPE_TWO_CYCLE_CORE:
+	    case TYPE_SHIFT:
+	    case TYPE_LR:
+	    case TYPE_SR:
+	      if ((effective_latency >= 2)
+		  && (unit != 2))
+		{
+		  unit = 1; // Early ALU
+		  latency = 2; //DEP_COST(dep) = 2;
+		}
+	      else
+		unit = 2; //Late ALU
+	      break;
+
+	      /* LD */
+	    case TYPE_LOAD:
+	      if ((effective_latency >= 4)
+		  && (unit != 2))
+		{
+		  unit = 1; //Early ALU
+		  latency = 4; //DEP_COST(dep) = 4;
+		}
+	      else
+		unit = 2; //Late ALU
+	      break;
+
+	      /* MPY */
+	    case TYPE_MUL16_EM:
+	    case TYPE_MULTI:
+	    case TYPE_UMULTI:
+	      if ((effective_latency >= 3)
+		  && (unit != 2))
+		{
+		  unit = 1; //Early ALU
+		  latency = 3; //DEP_COST(dep) = 3;
+		}
+	      else
+		unit = 2; //Late ALU
+	      break;
+
+	      /* BALU */
+	    case TYPE_MOVE:
+	    case TYPE_CMOVE:
+	    case TYPE_UNARY:
+	    case TYPE_BINARY:
+	    case TYPE_COMPARE:
+	    case TYPE_MISC:
+	      switch (INSN_INFO_ENTRY (uid).unit)
+		{
+		case 1 : /* Early ALU */
+		  if ((effective_latency >= 4)
+		      && (unit != 2))
+		    {
+		      unit = 1;
+		      latency = 1; //DEP_COST(dep) = 1;
+		    }
+		  break;
+		case 2: /* Late ALU */
+		  if ((effective_latency >= 4)
+		      && (unit != 2))
+		    {
+		      unit = 1;
+		      latency = 4; //DEP_COST(dep) = 4;
+		    }
+		  else
+		    unit = 2; // Late ALU
+		  break;
+		default:
+		  gcc_unreachable (); /* Not initialized unit for already scheduled insn*/
+		}
+	      break;
+
+	    default:
+	      break;
+	    }
+	  //DEP_COST(dep) = latency;
+	}
+    }
+
+  if (unit == 0)
+    {
+      /* This is a net producer. hence map on Early alu. */
+      unit = 1;
+    }
+
+  return unit;
+}
+
+/* Given an insn reset the cost of all the forward dependencies. This
+   forces the call of targetm.sched.adjust_cost hook. */
+static void
+arc_sched_reset_dep_cost (rtx insn)
+{
+   sd_iterator_def sd_it;
+   dep_t dep;
+   FOR_EACH_DEP(insn, SD_LIST_FORW, sd_it, dep)
+     {
+       enum reg_note dep_type = DEP_TYPE (dep);
+       if (dep_type == REG_DEP_TRUE)
+	 DEP_COST(dep) = UNKNOWN_DEP_COST;
+     }
+}
+
+/* Implement the TARGET_SCHED_VARIABLE_ISSUE hook.  We are about to
+   issue INSN.  Return the number of insns left on the ready queue
+   that can be issued this cycle.  We use this hook to record clock
+   cycles and reservations for every insn.  */
+static int
+arc_variable_issue (FILE *dump ATTRIBUTE_UNUSED,
+		    int sched_verbose ATTRIBUTE_UNUSED,
+		    rtx insn, int can_issue_more ATTRIBUTE_UNUSED)
+{
+  if (!TARGET_HS)
+    return can_issue_more-1; /* Do not use this hook if we compiler
+				for a different architecture */
+
+  int uid = INSN_UID (insn);
+
+  if (insn_info.exists ())
+    {
+      insn_set_clock(insn, curr_sched_clock);
+
+      int unit = -1;
+      int old_unit = -1;
+      switch (arc_attr_type(insn))
+	{
+	case TYPE_MOVE:
+	case TYPE_CMOVE:
+	case TYPE_UNARY:
+	case TYPE_BINARY:
+	case TYPE_COMPARE:
+	case TYPE_MISC:
+	  /* go on dependencies and figure out the unit. */
+	  unit = arc_sched_correct_unit (insn, curr_sched_clock);
+	  old_unit =  INSN_INFO_ENTRY (uid).unit;
+	  arc_sched_reset_dep_cost (insn);
+	  break;
+	}
+
+      insn_set_unit (insn, unit);
+
+      if (sched_verbose)
+	fprintf (dump, ";;\tinsn %d on unit %d:%d @ %d\n",
+		 uid,
+		 INSN_INFO_ENTRY (uid).unit,
+		 old_unit,
+		 INSN_INFO_ENTRY (uid).clock);
+    }
+
+  return can_issue_more-1;
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

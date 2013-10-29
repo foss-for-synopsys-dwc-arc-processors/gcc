@@ -38,7 +38,8 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_CPU_arc601  2
 #define TARGET_CPU_arc700  3
 #define TARGET_CPU_EM      4
-#define TARGET_CPU_generic 5
+#define TARGET_CPU_HS      5
+#define TARGET_CPU_generic 6
 
 #ifndef TARGET_CPU_DEFAULT
 #define TARGET_CPU_DEFAULT	TARGET_CPU_generic
@@ -76,9 +77,7 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_CPU_CPP_BUILTINS()	\
  do {					\
     builtin_define ("__arc__");		\
-    if (TARGET_A5)			\
-      builtin_define ("__A5__");	\
-    else if (TARGET_ARC600)			\
+    if (TARGET_ARC600)			\
       {					\
 	builtin_define ("__A6__");	\
 	builtin_define ("__ARC600__");	\
@@ -95,6 +94,10 @@ along with GCC; see the file COPYING3.  If not see
     else if (TARGET_EM)			\
       {					\
 	builtin_define ("__EM__");	\
+      }					\
+    else if (TARGET_HS)			\
+      {					\
+	builtin_define ("__HS__");	\
       }					\
     if (TARGET_NORM)			\
       {					\
@@ -151,7 +154,6 @@ along with GCC; see the file COPYING3.  If not see
 
 #define ASM_SPEC  "\
 %{mbig-endian|EB:-EB} %{EL} \
-%{mcpu=A5|mcpu=a5|mA5:-mA5} \
 %{mcpu=ARC600:-mARC600} \
 %{mcpu=ARC601:-mARC601} \
 %{mcpu=ARC700:-mARC700} \
@@ -295,13 +297,14 @@ along with GCC; see the file COPYING3.  If not see
 
 /* For an anulled-true delay slot insn for a delayed branch, should we only
    use conditional execution?  */
-#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700 && !TARGET_EM)
+#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700 && !TARGET_V2)
 
-#define TARGET_A5 (arc_cpu == PROCESSOR_A5)
 #define TARGET_ARC600 (arc_cpu == PROCESSOR_ARC600)
 #define TARGET_ARC601 (arc_cpu == PROCESSOR_ARC601)
 #define TARGET_ARC700 (arc_cpu == PROCESSOR_ARC700)
 #define TARGET_EM (arc_cpu == PROCESSOR_ARCv2EM)
+#define TARGET_HS (arc_cpu == PROCESSOR_ARCv2HS)
+#define TARGET_V2 ((arc_cpu == PROCESSOR_ARCv2HS) || (arc_cpu == PROCESSOR_ARCv2EM))
 
 /* Recast the cpu class to be the cpu attribute.  */
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
@@ -1704,7 +1707,7 @@ enum
   (GET_CODE (PATTERN (insn)) != COND_EXEC || !flag_pic || !TARGET_MEDIUM_CALLS)
 
 /* EM defines*/
-#define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_EM)
-#define EM_MULTI    ((arc_mpy_option > 1) && TARGET_EM)
+#define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_V2)
+#define EM_MULTI    ((arc_mpy_option > 1) && TARGET_V2)
 
 #endif /* GCC_ARC_H */

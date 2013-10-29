@@ -34,7 +34,7 @@ arc_option_init_struct (struct gcc_options *opts)
 {
   opts->x_flag_no_common = 255; /* Mark as not user-initialized.  */
 
-  /* Which cpu we're compiling for (A5, ARC600, ARC601, ARC700).  */
+  /* Which cpu we're compiling for (ARC600, ARC601, ARC700).  */
   arc_cpu = PROCESSOR_NONE;
 }
 
@@ -93,7 +93,6 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  /* For ARC700, mpy16 makes no sense. */
 	  opts->x_target_flags &= ~MASK_MPY16_SET;
 	  break;
-	case PROCESSOR_A5:
 	case PROCESSOR_ARC600:
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;

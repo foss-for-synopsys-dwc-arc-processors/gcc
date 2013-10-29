@@ -210,7 +210,7 @@
  "@internal
   constant such that (~x)+1 is a power of two, and x < 0"
   (and (match_code "const_int")
-       (match_test "TARGET_EM
+       (match_test "TARGET_V2
                     && ((ival < 0) || (ival >= 0x80000000))
                     && (ival != -1)
                     && IS_POWEROF2_P ((~ival) + 1)")))
@@ -258,7 +258,7 @@
   "@internal
    A valid memory operand for ARCompact load instructions scaled"
   (and (match_code "mem")
-       (match_test "compact_memory_operand_p (op, mode, false, TARGET_EM & TARGET_CODE_DENSITY)")))
+       (match_test "compact_memory_operand_p (op, mode, false, TARGET_V2 & TARGET_CODE_DENSITY)")))
 
 (define_memory_constraint "S"
   "@internal

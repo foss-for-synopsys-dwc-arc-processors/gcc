@@ -33,10 +33,6 @@ mno-cond-exec
 Target Report RejectNegative Mask(NO_COND_EXEC)
 Disable ARCompact specific pass to generate conditional execution instructions
 
-mA5
-Target Report
-Generate ARCompact 32-bit code for ARCtangent-A5 processor
-
 mA6
 Target Report
 Generate ARCompact 32-bit code for ARCtangent-ARC600 processor
@@ -62,6 +58,10 @@ Same as -mA7
 mav2em
 Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
 Generate ARCv2 code for EM processor
+
+mav2hs
+Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2HS)
+Generate ARCv2 code for HS processor
 
 mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
@@ -191,9 +191,6 @@ Enum
 Name(processor_type) Type(enum processor_type)
 
 EnumValue
-Enum(processor_type) String(A5) Value(PROCESSOR_A5)
-
-EnumValue
 Enum(processor_type) String(ARC600) Value(PROCESSOR_ARC600)
 
 EnumValue
@@ -204,6 +201,9 @@ Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
 
 EnumValue
 Enum(processor_type) String(ARCv2EM) Value(PROCESSOR_ARCv2EM)
+
+EnumValue
+Enum(processor_type) String(ARCv2HS) Value(PROCESSOR_ARCv2HS)
 
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
@@ -398,6 +398,12 @@ mARCv2EM
 Target
 
 mEM
+Target
+
+mARCv2HS
+Target
+
+mHS
 Target
 
 ; Unfortunately, listing the full option name gives us clashes

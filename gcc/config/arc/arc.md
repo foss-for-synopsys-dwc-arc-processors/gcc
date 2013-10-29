@@ -86,6 +86,7 @@
 (include ("arc600.md"))
 (include ("arc700.md"))
 (include ("arcEM.md"))
+(include ("arcHS.md"))
 
 ;; Predicates
 
@@ -244,15 +245,15 @@
 ; old definition: (define_attr "enabled" "no,yes" (const_string "yes"))
 (define_attr "enabled" "no,yes"
   (cond [(and (eq_attr "cpu_facility" "arcv1")
-	      (match_test "TARGET_EM"))
+	      (match_test "TARGET_V2"))
 	 (const_string "no")
 
 	 (and (eq_attr "cpu_facility" "em")
-	      (not (match_test "TARGET_EM")))
+	      (not (match_test "TARGET_V2")))
 	 (const_string "no")
 
 	 (and (eq_attr "cpu_facility" "cd")
-	      (not (and (match_test "TARGET_EM")
+	      (not (and (match_test "TARGET_V2")
 			(match_test "TARGET_CODE_DENSITY"))))
 	 (const_string "no")
 	 ]
@@ -625,12 +626,12 @@
    mov%? %0,%1
    mov%? %0,%S1%&
    mov%? %0,%S1
-   * return TARGET_EM ? \"ldh%? %0,%1%&\" : \"ldw%? %0,%1%&\";
-   * return TARGET_EM ? \"sth%? %1,%0%&\" : \"stw%? %1,%0%&\";
-   * return TARGET_EM ? \"ldh%U1%V1 %0,%1\" : \"ldw%U1%V1 %0,%1\";
-   * return TARGET_EM ? \"sth%U0%V0 %1,%0\" : \"stw%U0%V0 %1,%0\";
-   * return TARGET_EM ? \"sth%U0%V0 %1,%0\" : \"stw%U0%V0 %1,%0\";
-   * return TARGET_EM ? \"sth%U0%V0 %S1,%0\" : \"stw%U0%V0 %S1,%0\";"
+   * return TARGET_V2 ? \"ldh%? %0,%1%&\" : \"ldw%? %0,%1%&\";
+   * return TARGET_V2 ? \"sth%? %1,%0%&\" : \"stw%? %1,%0%&\";
+   * return TARGET_V2 ? \"ldh%U1%V1 %0,%1\" : \"ldw%U1%V1 %0,%1\";
+   * return TARGET_V2 ? \"sth%U0%V0 %1,%0\" : \"stw%U0%V0 %1,%0\";
+   * return TARGET_V2 ? \"sth%U0%V0 %1,%0\" : \"stw%U0%V0 %1,%0\";
+   * return TARGET_V2 ? \"sth%U0%V0 %S1,%0\" : \"stw%U0%V0 %S1,%0\";"
   [(set_attr "type" "move,move,move,move,move,move,move,move,move,load,store,load,store,store,store")
    (set_attr "iscompact" "maybe,maybe,maybe,true,false,false,false,maybe_limm,false,true,true,false,false,false,false")
    (set_attr "predicable" "yes,no,yes,no,yes,no,yes,yes,yes,no,no,no,no,no,no")
@@ -1309,7 +1310,7 @@
       && satisfies_constraint_Rcq (operands[0]))
     return "sub%?.ne %0,%0,%0";
   /* ??? might be good for speed on ARC600 too, *if* properly scheduled.  */
-  if ((TARGET_ARC700 || optimize_size || TARGET_EM)
+  if ((TARGET_ARC700 || optimize_size || TARGET_V2)
       && rtx_equal_p (operands[1], constm1_rtx)
       && GET_CODE (operands[3]) == LTU)
     return "sbc.cs %0,%0,%0";
@@ -1461,13 +1462,13 @@
 	(zero_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "0,q,  0,c,Usd,Usd,m")))]
   ""
   "@
-   * return TARGET_EM ? \"exth%? %0,%1%&\" : \"extw%? %0,%1%&\";
-   * return TARGET_EM ? \"exth%? %0,%1%&\" : \"extw%? %0,%1%&\";
+   * return TARGET_V2 ? \"exth%? %0,%1%&\" : \"extw%? %0,%1%&\";
+   * return TARGET_V2 ? \"exth%? %0,%1%&\" : \"extw%? %0,%1%&\";
    bmsk%? %0,%1,15
-   * return TARGET_EM ? \"exth %0,%1\" : \"extw %0,%1\";
-   * return TARGET_EM ? \"ldh%? %0,%1%&\" : \"ldw%? %0,%1%&\";
-   * return TARGET_EM ? \"ldh%U1 %0,%1\" : \"ldw%U1 %0,%1\";
-   * return TARGET_EM ? \"ldh%U1%V1 %0,%1\" : \"ldw%U1%V1 %0,%1\";"
+   * return TARGET_V2 ? \"exth %0,%1\" : \"extw %0,%1\";
+   * return TARGET_V2 ? \"ldh%? %0,%1%&\" : \"ldw%? %0,%1%&\";
+   * return TARGET_V2 ? \"ldh%U1 %0,%1\" : \"ldw%U1 %0,%1\";
+   * return TARGET_V2 ? \"ldh%U1%V1 %0,%1\" : \"ldw%U1%V1 %0,%1\";"
   [(set_attr "type" "unary,unary,unary,unary,load,load,load")
    (set_attr "iscompact" "maybe,true,false,false,true,false,false")
    (set_attr "predicable" "no,no,yes,no,no,no,no")])
@@ -1527,13 +1528,13 @@
    switch (which_alternative)
    {
    case 0:
-    return TARGET_EM ? \"sexh%? %0,%1%&\" : \"sexw%? %0,%1%& \";
+    return TARGET_V2 ? \"sexh%? %0,%1%&\" : \"sexw%? %0,%1%& \";
    case 1:
-    return TARGET_EM ? \"sexh %0,%1\" : \"sexw %0,%1\";
+    return TARGET_V2 ? \"sexh %0,%1\" : \"sexw %0,%1\";
    case 2:
     return \"ldh%?.x %0, %1\";
    case 3:
-    return TARGET_EM ? \"ldh.x%U1%V1 %0,%1\" : \"ldw.x%U1%V1 %0,%1\";
+    return TARGET_V2 ? \"ldh.x%U1%V1 %0,%1\" : \"ldw.x%U1%V1 %0,%1\";
    default:
      gcc_unreachable();
    }
@@ -2491,7 +2492,7 @@
 	adc %0,%1,%2"
   ; if we have a bad schedule after sched2, split.
   "reload_completed
-   && !optimize_size && (TARGET_ARC700 || TARGET_EM)
+   && !optimize_size && (TARGET_ARC700 || TARGET_V2)
    && arc_scheduling_not_expected ()
    && arc_sets_cc_p (prev_nonnote_insn (insn))
    /* If next comes a return or other insn that needs a delay slot,
@@ -2706,7 +2707,7 @@
 	sbc %0,%1,%2"
   ; if we have a bad schedule after sched2, split.
   "reload_completed
-   && !optimize_size && (TARGET_ARC700 || TARGET_EM)
+   && !optimize_size && (TARGET_ARC700 || TARGET_V2)
    && arc_scheduling_not_expected ()
    && arc_sets_cc_p (prev_nonnote_insn (insn))
    /* If next comes a return or other insn that needs a delay slot,
@@ -2954,7 +2955,7 @@
       return \"bclr%? %0,%1,%M2%&\";
     case 4:
       return (INTVAL (operands[2]) == 0xff
-	      ? \"extb%? %0,%1%&\" : (TARGET_EM ? \"exth%? %0,%1%&\" : \"extw%? %0,%1%&\"));
+	      ? \"extb%? %0,%1%&\" : (TARGET_V2 ? \"exth%? %0,%1%&\" : \"extw%? %0,%1%&\"));
     case 9: case 14: return \"bic%? %0,%1,%n2-1\";
     case 18:
       if (TARGET_BIG_ENDIAN)
@@ -4223,9 +4224,9 @@
    switch (which_alternative)
    {
    case 0:
-     return TARGET_EM ? \"normh \t%0, %1\" : \"normw \t%0, %1\" ;
+     return TARGET_V2 ? \"normh \t%0, %1\" : \"normw \t%0, %1\" ;
    case 1:
-     return TARGET_EM ? \"normh \t%0, %S1\" : \"normw \t%0, %S1\";
+     return TARGET_V2 ? \"normh \t%0, %S1\" : \"normw \t%0, %S1\";
    default:
      gcc_unreachable ();
    }
@@ -4330,7 +4331,7 @@
 	(unspec:SI [(div:SI (match_operand:SI 1 "general_operand" "r,Cal,r")
 			    (match_operand:SI 2 "general_operand" "r,r,Cal"))]
 		   UNSPEC_DIVAW))]
-  "(TARGET_ARC700 || TARGET_EA_SET) && !TARGET_EM"
+  "(TARGET_ARC700 || TARGET_EA_SET) && !TARGET_V2"
   "@
    divaw \t%0, %1, %2
    divaw \t%0, %S1, %2
@@ -4446,7 +4447,7 @@
 (define_insn "trap_s"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "L,Cal")]
 		   VUNSPEC_TRAP_S)]
-  "TARGET_ARC700 || TARGET_EM"
+  "TARGET_ARC700 || TARGET_V2"
 {
   if (which_alternative == 0)
     {
@@ -4464,7 +4465,7 @@
 (define_insn "unimp_s"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "N")]
 		   VUNSPEC_UNIMP_S)]
-  "TARGET_ARC700 || TARGET_EM"
+  "TARGET_ARC700 || TARGET_V2"
   "unimp_s"
   [(set_attr "length" "4")
   (set_attr "type" "misc")])
@@ -4473,7 +4474,7 @@
 (define_insn "kflag"
   [(unspec_volatile [(match_operand:SI 0 "nonmemory_operand" "rL,I,Cal")]
 		   VUNSPEC_KFLAG)]
-  "TARGET_EM"
+  "TARGET_V2"
   "@
     kflag%? %0
     kflag %0
@@ -4487,7 +4488,7 @@
   [(set (match_operand:SI  0 "dest_reg_operand" "=r")
 	(unspec_volatile:SI [(match_operand:SI 1 "immediate_operand" "N")]
 			    VUNSPEC_CLRI))]
-  "TARGET_EM"
+  "TARGET_V2"
   "clri  %0"
   [(set_attr "length" "4")
    (set_attr "type" "misc")])
@@ -4496,7 +4497,7 @@
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
 			    UNSPEC_FFS))]
-  "TARGET_NORM && TARGET_EM"
+  "TARGET_NORM && TARGET_V2"
   "@
    ffs \t%0, %1
    ffs \t%0, %S1"
@@ -4509,7 +4510,7 @@
 			    UNSPEC_FFS))
    (set (reg:CC_ZN CC_REG)
 	(compare:CC_ZN (match_dup 1) (const_int 0)))]
-  "TARGET_NORM && TARGET_EM"
+  "TARGET_NORM && TARGET_V2"
   "@
    ffs.f\t%0, %1
    ffs.f\t%0, %S1"
@@ -4519,7 +4520,7 @@
 (define_expand "ffssi2"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(ffs:SI (match_operand:SI 1 "register_operand" "")))]
-  "TARGET_NORM && TARGET_EM"
+  "TARGET_NORM && TARGET_V2"
 {
  emit_insn( gen_ffs_f (operands[0], operands[1]));
  emit_insn( gen_rtx_COND_EXEC
@@ -4538,7 +4539,7 @@
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
 			    UNSPEC_FLS))]
-  "TARGET_NORM && TARGET_EM"
+  "TARGET_NORM && TARGET_V2"
   "@
    fls \t%0, %1
    fls \t%0, %S1"
@@ -4548,7 +4549,7 @@
 (define_insn "seti"
   [(unspec:SI [(match_operand:SI 0 "general_operand" "rL")]
 	      UNSPEC_SETI)]
-  "TARGET_EM"
+  "TARGET_V2"
   "seti  %0"
   [(set_attr "length" "4")
    (set_attr "type" "misc")])
@@ -5163,7 +5164,7 @@
    (use (match_operand:QI 3 "const_int_operand" ""))
    (use (label_ref (match_operand 4 "" "")))
    (use (match_operand:QI 5 "const_int_operand" ""))]
-  "TARGET_ARC600 || TARGET_ARC700 || TARGET_EM"
+  "TARGET_ARC600 || TARGET_ARC700 || TARGET_V2"
 {
   if (INTVAL (operands[3]) > 1)
     FAIL;
@@ -5422,7 +5423,7 @@
 (define_insn "bswapsi2"
   [(set (match_operand:SI 0 "register_operand"           "= r,r")
 	(bswap:SI (match_operand:SI 1 "nonmemory_operand" "rL,Cal")))]
-  "TARGET_EM && TARGET_SWAP"
+  "TARGET_V2 && TARGET_SWAP"
   "swape %0, %1"
   [(set_attr "length" "4,8")
    (set_attr "type" "two_cycle_core")])
@@ -5431,14 +5432,14 @@
   [(prefetch (match_operand:SI 0 "address_operand" "")
 	     (match_operand:SI 1 "" "")
 	     (match_operand:SI 2 "" ""))]
-  "TARGET_EM"
+  "TARGET_V2"
   "")
 
 (define_insn "prefetch_1"
   [(prefetch (match_operand:SI 0 "register_operand" "r")
 	     (match_operand:SI 1 "" "")
 	     (match_operand:SI 2 "" ""))]
-  "TARGET_EM"
+  "TARGET_V2"
   "prefetch [%0]"
   [(set_attr "type" "load")
    (set_attr "length" "4")])
@@ -5448,7 +5449,7 @@
 		      (match_operand:SI 1 "nonmemory_operand" "r,Cm2,Cal"))
 	     (match_operand:SI 2 "" "")
 	     (match_operand:SI 3 "" ""))]
-  "TARGET_EM"
+  "TARGET_V2"
   "prefetch [%0,%1]"
   [(set_attr "type" "load")
    (set_attr "length" "4,4,8")])
@@ -5457,7 +5458,7 @@
   [(prefetch (match_operand:SI 0 "symbolic_operand" "Clb, Cal")
 	     (match_operand:SI 1 "" "")
 	     (match_operand:SI 2 "" ""))]
-  "TARGET_EM"
+  "TARGET_V2"
   "prefetch [%0]"
   [(set_attr "type" "load")
    (set_attr "length" "8")])
@@ -5518,7 +5519,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand"           "")
 	(rotate:SI (match_operand:SI 1 "register_operand" "")
 		   (match_operand:SI 2 "nonmemory_operand" "")))]
-  "TARGET_EM"
+  "TARGET_V2"
   {
    if (!CONST_INT_P(operands[2]))
       FAIL;
@@ -5530,7 +5531,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand"           "=r")
 	(rotate:SI (match_operand:SI 1 "register_operand" "rL")
 		   (const_int 1)))]
-  "TARGET_EM"
+  "TARGET_V2"
   "rol %0,%1"
   [(set_attr "type" "shift")
    (set_attr "predicable" "no")
@@ -5544,7 +5545,7 @@
   {
    if (TARGET_BARREL_SHIFTER)
       DONE;
-   else if (!TARGET_EM)
+   else if (!TARGET_V2)
       FAIL;
 
    if (!CONST_INT_P(operands[2]))
@@ -5554,10 +5555,10 @@
    })
 
 (define_insn "*rotrsi3_base"
-  [(set (match_operand:SI 0 "dest_reg_operand"           "=r")
+  [(set (match_operand:SI 0 "dest_reg_operand"              "=r")
 	(rotatert:SI (match_operand:SI 1 "register_operand" "rL")
 		     (const_int 1)))]
-  "TARGET_EM && !TARGET_BARREL_SHIFTER"
+  "TARGET_V2 && !TARGET_BARREL_SHIFTER"
   "ror %0,%1"
   [(set_attr "type" "shift")
    (set_attr "predicable" "no")
@@ -5567,7 +5568,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand"            "=Rcqq,w")
 	(ashift:SI (match_operand:SI 1 "nonmemory_operand" "Rcqq,c")
 		   (const_int 1)))]
-  "TARGET_EM"
+  "TARGET_V2"
   "asl%? %0,%1%&"
   [(set_attr "type" "shift")
    (set_attr "iscompact" "maybe,false")
@@ -5581,7 +5582,7 @@
   [(set (match_operand:SI 0 "register_operand"                "=r,r,r,r,r,r,r,r")
 	(arcCC_cond:SI (match_operand:SI 1 "nonmemory_operand" "0,r,n,0,r,0,0,r")
 		       (match_operand:SI 2 "nonmemory_operand" "r,r,r,L,L,I,n,n")))]
-  "TARGET_EM && TARGET_CODE_DENSITY"
+  "TARGET_V2 && TARGET_CODE_DENSITY"
   "set<code>%? %0, %1, %2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
    (set_attr "iscompact" "false")
@@ -5594,7 +5595,7 @@
   [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
 	(ltu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,  n,0,r,0,  0,  r")
 		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,  n,  n")))]
-  "TARGET_EM && TARGET_CODE_DENSITY"
+  "TARGET_V2 && TARGET_CODE_DENSITY"
   "setlo%? %0, %1, %2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
    (set_attr "iscompact" "false")
@@ -5607,7 +5608,7 @@
   [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
 	(geu:SI (match_operand:SI 1 "nonmemory_operand" "0,r,  n,0,r,0,  0,  r")
 		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,  n,  n")))]
-  "TARGET_EM && TARGET_CODE_DENSITY"
+  "TARGET_V2 && TARGET_CODE_DENSITY"
   "seths%? %0, %1, %2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
    (set_attr "iscompact" "false")
@@ -5621,7 +5622,7 @@
   [(set (match_operand:SI 0 "register_operand"         "=r,  r,  r,r")
 	(gtu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,  r,n")
 		(match_operand:SI 2 "nonmemory_operand" "r,C62,  n,r")))]
-  "TARGET_EM && TARGET_CODE_DENSITY"
+  "TARGET_V2 && TARGET_CODE_DENSITY"
   "#"
   "reload_completed"
   [(const_int 0)]
@@ -5647,7 +5648,7 @@
   [(set (match_operand:SI 0 "register_operand"         "=r,  r,r,r")
 	(leu:SI (match_operand:SI 1 "nonmemory_operand" "r,  r,r,n")
 		(match_operand:SI 2 "nonmemory_operand" "r,C62,n,r")))]
-  "TARGET_EM && TARGET_CODE_DENSITY"
+  "TARGET_V2 && TARGET_CODE_DENSITY"
   "#"
   "reload_completed"
   [(const_int 0)]
