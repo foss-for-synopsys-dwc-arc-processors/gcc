@@ -24,6 +24,11 @@
 	* config/arc/constraints.md: Likewise
 	* config/arc/t-arc-newlib: Likewise
 
+2013-10-31 Joern Rennecke  <joern.rennecke@embecosm.com>, Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c: Insert NOP if the last instruction of a
+          ZOL body is a jump where lp_count is modified.
+
 2013-10-29 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arcHS.md: New file

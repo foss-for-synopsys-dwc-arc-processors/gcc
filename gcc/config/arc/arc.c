@@ -7984,23 +7984,43 @@ arc600_corereg_hazard (rtx pred, rtx succ)
    A write to a core reg greater or equal to 32 must not be immediately
    followed by a use.  Anticipate the length requirement to insert a nop
    between PRED and SUCC to prevent a hazard.  */
-
 int
 arc_hazard (rtx pred, rtx succ)
 {
-  if (!TARGET_ARC600)
-    return 0;
+  rtx jump, lab;
+  basic_block succ_bb;
+
   if (!pred || !INSN_P (pred) || !succ || !INSN_P (succ))
     return 0;
-  /* We might have a CALL to a non-returning function before a loop end.
-     ??? Although the manual says that's OK (the target is outside the loop,
-     and the loop counter unused there), the assembler barfs on this, so we
-     must instert a nop before such a call too.  */
+  /* We might have a CALL to a non-returning function before a loop
+     end.  ??? Although the manual says that's OK (the target is
+     outside the loop, and the loop counter unused there), the
+     assembler barfs on this for ARC600, so we must instert a nop
+     before such a call too.  */
   if (recog_memoized (succ) == CODE_FOR_doloop_end_i
-      && (JUMP_P (pred) || CALL_P (pred)
-	  || GET_CODE (PATTERN (pred)) == SEQUENCE))
+      && ((TARGET_ARC600
+	   && (JUMP_P (pred) || CALL_P (pred)
+	       || GET_CODE (PATTERN (pred)) == SEQUENCE))
+	  /* Check if it is a jump. */
+	  || ((JUMP_P ((jump = pred))
+	       || (GET_CODE (PATTERN (pred)) == SEQUENCE
+		   && JUMP_P ((jump = XVECEXP (PATTERN (pred), 0, 0)))))
+	      /* Make sure is not a simple_return. */
+	      && (GET_CODE (PATTERN (jump)) != SIMPLE_RETURN)
+	      /* Go to the target of the jump and check for aliveness
+		 of LP_COUNT register. */
+	      && (!(lab = JUMP_LABEL (jump))
+		  || (!(succ_bb = BLOCK_FOR_INSN (lab))
+		      && (!NOTE_INSN_BASIC_BLOCK_P (NEXT_INSN (lab))
+			  || ! (succ_bb = NOTE_BASIC_BLOCK (NEXT_INSN (lab))))
+		      && !(succ_bb = BLOCK_FOR_INSN (NEXT_INSN (lab))))
+		  || (REGNO_REG_SET_P (df_get_live_in (succ_bb), LP_COUNT))))))
     return 4;
-  return arc600_corereg_hazard (pred, succ);
+
+  if (TARGET_ARC600)
+    return arc600_corereg_hazard (pred, succ);
+
+  return 0;
 }
 
 /* Return length adjustment for INSN.  */
