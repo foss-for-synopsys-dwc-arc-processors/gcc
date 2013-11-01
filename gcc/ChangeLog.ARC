@@ -1,3 +1,9 @@
+2013-11-01 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* doc/invoke.texi: Update description for -mmpy option, add
+          description for -mmpy16 option
+	* config/arc/arc.c: Update arc_hazard comment.
+
 2013-10-31 Joern Rennecke  <joern.rennecke@embecosm.com>, Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c: Insert NOP if the last instruction of a

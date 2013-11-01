@@ -488,7 +488,7 @@ Objective-C and Objective-C++ Dialects}.
 @emph{ARC Options} @gccoptlist{-mbarrel-shifter -mcode-density @gol
 -mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mEM -mARCv2EM -mav2em @gol
 -mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mea @gol
--mforce-short -mno-mpy -mmpy-option=@var{multo} -mmul32x16 -mmul64 @gol
+-mforce-short -mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
 -mdsp-packa -mdvbf -mlock -mmac-d16 -mmac-24 -mrtsc -mswape @gol
 -mtelephony -mxy -misize -mannotate-align -marclinux -marclinux_prof @gol
@@ -11256,9 +11256,10 @@ Force short suffix by ignoring the instruction length attribute. This
 is the default when GCC is configured using @samp{--with-cpu=EM}, and
 is otherwise not available as an option.
 
-@item -mno-mpy
-@opindex mno-mpy
-Do not generate mpy instructions for ARC700.
+@item -mmpy
+@opindex mmpy
+When using the negative variant, the compiler does not generate
+multiply instructions for ARC700, and ARCv2 variants.
 
 @item -mmpy-option=@var{multo}
 @opindex mmpy-option
@@ -11302,6 +11303,11 @@ sequential.
 
 This option is only available when the tool chain is configured with
 @samp{--with-cpu=EM}@.
+
+@item -mmpy16
+@opindex mmpy16
+Generate 16x16 bit multiply instructions for ARCv2 CPUs. This option
+is equivalent with -mmpy-option=1
 
 @item -mmul32x16
 @opindex mmul32x16
