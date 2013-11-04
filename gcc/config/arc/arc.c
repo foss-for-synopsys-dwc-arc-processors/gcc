@@ -9636,6 +9636,8 @@ static vec<arc_sched_insn_info> insn_info;
 #define INSN_INFO_LENGTH (insn_info).length ()
 #define INSN_INFO_ENTRY(N) (insn_info[(N)])
 #define INSN_INFO_EXISTS(N) (((N) < insn_info.length ()) && insn_info[(N)].valid)
+#define INSN_INFO_CLOCK_P(N) (((N) < insn_info.length ()) && (insn_info[(N)].valid & ~VALID_CLOCK))
+#define INSN_INFO_UNIT_P(N) (((N) < insn_info.length ()) && (insn_info[(N)].valid & ~VALID_UNIT)
 
 static void
 insn_set_unit (rtx insn, int unit)
@@ -10090,8 +10092,8 @@ insn_cycle_count (rtx insn)
   int uid0 = INSN_UID (insn);
   int uid1 = INSN_UID (BB_END (bb));
 
-  if (uid0 < INSN_INFO_LENGTH
-      && uid1 < INSN_INFO_LENGTH)
+  if (INSN_INFO_CLOCK_P (uid0)
+      && INSN_INFO_CLOCK_P (uid1))
     cycles = INSN_INFO_ENTRY (uid1).clock - INSN_INFO_ENTRY (uid0).clock;
   else
     {

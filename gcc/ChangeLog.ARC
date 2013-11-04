@@ -1,7 +1,13 @@
 2013-11-04 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Do not update insn_info data if
-          curr_sched_clock is not set.
+          curr_sched_clock is not set. Define INSN_INFO_CLOCK_P and
+	  INSN_INFO_UNIT_P. Use INSN_INFO_CLOCK_P in insn_cycle_count().
+	* config/arc/arc.h: Remove A5 reference.
+	* config/arc/arc.md: Likewise
+	* config/arc/arc.opt: Likewise
+	* config/arc/constraints.md: Likewise
+	* config/arc/t-arc-newlib: Likewise
 
 2013-10-29 Claudiu Zissulescu <claziss@synopsys.com>
 
