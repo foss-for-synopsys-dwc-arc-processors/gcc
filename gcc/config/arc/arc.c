@@ -782,7 +782,7 @@ arc_init (void)
 	break;
       }
 
-  /* Support mul64 generation only for A5 and ARC600.  */
+  /* Support mul64 generation only for ARC600.  */
   if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_V2))
       error ("-mmul64 not supported for ARC700 or ARCv2");
 
@@ -1343,13 +1343,13 @@ arc_conditional_register_usage (void)
       for (i=64; i<88; i++)
 	reg_alloc_order [i] = i;
     }
-  /* For Arctangent-A5 / ARC600, lp_count may not be read in an instruction
-     following immediately after another one setting it to a new value.
-     There was some discussion on how to enforce scheduling constraints for
+  /* For ARC600, lp_count may not be read in an instruction following
+     immediately after another one setting it to a new value.  There
+     was some discussion on how to enforce scheduling constraints for
      processors with missing interlocks on the gcc mailing list:
-     http://gcc.gnu.org/ml/gcc/2008-05/msg00021.html .
-     However, we can't actually use this approach, because for ARC the
-     delay slot scheduling pass is active, which runs after
+     http://gcc.gnu.org/ml/gcc/2008-05/msg00021.html .  However, we
+     can't actually use this approach, because for ARC the delay slot
+     scheduling pass is active, which runs after
      machine_dependent_reorg.  */
   if (TARGET_ARC600)
     CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], LP_COUNT);
@@ -2172,7 +2172,7 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   total_size = ARC_STACK_ALIGN (total_size);
 
   /* Compute offset of register save area from stack pointer:
-     A5 Frame: pretend_size <blink> reg_size <fp> var_size args_size <--sp
+     Frame: pretend_size <blink> reg_size <fp> var_size args_size <--sp
   */
   reg_offset = total_size - (pretend_size + reg_size + extra_size)
                + (frame_pointer_needed ? 4 : 0);
@@ -9665,6 +9665,35 @@ insn_set_clock (rtx insn, int cycle)
   INSN_INFO_ENTRY (uid).valid |= VALID_CLOCK;
 }
 
+/* Given a rtx, check if it is an assembly instruction or not. */
+static int
+arc_asm_insn_p (rtx x)
+{
+  int i, j;
+
+  if (x == 0)
+    return 0;
+
+  switch (GET_CODE (x))
+    {
+    case ASM_OPERANDS:
+      return 1;
+
+    case PARALLEL:
+      j = 0;
+      for (i = XVECLEN (x, 0) - 1; i >= 0; i--)
+	j += arc_asm_insn_p (XVECEXP (x, 0, i));
+      if ( j > 0)
+	return 1;
+      break;
+
+    default:
+      break;
+    }
+
+  return 0;
+}
+
 /* Given an insn, go on its dep and find its unit. */
 static void
 arc_guess_unit (rtx insn)
@@ -9709,6 +9738,11 @@ static int arc_sched_adjust_cost(rtx insn,
 
   if (DEBUG_INSN_P (insn) ||
       DEBUG_INSN_P (dep_insn))
+    return cost;
+
+  /* Check if any incoming instruction is an ASM instruction. */
+  if (arc_asm_insn_p (PATTERN (insn)) ||
+      arc_asm_insn_p (PATTERN (dep_insn)))
     return cost;
 
   enum reg_note dep = REG_NOTE_KIND (link);
@@ -10032,7 +10066,7 @@ arc_sched_finish_global (FILE *dump,
 }
 
 /* Place holder for the clock of the current scheduled instruction. */
-static int curr_sched_clock;
+static int curr_sched_clock = -1;
 
 static int
 arc_sched_reorder (FILE *dump ATTRIBUTE_UNUSED,
@@ -10084,6 +10118,9 @@ arc_sched_correct_unit (rtx insn, int clock)
   int unit = 0;
 
   if (!insn_info.exists ())
+    return -1;
+
+  if (clock < 0)
     return -1;
 
   /* go on dependencies and figure out the unit. */
@@ -10231,7 +10268,8 @@ arc_variable_issue (FILE *dump ATTRIBUTE_UNUSED,
 
   int uid = INSN_UID (insn);
 
-  if (insn_info.exists ())
+  if (insn_info.exists ()
+      && (curr_sched_clock >= 0))
     {
       insn_set_clock(insn, curr_sched_clock);
 

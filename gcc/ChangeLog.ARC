@@ -1,3 +1,8 @@
+2013-11-04 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Do not update insn_info data if
+          curr_sched_clock is not set.
+
 2013-10-29 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arcHS.md: New file
