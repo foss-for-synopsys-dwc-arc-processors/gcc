@@ -199,7 +199,7 @@
 
 
 ;; Attribute describing the processor
-(define_attr "cpu" "none,A5,ARC600,ARC700,EM"
+(define_attr "cpu" "none,ARC600,ARC700,EM"
   (const (symbol_ref "arc_cpu_attr")))
 
 ;; true for compact instructions (those with _s suffix)
@@ -5152,7 +5152,7 @@
 ; operand 3 is the number of levels of enclosed loops
 ; operand 4 is the label to jump to at the top of the loop
 ; operand 5 is nonzero if the loop is entered at its top.
-; Use this for the ARC600 and ARC700.  For ARCtangent-A5, this is unsafe
+; Use this for the ARC600 and ARC700.  For ARCtangent, this is unsafe
 ; without further checking for nearby branches etc., and without proper
 ; annotation of shift patterns that clobber lp_count
 ; ??? ARC600 might want to check if the loop has few iteration and only a
