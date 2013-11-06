@@ -2,6 +2,7 @@
 
 	* common/config/arc/arc-common.c: Add HS default options.
 	* config/arc/arc.h: Add HS processor options.
+	* config/arc/arc.md: Fix ffssi2 pattern.
 
 2013-11-04 Claudiu Zissulescu <claziss@synopsys.com>
 
