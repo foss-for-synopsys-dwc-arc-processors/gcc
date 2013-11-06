@@ -4521,16 +4521,12 @@
 	(ffs:SI (match_operand:SI 1 "register_operand" "")))]
   "TARGET_NORM && TARGET_EM"
 {
- emit_insn( gen_ffs_f (operands[0], operands[1]));
- emit_insn( gen_rtx_COND_EXEC
+ emit_insn (gen_ffs_f (operands[0], operands[1]));
+ emit_insn (gen_addsi3 (operands[0] , operands[0], GEN_INT(1)));
+ emit_insn (gen_rtx_COND_EXEC
 	    (VOIDmode,
-	     gen_rtx_LT (VOIDmode, gen_rtx_REG (CC_ZNmode, CC_REG), const0_rtx),
+	     gen_rtx_EQ (VOIDmode, gen_rtx_REG (CC_ZNmode, CC_REG), const0_rtx),
 	     gen_rtx_SET (VOIDmode, operands[0], const0_rtx)));
- emit_insn( gen_rtx_COND_EXEC
-	    (VOIDmode,
-	     gen_rtx_GE (VOIDmode, gen_rtx_REG (CC_ZNmode, CC_REG), const0_rtx),
-	     gen_rtx_SET (VOIDmode, operands[0],
-				    plus_constant (SImode, operands[0], 1))));
  DONE;
  })
 

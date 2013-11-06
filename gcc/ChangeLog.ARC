@@ -1,3 +1,7 @@
+2013-11-06 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Fix ffssi2 pattern.
+
 2013-11-01 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* doc/invoke.texi: Update description for -mmpy option, add
