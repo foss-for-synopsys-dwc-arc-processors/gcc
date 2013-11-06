@@ -1,3 +1,8 @@
+2013-11-06 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Add HS default options.
+	* config/arc/arc.h: Add HS processor options.
+
 2013-11-04 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Do not update insn_info data if

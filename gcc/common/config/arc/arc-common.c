@@ -93,11 +93,32 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  /* For ARC700, mpy16 makes no sense. */
 	  opts->x_target_flags &= ~MASK_MPY16_SET;
 	  break;
+
 	case PROCESSOR_ARC600:
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
 	  /* This option makes no sense for ARC60x. */
 	  opts->x_target_flags &= ~MASK_MPY_SET;
+	  break;
+
+	case PROCESSOR_ARCv2HS:
+	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
+	    {
+	      opts->x_target_flags |= MASK_MPY_SET;
+	      opts->x_target_flags |= MASK_MPY16_SET;
+	    }
+	  if (mmpy_seen)
+	    opts->x_target_flags |= MASK_MPY16_SET;
+	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
+	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
+	  if ( !(opts_set->x_target_flags & MASK_SHIFT_ASSIST))
+	    opts->x_target_flags |= MASK_SHIFT_ASSIST;
+	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
+	    opts->x_target_flags |= MASK_CODE_DENSITY;
+	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
+	    opts->x_target_flags |= MASK_NORM_SET;
+	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
+	    opts->x_target_flags |= MASK_SWAP_SET;
 	  break;
 
 	case PROCESSOR_ARCv2EM:
@@ -111,12 +132,14 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
 	  break;
+
 	case PROCESSOR_ARC601:
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
 	  /* This option makes no sense for ARC60x. */
 	  opts->x_target_flags &= ~MASK_MPY_SET;
 	  break;
+
 	default:
 	  gcc_unreachable ();
 	}
@@ -125,7 +148,8 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
       /* In the case of ARCv2, -mmpy option sets also the -mmpy16 option. */
     case OPT_mmpy:
       mmpy_seen = 1;
-      if (mcpu_seen == PROCESSOR_ARCv2EM)
+      if ((mcpu_seen == PROCESSOR_ARCv2EM)
+	  || (mcpu_seen == PROCESSOR_ARCv2HS))
 	opts->x_target_flags |= MASK_MPY16_SET;
       /* For V2 chain, by default turn on MPY16. */
 #ifdef TARGET_CPU_DEFAULT == TARGET_CPU_EM
