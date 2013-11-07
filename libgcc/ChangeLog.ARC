@@ -1,3 +1,7 @@
+2013-11-07  Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/t-arc-em: Remove file.
+
 2013-09-04  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/t-arc700-uClibc: Remove -mA7 flag
