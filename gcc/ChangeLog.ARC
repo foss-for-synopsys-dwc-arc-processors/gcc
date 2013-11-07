@@ -1,3 +1,7 @@
+2013-11-07 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/t-arc-newlib: Add HS to multilib.
+
 2013-11-06 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Add HS default options.
