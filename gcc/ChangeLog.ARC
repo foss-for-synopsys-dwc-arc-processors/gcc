@@ -1,3 +1,8 @@
+2013-11-08 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Use TARGET_SCHED_DFA_NEW_CYCLE instead of
+          TARGET_SCHED_REORDER to collect the current scheduler clock.
+
 2013-11-07 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/t-arc-newlib: Add HS to multilib.

@@ -504,8 +504,8 @@ static void arc_finalize_pic (void);
 #undef TARGET_SCHED_VARIABLE_ISSUE
 #define TARGET_SCHED_VARIABLE_ISSUE arc_variable_issue
 
-#undef TARGET_SCHED_REORDER
-#define TARGET_SCHED_REORDER arc_sched_reorder
+#undef TARGET_SCHED_DFA_NEW_CYCLE
+#define TARGET_SCHED_DFA_NEW_CYCLE arc_sched_dfa_new_cycle
 
 #undef  TARGET_SCHED_ADJUST_COST
 #define TARGET_SCHED_ADJUST_COST arc_sched_adjust_cost
@@ -9602,8 +9602,9 @@ arc_legitimize_reload_address (rtx *p, enum machine_mode mode, int opnum,
  * only once for a given use/def chain. Latter, it uses the cached
  * value.
  *
- * 3. Collect, via TARGET_SCHED_REORDER, the current emulated scheduler
- * clock.
+ * 3. Collect, the current emulated scheduler clock via
+ * TARGET_SCHED_DFA_NEW_CYCLE. This hook is more reliable to collect
+ * this clock than TARGET_SCHED_REORDER.
  *
  * 4. For each scheduled instruction (collected in
  * TARGET_SCHED_VARIABLE_ISSUE), set the instruction clock (in
@@ -10070,17 +10071,19 @@ arc_sched_finish_global (FILE *dump,
 /* Place holder for the clock of the current scheduled instruction. */
 static int curr_sched_clock = -1;
 
+/* More reliable place to collect the scheduler current clock than
+   TARGET_SCHED_REORDER. */
 static int
-arc_sched_reorder (FILE *dump ATTRIBUTE_UNUSED,
-		   int sched_verbose ATTRIBUTE_UNUSED,
-		   rtx *ready ATTRIBUTE_UNUSED,
-		   int *pn_ready ATTRIBUTE_UNUSED, int clock_var)
+arc_sched_dfa_new_cycle (FILE *dump ATTRIBUTE_UNUSED,
+			 int sched_verbose ATTRIBUTE_UNUSED,
+			 rtx insn ATTRIBUTE_UNUSED,
+			 int last_clock ATTRIBUTE_UNUSED,
+			 int clock_var,
+			 int *sort_p ATTRIBUTE_UNUSED)
 {
   curr_sched_clock = clock_var;
 
-  if (ready == NULL)
-    return 0;
-  return 1;
+  return 0;
 }
 
 /* Given an insn, return the number of cycles until BB_END. */
