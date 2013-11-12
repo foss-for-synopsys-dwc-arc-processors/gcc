@@ -1,3 +1,8 @@
+2013-11-11 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: arc_hazad() Avoid branches at the end of a
+          ZOL.
+
 2013-11-08 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Use TARGET_SCHED_DFA_NEW_CYCLE instead of

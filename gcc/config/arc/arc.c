@@ -7998,7 +7998,7 @@ arc_hazard (rtx pred, rtx succ)
      assembler barfs on this for ARC600, so we must instert a nop
      before such a call too.  */
   if (recog_memoized (succ) == CODE_FOR_doloop_end_i
-      && ((TARGET_ARC600
+      && (((TARGET_ARC600 || TARGET_HS)
 	   && (JUMP_P (pred) || CALL_P (pred)
 	       || GET_CODE (PATTERN (pred)) == SEQUENCE))
 	  /* Check if it is a jump. */
