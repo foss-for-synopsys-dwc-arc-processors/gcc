@@ -1,3 +1,7 @@
+2013-11-13 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Use unspec_volatile for __builtin_arc_seti.
+
 2013-11-06 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Fix ffssi2 pattern.
