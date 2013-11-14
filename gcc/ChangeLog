@@ -1,3 +1,8 @@
+2013-11-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Remove extra alignment;
+	use (.&-4) idiom.
+
 2013-11-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (LOGICAL_OP_NON_SHORT_CIRCUIT): Define.
