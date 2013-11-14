@@ -1,3 +1,11 @@
+2013-11-14  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/gmon/dcache_linesz.S: Disable reading the cache
+          configuration for HS.
+	* config/arc/gmon/profil.S: Disable using profiling functions
+          for HS.
+	* config/arc/lib1funcs.S: Avoid shor move for HS.
+
 2013-11-07  Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/t-arc-em: Remove file.

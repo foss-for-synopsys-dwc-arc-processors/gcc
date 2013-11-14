@@ -45,7 +45,7 @@ __profil_offset:
 	.global	__dcache_linesz
 	.global __profil
 	FUNC(__profil)
-#ifndef __EM__
+#if !defined (__EM__) && !defined (__HS__)
 .Lstop_profiling:
 	sr	r0,[CONTROL0]
 	j_s	[blink]
@@ -113,13 +113,13 @@ __profil:
 	.balign	4
 	mov_s	r0,0
 	j_s	[blink]
-#endif /* !__EM__ */
+#endif /* !__EM__ && !__HS__ */
 	ENDFUNC(__profil)
 
 	FUNC(__profil_irq)
 	.balign 4	; make final jump unaligned to avoid delay penalty
 	.balign 32,0,12	; make sure the code spans no more that two cache lines
-#ifndef __EM__
+#if !defined (__EM__) && !defined (__HS__)
 	nop_s
 __profil_irq:
 	push_s	r0
@@ -137,7 +137,7 @@ nostore:ld.ab	r2,[sp,8]
 	pop_s	r0
 	j.f	[ilink1]
 	ENDFUNC(__profil_irq)
-#endif /* !__EM__ */
+#endif /* !__EM__  && !__HS__ */
 
 ; could save one cycle if the counters were allocated at link time and
 ; the contents of __profil_offset were pre-computed at link time, like this:

@@ -394,12 +394,12 @@ SYM(__udivmodsi4):
 	lsr_s r1,r1
 	cmp_s r0,r1
 	xor.f r2,lp_count,31
-#ifndef __EM__
+#if !defined (__EM__) && !defined (__HS__)
 	mov_s lp_count,r2
 #else
 	mov lp_count,r2
 	nop_s
-#endif /* !__EM__ */
+#endif /* !__EM__ && !__HS__ */
 #endif /* !__ARC_NORM__ */
 	sub.cc r0,r0,r1
 	mov_s r3,3
