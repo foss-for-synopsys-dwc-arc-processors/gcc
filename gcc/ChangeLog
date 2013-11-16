@@ -1,3 +1,7 @@
+2013-11-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/constraints.md (Rcq): Simplify register number test.
+
 2013-11-14  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (doloop_begin_i): Remove extra alignment;
