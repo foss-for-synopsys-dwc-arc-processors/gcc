@@ -1,5 +1,12 @@
 2013-11-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.c (arc_predicate_delay_insns): New function.
+	(pass_arc_predicate_delay_insns): New rtl_opt_pass.
+	(arc_init): Register pass_arc_predicate_delay_insns if
+	flag_delayed_branch is active.
+
+2013-11-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/constraints.md (Rcq): Simplify register number test.
 
 2013-11-14  Joern Rennecke  <joern.rennecke@embecosm.com>
