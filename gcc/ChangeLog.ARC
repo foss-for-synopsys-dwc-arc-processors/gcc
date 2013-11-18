@@ -1,3 +1,7 @@
+2013-11-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c: Clean up compilation warnings.
+
 2013-11-06 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Fix ffssi2 pattern.
