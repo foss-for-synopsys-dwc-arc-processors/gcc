@@ -130,10 +130,10 @@
    (VUNSPEC_UNIMP_S 28) ; blockage insn for unimp_s generation
    (VUNSPEC_KFLAG 29); blockage insn for kflag generation
    (VUNSPEC_CLRI  30); disable interrupts
+   (VUNSPEC_SETI  31); SETI
 
    (UNSPEC_FFS  40); FFS
    (UNSPEC_FLS  41); FLS
-   (UNSPEC_SETI  41); SETI
 
    (R0_REG 0)
    (R1_REG 1)
@@ -4547,8 +4547,8 @@
    (set_attr "type" "two_cycle_core,two_cycle_core")])
 
 (define_insn "seti"
-  [(unspec:SI [(match_operand:SI 0 "general_operand" "rL")]
-	      UNSPEC_SETI)]
+  [(unspec_volatile:SI [(match_operand:SI 0 "general_operand" "rL")]
+		       VUNSPEC_SETI)]
   "TARGET_EM"
   "seti  %0"
   [(set_attr "length" "4")
@@ -5037,8 +5037,7 @@
     {
       /* ??? Can do better for when a scratch register
 	 is known.  But that would require extra testing.  */
-      arc_clear_unalign ();
-      return ".p2align 2\;push_s r0\;add r0,pcl,%4-.+2\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1-.+2\;sr r0,[3]; LP_END\;pop_s r0";
+      return "push_s r0\;add r0,pcl,%4-(.&-4)\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1-(.&-4)\;sr r0,[3]; LP_END\;pop_s r0";
     }
   /* Check if the loop end is in range to be set by the lp instruction.  */
   size = INTVAL (operands[3]) < 2 ? 0 : 2048;

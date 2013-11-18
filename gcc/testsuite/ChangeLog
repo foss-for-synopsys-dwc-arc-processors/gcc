@@ -1,3 +1,14 @@
+2013-11-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.dg/tree-ssa/ssa-dom-thread-4.c: Adjust for ARC
+	LOGICAL_OP_NON_SHORT_CIRCUIT definition.
+	* gcc.dg/tree-ssa/vrp47.c: Likewise.
+
+2013-10-28   Claudiu Zissulescu  <claziss@synopsys.com>
+	     Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* gcc.target/arc/jump-around-jump.c: New test.
+
 2013-03-22  Release Manager
 
 	* GCC 4.8.0 released.
