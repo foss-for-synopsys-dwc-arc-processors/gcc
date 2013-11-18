@@ -614,7 +614,6 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
      the fp/sp+largeoffset address. */
   if (code == SUBREG)
     {
-      int offset = SUBREG_BYTE (x);
       x = SUBREG_REG(x);
 
       if (REG_P (x))
@@ -647,6 +646,8 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
 		    case HImode:
 		      sri->icode = in_p ? CODE_FOR_reload_hi_load : CODE_FOR_reload_hi_store;
 		      break;
+		    default:
+		      break;
 		    }
 		}
 	    }
@@ -659,7 +660,6 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
 void
 arc_secondary_reload_conv (rtx reg, rtx mem, rtx scratch, bool store_p)
 {
-  int regno = true_regnum (reg);
   rtx addr;
 
   gcc_assert (GET_CODE (mem) == MEM);

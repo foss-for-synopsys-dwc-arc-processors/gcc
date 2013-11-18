@@ -1,3 +1,7 @@
+2013-11-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c: Clean up compilation warnings.
+
 2013-11-11 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: arc_hazad() Avoid branches at the end of a
