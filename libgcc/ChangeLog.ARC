@@ -1,3 +1,9 @@
+2013-11-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/dp-hack.h: Enable various floating point routines
+	also when NORM optimized handmade routines are used.
+        * config/arc/fp-hack.h: Likewise.
+
 2013-09-04  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/t-arc700-uClibc: Remove -mA7 flag
