@@ -61,16 +61,16 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define L_usi_to_sf
 #define __floatunsisf __floatunsisf_c
 #endif
-#define L_lt_sf
-#define L_ne_sf
-#define L_le_sf
-#define L_unord_sf
 #ifndef __ARC_NORM__
 #define L_fpcmp_parts_sf
 #define L_compare_sf
 #define L_eq_sf
+#define L_ne_sf
 #define L_gt_sf
 #define L_ge_sf
+#define L_lt_sf
+#define L_le_sf
+#define L_unord_sf
 #define L_negate_sf
 #elif ARC_FP_DEBUG
 #define L_fpcmp_parts_sf
@@ -80,4 +80,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define __gtsf2 __gtsf2_c
 #define L_ge_sf
 #define __gesf2 __gesf2_c
+#define L_unord_sf
+#define __unordsf2 __unordsf2_c
 #endif
