@@ -1,3 +1,8 @@
+2013-11-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h: TARGET_OPTFPE set for ARCEM and
+          ARCHS. TARGET_NORM set for ARCHS.
+
 2013-11-18 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c: Clean up compilation warnings.

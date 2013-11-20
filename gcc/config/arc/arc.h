@@ -274,12 +274,13 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Non-zero means the cpu supports norm instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mnorm is given.  */
-#define TARGET_NORM (TARGET_ARC700 || TARGET_NORM_SET)
+#define TARGET_NORM (TARGET_ARC700 || TARGET_NORM_SET || TARGET_HS)
 /* Indicate if an optimized floating point emulation library is available.  */
 #define TARGET_OPTFPE \
  (TARGET_ARC700 \
   /* We need a barrel shifter and NORM.  */ \
-  || (TARGET_ARC600 && TARGET_NORM_SET))
+  || (TARGET_ARC600 && TARGET_NORM_SET) \
+  || TARGET_HS || (TARGET_EM && TARGET_NORM_SET))
 
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */
