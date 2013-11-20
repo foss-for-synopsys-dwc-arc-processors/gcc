@@ -1,3 +1,8 @@
+2013-11-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/dp-hack.h: Revert to the previous state.
+        * config/arc/fp-hack.h: Likewise.
+
 2013-11-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/dp-hack.h: Enable various floating point routines

@@ -77,16 +77,16 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define L_usi_to_df
 #define __floatunsidf __floatunsidf_c
 #endif
-#define L_lt_df
-#define L_ne_df
-#define L_le_df
-#define L_unord_df
 #ifndef __ARC_NORM__
 #define L_fpcmp_parts_df
 #define L_compare_df
 #define L_eq_df
+#define L_ne_df
 #define L_gt_df
 #define L_ge_df
+#define L_lt_df
+#define L_le_df
+#define L_unord_df
 #define L_negate_df
 #elif ARC_DP_DEBUG
 #define L_fpcmp_parts_df
@@ -96,4 +96,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define __gtdf2 __gtdf2_c
 #define L_ge_df
 #define __gedf2 __gedf2_c
+#define L_unord_df
+#define __unorddf2 __unorddf2_c
 #endif
