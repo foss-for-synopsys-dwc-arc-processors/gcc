@@ -1,3 +1,16 @@
+2013-11-21 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config.gcc (TARGET_CPU_DEFAULT): Set to TARGET_CPU_HS when
+          configuring with --with-cpu.
+        * common/config/arc/arc-common.c
+          (TARGET_DEFAULT_TARGET_FLAGS): Set to appropriate values
+          when the default processor is HS.
+	* config/arc/arc.c (arc_cpu): Set to HS when is the default cpu.
+	* config/arc/arc.c (arc_sched_correct_unit): Avoid debug instructions.
+	* config/arc/arc.h (ASM_DEFAULT): Set to mHS when HS is the
+          default cpu. (MULTILIB_DEFAULTS): Set to HS when it is the
+          default cpu.
+
 2013-11-20 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: TARGET_OPTFPE set for ARCEM and

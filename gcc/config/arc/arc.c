@@ -10160,7 +10160,10 @@ arc_sched_correct_unit (rtx insn, int clock)
       int uid = INSN_UID (pro);
       enum reg_note dep_type = DEP_TYPE (dep);
 
-      if ((uid < INSN_INFO_LENGTH)
+      if (DEBUG_INSN_P (pro))
+	continue;
+
+      if (INSN_INFO_CLOCK_P (uid)
 	  && (dep_type == REG_DEP_TRUE))
 	{
 	  int pro_clock = INSN_INFO_ENTRY (uid).clock;
