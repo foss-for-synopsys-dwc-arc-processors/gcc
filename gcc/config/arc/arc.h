@@ -148,6 +148,8 @@ along with GCC; see the file COPYING3.  If not see
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define ASM_DEFAULT "-mEM"
+#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
+#define ASM_DEFAULT "-mHS"
 #else
 #define ASM_DEFAULT "-mARC700 -mEA"
 #endif
@@ -315,6 +317,8 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef MULTILIB_DEFAULTS
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define MULTILIB_DEFAULTS { "mcpu=ARCv2EM" }
+#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
+#define MULTILIB_DEFAULTS { "mcpu=ARCv2HS" }
 #else
 #define MULTILIB_DEFAULTS { "mcpu=ARC700" }
 #endif

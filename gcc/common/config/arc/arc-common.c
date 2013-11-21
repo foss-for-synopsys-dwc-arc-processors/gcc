@@ -87,57 +87,83 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	{
 	case PROCESSOR_ARC700:
 	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
-	    opts->x_target_flags |= MASK_MPY_SET;
+	    opts->x_target_flags |= MASK_MPY_SET;                /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
+	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on. */
+	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
+	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off. */
+	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
+	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off. */
 	  /* For ARC700, mpy16 makes no sense. */
 	  opts->x_target_flags &= ~MASK_MPY16_SET;
+	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
+	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  break;
 
 	case PROCESSOR_ARC600:
+	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
+	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off. */
+	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
+	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off. */
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
+	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on. */
 	  /* This option makes no sense for ARC60x. */
 	  opts->x_target_flags &= ~MASK_MPY_SET;
+	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
+	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  break;
 
 	case PROCESSOR_ARCv2HS:
 	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
 	    {
-	      opts->x_target_flags |= MASK_MPY_SET;
-	      opts->x_target_flags |= MASK_MPY16_SET;
+	      opts->x_target_flags |= MASK_MPY_SET;              /* Default: on. */
+	      opts->x_target_flags |= MASK_MPY16_SET;            /* Default: on. */
 	    }
 	  if (mmpy_seen)
 	    opts->x_target_flags |= MASK_MPY16_SET;
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;
+	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_SHIFT_ASSIST))
-	    opts->x_target_flags |= MASK_SHIFT_ASSIST;
+	    opts->x_target_flags |= MASK_SHIFT_ASSIST;           /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
-	    opts->x_target_flags |= MASK_CODE_DENSITY;
+	    opts->x_target_flags |= MASK_CODE_DENSITY;           /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
-	    opts->x_target_flags |= MASK_NORM_SET;
+	    opts->x_target_flags |= MASK_NORM_SET;               /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
-	    opts->x_target_flags |= MASK_SWAP_SET;
+	    opts->x_target_flags |= MASK_SWAP_SET;               /* Default: on. */
 	  break;
 
 	case PROCESSOR_ARCv2EM:
 	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
 	    {
-	      opts->x_target_flags |= MASK_MPY_SET;
-	      opts->x_target_flags |= MASK_MPY16_SET;
+	      opts->x_target_flags |= MASK_MPY_SET;              /* Default: on. */
+	      opts->x_target_flags |= MASK_MPY16_SET;            /* Default: on. */
 	    }
 	  if (mmpy_seen)
 	    opts->x_target_flags |= MASK_MPY16_SET;
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
+	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;        /* Default: off. */
+	  if ( !(opts_set->x_target_flags & MASK_SHIFT_ASSIST))
+	    opts->x_target_flags &= ~MASK_SHIFT_ASSIST;          /* Default: off. */
+	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
+	    opts->x_target_flags &= ~MASK_CODE_DENSITY;          /* Default: off. */
+	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
+	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off. */
+	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
+	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off. */
 	  break;
 
 	case PROCESSOR_ARC601:
+	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
+	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off. */
+	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
+	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off. */
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;
+	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;        /* Default: off. */
 	  /* This option makes no sense for ARC60x. */
 	  opts->x_target_flags &= ~MASK_MPY_SET;
+	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
+	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  break;
 
 	default:
@@ -188,7 +214,13 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
 #define DEFAULT_NO_SDATA (TARGET_SDATA_DEFAULT ? 0 : MASK_NO_SDATA_SET)
 
-#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
+#if TARGET_CPU_DEFAULT == TARGET_CPU_HS
+/* For HS max out. */
+#define TARGET_DEFAULT_TARGET_FLAGS \
+  (MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA \
+   | MASK_MPY_SET | MASK_MPY16_SET | MASK_SHIFT_ASSIST | MASK_CODE_DENSITY \
+   | MASK_NORM_SET | MASK_SWAP_SET)
+#elif TARGET_CPU_DEFAULT == TARGET_CPU_EM
 /* Default for EM: no barrel shifter*/
 #define TARGET_DEFAULT_TARGET_FLAGS \
   (MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA | MASK_MPY_SET | MASK_MPY16_SET)

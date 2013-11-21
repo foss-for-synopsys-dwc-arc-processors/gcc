@@ -863,6 +863,8 @@ arc_override_options (void)
   if (arc_cpu == PROCESSOR_NONE)
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
     arc_cpu = PROCESSOR_ARCv2EM;
+#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
+    arc_cpu = PROCESSOR_ARCv2HS;
 #else
     arc_cpu = PROCESSOR_ARC700;
 #endif
@@ -5234,8 +5236,8 @@ arc_init_builtins (void)
 
     def_mbuiltin (TARGET_V2,"__builtin_arc_kflag", void_ftype_usint, ARC_BUILTIN_KFLAG);
     def_mbuiltin (TARGET_V2,"__builtin_arc_clri", int_ftype_void, ARC_BUILTIN_CLRI);
-    def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_ffs", int_ftype_int, ARC_BUILTIN_FFS);
-    def_mbuiltin (TARGET_EM && TARGET_NORM,"__builtin_arc_fls", int_ftype_int, ARC_BUILTIN_FLS);
+    def_mbuiltin ((TARGET_EM && TARGET_NORM) || TARGET_HS,"__builtin_arc_ffs", int_ftype_int, ARC_BUILTIN_FFS);
+    def_mbuiltin ((TARGET_EM && TARGET_NORM) || TARGET_HS,"__builtin_arc_fls", int_ftype_int, ARC_BUILTIN_FLS);
     def_mbuiltin (TARGET_V2,"__builtin_arc_seti", void_ftype_int, ARC_BUILTIN_SETI);
 
     if (TARGET_SIMD_SET)
