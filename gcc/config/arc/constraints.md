@@ -215,6 +215,12 @@
                     && (ival != -1)
                     && IS_POWEROF2_P ((~ival) + 1)")))
 
+(define_constraint "C3p"
+ "@internal
+  constant int used to select xbfu a,b,u6 instruction. The values accepted are 1 and 2."
+  (and (match_code "const_int")
+       (match_test "((ival == 1) || (ival == 2))")))
+
 (define_constraint "Ccp"
  "@internal
   constant such that ~x (one's Complement) is a power of two"

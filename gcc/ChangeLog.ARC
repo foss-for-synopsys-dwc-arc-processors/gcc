@@ -1,3 +1,9 @@
+2013-11-26 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* /config/arc/arc.md: Add extzvsi pattern (XBFU) for HS.
+	* /config/arc/constraints.md: Define C3p constraint to be used
+          by extzvsi pattern.
+
 2013-11-21 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config.gcc (TARGET_CPU_DEFAULT): Set to TARGET_CPU_HS when

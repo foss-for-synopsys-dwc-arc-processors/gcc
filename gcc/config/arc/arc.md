@@ -5694,6 +5694,28 @@
  DONE;
 })
 
+;; ARCv2HS specific ops
+
+;; An idea is to use an expand here, and try to avoid long
+;; instructions by using mov_s c,u8 and then issuing a xbfu a,b,c,
+;; instead of a a,b,u8 (u8 is mapped onto a limm if it is larger than
+;; 63). This buys us 2 bytes.
+(define_insn "extzvsi"
+  [(set (match_operand:SI 0 "register_operand"                  "=r  , r  , r, r, r")
+	(zero_extract:SI (match_operand:SI 1 "register_operand"  "0  , r  , 0, 0, r")
+			 (match_operand:SI 2 "const_int_operand" "C3p, C3p, i, i, i")
+			 (match_operand:SI 3 "const_int_operand" "i  , i  , i, i, i")))]
+  "TARGET_HS && TARGET_BARREL_SHIFTER"
+  {
+   int assemble_op2 = (((INTVAL (operands[2]) - 1) & 0x1f) << 5) | (INTVAL (operands[3]) & 0x1f);
+   operands[2] = GEN_INT (assemble_op2);
+   return "xbfu%? %0,%1,%2";
+  }
+  [(set_attr "type"       "shift")
+   (set_attr "iscompact"  "false")
+   (set_attr "length"     "4,4,4,8,8")
+   (set_attr "predicable" "yes,no,no,yes,no")
+   (set_attr "cond"       "canuse,nocond,nocond,canuse,nocond")])
 
 ;; include the arc-FPX instructions
 (include "fpx.md")
