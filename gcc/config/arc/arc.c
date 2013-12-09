@@ -691,27 +691,6 @@ struct rtl_opt_pass pass_arc_ifcvt =
  }
 };
 
-static unsigned arc_predicate_delay_insns (void);
-struct rtl_opt_pass pass_arc_predicate_delay_insns =
-{
- {
-  RTL_PASS,
-  "arc_predicate_delay_insns",		/* name */
-  OPTGROUP_NONE,			/* optinfo_flags */
-  NULL,					/* gate */
-  arc_predicate_delay_insns,		/* execute */
-  NULL,					/* sub */
-  NULL,					/* next */
-  0,					/* static_pass_number */
-  TV_IFCVT2,				/* tv_id */
-  0,					/* properties_required */
-  0,					/* properties_provided */
-  0,					/* properties_destroyed */
-  0,					/* todo_flags_start */
-  TODO_df_finish			/* todo_flags_finish */
- }
-};
-
 /* Called by OVERRIDE_OPTIONS to initialize various things.  */
 
 void
@@ -835,11 +814,6 @@ arc_init (void)
   arc_punct_chars['^'] = 1;
   arc_punct_chars['&'] = 1;
 
-  static struct register_pass_info arc_predicate_delay_info
-    = { &pass_arc_predicate_delay_insns.pass, "dbr",
-        1, PASS_POS_INSERT_AFTER
-      };
-
   /* There are two target-independent ifcvt passes, and arc_reorg may do
      one ore more arc_ifcvt calls.  */
   static struct register_pass_info arc_ifcvt4_info
@@ -857,8 +831,6 @@ arc_init (void)
       register_pass (&arc_ifcvt4_info);
       register_pass (&arc_ifcvt5_info);
     }
-  if (flag_delayed_branch)
-    register_pass (&arc_predicate_delay_info);
 }
 
 /* Check ARC options, generate derived target attributes.  */
@@ -3893,8 +3865,6 @@ arc_ccfsm_post_advance (rtx insn, struct arc_ccfsm *state)
 	   && GET_CODE (PATTERN (insn)) != ADDR_DIFF_VEC
 	   && ((type = get_attr_type (insn)) == TYPE_BRANCH
 	       || (type == TYPE_UNCOND_BRANCH
-		   /* ??? Maybe should also handle TYPE_RETURN here,
-		      but we don't have a testcase for that.  */
 		   && ARC_CCFSM_BRANCH_DELETED_P (state))))
     {
       if (ARC_CCFSM_BRANCH_DELETED_P (state))
@@ -8526,30 +8496,6 @@ arc_ifcvt (void)
 	    {
 	      /* ??? don't conditionalize if all side effects are dead
 		 in the not-execute case.  */
-
-	      /* For commutative operators, we generally prefer to have
-		 the first source match the destination.  */
-	      if (GET_CODE (pat) == SET)
-		{
-		  rtx src = SET_SRC (pat);
-
-		  if (COMMUTATIVE_P (src))
-		    {
-		      rtx src0 = XEXP (src, 0);
-		      rtx src1 = XEXP (src, 1);
-		      rtx dst = SET_DEST (pat);
-
-		      if (rtx_equal_p (src1, dst) && !rtx_equal_p (src0, dst)
-			  /* Leave add_n alone - the canonical form is to
-			     have the complex summand first.  */
-			  && REG_P (src0))
-			pat = gen_rtx_SET (VOIDmode, dst,
-					   gen_rtx_fmt_ee (GET_CODE (src),
-							   GET_MODE (src),
-							   src1, src0));
-		    }
-		}
-
 	      /* dwarf2out.c:dwarf2out_frame_debug_expr doesn't know
 		 what to do with COND_EXEC.  */
 	      if (RTX_FRAME_RELATED_P (insn))
@@ -8595,74 +8541,6 @@ arc_ifcvt (void)
 	  gcc_unreachable ();
 	}
       arc_ccfsm_post_advance (insn, statep);
-    }
-  return 0;
-}
-
-/* Find annulled delay insns and convert them to use the appropriate predicate.
-   This allows branch shortening to size up these insns properly.  */
-
-static unsigned
-arc_predicate_delay_insns (void)
-{
-  for (rtx insn = get_insns (); insn; insn = NEXT_INSN (insn))
-    {
-      rtx pat, jump, dlay, src, cond, *patp;
-      int reverse;
-
-      if (!NONJUMP_INSN_P (insn)
-	  || GET_CODE (pat = PATTERN (insn)) != SEQUENCE)
-	continue;
-      jump = XVECEXP (pat, 0, 0);
-      dlay = XVECEXP (pat, 0, 1);
-      if (!JUMP_P (jump) || !INSN_ANNULLED_BRANCH_P (jump))
-	continue;
-      /* If the branch insn does the annulling, leave the delay insn alone.  */
-      if (!TARGET_AT_DBR_CONDEXEC && !INSN_FROM_TARGET_P (dlay))
-	continue;
-      /* ??? Could also leave DLAY un-conditionalized if its target is dead
-	 on the other path.  */
-      gcc_assert (GET_CODE (PATTERN (jump)) == SET);
-      gcc_assert (SET_DEST (PATTERN (jump)) == pc_rtx);
-      src = SET_SRC (PATTERN (jump));
-      gcc_assert (GET_CODE (src) == IF_THEN_ELSE);
-      cond = XEXP (src, 0);
-      if (XEXP (src, 2) == pc_rtx)
-	reverse = 0;
-      else if (XEXP (src, 1) == pc_rtx)
-	reverse = 1;
-      else
-	gcc_unreachable ();
-      if (!INSN_FROM_TARGET_P (dlay) != reverse)
-	{
-	  enum machine_mode ccm = GET_MODE (XEXP (cond, 0));
-	  enum rtx_code code = reverse_condition (GET_CODE (cond));
-	  if (code == UNKNOWN || ccm == CC_FP_GTmode || ccm == CC_FP_GEmode)
-	    code = reverse_condition_maybe_unordered (GET_CODE (cond));
-
-	  cond = gen_rtx_fmt_ee (code, GET_MODE (cond),
-				 copy_rtx (XEXP (cond, 0)),
-				 copy_rtx (XEXP (cond, 1)));
-	}
-      else
-	cond = copy_rtx (cond);
-      patp = &PATTERN (dlay);
-      pat = *patp;
-      /* dwarf2out.c:dwarf2out_frame_debug_expr doesn't know
-	 what to do with COND_EXEC.  */
-      if (RTX_FRAME_RELATED_P (dlay))
-	{
-	  /* As this is the delay slot insn of an anulled branch,
-	     dwarf2out.c:scan_trace understands the anulling semantics
-	     without the COND_EXEC.  */
-	  rtx note = alloc_reg_note (REG_FRAME_RELATED_EXPR, pat,
-				     REG_NOTES (dlay));
-	  validate_change (dlay, &REG_NOTES (dlay), note, 1);
-	}
-      pat = gen_rtx_COND_EXEC (VOIDmode, cond, pat);
-      validate_change (dlay, patp, pat, 1);
-      if (!apply_change_group ())
-	gcc_unreachable ();
     }
   return 0;
 }

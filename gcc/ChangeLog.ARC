@@ -1,3 +1,36 @@
+2013-12-09  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	Back out these bugs fixes:
+
+	2013-11-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * config/arc/arc.c (arc_predicate_delay_insns): New function.
+	  (pass_arc_predicate_delay_insns): New rtl_opt_pass.
+	  (arc_init): Register pass_arc_predicate_delay_insns if
+	  flag_delayed_branch is active.
+	2013-11-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * config/arc/constraints.md (Rcq): Simplify register number test.
+	2013-11-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * config/arc/arc.md (doloop_begin_i): Remove extra alignment;
+	  use (.&-4) idiom.
+	2013-11-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * config/arc/arc.h (LOGICAL_OP_NON_SHORT_CIRCUIT): Define.
+	2013-11-07  Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * config/arc/arc.c (arc_ifcvt): Use commutativity, e.g.:
+	  reg_a := reg_b + reg_a  ==>  reg_a := reg_a + reg_b
+	2013-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * config/arc/arc.c (arc_ccfsm_post_advance):
+	  Add comment about TYPE_RETURN.
+	2013-11-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * gcc.dg/tree-ssa/ssa-dom-thread-4.c: Adjust for ARC
+	  LOGICAL_OP_NON_SHORT_CIRCUIT definition.
+	  * gcc.dg/tree-ssa/vrp47.c: Likewise.
+	2013-10-28   Claudiu Zissulescu  <claziss@synopsys.com>
+		     Joern Rennecke  <joern.rennecke@embecosm.com>
+	  * gcc.target/arc/jump-around-jump.c: New test.
+
+	Because their cherry-pick date correlates with unverifyable
+	reports of linux boot problems.
+
 2013-11-18 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c: Clean up compilation warnings.
