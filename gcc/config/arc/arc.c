@@ -5039,6 +5039,14 @@ arc_legitimate_constant_p (enum machine_mode, rtx x)
 	  x = XEXP (x, 0);
 	}
 
+      if (GET_CODE (x) == NEG)
+	{
+	  /* Assembler does not understand -(@label@gotoff). Also, we
+	     do not print such pic address constant. */
+	  if (GET_CODE (XEXP (x, 0)) == UNSPEC)
+	    return false;
+	}
+
       /* Only some unspecs are valid as "constants".  */
       if (GET_CODE (x) == UNSPEC)
 	switch (XINT (x, 1))

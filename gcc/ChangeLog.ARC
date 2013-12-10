@@ -1,3 +1,8 @@
+2013-12-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c (arc_legitimate_constant_p): Prohibit
+          negate pic constants.
+
 2013-11-18 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c: Clean up compilation warnings.
