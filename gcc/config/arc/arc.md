@@ -156,7 +156,38 @@
 ])
 
 (define_constants
-  [(UNSPEC_PROF 18) ; profile callgraph counter
+  [(UNSPEC_NORM 11) ; norm generation through builtins. candidate for scheduling
+   (UNSPEC_NORMW 12) ; normw generation through builtins. candidate for scheduling
+   (UNSPEC_SWAP 13) ; swap generation through builtins. candidate for scheduling
+   (UNSPEC_MUL64 14) ; mul64 generation through builtins. candidate for scheduling
+   (UNSPEC_MULU64 15) ; mulu64 generation through builtins. candidate for scheduling
+   (UNSPEC_DIVAW 16) ; divaw generation through builtins. candidate for scheduling
+   (UNSPEC_DIRECT 17)
+   (UNSPEC_PROF 18) ; profile callgraph counter
+   (UNSPEC_LP 19) ; to set LP_END
+   (UNSPEC_CASESI 20)
+   (UNSPEC_TLS_GD 21)
+   (UNSPEC_TLS_LD 22)
+   (UNSPEC_TLS_IE 23)
+   (UNSPEC_TLS_OFF 24)
+   (VUNSPEC_RTIE 17) ; blockage insn for rtie generation
+   (VUNSPEC_SYNC 18) ; blockage insn for sync generation
+   (VUNSPEC_BRK 19) ; blockage insn for brk generation
+   (VUNSPEC_FLAG 20) ; blockage insn for flag generation
+   (VUNSPEC_SLEEP 21) ; blockage insn for sleep generation
+   (VUNSPEC_SWI 22) ; blockage insn for swi generation
+   (VUNSPEC_CORE_READ 23) ; blockage insn for reading a core register
+   (VUNSPEC_CORE_WRITE 24) ; blockage insn for writing to a core register
+   (VUNSPEC_LR 25) ; blockage insn for reading an auxiliary register
+   (VUNSPEC_SR 26) ; blockage insn for writing to an auxiliary register
+   (VUNSPEC_TRAP_S 27) ; blockage insn for trap_s generation
+   (VUNSPEC_UNIMP_S 28) ; blockage insn for unimp_s generation
+   (VUNSPEC_KFLAG 29); blockage insn for kflag generation
+   (VUNSPEC_CLRI  30); disable interrupts
+   (VUNSPEC_SETI  31); SETI
+
+   (UNSPEC_FFS  40); FFS
+   (UNSPEC_FLS  41); FLS
 
    (R0_REG 0)
    (R1_REG 1)
@@ -166,6 +197,7 @@
    (SP_REG 28)
    (ILINK1_REGNUM 29)
    (ILINK2_REGNUM 30)
+   (TLS_BASE_REGNUM 30)
    (RETURN_ADDR_REGNUM 31)
    (MUL64_OUT_REG 58)
    (ARCV2_ACC 58)
@@ -5421,6 +5453,12 @@
 }
   [(set_attr "type" "call")
    (set_attr "is_SIBCALL" "yes")])
+
+(define_insn "call_tls_get_addr"
+  [(set (reg:SI R0_REG) (unspec:SI [(reg:SI R0_REG)] UNSPEC_TLS_GD))]
+  "TARGET_TLS"
+  "bl __tls_get_addr"
+  [(set_attr "type" "sfunc")])
 
 ;; If hardware floating point is available, don't define a negdf pattern;
 ;; it would be something like:

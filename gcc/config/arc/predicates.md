@@ -128,6 +128,9 @@
     case SYMBOL_REF :
     case LABEL_REF :
     case CONST :
+      if (TARGET_TLS9 && GET_CODE (XEXP (op, 0)) == UNSPEC
+	  && XINT (XEXP (op, 0), 1) == UNSPEC_TLS_OFF)
+	return 0;
       return 1;
     case CONST_INT :
       /* This must be handled as "st c,[limm]".  Ditto for load.
@@ -262,6 +265,8 @@
   switch (GET_CODE (op))
     {
     case SYMBOL_REF :
+      if (SYMBOL_REF_TLS_MODEL (op))
+	return 0;
     case LABEL_REF :
     case CONST :
       return (!flag_pic || arc_legitimate_pic_operand_p(op));
@@ -356,7 +361,12 @@
 		|| (!CONST_INT_P (XEXP (addr, 1))
 		    && (TARGET_NO_SDATA_SET
 			|| GET_CODE (XEXP (addr, 1)) != SYMBOL_REF
-			|| !SYMBOL_REF_SMALL_P (XEXP (addr, 1))))))
+			|| !SYMBOL_REF_SMALL_P (XEXP (addr, 1)))
+		    && (!TARGET_TLS9
+			|| GET_CODE (XEXP (addr, 1)) != CONST
+			|| GET_CODE (XEXP (XEXP (addr, 1), 0)) != UNSPEC
+			|| (XINT (XEXP (XEXP (addr, 1), 0), 1)
+			    != UNSPEC_TLS_OFF)))))
 	  return 0;
 	if ((GET_CODE (addr) == PRE_MODIFY || GET_CODE (addr) == POST_MODIFY)
 	    && (GET_CODE (XEXP (addr, 1)) != PLUS

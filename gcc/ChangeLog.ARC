@@ -1,3 +1,40 @@
+2013-12-10  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (HARD_REGNO_OK_FOR_BASE_P): New macro.
+	(REGNO_OK_FOR_BASE_P): Use it.
+	(rname30): Declare.
+	(REGISTER_NAMES): Use rname30.
+	(REG_OK_FOR_INDEX_P_NONSTRICT, REG_OK_FOR_BASE_P_NONSTRICT,
+	 REG_OK_FOR_INDEX_P_STRICT, REG_OK_FOR_BASE_P_STRICT,
+	 RTX_OK_FOR_BASE_P, RTX_OK_FOR_INDEX_P):
+	Move from here..
+	* config/arc/arc.c: .. to here.
+	(RTX_OK_FOR_OFFSET_P): Change into inline function.
+	(LEGITIMATE_OFFSET_ADDRESS_P): Likewise.
+	(RTX_OK_FOR_OFFSET_P): Take TARGET_TLS9 into account.
+	[HAVE_AS_TLS] (TARGET_HAVE_TLS): Redefine.
+	(r30name): Define.
+	(arc_conditional_register_usage): Update r30name.
+	(arc_address_cost) <CONST>: Take RTX_OK_FOR_OFFSET_P into account.
+	(arc_print_operand, arc_print_operand_address): Handle UNSPEC_TLS_OFF.
+	(arc_legitimate_pc_offset_p): Allow UNSPEC_TLS_GD and UNSPEC_TLS_IE.
+	(arc_legitimate_pic_addr_p): Likewise.
+	(arc_output_pic_addr_const): Handle UNSPEC_TLS_GD, UNSPEC_TLS_IE and
+	UNSPEC_TLS_OFF.
+	(arc_legitimate_constant_p): Reject naked TLS SYMBOL_REFs.
+	Allow UNSPEC_TLS_GD, UNSPEC_TLS_IE and UNSPEC_TLS_OFF.
+	(arc_legitimate_address_p): Reject naked TLS SYMBOL_REFs.
+	(arc_legitimize_tls_address): New function.
+	(prepare_move_operands, arc_legitimize_address): Use it.
+	* config/arc/arc.md (UNSPEC_TLS_GD, UNSPEC_TLS_LD): New constants.
+	(UNSPEC_TLS_IE, UNSPEC_TLS_OFF, TLS_BASE_REGNUM): Likewise.
+	(call_tls_get_addr): New insn.
+	* config/arc/arc.opt (mtls, mtls9): New option.
+	* config/arc/predicates.md (long_immediate_loadstore_operand):
+	Take TARGET_TLS9 into account.
+	(move_dest_operand): Likewise.
+	(move_src_opeand): Reject naked TLS SYMBOL_REF.
+
 2015-02-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* doc/invoke.texi: Update ARC options.
