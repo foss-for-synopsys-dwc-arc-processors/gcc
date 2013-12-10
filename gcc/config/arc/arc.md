@@ -116,6 +116,10 @@
    (UNSPEC_PROF 18) ; profile callgraph counter
    (UNSPEC_LP 19) ; to set LP_END
    (UNSPEC_CASESI 20)
+   (UNSPEC_TLS_GD 21)
+   (UNSPEC_TLS_LD 22)
+   (UNSPEC_TLS_IE 23)
+   (UNSPEC_TLS_OFF 24)
    (VUNSPEC_RTIE 17) ; blockage insn for rtie generation
    (VUNSPEC_SYNC 18) ; blockage insn for sync generation
    (VUNSPEC_BRK 19) ; blockage insn for brk generation
@@ -143,6 +147,7 @@
    (SP_REG 28)
    (ILINK1_REGNUM 29)
    (ILINK2_REGNUM 30)
+   (TLS_BASE_REGNUM 30)
    (RETURN_ADDR_REGNUM 31)
    (MUL64_OUT_REG 58)
 
@@ -5390,6 +5395,12 @@
 }
   [(set_attr "type" "call")
    (set_attr "is_SIBCALL" "yes")])
+
+(define_insn "call_tls_get_addr"
+  [(set (reg:SI R0_REG) (unspec:SI [(reg:SI R0_REG)] UNSPEC_TLS_GD))]
+  "TARGET_TLS"
+  "bl __tls_get_addr"
+  [(set_attr "type" "sfunc")])
 
 ;; If hardware floating point is available, don't define a negdf pattern;
 ;; it would be something like:

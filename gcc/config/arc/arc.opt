@@ -424,3 +424,10 @@ Target Joined
 mmac_
 Target Joined
 
+mtls
+Target Report Mask(TLS)
+Enable target-specific TLS support
+
+mtls9
+Target Report Mask(TLS9)
+Assume local tls symbols can be addressed with scaled s9 offset
