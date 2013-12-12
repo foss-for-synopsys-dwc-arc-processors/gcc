@@ -1,6 +1,7 @@
 2013-12-12 Claudiu Zissulescu <claziss@synopsys.com>
 
-        * config/arc/arc.md (*movsi_insn): Fix pattern for reload.
+        * config/arc/arc.md (*movsi_insn): Fix pattern for
+          reload. Likewise for pattern addsi3_mixed.
 
 2013-12-10 Claudiu Zissulescu <claziss@synopsys.com>
 
