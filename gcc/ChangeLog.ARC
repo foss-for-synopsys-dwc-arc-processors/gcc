@@ -1,3 +1,32 @@
+2013-12-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (ARC_UNSPEC_GOTOFFPC): New UNSPEC value.
+	(arc_conditional_register_usage): Replace conditional "r30"
+	name with placing arc_tp_regno into fixed / call_used regs.
+	(arc_legitimate_pc_offset_p): Allow ARC_UNSPEC_GOTOFFPC.
+	(arc_legitimate_pic_addr_p): Likewise.
+	(arc_legitimize_pic_address): Use GOTOFFPC instead of GOTOFF.
+	(arc_output_pic_addr_const): Handle ARC_UNSPEC_GOTOFFPC.
+	(arc_legitimate_constant_p): Likewise.
+	(arc_get_tp, get_tls_get_addr): New functions.
+	(arc_emit_call_tls_get_addr): Likewise.
+	(arc_legitimize_tls_address): Use arc_emit_call_tls_get_addr
+	and arc_get_tp.
+	(prepare_move_operands): Remove TARGET_TLS check.
+	(arc_legitimize_address_0): Likewise.
+	(arc_output_libcall): Use @pcl syntax.
+	(arc_delegitimize_address_0): Delegitimize ARC_UNSPEC_GOTOFFPC.
+	(HARD_REGNO_OK_FOR_BASE_P): Check arc_tp_regno.
+	* config/arc/arc.md (TLS_BASE_REGNUM): Remove constant.
+	(movsi_insn, doloop_begin_i): Use @pcl syntax.
+	(tls_load_tp_soft): New pattern.
+	(call_tls_get_addr): Comment out for now.
+	(movdi): Call prepare_move_operands.
+	* config/arc/arc.opt (mtls): Remove option.
+	(mtp-regno): New option.
+	* config/arc/predicates.md (move_dest_operand): Disallow PIC
+	constants as store memory addresses.
+
 2013-12-10  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.h (HARD_REGNO_OK_FOR_BASE_P): New macro.
