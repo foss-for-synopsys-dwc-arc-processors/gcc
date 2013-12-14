@@ -521,3 +521,7 @@ Enable target-specific TLS support
 mtls9
 Target Report Var(TARGET_TLS9)
 Assume local tls symbols can be addressed with scaled s9 offset
+
+mtp-regno=
+Target RejectNegative Joined UInteger Var(arc_tp_regno) Init(-1)
+Specify thread pointer register number

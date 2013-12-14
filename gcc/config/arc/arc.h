@@ -801,7 +801,7 @@ extern enum reg_class arc_regno_reg_class[];
 
 #define HARD_REGNO_OK_FOR_BASE_P(REGNO) \
 ((REGNO) < 29 || ((REGNO) == ARG_POINTER_REGNUM) || ((REGNO) == 63) \
- || ((REGNO) == TLS_BASE_REGNUM && TARGET_TLS)) \
+ || ((REGNO) == (unsigned) arc_tp_regno)) \
 
 /* These assume that REGNO is a hard or pseudo reg number.
    They give nonzero only if REGNO is a hard reg of the suitable class

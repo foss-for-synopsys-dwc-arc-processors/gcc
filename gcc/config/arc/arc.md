@@ -101,8 +101,9 @@
 ;;  -----------------------------------------------------------------------------
 ;;  UNSPEC_PLT       3        symbol to be referenced through the PLT
 ;;  UNSPEC_GOT       4        symbol to be rerenced through the GOT
-;;  UNSPEC_GOTOFF    5        Local symbol.To be referenced relative to the
-;;                            GOTBASE.(Referenced as @GOTOFF)
+;;  UNSPEC_GOTOFF    5        Local symbol. To be referenced relative to the
+;;                            GOTBASE.  (Referenced as @GOTOFF)
+;;  UNSPEC_GOTOFFPC  6        Local symbol.  To be referenced pc-relative.
 ;;  ----------------------------------------------------------------------------
 
 (define_c_enum "unspec" [
@@ -197,7 +198,6 @@
    (SP_REG 28)
    (ILINK1_REGNUM 29)
    (ILINK2_REGNUM 30)
-   (TLS_BASE_REGNUM 30)
    (RETURN_ADDR_REGNUM 31)
    (MUL64_OUT_REG 58)
    (ARCV2_ACC 58)
@@ -733,7 +733,7 @@
    ror %0,((%1*2+1) & 0x3f) ;6
    mov%? %0,%1		;7
    add %0,%S1		;8
-   * return arc_get_unalign () ? \"add %0,pcl,%1-.+2\" : \"add %0,pcl,%1-.\";
+   add %0,pcl,%1@pcl	;9
    mov%? %0,%S1%&	;10
    mov%? %0,%S1		;11
    ld%?%U1 %0,%1%&	;12
@@ -1010,13 +1010,7 @@
   [(set (match_operand:DI 0 "move_dest_operand" "")
 	(match_operand:DI 1 "general_operand" ""))]
   ""
-  "
-{
-  /* Everything except mem = const or mem = mem can be done easily.  */
-
-  if (GET_CODE (operands[0]) == MEM)
-    operands[1] = force_reg (DImode, operands[1]);
-}")
+  "if (prepare_move_operands (operands, DImode)) DONE;")
 
 (define_insn_and_split "*movdi_insn"
   [(set (match_operand:DI 0 "move_dest_operand"      "=w, w,r,m")
@@ -5107,7 +5101,7 @@
       /* ??? Can do better for when a scratch register
 	 is known.  But that would require extra testing.  */
       arc_clear_unalign ();
-      return ".p2align 2\;push_s r0\;add r0,pcl,%4-.+2\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1-.+2\;sr r0,[3]; LP_END\;pop_s r0";
+      return ".p2align 2\;push_s r0\;add r0,pcl,%4@pcl\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1@pcl\;sr r0,[3]; LP_END\;pop_s r0";
     }
   /* Check if the loop end is in range to be set by the lp instruction.  */
   size = INTVAL (operands[3]) < 2 ? 0 : 2048;
@@ -5454,11 +5448,20 @@
   [(set_attr "type" "call")
    (set_attr "is_SIBCALL" "yes")])
 
-(define_insn "call_tls_get_addr"
-  [(set (reg:SI R0_REG) (unspec:SI [(reg:SI R0_REG)] UNSPEC_TLS_GD))]
-  "TARGET_TLS"
-  "bl __tls_get_addr"
-  [(set_attr "type" "sfunc")])
+(define_insn "tls_load_tp_soft"
+  [(set (reg:SI R0_REG) (unspec:SI [(const_int 0)] UNSPEC_TLS_OFF))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))]
+  ""
+  "*return arc_output_libcall (\"__read_tp\");"
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
+
+;; how to call tls_get_addr if we have a dso-local version with special ABI
+;(define_insn "call_tls_get_addr"
+;  [(set (reg:SI R0_REG) (unspec:SI [(reg:SI R0_REG)] UNSPEC_TLS_GD))]
+;  ""
+;  "bl __tls_get_addr"
+;  [(set_attr "is_sfunc" "yes")])
 
 ;; If hardware floating point is available, don't define a negdf pattern;
 ;; it would be something like:
