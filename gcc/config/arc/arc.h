@@ -1717,4 +1717,9 @@ enum
 #define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_V2)
 #define EM_MULTI    ((arc_mpy_option > 1) && TARGET_V2)
 
+/* Dump the stack info. */
+#undef  ASM_OUTPUT_FUNCTION_PREFIX
+#define  ASM_OUTPUT_FUNCTION_PREFIX(STREAM, NAME) \
+  arc_dump_stack_info(STREAM, NAME)
+
 #endif /* GCC_ARC_H */

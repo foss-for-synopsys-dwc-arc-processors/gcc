@@ -4,6 +4,11 @@
           default norm for ARC700, and barrel shifter for ARCv2EM.
         * config/arc/arc.md (*movsi_insn, *movhi_insn): Allow
           immediate to mem store operations.
+	* gcc/config/arc/arc-protos.h (arc_dump_stack_info): Add function prototype.
+	* gcc/config/arc/arc.c (arc_dump_stack_info,
+          arc_print_format_registers): Assembly pritty print function
+          frame information.
+	* gcc/config/arc/arc.h (ASM_OUTPUT_FUNCTION_PREFIX): Define.
 
 2013-12-12 Claudiu Zissulescu <claziss@synopsys.com>
 

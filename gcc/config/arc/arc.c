@@ -10341,6 +10341,101 @@ arc_variable_issue (FILE *dump ATTRIBUTE_UNUSED,
   return can_issue_more-1;
 }
 
+/* Helper evp_dump_stack_info*/
+static void
+arc_print_format_registers(FILE *stream,
+			   unsigned regno,
+			   enum machine_mode mode)
+{
+  unsigned int  j, nregs = hard_regno_nregs[regno][mode];
+  unsigned int ll = 0;
+  for (j = regno+nregs; j > regno; j--)
+    {
+      fprintf(stream,"%s", reg_names[j-1]);
+      ll += strlen(reg_names[j-1]);
+    }
+  fprintf(stream,"`");
+  for (j = ll; j <20; j++)
+    {
+      fprintf(stream, " ");
+    }
+  fprintf(stream,"\t(%d)\n",
+	  GET_MODE_SIZE(mode));
+}
+
+/* Dumps the information of the current stack. */
+void
+arc_dump_stack_info(FILE *stream,
+		    const char *name)
+{
+  struct arc_frame_info *frame_info = &cfun->machine->frame_info;
+
+  fprintf (stream, "\n#####################\n");
+  fprintf (stream, "# function ");
+  assemble_name (stream, name);
+  fprintf (stream, "\n#\n");
+  fprintf (stream, "# Local Frame (%d bytes):\n", frame_info->total_size);
+  for (int i = 0; i <= 31; i++)
+    {
+      if (frame_info->gmask & (1L << i))
+	{
+	  fprintf (stream, "#  sp[%4d] = regsave `",
+		   frame_info->total_size - (4*i));
+	  fprintf (stream, "%s`\t(4)\n", reg_names[i]);
+	}
+    }
+  fprintf(stream, "#\n");
+  fprintf(stream, "# Parameters:\n");
+  tree parm = DECL_ARGUMENTS (current_function_decl);
+  while (parm)
+    {
+      rtx  rtl = DECL_INCOMING_RTL (parm);
+      if (rtl)
+	{
+	  fprintf(stream,"#  ");
+	  tree decl_name;
+	  decl_name = DECL_NAME (parm);
+	  if (decl_name != NULL && IDENTIFIER_POINTER (decl_name) != NULL)
+	    {
+	      const char *name =  lang_hooks.dwarf_name (parm, 0);
+	      if(name)
+		fprintf(stream, "%-20.20s =`", name);
+	      else
+		fprintf(stream, "N.A.`");
+	    }
+	  if (REG_P (rtl))
+	    {
+	      unsigned regno = REGNO(rtl);
+	      enum machine_mode mode = GET_MODE(rtl);
+	      arc_print_format_registers(stream, regno, mode);
+	    }
+	  else if (MEM_P(rtl))
+	    {
+	      rtx addr = XEXP(rtl, 0);
+	      long argPtrOfs = frame_info->total_size -
+		arc_initial_elimination_offset(ARG_POINTER_REGNUM,
+					       (arc_frame_pointer_required() ?
+						FRAME_POINTER_REGNUM : STACK_POINTER_REGNUM));
+	      if (GET_CODE(addr) == PLUS)
+		{
+		  rtx ofs = XEXP(addr, 1);
+		  gcc_assert(CONST_INT_P(ofs));
+		  argPtrOfs += INTVAL(ofs);
+		}
+	      fprintf(stream, "%s[%4ld]`                 (%d)\n",
+		      (arc_frame_pointer_required() ? "fp" : "sp"),
+		      argPtrOfs,
+		      GET_MODE_SIZE(GET_MODE(rtl)));
+	    }
+	  else
+	    {
+		  fprintf(stream,"N.A. `\n");
+	    }
+	}
+      parm = TREE_CHAIN (parm);
+    }
+  fprintf (stream, "#####################\n");
+}
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
