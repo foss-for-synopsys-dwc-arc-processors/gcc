@@ -91,7 +91,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
-	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off. */
+	    opts->x_target_flags |= MASK_NORM_SET;               /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
 	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off. */
 	  /* For ARC700, mpy16 makes no sense. */
@@ -142,7 +142,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  if (mmpy_seen)
 	    opts->x_target_flags |= MASK_MPY16_SET;
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;        /* Default: off. */
+	    opts->x_target_flags |= MASK_BARREL_SHIFTER;        /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_SHIFT_ASSIST))
 	    opts->x_target_flags &= ~MASK_SHIFT_ASSIST;          /* Default: off. */
 	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
@@ -223,7 +223,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 #elif TARGET_CPU_DEFAULT == TARGET_CPU_EM
 /* Default for EM: no barrel shifter*/
 #define TARGET_DEFAULT_TARGET_FLAGS \
-  (MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA | MASK_MPY_SET | MASK_MPY16_SET)
+  (MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA | MASK_MPY_SET | MASK_MPY16_SET)
 #else
 /* We default to ARC700, which has the barrel shifter enabled.  */
 #define TARGET_DEFAULT_TARGET_FLAGS \
