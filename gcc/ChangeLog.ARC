@@ -2,6 +2,8 @@
 
         * common/config/arc/arc-common.c (arc_handle_option): Make
           default norm for ARC700, and barrel shifter for ARCv2EM.
+        * config/arc/arc.md (*movsi_insn, *movhi_insn): Allow
+          immediate to mem store operations.
 
 2013-12-12 Claudiu Zissulescu <claziss@synopsys.com>
 
