@@ -8023,6 +8023,9 @@ arc_hazard (rtx pred, rtx succ)
 	  || ((JUMP_P ((jump = pred))
 	       || (GET_CODE (PATTERN (pred)) == SEQUENCE
 		   && JUMP_P ((jump = XVECEXP (PATTERN (pred), 0, 0)))))
+	      /* Make sure is not a millicode jump */
+	      && (!(JUMP_P (jump) && (GET_CODE (PATTERN (jump)) == PARALLEL)
+		    && (XVECEXP (PATTERN (jump), 0, 0) == ret_rtx)))
 	      /* Make sure is not a simple_return. */
 	      && (GET_CODE (PATTERN (jump)) != SIMPLE_RETURN)
 	      /* Go to the target of the jump and check for aliveness
