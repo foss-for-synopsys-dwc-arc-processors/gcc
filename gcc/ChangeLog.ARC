@@ -1,3 +1,7 @@
+2014-01-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c (arc_hazard): Filter out millicode jumps.
+
 2013-12-19 Claudiu Zissulescu <claziss@synopsys.com>
 
         * common/config/arc/arc-common.c (arc_handle_option): Make
