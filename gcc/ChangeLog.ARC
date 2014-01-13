@@ -1,3 +1,9 @@
+2014-01-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (compact_memory_operand_p):
+	Fix warning.
+	* config/arc/constraints.md (C2p): Likewise.
+
 2013-12-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (ARC_UNSPEC_GOTOFFPC): New UNSPEC value.

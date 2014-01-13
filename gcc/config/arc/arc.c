@@ -1,4 +1,4 @@
-/* Subroutines used for code generation on the Synopsys DesignWare ARC cpu.
+0/* Subroutines used for code generation on the Synopsys DesignWare ARC cpu.
    Copyright (C) 1994, 1995, 1997, 2004, 2007-2012
    Free Software Foundation, Inc.
 
@@ -10411,29 +10411,31 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, boo
       plus0 = XEXP (addr, 0);
       plus1 = XEXP (addr, 1);
 
-      if (REG_P (plus0) && REG_P (plus1)
-	  && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
-	      || COMPACT_GP_REG_P (REGNO (plus0)))
-	  && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
-	      || COMPACT_GP_REG_P (REGNO (plus1))))
-	{
-	  return !code_density;
-	}
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || COMPACT_GP_REG_P (REGNO (plus0)))
+          && ((GET_CODE (plus1) == REG)
+              && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
+                  || COMPACT_GP_REG_P (REGNO (plus1)))))
+        {
+          return !code_density;
+        }
 
-      if (REG_P (plus0) && CONST_INT_P (plus1))
-	{
+      if ((GET_CODE (plus0) == REG)
+          && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+              || (COMPACT_GP_REG_P (REGNO (plus0)) && !code_density)
+	      || (IN_RANGE (REGNO (plus0), 0, 31) && code_density))
+          && (GET_CODE (plus1) == CONST_INT))
+        {
 	  bool valid = false;
 
-	  off = INTVAL (plus1);
+          off = INTVAL (plus1);
 
-	  /* Negative offset is not supported in 16-bit load/store
-	     insns. */
-	  if (off < 0)
-	    return false;
+          /* Negative offset is not supported in 16-bit load/store insns.  */
+          if (off < 0)
+            return 0;
 
-	  if (REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
-	    valid = true;
-
+	  /* Only u5 immediates allowed in code density instructions. */
 	  if (code_density)
 	    {
 	      switch (size)
