@@ -1319,14 +1319,12 @@ arc_init_reg_tables (void)
    know it.  mmid gets number 57, if still available, and mlo / mhi get
    number 58 and 59, depending on endianness.  We use DBX_REGISTER_NUMBER
    to map this back.  */
+  char rname29[] = "ilink1";
   char rname30[]  = "ilink2";
   char rname56[5] = "r56";
   char rname57[5] = "r57";
   char rname58[5] = "r58";
   char rname59[5] = "r59";
-
-char rname29[7] = "ilink1";
-char rname30[7] = "ilink2";
 
 static void
 arc_conditional_register_usage (void)
