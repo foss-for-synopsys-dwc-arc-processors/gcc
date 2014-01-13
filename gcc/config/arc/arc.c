@@ -9824,7 +9824,7 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, boo
       if ((GET_CODE (plus0) == REG)
           && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
               || (COMPACT_GP_REG_P (REGNO (plus0)) && !code_density)
-	      || (REGNO (plus0) >= 0 && REGNO (plus0) <= 31 && code_density))
+	      || (IN_RANGE (REGNO (plus0), 0, 31) && code_density))
           && (GET_CODE (plus1) == CONST_INT))
         {
           off = INTVAL (plus1);
