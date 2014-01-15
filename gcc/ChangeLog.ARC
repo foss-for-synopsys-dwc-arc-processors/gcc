@@ -1,3 +1,17 @@
+2014-01-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c (arc_hazard): Filter out millicode jumps.
+
+2013-12-12 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md (*movsi_insn): Fix pattern for
+          reload. Likewise for pattern addsi3_mixed.
+
+2013-12-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.c (arc_legitimate_constant_p): Prohibit
+          negate pic constants.
+
 2013-12-09  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	Back out these bugs fixes:

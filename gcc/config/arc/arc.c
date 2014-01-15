@@ -5009,6 +5009,14 @@ arc_legitimate_constant_p (enum machine_mode, rtx x)
 	  x = XEXP (x, 0);
 	}
 
+      if (GET_CODE (x) == NEG)
+	{
+	  /* Assembler does not understand -(@label@gotoff). Also, we
+	     do not print such pic address constant. */
+	  if (GET_CODE (XEXP (x, 0)) == UNSPEC)
+	    return false;
+	}
+
       /* Only some unspecs are valid as "constants".  */
       if (GET_CODE (x) == UNSPEC)
 	switch (XINT (x, 1))
@@ -7985,6 +7993,9 @@ arc_hazard (rtx pred, rtx succ)
 	  || ((JUMP_P ((jump = pred))
 	       || (GET_CODE (PATTERN (pred)) == SEQUENCE
 		   && JUMP_P ((jump = XVECEXP (PATTERN (pred), 0, 0)))))
+	      /* Make sure is not a millicode jump */
+	      && (!(JUMP_P (jump) && (GET_CODE (PATTERN (jump)) == PARALLEL)
+		    && (XVECEXP (PATTERN (jump), 0, 0) == ret_rtx)))
 	      /* Make sure is not a simple_return. */
 	      && (GET_CODE (PATTERN (jump)) != SIMPLE_RETURN)
 	      /* Go to the target of the jump and check for aliveness
