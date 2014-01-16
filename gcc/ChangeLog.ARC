@@ -1,3 +1,10 @@
+2014-01-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_output_pic_addr_const):
+	Use @tpoff9 for UNSPEC_TLS_OFF if TARGET_TLS9.
+	(arc_legitimize_tls_address): When not emitting pic code,
+	always assume local exec model.
+
 2014-01-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (compact_memory_operand_p):

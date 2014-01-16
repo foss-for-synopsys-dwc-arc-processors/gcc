@@ -5318,7 +5318,7 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
 	  suffix = "@tlsie", pcrel = true;
 	  break;
 	case UNSPEC_TLS_OFF:
-	  suffix = "@tpoff";
+	  suffix = (TARGET_TLS9 ? "@tpoff9" : "@tpoff");
 	  break;
 	default:
 	  output_operand_lossage ("invalid UNSPEC as operand: %d", XINT (x,1));
@@ -8538,6 +8538,8 @@ arc_emit_call_tls_get_addr (rtx x, int reloc, rtx eqv)
 static rtx
 arc_legitimize_tls_address (rtx addr, enum tls_model model)
 {
+  if (!flag_pic)
+    model = TLS_MODEL_LOCAL_EXEC;
   switch (model)
     {
     case TLS_MODEL_LOCAL_DYNAMIC: /* not optimized yet, fall through.  */
