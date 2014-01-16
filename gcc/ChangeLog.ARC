@@ -1,5 +1,11 @@
 2014-01-16 Claudiu Zissulescu <claziss@synopsys.com>
 
+        * config/arc/arc.md: Add mpyd, mpydu instructions.
+	* common/config/arc/arc-common.c: Update mpy-option range.
+        * config/arc/arc.opt: Likewise.
+
+2014-01-16 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc-protos.h (arc_init_cumulative_args): Declare.
 	* config/arc/arc.h (arc_args): Define, used by CUMULATIVE_ARGS
 	* config/arc/arc.h (INIT_CUMULATIVE_ARGS): Use arc_init_cumulative_args.

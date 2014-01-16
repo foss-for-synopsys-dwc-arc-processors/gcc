@@ -194,7 +194,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
       break;
 
     case OPT_mmpy_option_:
-      if (value < 0 || value > 6)
+      if (value < 0 || value > 9)
 	error_at (loc, "bad value %qs for -mmpy-option switch", arg);
 
       if (value > 0)

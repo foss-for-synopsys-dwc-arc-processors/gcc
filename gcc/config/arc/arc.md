@@ -1958,7 +1958,12 @@
    || TARGET_MULMAC_32BY16_SET"
 "
 {
-  if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
+  if (TARGET_HS && (arc_mpy_option > 7))
+    {
+     emit_insn (gen_mpyd_arcv2hs (operands[0], operands[1], operands[2]));
+     DONE;
+    }
+  else if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -2195,7 +2200,12 @@
 		 (zero_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
   ""
 {
-  if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
+  if (TARGET_HS && (arc_mpy_option > 7))
+    {
+     emit_insn (gen_mpydu_arcv2hs (operands[0], operands[1], operands[2]));
+     DONE;
+    }
+  else if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
     {
       operands[2] = force_reg (SImode, operands[2]);
       if (!register_operand (operands[0], DImode))
@@ -5735,6 +5745,33 @@
    (set_attr "length"     "4,4,4,8,8")
    (set_attr "predicable" "yes,no,no,yes,no")
    (set_attr "cond"       "canuse,nocond,nocond,canuse,nocond")])
+
+(define_insn "mpyd_arcv2hs"
+  [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r,r,Rcr,  r")
+	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand"  "  0, c,0,  0,  c"))
+		 (sign_extend:DI (match_operand:SI 2 "nonmemory_operand" " cL,cL,I,Cal,Cal"))))
+   (clobber (reg:DI 56))]
+  "TARGET_HS && (arc_mpy_option > 7)"
+  "mpyd%? %0, %1, %2"
+  [(set_attr "length" "4,4,4,8,8")
+  (set_attr "iscompact" "false")
+  (set_attr "type" "multi")
+  (set_attr "predicable" "yes,no,no,yes,no")
+  (set_attr "cond" "canuse,nocond,nocond,canuse_limm,nocond")])
+
+(define_insn "mpydu_arcv2hs"
+  [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r,r,Rcr,  r")
+	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"  "  0, c,0,  0,  c"))
+		 (zero_extend:DI (match_operand:SI 2 "nonmemory_operand" " cL,cL,I,Cal,Cal"))))
+   (clobber (reg:DI 56))]
+  "TARGET_HS && (arc_mpy_option > 7)"
+  "mpydu%? %0, %1, %2"
+  [(set_attr "length" "4,4,4,8,8")
+  (set_attr "iscompact" "false")
+  (set_attr "type" "multi")
+  (set_attr "predicable" "yes,no,no,yes,no")
+  (set_attr "cond" "canuse,nocond,nocond,canuse_limm,nocond")])
+
 
 ;; include the arc-FPX instructions
 (include "fpx.md")
