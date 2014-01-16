@@ -1,3 +1,18 @@
+2014-01-16 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_init_cumulative_args): Declare.
+	* config/arc/arc.h (arc_args): Define, used by CUMULATIVE_ARGS
+	* config/arc/arc.h (INIT_CUMULATIVE_ARGS): Use arc_init_cumulative_args.
+	* config/arc/arc.c (TARGET_STRICT_ARGUMENT_NAMING): Define
+	* config/arc/arc.c (arc_conditional_register_usage): Allow
+          only even-odd register pair for 64+ bit data types.
+	* config/arc/arc.c (arc_setup_incoming_varargs): Use the new CUMULATIVE_ARGS
+	  structure.
+	* config/arc/arc.c (arc_strict_argument_naming, arc_init_cumulative_args
+	  arc_hard_regno_nregs, arc_function_args_impl): New functions.
+  	* config/arc/arc.c (arc_arg_partial_bytes, arc_function_arg, arc_function_arg_advance):
+	  Use arc_function_args_impl.
+
 2014-01-10 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c (arc_hazard): Filter out millicode jumps.
