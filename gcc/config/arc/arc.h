@@ -882,13 +882,19 @@ arc_return_addr_rtx(COUNT,FRAME)
    hold all necessary information about the function itself
    and about the args processed so far, enough to enable macros
    such as FUNCTION_ARG to determine where the next arg should go.  */
-#define CUMULATIVE_ARGS int
+typedef struct arc_args
+{
+  /* Registers that are still available for parameter passing. */
+  bool avail[FIRST_PSEUDO_REGISTER];
+  /* Backwards compatibility: total number of used registers.  */
+  int arg_num;
+} CUMULATIVE_ARGS;
 
 /* Initialize a variable CUM of type CUMULATIVE_ARGS
    for a call to a function whose data type is FNTYPE.
    For a library call, FNTYPE is 0.  */
 #define INIT_CUMULATIVE_ARGS(CUM,FNTYPE,LIBNAME,INDIRECT,N_NAMED_ARGS) \
-((CUM) = 0)
+  arc_init_cumulative_args (&CUM, FNTYPE, LIBNAME, INDIRECT, N_NAMED_ARGS)
 
 /* The number of registers used for parameter passing.  Local to this file.  */
 #define MAX_ARC_PARM_REGS 8

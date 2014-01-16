@@ -134,7 +134,8 @@
 
    (UNSPEC_FFS  40); FFS
    (UNSPEC_FLS  41); FLS
-   (UNSPEC_SETI  41); SETI
+   (UNSPEC_SETI  42); SETI
+   (UNSPEC_VADD2  43); VADD2
 
    (R0_REG 0)
    (R1_REG 1)
@@ -4561,6 +4562,17 @@
   "seti  %0"
   [(set_attr "length" "4")
    (set_attr "type" "misc")])
+
+(define_insn "vadd2"
+  [(set (match_operand: DI 0 "dest_reg_operand" "=r")
+	(unspec:DI [(match_operand:DI 1 "register_operand" "r")
+		    (match_operand:DI 2 "register_operand" "r")]
+		   UNSPEC_VADD2))]
+  "TARGET_HS"
+  "vadd2 %0, %1, %2 ; Used in DI"
+  [(set_attr "length" "4")
+   (set_attr "type" "misc")])
+
 ;; End of instructions generated through builtins
 
 ; Since the demise of REG_N_SETS as reliable data readily available to the
