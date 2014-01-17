@@ -87,6 +87,10 @@ matomic
 Target Report Mask(ATOMIC)
 Enable atomic instructions for ARCv2
 
+mll64
+Target Report Mask(LL64)
+Enable double load/store instructions for ARCv2HS
+
 mmixed-code
 Target Report Mask(MIXED_CODE_SET)
 Tweak register allocation to help 16-bit instruction generation

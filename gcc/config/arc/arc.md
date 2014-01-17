@@ -964,8 +964,12 @@
 (define_insn_and_split "*movdi_insn"
   [(set (match_operand:DI 0 "move_dest_operand" "=w,w,r,m")
 	(match_operand:DI 1 "move_double_src_operand" "c,Hi,m,c"))]
-  "register_operand (operands[0], DImode)
-   || register_operand (operands[1], DImode)"
+  "(register_operand (operands[0], DImode)
+    || register_operand (operands[1], DImode))
+   && !(TARGET_HS && TARGET_LL64
+        && (memory_operand (operands[0], DImode) || memory_operand (operands[1], DImode)))
+   && !(TARGET_HS && (arc_mpy_option > 8) && register_operand (operands[0], DImode)
+		  && register_operand (operands[1], DImode))"
   "*
 {
   switch (which_alternative)
@@ -1010,7 +1014,11 @@
 	}
     }
 }"
-  "&& reload_completed && optimize"
+  "&& reload_completed && optimize
+   && !(TARGET_HS && TARGET_LL64
+        && (memory_operand (operands[0], DImode) || memory_operand (operands[1], DImode)))
+   && !(TARGET_HS && (arc_mpy_option > 8) && register_operand (operands[0], DImode)
+		  && register_operand (operands[1], DImode))"
   [(set (match_dup 2) (match_dup 3)) (set (match_dup 4) (match_dup 5))]
   "arc_split_move (operands);"
   [(set_attr "type" "move,move,load,store")
@@ -5771,6 +5779,32 @@
   (set_attr "type" "multi")
   (set_attr "predicable" "yes,no,no,yes,no")
   (set_attr "cond" "canuse,nocond,nocond,canuse_limm,nocond")])
+
+(define_insn "*movdi_hsll64"
+  [(set (match_operand:DI 0 "general_operand"  "=r,m")
+	(match_operand:DI 1 "general_operand"   "m,c"))]
+  "TARGET_HS && TARGET_LL64
+   && ((register_operand (operands[0], DImode) && !register_operand (operands[1], DImode))
+       || (!register_operand (operands[0], DImode) && register_operand (operands[1], DImode)))"
+ "@
+  ldd%U1%V1 %0,%1%&
+  std%U0%V0 %1,%0"
+ [(set_attr "type" "load,store")
+  (set_attr "iscompact" "false,false")
+  (set_attr "length" "*,*")
+  (set_attr "predicable" "no,no")]
+)
+
+(define_insn "*movdi_vadd2"
+  [(set (match_operand:DI 0 "register_operand" "=r")
+	(match_operand:DI 1 "register_operand"  "r"))]
+  "TARGET_HS && (arc_mpy_option > 8)"
+  "vadd2 %0,%1,0  ; movdi %0,%1"
+  [(set_attr "length" "4")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "multi")
+   (set_attr "predicable" "no")]
+)
 
 
 ;; include the arc-FPX instructions

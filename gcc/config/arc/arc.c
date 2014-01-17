@@ -483,6 +483,9 @@ static void arc_finalize_pic (void);
 #undef TARGET_STRICT_ARGUMENT_NAMING
 #define TARGET_STRICT_ARGUMENT_NAMING arc_strict_argument_naming
 
+#undef TARGET_PRETEND_OUTGOING_VARARGS_NAMED
+#define TARGET_PRETEND_OUTGOING_VARARGS_NAMED arc_pretend_outgoing_varargs_named
+
 #undef TARGET_PASS_BY_REFERENCE
 #define TARGET_PASS_BY_REFERENCE arc_pass_by_reference
 
@@ -1783,6 +1786,12 @@ static bool arc_strict_argument_naming(cumulative_args_t cum ATTRIBUTE_UNUSED)
     return TARGET_HS;
 }
 
+static bool
+arc_pretend_outgoing_varargs_named (cumulative_args_t ca_v)
+{
+  return !TARGET_HS;
+}
+
 /* Cost functions.  */
 
 /* Provide the costs of an addressing mode that contains ADDR.
@@ -2295,6 +2304,7 @@ arc_save_restore (rtx base_reg,
 
       for (regno = 0; regno <= 31; regno++)
 	{
+#if 0
 	  if ((gmask & (1L << regno)) != 0)
 	    {
 	      rtx reg = gen_rtx_REG (SImode, regno);
@@ -2319,6 +2329,55 @@ arc_save_restore (rtx base_reg,
 		frame_move_inc (mem, reg, base_reg, addr);
 	      offset += UNITS_PER_WORD;
 	    } /* if */
+#else
+	  enum machine_mode mode = SImode;
+	  bool found = false;
+
+	  if (TARGET_HS && TARGET_LL64
+	      && (regno % 2 == 0)
+	      && ((gmask & (1L << regno)) != 0)
+	      && ((gmask & (1L << (regno+1))) != 0))
+	    {
+	      found = true;
+	      mode  = DImode;
+	    }
+	  else if ((gmask & (1L << regno)) != 0)
+	    {
+	      found = true;
+	      mode  = SImode;
+	    }
+
+	  if (found)
+	    {
+	      rtx reg = gen_rtx_REG (mode, regno);
+	      rtx addr, mem;
+
+	      if (*first_offset)
+		{
+		  gcc_assert (!offset);
+		  addr = plus_constant (Pmode, base_reg, *first_offset);
+		  addr = gen_rtx_PRE_MODIFY (Pmode, base_reg, addr);
+		  *first_offset = 0;
+		}
+	      else
+		{
+		  gcc_assert (SMALL_INT (offset));
+		  addr = plus_constant (Pmode, base_reg, offset);
+		}
+	      mem = gen_frame_mem (mode, addr);
+	      if (epilogue_p)
+		frame_move_inc (reg, mem, base_reg, addr);
+	      else
+		frame_move_inc (mem, reg, base_reg, addr);
+
+	      offset += UNITS_PER_WORD;
+	      if (mode == DImode)
+		{
+		  offset += UNITS_PER_WORD;
+		  regno ++;
+		}
+	    } /* if */
+#endif
 	} /* for */
     }/* if */
   if (sibthunk_insn)

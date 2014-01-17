@@ -1,3 +1,11 @@
+2014-01-17 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.opt: Add mll64 option.
+        * config/arc/arc.h: Include stdbool.h header (required by CUMULATIVE_ARGS).
+	* config/arc/arc.c (TARGET_PRETEND_OUTGOING_VARARGS_NAMED) Defined.
+	* config/arc/arc.c (arc_save_restore): Use double loads/store whenever is possible.
+	* config/arc/arc.md (movdi): Add ldd/std/vadd instructions.
+
 2014-01-16 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md: Add mpyd, mpydu instructions.

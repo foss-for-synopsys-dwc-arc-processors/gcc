@@ -29,6 +29,8 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_ARC_H
 #define GCC_ARC_H
 
+#include <stdbool.h>
+
 /* Things to do:
 
    - incscc, decscc?
