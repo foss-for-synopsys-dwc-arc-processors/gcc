@@ -1,3 +1,10 @@
+2014-01-19  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h [DEFAULT_LIBC != LIBC_UCLIBC] (EXTRA_SPECS): Define.
+	[DEFAULT_LIBC != LIBC_UCLIBC] (ARC_TLS_EXTRA_START_SPEC): Likewise.
+	[DEFAULT_LIBC != LIBC_UCLIBC] (STARTFILE_SPEC): Add
+	%(arc_tls_extra_start_spec).
+
 2014-01-16  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* configure.ac: Add arc-*-* case to test for tls.

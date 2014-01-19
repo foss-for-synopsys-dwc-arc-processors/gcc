@@ -1,3 +1,9 @@
+2014-01-19  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.host (arc*-*-elf*) <extra_parts>: Add crttls_r30.o.
+	* config/arc/crttls_r30.S: New file.
+	* config/arc/t-arc (crttls_r30.o): New rule.
+
 2013-11-20 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/dp-hack.h: Revert to the previous state.
