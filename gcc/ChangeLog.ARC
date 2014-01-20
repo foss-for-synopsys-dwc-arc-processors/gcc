@@ -1,3 +1,8 @@
+2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md (doloop_begin_i): Account for the effects
+          of .p2align in instruction length.
+
 2014-01-17 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.opt: Add mll64 option.
