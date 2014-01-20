@@ -5,6 +5,11 @@
 	 (arc_hazard): Use it.
 	* config/arc/arc700.md: Likewise.
 
+2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md (doloop_begin_i): Account for the effects
+          of .p2align in instruction length.
+
 2014-01-10 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c (arc_hazard): Filter out millicode jumps.
