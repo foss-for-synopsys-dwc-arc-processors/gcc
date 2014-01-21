@@ -204,7 +204,7 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define ARC_TLS_EXTRA_START_SPEC "crttls_r30.o%s"
+#define ARC_TLS_EXTRA_START_SPEC "crttls_r25.o%s"
 
 /* In the "spec:" rule,, t-epiphany changes this to epiphany_library_stub_spec
  *    and epiphany_library_extra_spec, respectively.  */

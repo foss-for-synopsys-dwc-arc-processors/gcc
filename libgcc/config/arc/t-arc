@@ -68,6 +68,9 @@ crtg.o: $(srcdir)/config/arc/crtg.S
 crtgend.o: $(srcdir)/config/arc/crtgend.S
 	$(crt_compile) -c -x assembler-with-cpp $<
 
+crttls_r25.o: $(srcdir)/config/arc/crttls_r25.S
+	$(crt_compile) -c -x assembler-with-cpp $<
+
 crttls_r30.o: $(srcdir)/config/arc/crttls_r30.S
 	$(crt_compile) -c -x assembler-with-cpp $<
 
