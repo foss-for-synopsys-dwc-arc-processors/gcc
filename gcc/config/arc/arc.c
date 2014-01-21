@@ -7980,7 +7980,20 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
       emit_insn (gen_call_tls_get_addr ());
       return r0;
 #else
-      return arc_emit_call_tls_get_addr (addr, UNSPEC_TLS_GD, addr);
+      if (0) /* Should we have an option for this?  */
+	return arc_emit_call_tls_get_addr (addr, UNSPEC_TLS_GD, addr);
+      else
+	{
+          rtx r0 = gen_rtx_REG (Pmode, R0_REG);
+          rtx desc_addr
+	    = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_GD);
+	  desc_addr = gen_rtx_CONST (Pmode, desc_addr);
+	  emit_move_insn (r0, desc_addr);
+	  rtx call_addr = gen_const_mem (Pmode, r0);
+	  call_addr = copy_to_mode_reg (Pmode, call_addr);
+          emit_insn (gen_tls_gd_dispatch (call_addr, addr));
+          return r0;
+	}
 #endif
     case TLS_MODEL_INITIAL_EXEC:
       addr = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_IE);
@@ -9942,6 +9955,14 @@ arc_legitimize_reload_address (rtx *p, enum machine_mode mode, int opnum,
       return true;
     }
   return false;
+}
+
+/* We can't inline this in INSN_REFERENCES_ARE_DELAYED because resource.h
+   doesn't include the required header files.  */
+bool
+insn_is_tls_gd_dispatch (rtx insn)
+{
+  return recog_memoized (insn) == CODE_FOR_tls_gd_dispatch;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
