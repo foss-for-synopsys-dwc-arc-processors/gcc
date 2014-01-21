@@ -1,5 +1,11 @@
 2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config.host (arc*-*-elf*) <extra_parts>: Add crttls_r25.o.
+	* config/arc/crttls_r25.S: New file.
+	* config/arc/t-arc (crttls_r25.o): New rule.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/crttls_r30.S: Fix pasto.
 
 2014-01-19  Joern Rennecke  <joern.rennecke@embecosm.com>

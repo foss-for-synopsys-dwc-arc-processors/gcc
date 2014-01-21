@@ -1514,7 +1514,7 @@ arc_conditional_register_usage (void)
       strcpy (rname58, TARGET_BIG_ENDIAN ? "mhi" : "mlo");
       strcpy (rname59, TARGET_BIG_ENDIAN ? "mlo" : "mhi");
     }
-  if (arc_tp_regno != 0)
+  if (arc_tp_regno != -1)
     fixed_regs [arc_tp_regno] = call_used_regs[arc_tp_regno] = 1;
   if (TARGET_MULMAC_32BY16_SET)
     {

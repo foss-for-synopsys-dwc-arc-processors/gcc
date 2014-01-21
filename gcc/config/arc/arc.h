@@ -239,7 +239,7 @@ ASM_DEFOPT "%{matomic:-mlock} \
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define ARC_TLS_EXTRA_START_SPEC "crttls_r30.o%s"
+#define ARC_TLS_EXTRA_START_SPEC "crttls_r25.o%s"
 
 #define EXTRA_SPECS \
   { "arc_tls_extra_start_spec", ARC_TLS_EXTRA_START_SPEC }, \
