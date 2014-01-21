@@ -8570,7 +8570,7 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
     case TLS_MODEL_INITIAL_EXEC:
       addr = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_IE);
       addr = force_reg (Pmode, gen_rtx_CONST (Pmode, addr));
-      addr = gen_const_mem (Pmode, addr);
+      addr = copy_to_mode_reg (Pmode, gen_const_mem (Pmode, addr));
       return gen_rtx_PLUS (Pmode, arc_get_tp (), addr);
     case TLS_MODEL_LOCAL_EXEC:
       addr = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_OFF);
