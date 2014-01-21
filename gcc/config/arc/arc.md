@@ -5464,6 +5464,16 @@
 ;  "bl __tls_get_addr"
 ;  [(set_attr "is_sfunc" "yes")])
 
+(define_insn "tls_gd_load"
+  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,c")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "Rcq#q,c")
+		    (match_operand:SI 2 "symbolic_operand" "X,X")]
+	 UNSPEC_TLS_GD))]
+  ""
+  ".tls_gd_ld %2`ld%? %0,[%1]"
+  [(set_attr "type" "load")
+   (set_attr "iscompact" "maybe,*")])
+
 ; We make this call specific to the tls symbol to avoid commoning this with
 ; calls for other symbols; we want the linker to be able to 
 (define_insn "tls_gd_dispatch"
@@ -5478,7 +5488,7 @@
    (clobber (reg:DI R10_REG))
    (clobber (reg:SI R12_REG))]
   ""
-  "bl%!%* %0"
+  ".tls_gd_call %1`jl%!%* [%0]"
   [(set_attr "type" "call")
    (set_attr "iscompact" "maybe,false,*")
    (set_attr "predicable" "no,no,yes")])

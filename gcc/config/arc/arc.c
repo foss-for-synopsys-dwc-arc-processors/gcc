@@ -8561,9 +8561,9 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
 	    = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_GD);
 	  desc_addr = gen_rtx_CONST (Pmode, desc_addr);
 	  emit_move_insn (r0, desc_addr);
-	  rtx call_addr = gen_const_mem (Pmode, r0);
-	  call_addr = copy_to_mode_reg (Pmode, call_addr);
-          emit_insn (gen_tls_gd_dispatch (call_addr, addr));
+	  rtx call_addr_reg = gen_reg_rtx (Pmode);
+	  emit_insn (gen_tls_gd_load (call_addr_reg, r0, addr));
+	  emit_insn (gen_tls_gd_dispatch (call_addr_reg, addr));
           return r0;
 	}
 #endif

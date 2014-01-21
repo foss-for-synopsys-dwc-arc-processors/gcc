@@ -1,5 +1,11 @@
 2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.c (arc_legitimize_tls_address): Use gen_tls_gd_load.
+	* config/arc/arc.md (tls_gd_load): New pattern.
+	(tls_gd_dispatch): Emit .tls_gd_call pseudo-op.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.c (arc_legitimize_tls_address)
 	<TLS_MODEL_INITIAL_EXEC>: Force MEM into a register before adding
 	thread pointer.
