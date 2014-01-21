@@ -1,3 +1,7 @@
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/crttls_r30.S: Fix pasto.
+
 2014-01-19  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config.host (arc*-*-elf*) <extra_parts>: Add crttls_r30.o.

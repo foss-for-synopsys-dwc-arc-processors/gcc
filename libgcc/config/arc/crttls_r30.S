@@ -48,7 +48,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 	
 	.global SYM(__read_tp)
 SYM(__read_tp):
-	FUNC(__mulsi3)
+	FUNC(__read_tp)
 	mov r0,r30
 	nop
 	j [blink]
