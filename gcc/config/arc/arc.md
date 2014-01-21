@@ -194,6 +194,7 @@
    (R1_REG 1)
    (R2_REG 2)
    (R3_REG 3)
+   (R10_REG 10)
    (R12_REG 12)
    (SP_REG 28)
    (ILINK1_REGNUM 29)
@@ -5462,6 +5463,25 @@
 ;  ""
 ;  "bl __tls_get_addr"
 ;  [(set_attr "is_sfunc" "yes")])
+
+; We make this call specific to the tls symbol to avoid commoning this with
+; calls for other symbols; we want the linker to be able to 
+(define_insn "tls_gd_dispatch"
+  [(set (reg:SI R0_REG)
+	(unspec:SI
+	  [(reg:SI R0_REG)
+	   (call (mem:SI (match_operand:SI 0 "register_operand" "Rcq,q,c"))
+		 (const_int 0))
+	   (match_operand:SI 1 "symbolic_operand" "X,X,X")]
+	 UNSPEC_TLS_GD))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:DI R10_REG))
+   (clobber (reg:SI R12_REG))]
+  ""
+  "bl%!%* %0"
+  [(set_attr "type" "call")
+   (set_attr "iscompact" "maybe,false,*")
+   (set_attr "predicable" "no,no,yes")])
 
 ;; If hardware floating point is available, don't define a negdf pattern;
 ;; it would be something like:

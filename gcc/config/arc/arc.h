@@ -1672,7 +1672,12 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
    && GET_CODE (PATTERN (X)) != CLOBBER		\
    && (get_attr_type (X) == TYPE_CALL || get_attr_type (X) == TYPE_SFUNC))
 
-#define INSN_REFERENCES_ARE_DELAYED(insn) INSN_SETS_ARE_DELAYED (insn)
+/* ??? INSN_REFERENCES_ARE_DELAYED also applies to the address in a CALL
+   even if that call is not in a CALL_INSN.
+   For sfuncs, we cope with disapplowing r12 setters in the delay slot,
+   but tls_gd_dispatch allows any register.  */
+#define INSN_REFERENCES_ARE_DELAYED(insn) \
+  (INSN_SETS_ARE_DELAYED (insn) && !insn_is_tls_gd_dispatch (insn))
 
 #define CALL_ATTR(X, NAME) \
   ((CALL_P (X) || NONJUMP_INSN_P (X)) \

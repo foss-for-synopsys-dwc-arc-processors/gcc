@@ -1,5 +1,16 @@
 2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc-protos.h (insn_is_tls_gd_dispatch): Declare.
+	* config/arc/arc.c (arc_legitimize_tls_address)
+	<TLS_MODEL_GLOBAL_DYNAMIC>: Use gen_tls_gd_dispatch.
+	(insn_is_tls_gd_dispatch): New function.
+	* config/arc/arc.h (INSN_REFERENCES_ARE_DELAYED): Check
+	insn_is_tls_gd_dispatch.
+	* config/arc/arc.md (R10_REG): New constant.
+	(tls_gd_dispatch): New pattern.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.opt (mtp-regn): Change arc_tp_regno default to 25.
 	* config/arc/arc.h [DEFAULT_LIBC != LIBC_UCLIBC]
 	(ARC_TLS_EXTRA_START_SPEC): Use crttls_r25.o .
