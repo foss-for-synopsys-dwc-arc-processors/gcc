@@ -55,7 +55,7 @@ SYM(__read_tp):
 	ENDFUNC(__read_tp)
 
 	.section .init
-	mov r25,__main_tcb_end+512
+	mov r25,__main_tcb_end+256
 
 	.section .tbss
 __main_tcb:
