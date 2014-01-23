@@ -1,3 +1,36 @@
+2014-01-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (emit_pic_move): Don't declare.
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Allow @tlsoff9 with addend.
+	(emit_pic_move): Now static.  If !flag_pic, don't force source of
+	move into memory into reg, nor allocate a temporary.
+	Rename to...
+	(prepare_pic_move) .. this.
+	(arc_print_operand): Handle @tlsoff{,9} with addend.
+	(arc_print_operand_address): Likewise.
+	(arc_raw_symbolic_reference_mentioned_p): Return true for raw
+	TLS symbols.  Return false for other symbols when !flag_pic.
+	(arc_get_tp): Move before arc_legitimize_pic_address.
+	(arc_legitimize_tls_address): Likewise.  Delete dead code.
+	(tls_get_addr_libfunc, get_tls_get_addr): Delete.
+	(arc_emit_call_tls_get_addr): Likewise.
+	(arc_legitimize_pic_address): Delete dead code.
+	Check for TLS symbols.  If not flag_pic, return other symbols
+	unchanged.  If legitimizing a PLUS and both parts are legitimized
+	unchanged, return original address unchanged.
+	(arc_legitimate_constant_p): Check for TLS symbols inside of a
+	PLUS etc.
+	(arc_legitimate_address_p, prepare_move_operands): Likewise.
+	(arc_legitimize_address_0): Likewise.
+	(arc_rewrite_small_data_p): Check that we didn't got a TLS symbol.
+	(prepare_move_operand): Check for small data and pic/tls
+	independently.
+	* config/arc/predicates.md (move_src_operand): Use
+	arc_legitimate_constant_p.
+
+	* config/arc/arc.c (arc_delegitimize_address_0):
+	Handle @pcl with addend.
+
 2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_legitimize_tls_address): Use gen_tls_gd_load.

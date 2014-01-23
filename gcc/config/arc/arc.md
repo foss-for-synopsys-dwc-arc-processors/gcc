@@ -5457,13 +5457,6 @@
   [(set_attr "is_sfunc" "yes")
    (set_attr "predicable" "yes")])
 
-;; how to call tls_get_addr if we have a dso-local version with special ABI
-;(define_insn "call_tls_get_addr"
-;  [(set (reg:SI R0_REG) (unspec:SI [(reg:SI R0_REG)] UNSPEC_TLS_GD))]
-;  ""
-;  "bl __tls_get_addr"
-;  [(set_attr "is_sfunc" "yes")])
-
 (define_insn "tls_gd_load"
   [(set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,c")
 	(unspec:SI [(match_operand:SI 1 "register_operand" "Rcq#q,c")

@@ -268,8 +268,9 @@
       if (SYMBOL_REF_TLS_MODEL (op))
 	return 0;
     case LABEL_REF :
+      return 1;
     case CONST :
-      return (!flag_pic || arc_legitimate_pic_operand_p(op));
+      return arc_legitimate_constant_p (mode, op);
     case CONST_INT :
       return (LARGE_INT (INTVAL (op)));
     case CONST_DOUBLE :
