@@ -1,5 +1,12 @@
 2014-01-30  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.c (tls_get_addr_libfunc): Add back.
+	(get_tls_get_addr, arc_emit_call_tls_get_addr): Likewise.
+	(arc_legitimize_tls_address): Use obsolete general-dynamic
+	implementation.
+
+2014-01-30  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* dwarf2cfi.c: Include diagnostic-core.h.
 	(maybe_record_trace_start): Don't ICE, just warn, for a row mismatch.
 
