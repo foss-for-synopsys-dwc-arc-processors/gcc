@@ -5086,6 +5086,44 @@ arc_get_tp (void)
   return reg;
 }
 
+/* FIXME: This is an obsolete and inefficient design.  Implemented because
+   run-time code for it was lying around.  */
+#if 1
+/* Build the SYMBOL_REF for __tls_get_addr.  */
+
+static GTY(()) rtx tls_get_addr_libfunc;
+
+static rtx
+get_tls_get_addr (void)
+{
+  if (!tls_get_addr_libfunc)
+    tls_get_addr_libfunc = init_one_libfunc ("__tls_get_addr");
+  return tls_get_addr_libfunc;
+}
+
+static rtx
+arc_emit_call_tls_get_addr (rtx x, int reloc, rtx eqv)
+{
+  rtx insns;
+
+  start_sequence ();
+
+  x = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, x), reloc);
+  x = gen_const_mem (Pmode, gen_rtx_CONST (Pmode, x));
+
+  rtx ret = emit_library_call_value (get_tls_get_addr (), NULL_RTX,
+				     LCT_PURE, /* LCT_CONST?  */
+				     Pmode, 1, x, Pmode);
+
+  insns = get_insns ();
+  end_sequence ();
+
+  rtx dest = gen_reg_rtx (Pmode);
+  emit_libcall_block (insns, dest, ret, eqv);
+  return dest;
+}
+#endif /* Obsolete design  */
+
 /* Return a legitimized address for ADDR,
    which is a SYMBOL_REF with tls_model MODEL.  */
 
@@ -5098,16 +5136,19 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
     {
     case TLS_MODEL_LOCAL_DYNAMIC: /* not optimized yet, fall through.  */
     case TLS_MODEL_GLOBAL_DYNAMIC:
+      if (1) /* FIXME obsolete design.  */
+	return arc_emit_call_tls_get_addr (addr, UNSPEC_TLS_GD, addr);
+      else
 	{
-          rtx r0 = gen_rtx_REG (Pmode, R0_REG);
-          rtx desc_addr
+	  rtx r0 = gen_rtx_REG (Pmode, R0_REG);
+	  rtx desc_addr
 	    = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_GD);
 	  desc_addr = gen_rtx_CONST (Pmode, desc_addr);
 	  emit_move_insn (r0, desc_addr);
 	  rtx call_addr_reg = gen_reg_rtx (Pmode);
 	  emit_insn (gen_tls_gd_load (call_addr_reg, r0, addr));
 	  emit_insn (gen_tls_gd_dispatch (call_addr_reg, addr));
-          return r0;
+	  return r0;
 	}
     case TLS_MODEL_INITIAL_EXEC:
       addr = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_IE);
