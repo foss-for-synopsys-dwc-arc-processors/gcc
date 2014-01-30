@@ -1,3 +1,8 @@
+2014-01-30  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* dwarf2cfi.c: Include diagnostic-core.h.
+	(maybe_record_trace_start): Don't ICE, just warn, for a row mismatch.
+
 2014-01-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc-protos.h (emit_pic_move): Don't declare.
