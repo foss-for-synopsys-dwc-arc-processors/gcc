@@ -5486,6 +5486,17 @@
    (set_attr "iscompact" "maybe,false,*")
    (set_attr "predicable" "no,no,yes")])
 
+;; For thread pointer builtins
+(define_expand "get_thread_pointersi"
+  [(set (match_operand:SI 0 "register_operand") (match_dup 1))]
+ ""
+ "operands[1] = gen_rtx_REG (Pmode, arc_tp_regno);")
+
+(define_expand "set_thread_pointersi"
+  [(set (match_dup 1) (match_operand:SI 0 "register_operand"))]
+ ""
+ "operands[1] = gen_rtx_REG (Pmode, arc_tp_regno);")
+
 ;; If hardware floating point is available, don't define a negdf pattern;
 ;; it would be something like:
 ;;(define_insn "negdf2"

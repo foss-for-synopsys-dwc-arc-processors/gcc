@@ -1,3 +1,11 @@
+2014-02-01  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	Support for __builtin_thread_pointer / __builtin_set_thread_pointer:
+	* config/arc/arc.md (arc_conditional_register_usage): Make
+	arc_tp_regno a global rather than a fixed register.
+	* config/arc/arc.md (get_thread_pointersi): New pattern.
+	* config/arc/arc.md (set_thread_pointersi): Likewise.
+
 2014-01-30  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (tls_get_addr_libfunc): Add back.
