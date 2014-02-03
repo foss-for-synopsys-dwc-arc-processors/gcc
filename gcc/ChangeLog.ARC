@@ -1,3 +1,9 @@
+2014-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (tls_gd_obsolete_get_addr): New pattern.
+	* config/arc/arc.c (tls_get_addr_libfunc, get_tls_get_addr): Remove.
+	(arc_emit_call_tls_get_addr): Use gen_tls_gd_obsolete_get_addr.
+
 2014-02-01  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	Support for __builtin_thread_pointer / __builtin_set_thread_pointer:
