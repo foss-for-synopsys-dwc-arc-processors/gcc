@@ -5089,37 +5089,33 @@ arc_get_tp (void)
 /* FIXME: This is an obsolete and inefficient design.  Implemented because
    run-time code for it was lying around.  */
 #if 1
-/* Build the SYMBOL_REF for __tls_get_addr.  */
-
-static GTY(()) rtx tls_get_addr_libfunc;
 
 static rtx
-get_tls_get_addr (void)
+arc_emit_call_tls_get_addr (rtx sym, int reloc, rtx eqv)
 {
-  if (!tls_get_addr_libfunc)
-    tls_get_addr_libfunc = init_one_libfunc ("__tls_get_addr");
-  return tls_get_addr_libfunc;
-}
-
-static rtx
-arc_emit_call_tls_get_addr (rtx x, int reloc, rtx eqv)
-{
+  rtx r0 = gen_rtx_REG (Pmode, R0_REG);
   rtx insns;
+  rtx call_fusage = NULL_RTX;
 
   start_sequence ();
 
-  x = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, x), reloc);
+  rtx x = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, sym), reloc);
   x = gen_const_mem (Pmode, gen_rtx_CONST (Pmode, x));
+  emit_move_insn (r0, x);
+  use_reg (&call_fusage, r0);
 
-  rtx ret = emit_library_call_value (get_tls_get_addr (), NULL_RTX,
-				     LCT_PURE, /* LCT_CONST?  */
-				     Pmode, 1, x, Pmode);
+  gcc_assert (reloc == UNSPEC_TLS_GD);
+  rtx call_insn = emit_call_insn (gen_tls_gd_obsolete_get_addr (sym));
+  /* Should we set RTL_CONST_CALL_P?  We read memory, but not in a
+     way that the application should care.  */
+  RTL_PURE_CALL_P (call_insn) = 1;
+  add_function_usage_to (call_insn, call_fusage);
 
   insns = get_insns ();
   end_sequence ();
 
   rtx dest = gen_reg_rtx (Pmode);
-  emit_libcall_block (insns, dest, ret, eqv);
+  emit_libcall_block (insns, dest, r0, eqv);
   return dest;
 }
 #endif /* Obsolete design  */
