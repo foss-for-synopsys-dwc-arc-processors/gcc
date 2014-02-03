@@ -5465,7 +5465,12 @@
   ""
   ".tls_gd_ld %2`ld%? %0,[%1]"
   [(set_attr "type" "load")
-   (set_attr "iscompact" "maybe,*")])
+   ; if the linker has to patch this into IE, we need a long insns
+   ; (FIXME: or two short insn, ld_s / jl_s.  missing -Os optimization.)
+   (set_attr_alternative "iscompact"
+     [(cond [(ne (symbol_ref "arc_tp_regno == 30") (const_int 0))
+	     (const_string "*")] (const_string "maybe"))
+      (const_string "*")])])
 
 (define_insn "tls_gd_obsolete_get_addr"
   [(set (reg:SI R0_REG)
