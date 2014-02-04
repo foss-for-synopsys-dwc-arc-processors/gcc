@@ -1,3 +1,8 @@
+2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (tls_gd_obsolete_get_addr): Add predication/
+	delay slot suffixes.
+
 2014-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (tls_gd_load): Don't use short insn if rtp
