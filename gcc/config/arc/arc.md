@@ -5480,9 +5480,10 @@
 		 (const_int 0)))
    (clobber (reg:SI RETURN_ADDR_REGNUM))]
   ""
-  ".tls_gd_ld %0`bl%!%* __tls_get_addr@plt"
+  ".tls_gd_ld %0`bl%* __tls_get_addr@plt"
   [(set_attr "type" "call")
-   (set_attr "predicable" "yes")])
+   ; With TARGET_MEDIUM_CALLS, plt calls are not predicable.
+   (set_attr "predicable" "no")])
 
 ; We make this call specific to the tls symbol to avoid commoning this with
 ; calls for other symbols; we want the linker to be able to 

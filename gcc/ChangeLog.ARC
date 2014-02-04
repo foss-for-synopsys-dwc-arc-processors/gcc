@@ -1,5 +1,9 @@
 2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.md (tls_gd_obsolete_get_addr): Remove predicability.
+
+2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.md (tls_gd_obsolete_get_addr): Add predication/
 	delay slot suffixes.
 
