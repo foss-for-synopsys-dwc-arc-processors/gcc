@@ -5480,7 +5480,7 @@
 		 (const_int 0)))
    (clobber (reg:SI RETURN_ADDR_REGNUM))]
   ""
-  ".tls_gd_ld %0`bl __tls_get_addr@plt"
+  ".tls_gd_ld %0`bl%!%* __tls_get_addr@plt"
   [(set_attr "type" "call")
    (set_attr "predicable" "yes")])
 
