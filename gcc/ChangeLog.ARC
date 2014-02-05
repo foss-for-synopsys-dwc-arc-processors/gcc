@@ -1,3 +1,10 @@
+2014-02-05 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/cmp-fpu.c: New file
+	* testsuite/gcc.target/arc/fma.c: Likewise
+	* testsuite/gcc.target/arc/fma.h: Likewise
+	* testsuite/gcc.target/arc/arc.exp: Add check_effective_target_arc_fpu_ok procedure.
+
 2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md (doloop_begin_i): Account for the effects

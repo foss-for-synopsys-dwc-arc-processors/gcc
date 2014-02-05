@@ -24,6 +24,13 @@ if ![istarget arc*-*-*] then {
 # Load support procs.
 load_lib gcc-dg.exp
 
+proc check_effective_target_arc_fpu_ok { } {
+    return [check_no_compiler_messages arc_fpu_ok object {
+	int dummy;
+    } "-mcpu=ARCv2HS -mhard-float"]
+}
+
+
 # If a testcase doesn't have special options, use these.
 global DEFAULT_CFLAGS
 if ![info exists DEFAULT_CFLAGS] then {
