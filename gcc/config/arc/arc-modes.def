@@ -31,6 +31,10 @@ CC_MODE (CC_FP_ORD);
 CC_MODE (CC_FP_UNEQ);
 CC_MODE (CC_FPX);
 
+/* FPU conditon flags. */
+CC_MODE (CC_FPU);
+CC_MODE (CC_FPUE);
+
 /* Vector modes.  */
 VECTOR_MODES (INT, 4);        /*            V4QI V2HI */
 VECTOR_MODES (INT, 8);        /*       V8QI V4HI V2SI */

@@ -132,8 +132,12 @@ Target Report Mask(EA_SET)
 Generate Extended arithmetic instructions.  Currently only divaw, adds, subs and sat16 are supported
 
 msoft-float
-Target Report Mask(0)
-Dummy flag. This is the default unless FPX switches are provided explicitly
+Target Report RejectNegative InverseMask(HARD_FLOAT)
+Dummy flag. This is the default unless FPX/FPU switches are provided explicitly
+
+mhard-float
+Target Report RejectNegative Mask(HARD_FLOAT)
+FPU: Generate FPU instructions.
 
 mlong-calls
 Target Report Mask(LONG_CALLS_SET)

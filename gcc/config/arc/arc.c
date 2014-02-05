@@ -818,7 +818,12 @@ arc_init (void)
   /* FPX-3. No FPX extensions on pre-ARC600 cores.  */
   if ((TARGET_DPFP || TARGET_SPFP)
       && !(TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700 || TARGET_EM))
-    error ("FPX extensions not available on pre-ARC600 cores");
+    error ("FPX extensions not available on this core");
+
+  /* FPX-4. No FPX extensions mixed with FPU extensions  */
+  if ((TARGET_DPFP || TARGET_SPFP)
+      && TARGET_HARD_FLOAT)
+    error ("No FPX/FPU mixing allowed");
 
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
   if (flag_pic && (!(TARGET_ARC700 || TARGET_V2)))
@@ -1020,6 +1025,27 @@ get_arc_condition_code (rtx comparison)
 	case UNEQ      : return ARC_CC_LS;
 	default : gcc_unreachable ();
 	}
+    case CC_FPUmode:
+    case CC_FPUEmode:
+      switch (GET_CODE (comparison))
+	{
+	case EQ        : return ARC_CC_EQ;
+	case NE        : return ARC_CC_NE;
+	case GT        : return ARC_CC_GT;
+	case GE        : return ARC_CC_GE;
+	case LT        : return ARC_CC_C;
+	case LE        : return ARC_CC_LS;
+	case UNORDERED : return ARC_CC_V;
+	case ORDERED   : return ARC_CC_NV;
+	case UNGT      : return ARC_CC_HI;
+	case UNGE      : return ARC_CC_HS;
+	case UNLT      : return ARC_CC_LT;
+	case UNLE      : return ARC_CC_LE;
+	  /* UNEQ and LTGT do not have representation. */
+	case LTGT      : /* Fall through.  */
+	case UNEQ      : /* Fall through.  */
+	default : gcc_unreachable ();
+	}
     default : gcc_unreachable ();
     }
   /*NOTREACHED*/
@@ -1115,6 +1141,32 @@ arc_select_cc_mode (enum rtx_code op, rtx x, rtx y)
       case ORDERED: case UNORDERED: return CC_FP_ORDmode;
       default: gcc_unreachable ();
       }
+  else if (GET_MODE_CLASS (mode) == MODE_FLOAT && TARGET_HARD_FLOAT)
+    {
+      switch (op)
+	{
+	case EQ:
+	case NE:
+	case UNORDERED:
+	case UNLT:
+	case UNLE:
+	case UNGT:
+	case UNGE:
+	case UNEQ:
+	  return CC_FPUmode;
+
+	case LT:
+	case LE:
+	case GT:
+	case GE:
+	case LTGT:
+	case ORDERED:
+	  return CC_FPUEmode;
+
+	default:
+	  gcc_unreachable ();
+	}
+    }
 
   return CCmode;
 }
@@ -6524,7 +6576,10 @@ arc_reorg (void)
 		      break;
 		    }
 		}
-	      if (! link_insn)
+	      if (!link_insn
+		  /* Avoid FPU instructions. */
+		  || (GET_MODE (SET_DEST (PATTERN (link_insn))) == CC_FPUmode)
+		  || (GET_MODE (SET_DEST (PATTERN (link_insn))) == CC_FPUEmode))
 		continue;
 	      else
 		/* Check if this is a data dependency.  */

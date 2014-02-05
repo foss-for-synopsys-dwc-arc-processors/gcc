@@ -1,9 +1,19 @@
 2014-02-05 Claudiu Zissulescu <claziss@synopsys.com>
 
-	* testsuite/gcc.target/arc/cmp-fpu.c: New file
-	* testsuite/gcc.target/arc/fma.c: Likewise
-	* testsuite/gcc.target/arc/fma.h: Likewise
+	* testsuite/gcc.target/arc/cmp-fpu.c: New file.
+	* testsuite/gcc.target/arc/fma.c: Likewise.
+	* testsuite/gcc.target/arc/fma.h: Likewise.
 	* testsuite/gcc.target/arc/arc.exp: Add check_effective_target_arc_fpu_ok procedure.
+	* config/arc/fpu.md: New file.
+	* gcc/config/arc/arc-modes.def (CC_FPU, CC_FPUE): Add.
+	* config/arc/arc.c (get_arc_condition_code, arc_select_cc_mode):
+	  Handle CC_FPUmode and CC_FPUEmode.
+	* config/arc/arc.c (arc_reorg): Avoid usage of BRcc instructions for FPU ops.
+	* config/arc/arc.h (TARGET_OPTFPE, REVERSE_CONDITION): Handle new v2 FPU extensions.
+	* config/arc/arc.md: Add ARCv2 FPU extensions support.
+	* config/arc/fpx.md: Likewise.
+	* config/arc/arc.opt (mhard-float): Define.
+	* config/arc/predicates.md (fpu_comparison_operator): Define.
 
 2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
 

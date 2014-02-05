@@ -281,10 +281,10 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_NORM (TARGET_ARC700 || TARGET_NORM_SET || TARGET_HS)
 /* Indicate if an optimized floating point emulation library is available.  */
 #define TARGET_OPTFPE \
- (TARGET_ARC700 \
-  /* We need a barrel shifter and NORM.  */ \
-  || (TARGET_ARC600 && TARGET_NORM_SET) \
-  || TARGET_HS || (TARGET_EM && TARGET_NORM_SET))
+  (TARGET_ARC700							\
+   /* We need a barrel shifter and NORM.  */				\
+   || (TARGET_ARC600 && TARGET_NORM_SET)				\
+   || (TARGET_HS && !TARGET_HARD_FLOAT) || (TARGET_EM && TARGET_NORM_SET))
 
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */
@@ -1680,11 +1680,12 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
    && get_attr_is_##NAME (X) == IS_##NAME##_YES) \
 
 #define REVERSE_CONDITION(CODE,MODE) \
-	(((MODE) == CC_FP_GTmode || (MODE) == CC_FP_GEmode \
-	  || (MODE) == CC_FP_UNEQmode || (MODE) == CC_FP_ORDmode \
-	  || (MODE) == CC_FPXmode) \
-	 ? reverse_condition_maybe_unordered ((CODE)) \
-	 : reverse_condition ((CODE)))
+  (((MODE) == CC_FP_GTmode || (MODE) == CC_FP_GEmode		 \
+    || (MODE) == CC_FP_UNEQmode || (MODE) == CC_FP_ORDmode	 \
+    || (MODE) == CC_FPXmode || (MODE) == CC_FPUmode              \
+    || (MODE) == CC_FPUEmode)                                    \
+   ? reverse_condition_maybe_unordered ((CODE))			 \
+   : reverse_condition ((CODE)))
 
 #define ADJUST_INSN_LENGTH(X, LENGTH) \
   ((LENGTH) \
