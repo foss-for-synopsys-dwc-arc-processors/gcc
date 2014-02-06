@@ -1,3 +1,13 @@
+2014-02-06 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-opts.h (FPU_*): Define.
+	* config/arc/arc.c: Allow usage of soft optimized double floating point
+	 routines, when no hardware support exists.
+	* config/arc/arc.h (TARGET_FP_*): Define.
+	* config/arc/arc.md: Selective FPU support implementation.
+	* config/arc/arc.opt: Likewise.
+	* config/arc/fpu.md: Likewise.
+
 2014-02-05 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* testsuite/gcc.target/arc/cmp-fpu.c: New file.

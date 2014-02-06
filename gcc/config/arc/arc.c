@@ -1129,7 +1129,8 @@ arc_select_cc_mode (enum rtx_code op, rtx x, rtx y)
 	return CC_FP_GEmode;
       default: gcc_unreachable ();
       }
-  else if (GET_MODE_CLASS (mode) == MODE_FLOAT && TARGET_OPTFPE)
+  else if ((GET_MODE_CLASS (mode) == MODE_FLOAT && TARGET_OPTFPE && !TARGET_HARD_FLOAT)
+	   || (mode == DFmode && TARGET_OPTFPE && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE))
     switch (op)
       {
       case EQ: case NE: return CC_Zmode;
@@ -1717,7 +1718,8 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
 						 gen_rtx_REG (CC_FPXmode, 61),
 						 const0_rtx)));
     }
-  else if (GET_MODE_CLASS (cmode) == MODE_FLOAT && TARGET_OPTFPE)
+  else if ((GET_MODE_CLASS (cmode) == MODE_FLOAT && TARGET_OPTFPE && !TARGET_HARD_FLOAT)
+	   || (cmode == DFmode && TARGET_OPTFPE && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE))
     {
       rtx op0 = gen_rtx_REG (cmode, 0);
       rtx op1 = gen_rtx_REG (cmode, GET_MODE_SIZE (cmode) / UNITS_PER_WORD);

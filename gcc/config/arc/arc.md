@@ -1037,8 +1037,9 @@
 (define_insn "*movsf_insn"
   [(set (match_operand:SF 0 "move_dest_operand" "=   W,w,w,r,m")
 	(match_operand:SF 1 "move_src_operand"   "WCm1,c,E,m,c"))]
-  "register_operand (operands[0], SFmode)
-   || register_operand (operands[1], SFmode)"
+  "(register_operand (operands[0], SFmode)
+   || register_operand (operands[1], SFmode))
+   && !(register_operand (operands[1], SFmode) && REGNO(operands[1]) == 58)"
   "@
    mov%? %0,%1
    mov%? %0,%1
@@ -3398,7 +3399,7 @@
   }
 })
 
-(define_mode_iterator SDF [SF DF])
+(define_mode_iterator SDF [(SF "TARGET_FP_SINGLE || TARGET_OPTFPE") (DF "TARGET_FP_DOUBLE || TARGET_OPTFPE")])
 
 (define_expand "cstore<mode>4"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
@@ -5807,7 +5808,7 @@
   [(set (match_operand:SF 0 "register_operand"           "")
 	(plus:SF (match_operand:SF 1 "nonmemory_operand" "")
 		 (match_operand:SF 2 "nonmemory_operand" "")))]
-  "TARGET_HARD_FLOAT || TARGET_SPFP"
+  "TARGET_FP_SINGLE || TARGET_SPFP"
   "")
 
 ;;sub
@@ -5815,7 +5816,7 @@
   [(set (match_operand:SF 0 "register_operand"            "")
 	(minus:SF (match_operand:SF 1 "nonmemory_operand" "")
 		  (match_operand:SF 2 "nonmemory_operand" "")))]
-  "TARGET_HARD_FLOAT || TARGET_SPFP"
+  "TARGET_FP_SINGLE || TARGET_SPFP"
   "")
 
 ;;mul
@@ -5823,7 +5824,7 @@
   [(set (match_operand:SF 0 "register_operand"           "")
 	(mult:SF (match_operand:SF 1 "nonmemory_operand" "")
 		 (match_operand:SF 2 "nonmemory_operand" "")))]
-  "TARGET_HARD_FLOAT || TARGET_SPFP"
+  "TARGET_FP_SINGLE || TARGET_SPFP"
   "")
 
 ;;add
@@ -5832,7 +5833,7 @@
 	(plus:DF (match_operand:DF 1 "arc_double_register_operand" "")
 		 (match_operand:DF 2 "nonmemory_operand"           "")))
      ]
- "TARGET_HARD_FLOAT || TARGET_DPFP"
+ "TARGET_FP_DOUBLE || TARGET_DPFP"
  "
   if (TARGET_DPFP)
    {
@@ -5864,7 +5865,7 @@
   [(set (match_operand:DF 0 "arc_double_register_operand"          "")
 		    (minus:DF (match_operand:DF 1 "nonmemory_operand" "")
 				  (match_operand:DF 2 "nonmemory_operand" "")))]
-  "TARGET_HARD_FLOAT || TARGET_DPFP"
+  "TARGET_FP_DOUBLE || TARGET_DPFP"
   "
    if (TARGET_DPFP)
     {
@@ -5897,7 +5898,7 @@
   [(set (match_operand:DF 0 "arc_double_register_operand"          "")
 	(mult:DF (match_operand:DF 1 "arc_double_register_operand" "")
 		 (match_operand:DF 2 "nonmemory_operand" "")))]
-  "TARGET_HARD_FLOAT || TARGET_DPFP"
+  "TARGET_FP_DOUBLE || TARGET_DPFP"
   "
    if (TARGET_DPFP)
     {

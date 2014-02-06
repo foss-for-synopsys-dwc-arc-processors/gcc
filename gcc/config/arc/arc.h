@@ -284,7 +284,8 @@ along with GCC; see the file COPYING3.  If not see
   (TARGET_ARC700							\
    /* We need a barrel shifter and NORM.  */				\
    || (TARGET_ARC600 && TARGET_NORM_SET)				\
-   || (TARGET_HS && !TARGET_HARD_FLOAT) || (TARGET_EM && TARGET_NORM_SET))
+   || (TARGET_HS && !TARGET_HARD_FLOAT) || (TARGET_HS && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE) \
+   || (TARGET_EM && TARGET_NORM_SET))
 
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */
@@ -1730,5 +1731,16 @@ enum
 #undef  ASM_OUTPUT_FUNCTION_PREFIX
 #define  ASM_OUTPUT_FUNCTION_PREFIX(STREAM, NAME) \
   arc_dump_stack_info(STREAM, NAME)
+
+/* FPU defines. */
+#define TARGET_HARD_FLOAT (arc_fpu_build != 0)
+#define TARGET_FP_SINGLE  ((arc_fpu_build & FPU_SP) != 0)
+#define TARGET_FP_DOUBLE  ((arc_fpu_build & FPU_DP) != 0)
+#define TARGET_FP_SFUZED  ((arc_fpu_build & FPU_SF) != 0)
+#define TARGET_FP_DFUZED  ((arc_fpu_build & FPU_DF) != 0)
+#define TARGET_FP_SCONV   ((arc_fpu_build & FPU_SC) != 0)
+#define TARGET_FP_DCONV   ((arc_fpu_build & FPU_DC) != 0)
+#define TARGET_FP_SSQRT   ((arc_fpu_build & FPU_SD) != 0)
+#define TARGET_FP_DSQRT   ((arc_fpu_build & FPU_DD) != 0)
 
 #endif /* GCC_ARC_H */
