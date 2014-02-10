@@ -8011,6 +8011,13 @@ arc_hazard (rtx pred, rtx succ)
   if (TARGET_ARC600)
     return arc600_corereg_hazard (pred, succ);
 
+  if (TARGET_ARC700)
+    {
+      if (arc_store_addr_hazard_p (pred, succ))
+	return 4;
+      if (arc_store_addr_hazard_p (pred, next_real_insn(succ)))
+	return 4;
+    }
   return 0;
 }
 
@@ -9587,6 +9594,60 @@ arc_legitimize_reload_address (rtx *p, enum machine_mode mode, int opnum,
       push_reload (XEXP (x, 0), NULL_RTX, &XEXP (x, 0), NULL,
 		   BASE_REG_CLASS, Pmode, VOIDmode, 0, 0, opnum, type);
       return true;
+    }
+  return false;
+}
+
+/* Return true if a load instruction (CONSUMER) uses the same address
+   as a store instruction (PRODUCER). This function is used to avoid
+   st/ld address hazard in ARC700 cores. */
+bool
+arc_store_addr_hazard_p (rtx producer, rtx consumer)
+{
+  rtx in_set, out_set;
+  rtx out_addr, in_addr;
+  enum rtx_code in_code, out_code;
+
+  if (!producer)
+    return false;
+
+  if (!consumer)
+    return false;
+
+  /* Peel the producer and the consumer for the address. */
+  out_set = single_set (producer);
+  if (out_set)
+    {
+      out_addr = SET_DEST (out_set);
+      if (!out_addr)
+	return false;
+      if (GET_CODE (out_addr) == ZERO_EXTEND
+	  || GET_CODE (out_addr) == SIGN_EXTEND)
+	out_addr = XEXP (out_addr, 0);
+
+      if (!MEM_P(out_addr))
+	return false;
+
+      in_set = single_set (consumer);
+      if (in_set)
+	{
+	  in_addr = SET_SRC (in_set);
+	  if (!in_addr)
+	    return false;
+	  if (GET_CODE (in_addr) == ZERO_EXTEND
+	      || GET_CODE (in_addr) == SIGN_EXTEND)
+	    in_addr = XEXP (in_addr, 0);
+
+	  if (!MEM_P(in_addr))
+	    return false;
+
+	  /* Get rid of the MEM() and check if the addresses are
+	     equivalent. */
+	  in_addr = XEXP (in_addr, 0);
+	  out_addr = XEXP (out_addr, 0);
+
+	  return exp_equiv_p (in_addr, out_addr, 0, true);
+	}
     }
   return false;
 }

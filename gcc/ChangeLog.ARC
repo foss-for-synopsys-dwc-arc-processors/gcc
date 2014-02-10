@@ -1,3 +1,10 @@
+2014-02-10 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_store_addr_hazard_p): Declare.
+	* config/arc/arc.c (arc_store_addr_hazard_p): New function.
+	 (arc_hazard): Use it.
+	* config/arc/arc700.md: Likewise.
+
 2014-01-10 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c (arc_hazard): Filter out millicode jumps.
