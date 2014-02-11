@@ -398,8 +398,6 @@ static int get_arc_condition_code (rtx);
 
 static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
 
-/* Initialized arc_attribute_table to NULL since arc doesnot have any
-   machine specific supported attributes.  */
 const struct attribute_spec arc_attribute_table[] =
 {
  /* { name, min_len, max_len, decl_req, type_req, fn_type_req, handler,
@@ -415,7 +413,7 @@ const struct attribute_spec arc_attribute_table[] =
   /* And these functions are always known to reside within the 21 bit
      addressing range of blcc.  */
   { "short_call",   0, 0, false, true,  true,  NULL, false },
-  { "tls9", 0, 0, true, false, false, NULL, false },
+  { "tls9", 0, 1, true, false, false, NULL, false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
 static int arc_comp_type_attributes (const_tree, const_tree);
@@ -5140,7 +5138,27 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
     model = TLS_MODEL_LOCAL_EXEC;
   switch (model)
     {
-    case TLS_MODEL_LOCAL_DYNAMIC: /* not optimized yet, fall through.  */
+    case TLS_MODEL_LOCAL_DYNAMIC:
+      rtx base; base = const0_rtx;
+      tree base_decl; base_decl
+	= lookup_attribute ("tls9", DECL_ATTRIBUTES (SYMBOL_REF_DECL (addr)));
+      const char *base_name; base_name = ".tbss";
+      if (base_decl && TREE_VALUE (base_decl)
+	  && TREE_VALUE (TREE_VALUE (base_decl)))
+	{
+
+	  base_decl = TREE_VALUE (TREE_VALUE (base_decl));
+	  if (TREE_CODE (base_decl) == STRING_CST)
+	    base_name = TREE_STRING_POINTER (base_decl);
+	  else if (TREE_CODE (base_decl) == IDENTIFIER_NODE)
+	    base_name = IDENTIFIER_POINTER (base_decl);
+
+	}
+      base = gen_rtx_SYMBOL_REF (Pmode, base_name);
+      base = arc_legitimize_tls_address (base, TLS_MODEL_GLOBAL_DYNAMIC);
+      addr = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr, base), UNSPEC_TLS_OFF);
+      addr = gen_rtx_CONST (Pmode, addr);
+      return gen_rtx_PLUS (Pmode, base, addr);
     case TLS_MODEL_GLOBAL_DYNAMIC:
       if (1) /* FIXME obsolete design.  */
 	return arc_emit_call_tls_get_addr (addr, UNSPEC_TLS_GD, addr);
@@ -5153,7 +5171,8 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
 	  emit_move_insn (r0, desc_addr);
 	  rtx call_addr_reg = gen_reg_rtx (Pmode);
 	  emit_insn (gen_tls_gd_load (call_addr_reg, r0, addr));
-	  emit_insn (gen_tls_gd_dispatch (call_addr_reg, addr));
+	  rtx insn = emit_insn (gen_tls_gd_dispatch (call_addr_reg, addr));
+	  add_reg_note (insn, REG_EQUAL, addr);
 	  return r0;
 	}
     case TLS_MODEL_INITIAL_EXEC:
@@ -5389,7 +5408,13 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
 	  suffix = "@tlsie", pcrel = true;
 	  break;
 	case UNSPEC_TLS_OFF:
-	  suffix = (SYMBOL_REF_TLS_S9_P (XEXP (x, 0)) ? "@tpoff9" : "@tpoff");
+	  bool s9; s9 = SYMBOL_REF_TLS_S9_P (XEXP (x, 0));
+	  if (SYMBOL_REF_TLS_MODEL (XVECEXP (x, 0, 0)) == TLS_MODEL_LOCAL_EXEC)
+	    suffix = (s9 ? "@tpoff9" : "@tpoff");
+	  else
+	    /* FIXME:
+	       Need to output the base somehow - at least if it isn't .tbss  .*/
+	    suffix = (s9 ? "@dtpoff9" : "@dtpoff");
 	  break;
 	default:
 	  output_operand_lossage ("invalid UNSPEC as operand: %d", XINT (x,1));
