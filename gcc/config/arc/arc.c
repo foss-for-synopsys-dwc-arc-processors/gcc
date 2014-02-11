@@ -4690,8 +4690,8 @@ arc_encode_section_info (tree decl, rtx rtl, int first)
 
       tree attr = (TREE_TYPE (decl) != error_mark_node
 		   ? TYPE_ATTRIBUTES (TREE_TYPE (decl)) : NULL_TREE);
-      tree long_call_attr = lookup_attribute ("tls9", attr);
-      SYMBOL_REF_FLAGS (symbol) |= SYMBOL_FLAG_TLS_S9;
+      if (lookup_attribute ("tls9", attr))
+	SYMBOL_REF_FLAGS (symbol) |= SYMBOL_FLAG_TLS_S9;
     }
 }
 
