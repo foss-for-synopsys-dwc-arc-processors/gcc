@@ -133,7 +133,6 @@ RTX_OK_FOR_OFFSET_P (enum machine_mode mode, rtx x)
 	  && XINT (XEXP (x, 0), 1) == UNSPEC_TLS_OFF
 	  && CONST_INT_P (XEXP (x, 1))
 	  && IN_RANGE (INTVAL (XEXP (x, 1)), -1024, 1023))
-	return true;
 	return SYMBOL_REF_TLS_S9_P (XEXP (XEXP (x, 0), 0));
     }
   return false;
