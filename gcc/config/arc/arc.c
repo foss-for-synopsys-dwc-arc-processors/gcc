@@ -5142,7 +5142,7 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
       rtx base; base = const0_rtx;
       tree base_decl; base_decl
 	= lookup_attribute ("tls9", DECL_ATTRIBUTES (SYMBOL_REF_DECL (addr)));
-      const char *base_name; base_name = ".tbss";
+      const char *base_name; base_name = ".tdata";
       if (base_decl && TREE_VALUE (base_decl)
 	  && TREE_VALUE (TREE_VALUE (base_decl)))
 	{
@@ -5413,7 +5413,8 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
 	    suffix = (s9 ? "@tpoff9" : "@tpoff");
 	  else
 	    /* FIXME:
-	       Need to output the base somehow - at least if it isn't .tbss  .*/
+	       Need to output the base somehow - at least if it isn't .tdata  .
+	       Maybe "sym@dtpoff - base@dtpoff" ?  */
 	    suffix = (s9 ? "@dtpoff9" : "@dtpoff");
 	  break;
 	default:
