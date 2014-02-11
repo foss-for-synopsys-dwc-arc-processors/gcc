@@ -5,6 +5,9 @@
 	(arc_attribute_table): Add tls9.
 	(arc_encode_section_info): Set SYMBOL_FLAG_TLS_S9 for tls9 attribute.
 
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Remove left-over
+	"return true;" .
+
 2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (tls_gd_obsolete_get_addr): Remove predicability.
