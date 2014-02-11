@@ -1,5 +1,13 @@
 2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.c (arc_attribute_table) <tls9>: Change max_arg to 1.
+	(arc_legitimize_tls_address): Handle TLS_MODEL_LOCAL_DYNAMIC
+	properly.
+	(arc_output_pic_addr_const): Output @dtpoff{,9} for local dynamic
+	tls model.
+
+2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.c (arc_emit_call_tls_get_addr): Load the
 	Address of GD slot pair into r0, not the first got slot contents.
 
