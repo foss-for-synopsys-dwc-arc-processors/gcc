@@ -127,13 +127,13 @@ RTX_OK_FOR_OFFSET_P (enum machine_mode mode, rtx x)
     {
       x = XEXP (x, 0);
       if (GET_CODE (x) == UNSPEC && XINT (x, 1) == UNSPEC_TLS_OFF)
-	return SYMBOL_REF_TLS_S9_P (XEXP (x, 0));
+	return SYMBOL_REF_TLS_S9_P (XVECEXP (x, 0, 0));
       if (GET_CODE (x) == PLUS
 	  && GET_CODE (XEXP (x, 0)) == UNSPEC
 	  && XINT (XEXP (x, 0), 1) == UNSPEC_TLS_OFF
 	  && CONST_INT_P (XEXP (x, 1))
 	  && IN_RANGE (INTVAL (XEXP (x, 1)), -1024, 1023))
-	return SYMBOL_REF_TLS_S9_P (XEXP (XEXP (x, 0), 0));
+	return SYMBOL_REF_TLS_S9_P (XVECEXP (XEXP (x, 0), 0, 0));
     }
   return false;
 }
@@ -4689,7 +4689,7 @@ arc_encode_section_info (tree decl, rtx rtl, int first)
       rtx symbol = XEXP (rtl, 0);
 
       tree attr = (TREE_TYPE (decl) != error_mark_node
-		   ? TYPE_ATTRIBUTES (TREE_TYPE (decl)) : NULL_TREE);
+		   ? DECL_ATTRIBUTES (decl) : NULL_TREE);
       if (lookup_attribute ("tls9", attr))
 	SYMBOL_REF_FLAGS (symbol) |= SYMBOL_FLAG_TLS_S9;
     }
@@ -5389,7 +5389,7 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
 	  suffix = "@tlsie", pcrel = true;
 	  break;
 	case UNSPEC_TLS_OFF:
-	  suffix = (TARGET_TLS9 ? "@tpoff9" : "@tpoff");
+	  suffix = (SYMBOL_REF_TLS_S9_P (XEXP (x, 0)) ? "@tpoff9" : "@tpoff");
 	  break;
 	default:
 	  output_operand_lossage ("invalid UNSPEC as operand: %d", XINT (x,1));

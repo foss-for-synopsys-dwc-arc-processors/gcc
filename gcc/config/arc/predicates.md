@@ -128,8 +128,9 @@
     case SYMBOL_REF :
     case LABEL_REF :
     case CONST :
-      if (TARGET_TLS9 && GET_CODE (XEXP (op, 0)) == UNSPEC
-	  && XINT (XEXP (op, 0), 1) == UNSPEC_TLS_OFF)
+      if (GET_CODE (XEXP (op, 0)) == UNSPEC
+	  && XINT (XEXP (op, 0), 1) == UNSPEC_TLS_OFF
+	  && SYMBOL_REF_TLS_S9_P (XEXP (XEXP (op, 0), 0)))
 	return 0;
       return 1;
     case CONST_INT :
@@ -363,11 +364,11 @@
 		    && (TARGET_NO_SDATA_SET
 			|| GET_CODE (XEXP (addr, 1)) != SYMBOL_REF
 			|| !SYMBOL_REF_SMALL_P (XEXP (addr, 1)))
-		    && (!TARGET_TLS9
-			|| GET_CODE (XEXP (addr, 1)) != CONST
+		    && (GET_CODE (XEXP (addr, 1)) != CONST
 			|| GET_CODE (XEXP (XEXP (addr, 1), 0)) != UNSPEC
-			|| (XINT (XEXP (XEXP (addr, 1), 0), 1)
-			    != UNSPEC_TLS_OFF)))))
+			|| XINT (XEXP (XEXP (addr, 1), 0), 1) != UNSPEC_TLS_OFF
+			|| !SYMBOL_REF_TLS_S9_P
+			      (XEXP (XEXP (XEXP (addr, 1), 0), 0))))))
 	  return 0;
 	if ((GET_CODE (addr) == PRE_MODIFY || GET_CODE (addr) == POST_MODIFY)
 	    && (GET_CODE (XEXP (addr, 1)) != PLUS

@@ -13,7 +13,13 @@
 	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Remove left-over
 	"return true;" .
 
-	* config/arc/arc.c (arc_encode_section_info): Fix bug in last change.
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Fix access of
+	SYMBOL_REF in UNSPEC.
+	(arc_encode_section_info): Fix bug in last change.
+	(arc_output_pic_addr_const): Use SYMBOL_REF_TLS_S9_P.
+	* config/arc/predicates.md (long_immediate_loadstore_operand):
+	Likewise.
+	(move_dest_operand): Likewise.
 
 2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
