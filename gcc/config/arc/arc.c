@@ -123,17 +123,18 @@ RTX_OK_FOR_OFFSET_P (enum machine_mode mode, rtx x)
 		      (INTVAL (x) & (GET_MODE_SIZE (mode) - 1) & 3
 		       ? 0
 		       : -(-GET_MODE_SIZE (mode) | -4) >> 1));
-  if (GET_CODE (x) == CONST && TARGET_TLS9)
+  if (GET_CODE (x) == CONST)
     {
       x = XEXP (x, 0);
       if (GET_CODE (x) == UNSPEC && XINT (x, 1) == UNSPEC_TLS_OFF)
-	return true;
+	return SYMBOL_REF_TLS_S9_P (XEXP (x, 0));
       if (GET_CODE (x) == PLUS
 	  && GET_CODE (XEXP (x, 0)) == UNSPEC
 	  && XINT (XEXP (x, 0), 1) == UNSPEC_TLS_OFF
 	  && CONST_INT_P (XEXP (x, 1))
 	  && IN_RANGE (INTVAL (XEXP (x, 1)), -1024, 1023))
 	return true;
+	return SYMBOL_REF_TLS_S9_P (XEXP (XEXP (x, 0), 0));
     }
   return false;
 }
@@ -415,6 +416,7 @@ const struct attribute_spec arc_attribute_table[] =
   /* And these functions are always known to reside within the 21 bit
      addressing range of blcc.  */
   { "short_call",   0, 0, false, true,  true,  NULL, false },
+  { "tls9", 0, 0, true, false, false, NULL, false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
 static int arc_comp_type_attributes (const_tree, const_tree);
@@ -4682,6 +4684,15 @@ arc_encode_section_info (tree decl, rtx rtl, int first)
 	flags |= SYMBOL_FLAG_SHORT_CALL;
 
       SYMBOL_REF_FLAGS (symbol) = flags;
+    }
+  else if (TREE_CODE (decl) == VAR_DECL)
+    {
+      rtx symbol = XEXP (rtl, 0);
+
+      tree attr = (TREE_TYPE (decl) != error_mark_node
+		   ? TYPE_ATTRIBUTES (TREE_TYPE (decl)) : NULL_TREE);
+      tree long_call_attr = lookup_attribute ("tls9", attr);
+      SYMBOL_REF_FLAGS (symbol) |= SYMBOL_FLAG_TLS_S9;
     }
 }
 

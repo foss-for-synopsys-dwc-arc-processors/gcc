@@ -1,3 +1,10 @@
+2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (SYMBOL_FLAG_TLS_S9, SYMBOL_REF_TLS_S9_P): Define.
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Check SYMBOL_REF_TLS_S9_P.
+	(arc_attribute_table): Add tls9.
+	(arc_encode_section_info): Set SYMBOL_FLAG_TLS_S9 for tls9 attribute.
+
 2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (tls_gd_obsolete_get_addr): Remove predicability.

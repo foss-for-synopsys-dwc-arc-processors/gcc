@@ -50,6 +50,7 @@ along with GCC; see the file COPYING3.  If not see
 #define SYMBOL_FLAG_SHORT_CALL	(SYMBOL_FLAG_MACH_DEP << 0)
 #define SYMBOL_FLAG_MEDIUM_CALL	(SYMBOL_FLAG_MACH_DEP << 1)
 #define SYMBOL_FLAG_LONG_CALL	(SYMBOL_FLAG_MACH_DEP << 2)
+#define SYMBOL_FLAG_TLS_S9	(SYMBOL_FLAG_MACH_DEP << 3)
 
 /* Check if this symbol has a long_call attribute in its declaration */
 #define SYMBOL_REF_LONG_CALL_P(X)	\
@@ -62,6 +63,10 @@ along with GCC; see the file COPYING3.  If not see
 /* Check if this symbol has a short_call attribute in its declaration */
 #define SYMBOL_REF_SHORT_CALL_P(X)	\
 	((SYMBOL_REF_FLAGS (X) & SYMBOL_FLAG_SHORT_CALL) != 0)
+
+/* Check if this symbol has a tls9 attribute in its declaration */
+#define SYMBOL_REF_TLS_S9_P(X)	\
+	(TARGET_TLS9 || (SYMBOL_REF_FLAGS (X) & SYMBOL_FLAG_TLS_S9) != 0)
 
 #undef ASM_SPEC
 #undef LINK_SPEC
