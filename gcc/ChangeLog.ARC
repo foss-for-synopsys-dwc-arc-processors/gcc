@@ -13,6 +13,8 @@
 	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Remove left-over
 	"return true;" .
 
+	* config/arc/arc.c (arc_encode_section_info): Fix bug in last change.
+
 2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (tls_gd_obsolete_get_addr): Remove predicability.
