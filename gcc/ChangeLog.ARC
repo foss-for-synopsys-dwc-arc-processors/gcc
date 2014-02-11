@@ -6,6 +6,9 @@
 	(arc_output_pic_addr_const): Output @dtpoff{,9} for local dynamic
 	tls model.
 
+	* config/arc/arc.c (arc_legitimize_tls_address): Use .tdata as
+	default base for TLS_MODEL_LOCAL_DYNAMIC.
+
 2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_emit_call_tls_get_addr): Load the
