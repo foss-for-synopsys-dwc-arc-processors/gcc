@@ -5110,7 +5110,7 @@ arc_emit_call_tls_get_addr (rtx sym, int reloc, rtx eqv)
   start_sequence ();
 
   rtx x = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, sym), reloc);
-  x = gen_const_mem (Pmode, gen_rtx_CONST (Pmode, x));
+  x = gen_rtx_CONST (Pmode, x);
   emit_move_insn (r0, x);
   use_reg (&call_fusage, r0);
 

@@ -1,5 +1,10 @@
 2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.c (arc_emit_call_tls_get_addr): Load the
+	Address of GD slot pair into r0, not the first got slot contents.
+
+2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.h (SYMBOL_FLAG_TLS_S9, SYMBOL_REF_TLS_S9_P): Define.
 	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Check SYMBOL_REF_TLS_S9_P.
 	(arc_attribute_table): Add tls9.
