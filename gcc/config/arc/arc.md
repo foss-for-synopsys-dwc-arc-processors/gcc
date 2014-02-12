@@ -131,6 +131,7 @@
    (VUNSPEC_KFLAG 29); blockage insn for kflag generation
    (VUNSPEC_CLRI  30); disable interrupts
    (VUNSPEC_SETI  31); SETI
+   (VUNSPEC_NOP  32); NOPV
 
    (UNSPEC_FFS  40); FFS
    (UNSPEC_FLS  41); FLS
@@ -4038,6 +4039,15 @@
 
 (define_insn "nop"
   [(const_int 0)]
+  ""
+  "nop%?"
+  [(set_attr "type" "misc")
+   (set_attr "iscompact" "true")
+   (set_attr "cond" "canuse")
+   (set_attr "length" "2")])
+
+(define_insn "nopv"
+  [(unspec_volatile [(const_int 0)] VUNSPEC_NOP)]
   ""
   "nop%?"
   [(set_attr "type" "misc")

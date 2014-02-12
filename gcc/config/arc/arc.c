@@ -5900,6 +5900,38 @@ arc_invalid_within_doloop (const_rtx insn)
   return NULL;
 }
 
+/* The same functionality as arc_hazard. It is called in machine reorg
+   before any other optimization. Hence, the NOP size is taken into
+   account when doing branch shortening. */
+static void
+workaround_arc_anomaly (void)
+{
+  rtx insn, succ0, succ1;
+
+  if (!TARGET_ARC700)
+    return;
+
+  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
+    {
+      succ0 = next_real_insn(insn);
+      if (arc_store_addr_hazard_p (insn, succ0))
+	{
+	  emit_insn_after (gen_nopv (), insn);
+	  emit_insn_after (gen_nopv (), insn);
+	  continue;
+	}
+
+      /* Avoid adding nops if the instruction between the ST and LD is
+	 a call or jump. */
+      succ1 = next_real_insn(succ0);
+      if (succ0 && !JUMP_P (succ0) && !CALL_P (succ0)
+	  && arc_store_addr_hazard_p (insn, succ1))
+	{
+	  emit_insn_after (gen_nopv (), insn);
+	}
+    }
+}
+
 static int arc_reorg_in_progress = 0;
 
 /* ARC's machince specific reorg function.  */
@@ -5911,6 +5943,8 @@ arc_reorg (void)
   rtx pc_target;
   long offset;
   int changed;
+
+  workaround_arc_anomaly();
 
   cfun->machine->arc_reorg_started = 1;
   arc_reorg_in_progress = 1;
@@ -8011,13 +8045,6 @@ arc_hazard (rtx pred, rtx succ)
   if (TARGET_ARC600)
     return arc600_corereg_hazard (pred, succ);
 
-  if (TARGET_ARC700)
-    {
-      if (arc_store_addr_hazard_p (pred, succ))
-	return 4;
-      if (arc_store_addr_hazard_p (pred, next_real_insn(succ)))
-	return 4;
-    }
   return 0;
 }
 
@@ -9640,13 +9667,19 @@ arc_store_addr_hazard_p (rtx producer, rtx consumer)
 
 	  if (!MEM_P(in_addr))
 	    return false;
-
+#if 0
+	  /* Use this path if the results using exp_equiv_p are not
+	     satisfactorily. */
+	  if (true_dependence (in_addr, VOIDmode, out_addr))
+	    return true;
+#else
 	  /* Get rid of the MEM() and check if the addresses are
 	     equivalent. */
 	  in_addr = XEXP (in_addr, 0);
 	  out_addr = XEXP (out_addr, 0);
 
 	  return exp_equiv_p (in_addr, out_addr, 0, true);
+#endif
 	}
     }
   return false;

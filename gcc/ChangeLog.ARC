@@ -1,3 +1,12 @@
+2014-02-12 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (nopv): New pattern.
+	* config/arc/arc.c (workaround_arc_anomaly): New function.
+	 Use nopv pattern, and arc_store_addr_hazard_p.
+	 (arc_reorg): Use it.
+	 (arc_hazard): Remove usage of arc_store_addr_hazard_p.
+	 (arc_store_addr_hazard_p): Provide alternative analysis.
+
 2014-02-10 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h (arc_store_addr_hazard_p): Declare.
