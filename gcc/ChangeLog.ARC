@@ -1,3 +1,8 @@
+2014-02-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (movsi_cond_exec): Add Rac to contraint of
+	second operand of second alternative.
+
 2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_attribute_table) <tls9>: Change max_arg to 1.
