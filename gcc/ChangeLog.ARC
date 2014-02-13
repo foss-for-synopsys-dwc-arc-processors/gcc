@@ -1,3 +1,7 @@
+2014-02-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.opt (mtp-regno=none): New option.
+
 2014-02-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (movsi_cond_exec): Add Rac to contraint of
@@ -139,7 +143,7 @@
 
 2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
 
-	* config/arc/arc.opt (mtp-regn): Change arc_tp_regno default to 25.
+	* config/arc/arc.opt (mtp-regno): Change arc_tp_regno default to 25.
 	* config/arc/arc.h [DEFAULT_LIBC != LIBC_UCLIBC]
 	(ARC_TLS_EXTRA_START_SPEC): Use crttls_r25.o .
 
