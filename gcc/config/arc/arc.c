@@ -1521,8 +1521,12 @@ arc_conditional_register_usage (void)
       strcpy (rname58, TARGET_BIG_ENDIAN ? "mhi" : "mlo");
       strcpy (rname59, TARGET_BIG_ENDIAN ? "mlo" : "mhi");
     }
+  /* The nature of arc_tp_regno is actually something more like a global
+     register, however globalize_reg requires a declaration.
+     We use EPILOGUE_USES to compensate so that sets from
+     __builtin_set_frame_pointer are not deleted.  */
   if (arc_tp_regno != -1)
-    global_regs [arc_tp_regno] = 1;
+    fixed_regs[arc_tp_regno] = call_used_regs[arc_tp_regno] = 1;
   if (TARGET_MULMAC_32BY16_SET)
     {
       fix_start = 56;
@@ -10338,6 +10342,8 @@ arc_can_follow_jump (const_rtx follower, const_rtx followee)
 bool
 arc_epilogue_uses (int regno)
 {
+  if (regno == arc_tp_regno)
+    return true;
   if (reload_completed)
     {
       if (ARC_INTERRUPT_P (cfun->machine->fn_type))
