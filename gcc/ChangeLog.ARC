@@ -2,6 +2,10 @@
 
 	* config/arc/arc.opt (mtp-regno=none): New option.
 
+	* config/arc/arc.md (arc_conditional_register_usage): Make
+	arc_tp_regno again a fixed register.
+	(arc_epilogue_uses): ARC_TP_REGNO is used.
+
 2014-02-12  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.md (movsi_cond_exec): Add Rac to contraint of
