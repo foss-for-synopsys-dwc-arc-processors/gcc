@@ -5132,21 +5132,25 @@ arc_emit_call_tls_get_addr (rtx sym, int reloc, rtx eqv)
 }
 #endif /* Obsolete design  */
 
+#define DTPOFF_ZERO_SYM ".tdata"
+
 /* Return a legitimized address for ADDR,
    which is a SYMBOL_REF with tls_model MODEL.  */
 
 static rtx
 arc_legitimize_tls_address (rtx addr, enum tls_model model)
 {
-  if (!flag_pic)
-    model = TLS_MODEL_LOCAL_EXEC;
+  if (!flag_pic
+      && (model != TLS_MODEL_LOCAL_DYNAMIC || TARGET_TLS9))
+    goto local_exec;
   switch (model)
     {
     case TLS_MODEL_LOCAL_DYNAMIC:
-      rtx base; base = const0_rtx;
+      rtx base;
       tree base_decl; base_decl
 	= lookup_attribute ("tls9", DECL_ATTRIBUTES (SYMBOL_REF_DECL (addr)));
-      const char *base_name; base_name = ".tdata";
+      const char *base_name; base_name = DTPOFF_ZERO_SYM;
+      rtvec v;
       if (base_decl && TREE_VALUE (base_decl)
 	  && TREE_VALUE (TREE_VALUE (base_decl)))
 	{
@@ -5159,10 +5163,18 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
 
 	}
       base = gen_rtx_SYMBOL_REF (Pmode, base_name);
-      base = arc_legitimize_tls_address (base, TLS_MODEL_GLOBAL_DYNAMIC);
-      addr = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr, base), UNSPEC_TLS_OFF);
+      if (strcmp (base_name, DTPOFF_ZERO_SYM) == 0)
+	{
+	  if (!flag_pic)
+	    goto local_exec;
+	  v = gen_rtvec (1, addr);
+	}
+      else
+	v = gen_rtvec (2, addr, base);
+      addr = gen_rtx_UNSPEC (Pmode, v, UNSPEC_TLS_OFF);
       addr = gen_rtx_CONST (Pmode, addr);
-      return gen_rtx_PLUS (Pmode, base, addr);
+      base = arc_legitimize_tls_address (base, TLS_MODEL_GLOBAL_DYNAMIC);
+      return gen_rtx_PLUS (Pmode, force_reg (Pmode, base), addr);
     case TLS_MODEL_GLOBAL_DYNAMIC:
       if (1) /* FIXME obsolete design.  */
 	return arc_emit_call_tls_get_addr (addr, UNSPEC_TLS_GD, addr);
@@ -5185,6 +5197,7 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
       addr = copy_to_mode_reg (Pmode, gen_const_mem (Pmode, addr));
       return gen_rtx_PLUS (Pmode, arc_get_tp (), addr);
     case TLS_MODEL_LOCAL_EXEC:
+    local_exec:
       addr = gen_rtx_UNSPEC (Pmode, gen_rtvec (1, addr), UNSPEC_TLS_OFF);
       addr = gen_rtx_CONST (Pmode, addr);
       return gen_rtx_PLUS (Pmode, arc_get_tp (), addr);
@@ -5390,7 +5403,8 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
     case UNSPEC:
       const char *suffix;
       bool pcrel; pcrel = false;
-      gcc_assert (XVECLEN (x, 0) == 1);
+      rtx base; base = NULL;
+      gcc_assert (XVECLEN (x, 0) >= 1);
       switch (XINT (x, 1))
 	{
 	case ARC_UNSPEC_GOT:
@@ -5412,13 +5426,13 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
 	  suffix = "@tlsie", pcrel = true;
 	  break;
 	case UNSPEC_TLS_OFF:
-	  bool s9; s9 = SYMBOL_REF_TLS_S9_P (XEXP (x, 0));
-	  if (SYMBOL_REF_TLS_MODEL (XVECEXP (x, 0, 0)) == TLS_MODEL_LOCAL_EXEC)
+	  bool s9; s9 = SYMBOL_REF_TLS_S9_P (XVECEXP (x, 0, 0));
+	  if (XVECLEN (x, 0) == 2)
+	    base = XVECEXP (x, 0, 1);
+	  if (SYMBOL_REF_TLS_MODEL (XVECEXP (x, 0, 0)) == TLS_MODEL_LOCAL_EXEC
+	      || (!flag_pic && !base))
 	    suffix = (s9 ? "@tpoff9" : "@tpoff");
 	  else
-	    /* FIXME:
-	       Need to output the base somehow - at least if it isn't .tdata  .
-	       Maybe "sym@dtpoff - base@dtpoff" ?  */
 	    suffix = (s9 ? "@dtpoff9" : "@dtpoff");
 	  break;
 	default:
@@ -5429,6 +5443,8 @@ arc_output_pic_addr_const (FILE * file, rtx x, int code)
 	fputs ("pcl,", file);
       arc_output_pic_addr_const (file, XVECEXP (x, 0, 0), code);
       fputs (suffix, file);
+      if (base)
+	arc_output_pic_addr_const (file, base, code);
       break;
 
     default:
