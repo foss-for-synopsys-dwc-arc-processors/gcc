@@ -1,3 +1,14 @@
+2014-02-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (DTPOFF_ZERO_SYM): Define.
+	(arc_legitimize_tls_address): Don't change local-dynamic to
+	local-exec if that'd loose 9-bit offset addressing.
+	Where we have a base address, emit it as the second element in
+	the UNSPEC_TLS_OFF vector.
+	Force base into register.
+	(arc_output_pic_addr_const) <UNSPEC_TLS_OFF>: If a base is given,
+	output it too.
+
 2014-02-13  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.opt (mtp-regno=none): New option.
