@@ -11,6 +11,12 @@
 	* config/arc/atomic.md: New file.
 	* config/arc/constraints.md (ATO): New memory constraint.
 	* config/arc/predicates.md (mem_noofs_operand): New predicate.
+	* testsuite/lib/target-supports.exp (check_effective_target_archs): New procedure.
+	  (check_effective_target_arc_atomic): Likewise.
+	  (check_effective_target_sync_int_long): Add arcv2hs cpu with atomic ops.
+	  (check_effective_target_sync_char_short): Likewise.
+        * testsuite/gcc.dg/builtin-apply2.c: Skip this test for HS cpu.
+	* testsuite/gcc.dg/torture/stackalign/builtin-apply-2.c: Likewise.
 
 2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
 

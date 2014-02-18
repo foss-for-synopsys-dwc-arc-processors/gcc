@@ -2078,6 +2078,24 @@ proc check_effective_target_aarch64_big_endian { } {
     }]
 }
 
+# Return 1 if this is a compiler supporting ARCv2 HS as default processor
+proc check_effective_target_archs { } {
+    return [check_no_compiler_messages archs assembly {
+	#if !defined(__HS__)
+	#error FOO
+	#endif
+    }]
+}
+
+# Return 1 if this is a compiler supporting ARC atomic operations
+proc check_effective_target_arc_atomic { } {
+    return [check_no_compiler_messages arc_atomic assembly {
+	#if !defined(__atomic__)
+	#error FOO
+	#endif
+    }]
+}
+
 # Return 1 is this is an arm target using 32-bit instructions
 proc check_effective_target_arm32 { } {
     return [check_no_compiler_messages arm32 assembly {
@@ -4371,6 +4389,7 @@ proc check_effective_target_sync_int_long { } {
 	     || [istarget aarch64*-*-*]
 	     || [istarget alpha*-*-*] 
 	     || [istarget arm*-*-linux-*] 
+	     || ([istarget arc*-*-*] && [check_effective_target_arc_atomic])
 	     || [istarget bfin*-*linux*]
 	     || [istarget hppa*-*linux*]
 	     || [istarget s390*-*-*] 
@@ -4406,6 +4425,7 @@ proc check_effective_target_sync_char_short { } {
 	     || [istarget hppa*-*linux*]
 	     || [istarget s390*-*-*] 
 	     || [istarget powerpc*-*-*]
+	     || ([istarget arc*-*-*] && [check_effective_target_arc_atomic])
 	     || [istarget crisv32-*-*] || [istarget cris-*-*]
 	     || ([istarget sparc*-*-*] && [check_effective_target_sparc_v9])
 	     || [check_effective_target_mips_llsc] } {

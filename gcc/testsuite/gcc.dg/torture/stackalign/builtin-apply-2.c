@@ -7,7 +7,8 @@
 /* { dg-do run } */
 
 /* { dg-skip-if "Variadic funcs use Base AAPCS.  Normal funcs use VFP variant." { arm_hf_eabi } } */
-   
+/* { dg-skip-if "" { archs } { "*" } { "" } } */
+
 
 #define INTEGER_ARG  5
 
