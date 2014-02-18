@@ -9992,7 +9992,6 @@ arc_guess_unit (rtx insn)
   FOR_EACH_DEP(insn, SD_LIST_RES_BACK, sd_it, dep)
     {
       rtx pro = DEP_PRO (dep);
-      int uid = INSN_UID (pro);
       enum reg_note dep_type = DEP_TYPE (dep);
       if (dep_type == REG_DEP_TRUE)
 	{
@@ -10687,6 +10686,229 @@ arc_dump_stack_info(FILE *stream,
     }
   fprintf (stream, "#####################\n");
 }
+
+/* Expand a compare and swap pattern.  */
+
+static void
+emit_unlikely_jump (rtx insn)
+{
+  rtx very_unlikely = GEN_INT (REG_BR_PROB_BASE / 100 - 1);
+
+  insn = emit_jump_insn (insn);
+  add_reg_note (insn, REG_BR_PROB, very_unlikely);
+}
+
+/* Expand code to perform a 8 or 16-bit compare and swap by doing 32-bit
+   compare and swap on the word containing the byte or half-word.  */
+
+static void
+arc_expand_compare_and_swap_qh (rtx bool_result, rtx result, rtx mem,
+				rtx oldval, rtx newval, rtx is_weak, rtx mod_s, rtx mod_f)
+{
+  rtx addr1 = force_reg (Pmode, XEXP (mem, 0));
+  rtx addr = gen_reg_rtx (Pmode);
+  rtx off = gen_reg_rtx (SImode);
+  rtx oldv = gen_reg_rtx (SImode);
+  rtx newv = gen_reg_rtx (SImode);
+  rtx oldvalue = gen_reg_rtx (SImode);
+  rtx newvalue = gen_reg_rtx (SImode);
+  rtx res = gen_reg_rtx (SImode);
+  rtx resv = gen_reg_rtx (SImode);
+  rtx memsi, val, mask, end_label, loop_label, cc, x;
+  enum machine_mode mode;
+
+  /* Truncate the address. */
+  emit_insn (gen_rtx_SET (VOIDmode, addr,
+			  gen_rtx_AND (Pmode, addr1, GEN_INT (-4))));
+
+  /* Compute the datum offset. */
+  emit_insn (gen_rtx_SET (VOIDmode, off,
+			  gen_rtx_AND (SImode, addr1, GEN_INT (3))));
+
+  /* Normal read from truncated address. */
+  memsi = gen_rtx_MEM (SImode, addr);
+  set_mem_alias_set (memsi, ALIAS_SET_MEMORY_BARRIER);
+  MEM_VOLATILE_P (memsi) = MEM_VOLATILE_P (mem);
+
+  val = copy_to_reg (memsi);
+
+  /* Convert the offset in bits. */
+  emit_insn (gen_rtx_SET (VOIDmode, off,
+			  gen_rtx_ASHIFT (SImode, off, GEN_INT (3))));
+
+  /* Get the proper mask. */
+  if (GET_MODE (mem) == QImode)
+    mask = force_reg (SImode, GEN_INT (0xff));
+  else
+    mask = force_reg (SImode, GEN_INT (0xffff));
+
+  emit_insn (gen_rtx_SET (VOIDmode, mask,
+			  gen_rtx_ASHIFT (SImode, mask, off)));
+
+  /* Prepare the old and new values. */
+  emit_insn (gen_rtx_SET (VOIDmode, val,
+			  gen_rtx_AND (SImode, gen_rtx_NOT (SImode, mask),
+				       val)));
+
+  oldval = gen_lowpart (SImode, oldval);
+  emit_insn (gen_rtx_SET (VOIDmode, oldv,
+			  gen_rtx_ASHIFT (SImode, oldval, off)));
+
+  newval = gen_lowpart_common (SImode, newval);
+  emit_insn (gen_rtx_SET (VOIDmode, newv,
+			  gen_rtx_ASHIFT (SImode, newval, off)));
+
+  emit_insn (gen_rtx_SET (VOIDmode, oldv,
+			  gen_rtx_AND (SImode, oldv, mask)));
+
+  emit_insn (gen_rtx_SET (VOIDmode, newv,
+			  gen_rtx_AND (SImode, newv, mask)));
+
+  end_label = gen_label_rtx ();
+  loop_label = gen_label_rtx ();
+  emit_label (loop_label);
+
+  /* Make the old and new values. */
+  emit_insn (gen_rtx_SET (VOIDmode, oldvalue,
+			  gen_rtx_IOR (SImode, oldv, val)));
+
+  emit_insn (gen_rtx_SET (VOIDmode, newvalue,
+			  gen_rtx_IOR (SImode, newv, val)));
+
+  /* Try an 32bit atomic compare and swap. It clobbers the CC register. */
+  emit_insn (gen_atomic_compare_and_swapsi_1 (res, memsi, oldvalue, newvalue,
+					      is_weak, mod_s, mod_f));
+
+  x = gen_rtx_REG (CC_Zmode, CC_REG);
+  x = gen_rtx_EQ (SImode, x, const0_rtx);
+  emit_insn (gen_rtx_SET (VOIDmode, bool_result, x));
+
+  /* Check the results. */
+  x = gen_rtx_REG (CC_Zmode, CC_REG);
+  x = gen_rtx_EQ (VOIDmode, x, const0_rtx);
+  x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
+			    gen_rtx_LABEL_REF (Pmode, end_label), pc_rtx);
+  emit_jump_insn (gen_rtx_SET (VOIDmode, pc_rtx, x));
+
+  /* Make sure there are no side effects. */
+  emit_insn (gen_rtx_SET (VOIDmode, resv,
+			  gen_rtx_AND (SImode, gen_rtx_NOT (SImode, mask),
+				       res)));
+  mode = SELECT_CC_MODE (NE, resv, val);
+  cc = gen_rtx_REG (mode, CC_REG);
+  emit_insn (gen_rtx_SET (VOIDmode, cc, gen_rtx_COMPARE (mode, resv, val)));
+
+  emit_insn (gen_rtx_SET (VOIDmode, val, resv));
+
+  x = gen_rtx_NE (VOIDmode, cc, const0_rtx);
+  x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
+			    gen_rtx_LABEL_REF (Pmode, loop_label), pc_rtx);
+  emit_unlikely_jump (gen_rtx_SET (VOIDmode, pc_rtx, x));
+
+  emit_label (end_label);
+
+  emit_insn (gen_rtx_SET (VOIDmode, res,
+			  gen_rtx_AND (SImode, res, mask)));
+
+  emit_insn (gen_rtx_SET (VOIDmode, res,
+			  gen_rtx_LSHIFTRT (SImode, res, off)));
+
+  emit_move_insn (result, gen_lowpart (GET_MODE (result), res));
+}
+
+
+void
+arc_expand_compare_and_swap (rtx operands[])
+{
+  rtx bval, rval, mem, oldval, newval, is_weak, mod_s, mod_f, x;
+  enum machine_mode mode;
+
+  bval = operands[0];
+  rval = operands[1];
+  mem = operands[2];
+  oldval = operands[3];
+  newval = operands[4];
+  is_weak = operands[5];
+  mod_s = operands[6];
+  mod_f = operands[7];
+  mode = GET_MODE (mem);
+
+  if (reg_overlap_mentioned_p (rval, oldval))
+    oldval = copy_to_reg (oldval);
+
+  if (mode == SImode)
+    {
+      emit_insn (gen_atomic_compare_and_swapsi_1 (rval, mem, oldval, newval,
+						  is_weak, mod_s, mod_f));
+      x = gen_rtx_REG (CC_Zmode, CC_REG);
+      x = gen_rtx_EQ (SImode, x, const0_rtx);
+      emit_insn (gen_rtx_SET (VOIDmode, bval, x));
+    }
+  else
+    {
+      arc_expand_compare_and_swap_qh (bval, rval, mem, oldval, newval,
+				      is_weak, mod_s, mod_f);
+    }
+}
+
+void
+arc_split_compare_and_swap (rtx operands[])
+{
+  rtx rval, mem, oldval, newval;
+  enum machine_mode mode;
+  enum memmodel mod_s, mod_f;
+  bool is_weak;
+  rtx label1, label2, x, cond;
+
+  rval = operands[0];
+  mem = operands[1];
+  oldval = operands[2];
+  newval = operands[3];
+  is_weak = (operands[4] != const0_rtx);
+  mod_s = (enum memmodel) INTVAL (operands[5]);
+  mod_f = (enum memmodel) INTVAL (operands[6]);
+  mode = GET_MODE (mem);
+
+  /* ARC atomic ops work only with 32-bit aligned memories. */
+  gcc_assert (mode == SImode);
+
+  label1 = NULL_RTX;
+  if (!is_weak)
+    {
+      label1 = gen_label_rtx ();
+      emit_label (label1);
+    }
+  label2 = gen_label_rtx ();
+
+  /* Load exclusive. */
+  emit_insn (gen_arc_load_exclusivesi (rval, mem));
+
+  /* Check if it is oldval. */
+  mode = SELECT_CC_MODE (NE, rval, oldval);
+  cond = gen_rtx_REG (mode, CC_REG);
+  emit_insn (gen_rtx_SET (VOIDmode, cond, gen_rtx_COMPARE (mode, rval, oldval)));
+
+  x = gen_rtx_NE (VOIDmode, cond, const0_rtx);
+  x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
+			    gen_rtx_LABEL_REF (Pmode, label2), pc_rtx);
+  emit_unlikely_jump (gen_rtx_SET (VOIDmode, pc_rtx, x));
+
+  /* Exclusively store new item. Store clobbers CC reg. */
+  emit_insn (gen_arc_store_exclusivesi (mem, newval));
+
+  if (!is_weak)
+    {
+      /* Check the result of the store. */
+      cond = gen_rtx_REG (CC_Zmode, CC_REG);
+      x = gen_rtx_NE (VOIDmode, cond, const0_rtx);
+      x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
+				gen_rtx_LABEL_REF (Pmode, label1), pc_rtx);
+      emit_unlikely_jump (gen_rtx_SET (VOIDmode, pc_rtx, x));
+    }
+
+    emit_label (label2);
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 

@@ -1,3 +1,17 @@
+2014-02-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_split_compare_and_swap): Declare.
+	 (arc_expand_compare_and_swap): Likewise.
+	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Define __atomic__.
+	* config/arc/arc.c (arc_expand_compare_and_swap_qh): New function.
+	  (emit_unlikely_jump): Likewise.
+	  (arc_expand_compare_and_swap): Likewise.
+	  (arc_split_compare_and_swap): Likewise.
+	* config/arc/arc.md (VUNSPEC_EX, VUNSPEC_CAS, VUNSPEC_LL, VUNSPEC_SC): Define.
+	* config/arc/atomic.md: New file.
+	* config/arc/constraints.md (ATO): New memory constraint.
+	* config/arc/predicates.md (mem_noofs_operand): New predicate.
+
 2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md (doloop_begin_i): Account for the effects

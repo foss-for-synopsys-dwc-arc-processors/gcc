@@ -84,11 +84,11 @@ along with GCC; see the file COPYING3.  If not see
 	builtin_define ("__A6__");	\
 	builtin_define ("__ARC600__");	\
       }					\
-    else if (TARGET_ARC601)			\
+    else if (TARGET_ARC601)		\
       {					\
 	builtin_define ("__ARC601__");	\
       }					\
-    else if (TARGET_ARC700)			\
+    else if (TARGET_ARC700)		\
       {					\
 	builtin_define ("__A7__");	\
 	builtin_define ("__ARC700__");	\
@@ -100,6 +100,10 @@ along with GCC; see the file COPYING3.  If not see
     else if (TARGET_HS)			\
       {					\
 	builtin_define ("__HS__");	\
+      }					\
+    if (TARGET_ATOMIC)			\
+      {					\
+	builtin_define ("__atomic__");	\
       }					\
     if (TARGET_NORM)			\
       {					\

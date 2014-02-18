@@ -132,6 +132,11 @@
    (VUNSPEC_KFLAG 29); blockage insn for kflag generation
    (VUNSPEC_CLRI  30); disable interrupts
 
+   (VUNSPEC_EX  36)
+   (VUNSPEC_CAS 37)
+   (VUNSPEC_SC  38)
+   (VUNSPEC_LL  39)
+
    (UNSPEC_FFS  40); FFS
    (UNSPEC_FLS  41); FLS
    (UNSPEC_SETI  42); SETI
@@ -659,7 +664,7 @@
 ; insns it should lengthen the return insn.
 ; N.B. operand 1 of alternative 7 expands into pcl,symbol@gotpc .
 (define_insn "*movsi_insn"                       ;   0     1     2    3  4 5   6    7   8   9    10   11  12  13     14     15  16  17  18  19  20  21   22   23   24
-  [(set (match_operand:SI 0 "move_dest_operand"  "=Rcq,Rcq#q,    w,   W, w,w,  w,???w, ?w,  w,Rcq#q,   w,Rcq,  S,   Us<,RcqRck,!*x,!*Rsd,Rcd,  r,Usd,  m,???m,VUsc,VUsc")
+  [(set (match_operand:SI 0 "move_dest_operand"  "=Rcq,Rcq#q,    w,   W, w,w,  w,???w, ?w,  w,Rcq#q,   w,Rcq,  S,   Us<,RcqRck,!*x,!*Rsd,!*Rcd,  r,Usd,  m,???m,VUsc,VUsc")
 	(match_operand:SI 1 "move_src_operand"     "cL,   cP,Rcq#q,WCm1,cL,I,Crr,?Rac,Cpc,Clb, ?Cal,?Cal,Uts,Rcq,RcqRck,   Us>,Usd,  Usd,Ucd,  m,!*x,  c,?Rac, Cm3, C32"))]
   "register_operand (operands[0], SImode)
    || register_operand (operands[1], SImode)
@@ -5811,3 +5816,6 @@
 (include "fpx.md")
 
 (include "simdext.md")
+
+;; include atomic extensions
+(include "atomic.md")
