@@ -1,3 +1,14 @@
+2014-02-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_expand_atomic_op): Declare
+	* config/arc/arc.c (arc_expand_atomic_op): New function.
+	 (arc_pre_atomic_barrier): Likewise.
+	 (arc_post_atomic_barrier): Likewise.
+	 (arc_split_compare_and_swap): Use barriers.
+	* config/arc/arc.md (UNSPEC_MEMBAR): Define.
+	* config/arc/atomic.md (mem_thread_fence): New pattern.
+	 (membar, atomic_*): Likewise.
+
 2014-02-18 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h (arc_split_compare_and_swap): Declare.

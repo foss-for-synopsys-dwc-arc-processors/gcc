@@ -18,6 +18,55 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (define_mode_iterator QHSI [QI HI SI])
+(define_code_iterator atomicop [plus minus ior xor and])
+(define_code_attr atomic_optab
+  [(ior "or") (xor "xor") (and "and") (plus "add") (minus "sub")])
+
+(define_expand "mem_thread_fence"
+  [(match_operand:SI 0 "const_int_operand")]
+  ""
+{
+  enum memmodel model = (enum memmodel) INTVAL (operands[0]);
+  switch (model)
+    {
+    case MEMMODEL_RELAXED:
+      break;
+    case MEMMODEL_CONSUME:
+    case MEMMODEL_ACQUIRE:
+    case MEMMODEL_RELEASE:
+    case MEMMODEL_ACQ_REL:
+      emit_insn (gen_membar (const0_rtx));
+      break;
+    case MEMMODEL_SEQ_CST:
+      emit_insn (gen_sync (const1_rtx));
+      break;
+    default:
+      gcc_unreachable ();
+    }
+  DONE;
+})
+
+(define_expand "membar"
+  [(set (match_dup 1)
+	(unspec:BLK [(match_dup 1) (match_operand:SI 0 "const_int_operand")]
+		    UNSPEC_MEMBAR))]
+  ""
+{
+  operands[1] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
+  MEM_VOLATILE_P (operands[1]) = 1;
+})
+
+;; A compiler-only memory barrier.  Generic code, when checking for the
+;; existence of various named patterns, uses asm("":::"memory") when we
+;; don't need an actual instruction.
+(define_insn "*membar_empty"
+  [(set (match_operand:BLK 0 "" "")
+	(unspec:BLK [(match_dup 0) (const_int 0)]
+		    UNSPEC_MEMBAR))]
+  ""
+  ""
+  [(set_attr "type" "multi")
+   (set_attr "length" "0")])
 
 (define_expand "atomic_compare_and_swap<mode>"
   [(match_operand:SI 0 "register_operand" "")		;; bool out
@@ -89,6 +138,8 @@
 {
   enum memmodel model = (enum memmodel) INTVAL (operands[3]);
 
+  if (model == MEMMODEL_SEQ_CST)
+    emit_insn (gen_sync (const1_rtx));
   emit_insn (gen_exchangesi (operands[0], operands[1], operands[2]));
   DONE;
 })
@@ -105,4 +156,77 @@
    (set_attr "iscompact" "false")
    (set_attr "predicable" "no")
    (set_attr "length" "*")])
+
+(define_expand "atomic_<atomic_optab>si"
+  [(match_operand:SI 0 "mem_noofs_operand" "")		        ;; memory
+   (atomicop:SI (match_dup 0)
+		(match_operand:SI 1 "register_operand" ""))	;; operand
+   (match_operand:SI 2 "const_int_operand" "")]		        ;; model
+  "TARGET_ATOMIC"
+{
+  arc_expand_atomic_op (<CODE>, operands[0], operands[1],
+				NULL_RTX, NULL_RTX, operands[2]);
+  DONE;
+})
+
+(define_expand "atomic_nandsi"
+  [(match_operand:SI 0 "mem_noofs_operand" "")		;; memory
+   (match_operand:SI 1 "register_operand" "")		;; operand
+   (match_operand:SI 2 "const_int_operand" "")]		;; model
+  "TARGET_ATOMIC"
+{
+ arc_expand_atomic_op (NOT, operands[0], operands[1],
+			    NULL_RTX, NULL_RTX, operands[2]);
+ DONE;
+})
+
+(define_expand "atomic_fetch_<atomic_optab>si"
+  [(match_operand:SI 0 "register_operand" "")	        	;; output
+   (match_operand:SI 1 "mem_noofs_operand" "")	      	        ;; memory
+   (atomicop:SI (match_dup 1)
+		(match_operand:SI 2 "register_operand" ""))	;; operand
+   (match_operand:SI 3 "const_int_operand" "")]		        ;; model
+  "TARGET_ATOMIC"
+{
+  arc_expand_atomic_op (<CODE>, operands[1], operands[2],
+				operands[0], NULL_RTX, operands[3]);
+  DONE;
+})
+
+(define_expand "atomic_fetch_nandsi"
+  [(match_operand:SI 0 "register_operand" "")		;; output
+   (match_operand:SI 1 "mem_noofs_operand" "")		;; memory
+   (match_operand:SI 2 "register_operand" "")		;; operand
+   (match_operand:SI 3 "const_int_operand" "")]		;; model
+  "TARGET_ATOMIC"
+{
+  arc_expand_atomic_op (NOT, operands[1], operands[2],
+			     operands[0], NULL_RTX, operands[3]);
+  DONE;
+})
+
+(define_expand "atomic_<atomic_optab>_fetchsi"
+  [(match_operand:SI 0 "register_operand" "")		        ;; output
+   (match_operand:SI 1 "mem_noofs_operand" "")	        	;; memory
+   (atomicop:SI (match_dup 1)
+		(match_operand:SI 2 "register_operand" ""))	;; operand
+   (match_operand:SI 3 "const_int_operand" "")]	        	;; model
+  "TARGET_ATOMIC"
+{
+  arc_expand_atomic_op (<CODE>, operands[1], operands[2],
+				NULL_RTX, operands[0], operands[3]);
+  DONE;
+})
+
+(define_expand "atomic_nand_fetchsi"
+  [(match_operand:SI 0 "register_operand" "")		;; output
+   (match_operand:SI 1 "mem_noofs_operand" "")		;; memory
+   (match_operand:SI 2 "register_operand" "")		;; operand
+   (match_operand:SI 3 "const_int_operand" "")]		;; model
+  "TARGET_ATOMIC"
+{
+  arc_expand_atomic_op (NOT, operands[1], operands[2],
+			     NULL_RTX, operands[0], operands[3]);
+  DONE;
+})
 

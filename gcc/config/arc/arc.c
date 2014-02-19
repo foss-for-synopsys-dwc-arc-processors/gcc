@@ -10687,6 +10687,51 @@ arc_dump_stack_info(FILE *stream,
   fprintf (stream, "#####################\n");
 }
 
+
+/* Emit a memory barrier around an atomic sequence according to MODEL.  */
+
+static void
+arc_pre_atomic_barrier (enum memmodel model)
+{
+ switch (model & MEMMODEL_MASK)
+    {
+    case MEMMODEL_RELAXED:
+    case MEMMODEL_CONSUME:
+    case MEMMODEL_ACQUIRE:
+      break;
+    case MEMMODEL_RELEASE:
+    case MEMMODEL_ACQ_REL:
+      emit_insn (gen_membar (const0_rtx));
+      break;
+    case MEMMODEL_SEQ_CST:
+      emit_insn (gen_sync (const1_rtx));
+      break;
+    default:
+      gcc_unreachable ();
+    }
+}
+
+static void
+arc_post_atomic_barrier (enum memmodel model)
+{
+ switch (model & MEMMODEL_MASK)
+    {
+    case MEMMODEL_RELAXED:
+    case MEMMODEL_CONSUME:
+    case MEMMODEL_RELEASE:
+      break;
+    case MEMMODEL_ACQUIRE:
+    case MEMMODEL_ACQ_REL:
+      emit_insn (gen_membar (const0_rtx));
+      break;
+    case MEMMODEL_SEQ_CST:
+      emit_insn (gen_sync (const1_rtx));
+      break;
+    default:
+      gcc_unreachable ();
+    }
+}
+
 /* Expand a compare and swap pattern.  */
 
 static void
@@ -10872,6 +10917,8 @@ arc_split_compare_and_swap (rtx operands[])
   /* ARC atomic ops work only with 32-bit aligned memories. */
   gcc_assert (mode == SImode);
 
+  arc_pre_atomic_barrier (mod_s);
+
   label1 = NULL_RTX;
   if (!is_weak)
     {
@@ -10906,9 +10953,82 @@ arc_split_compare_and_swap (rtx operands[])
       emit_unlikely_jump (gen_rtx_SET (VOIDmode, pc_rtx, x));
     }
 
+  if (mod_f != MEMMODEL_RELAXED)
+    emit_label (label2);
+
+  arc_post_atomic_barrier (mod_s);
+
+  if (mod_f == MEMMODEL_RELAXED)
     emit_label (label2);
 }
 
+/* Expand an atomic fetch-and-operate pattern.  CODE is the binary operation
+   to perform.  MEM is the memory on which to operate.  VAL is the second
+   operand of the binary operator.  BEFORE and AFTER are optional locations to
+   return the value of MEM either before of after the operation.  MODEL_RTX
+   is a CONST_INT containing the memory model to use.  */
+void
+arc_expand_atomic_op (enum rtx_code code, rtx mem, rtx val,
+			 rtx orig_before, rtx orig_after, rtx model_rtx)
+{
+  enum memmodel model = (enum memmodel) INTVAL (model_rtx);
+  enum machine_mode mode = GET_MODE (mem);
+  rtx label, x, cond;
+  rtx before = orig_before, after = orig_after;
+
+  /* ARC atomic ops work only with 32-bit aligned memories. */
+  gcc_assert (mode == SImode);
+
+  arc_pre_atomic_barrier (model);
+
+  label = gen_label_rtx ();
+  emit_label (label);
+  label = gen_rtx_LABEL_REF (VOIDmode, label);
+
+  if (before == NULL_RTX)
+    before = gen_reg_rtx (mode);
+
+  if (after == NULL_RTX)
+    after = gen_reg_rtx (mode);
+
+  /* Load exclusive. */
+  emit_insn (gen_arc_load_exclusivesi (before, mem));
+
+  switch (code)
+    {
+    case NOT:
+      x = gen_rtx_AND (mode, before, val);
+      emit_insn (gen_rtx_SET (VOIDmode, after, x));
+      x = gen_rtx_NOT (mode, after);
+      emit_insn (gen_rtx_SET (VOIDmode, after, x));
+      break;
+
+    case MINUS:
+      if (CONST_INT_P (val))
+	{
+	  val = GEN_INT (-INTVAL (val));
+	  code = PLUS;
+	}
+      /* FALLTHRU */
+
+    default:
+      x = gen_rtx_fmt_ee (code, mode, before, val);
+      emit_insn (gen_rtx_SET (VOIDmode, after, x));
+      break;
+   }
+
+  /* Exclusively store new item. Store clobbers CC reg. */
+  emit_insn (gen_arc_store_exclusivesi (mem, after));
+
+  /* Check the result of the store. */
+  cond = gen_rtx_REG (CC_Zmode, CC_REG);
+  x = gen_rtx_NE (VOIDmode, cond, const0_rtx);
+  x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
+			    label, pc_rtx);
+  emit_unlikely_jump (gen_rtx_SET (VOIDmode, pc_rtx, x));
+
+  arc_post_atomic_barrier (model);
+}
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
