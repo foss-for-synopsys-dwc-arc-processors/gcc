@@ -1,3 +1,9 @@
+2014-02-21 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_expand_compare_and_swap_qh): Handle weak argument.
+	* config/arc/arc.opt: mlock masks TARGET_ATOMIC. This option is used by
+	 ARCv1 cores with llock/scond options.
+
 2014-02-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h (arc_expand_atomic_op): Declare

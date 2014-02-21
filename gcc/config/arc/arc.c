@@ -10743,12 +10743,19 @@ emit_unlikely_jump (rtx insn)
   add_reg_note (insn, REG_BR_PROB, very_unlikely);
 }
 
-/* Expand code to perform a 8 or 16-bit compare and swap by doing 32-bit
-   compare and swap on the word containing the byte or half-word.  */
+/* Expand code to perform a 8 or 16-bit compare and swap by doing
+   32-bit compare and swap on the word containing the byte or
+   half-word. The difference between a weak and a strong CAS is that
+   the weak version may simply fail. The strong version relays on two
+   loops, one checks if the SCOND op is succsfully or not, the other
+   checks if the 32 bit accessed location which contains the 8 or 16
+   bit datum is not changed by other thread. The first loop is
+   implemented by the atomic_compare_and_swapsi_1 pattern. The second
+   loops is implemented by this routine. */
 
 static void
 arc_expand_compare_and_swap_qh (rtx bool_result, rtx result, rtx mem,
-				rtx oldval, rtx newval, rtx is_weak, rtx mod_s, rtx mod_f)
+				rtx oldval, rtx newval, rtx weak, rtx mod_s, rtx mod_f)
 {
   rtx addr1 = force_reg (Pmode, XEXP (mem, 0));
   rtx addr = gen_reg_rtx (Pmode);
@@ -10761,6 +10768,7 @@ arc_expand_compare_and_swap_qh (rtx bool_result, rtx result, rtx mem,
   rtx resv = gen_reg_rtx (SImode);
   rtx memsi, val, mask, end_label, loop_label, cc, x;
   enum machine_mode mode;
+  bool is_weak = (weak != const0_rtx);
 
   /* Truncate the address. */
   emit_insn (gen_rtx_SET (VOIDmode, addr,
@@ -10809,9 +10817,12 @@ arc_expand_compare_and_swap_qh (rtx bool_result, rtx result, rtx mem,
   emit_insn (gen_rtx_SET (VOIDmode, newv,
 			  gen_rtx_AND (SImode, newv, mask)));
 
-  end_label = gen_label_rtx ();
-  loop_label = gen_label_rtx ();
-  emit_label (loop_label);
+  if (!is_weak)
+    {
+      end_label = gen_label_rtx ();
+      loop_label = gen_label_rtx ();
+      emit_label (loop_label);
+    }
 
   /* Make the old and new values. */
   emit_insn (gen_rtx_SET (VOIDmode, oldvalue,
@@ -10820,38 +10831,50 @@ arc_expand_compare_and_swap_qh (rtx bool_result, rtx result, rtx mem,
   emit_insn (gen_rtx_SET (VOIDmode, newvalue,
 			  gen_rtx_IOR (SImode, newv, val)));
 
-  /* Try an 32bit atomic compare and swap. It clobbers the CC register. */
+  /* Try an 32bit atomic compare and swap. It clobbers the CC
+     register. */
   emit_insn (gen_atomic_compare_and_swapsi_1 (res, memsi, oldvalue, newvalue,
-					      is_weak, mod_s, mod_f));
+					      weak, mod_s, mod_f));
 
+  /* Regardless of the weakness of the operation, a proper boolean
+     result needs to be provided. */
   x = gen_rtx_REG (CC_Zmode, CC_REG);
   x = gen_rtx_EQ (SImode, x, const0_rtx);
   emit_insn (gen_rtx_SET (VOIDmode, bool_result, x));
 
-  /* Check the results. */
-  x = gen_rtx_REG (CC_Zmode, CC_REG);
-  x = gen_rtx_EQ (VOIDmode, x, const0_rtx);
-  x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
-			    gen_rtx_LABEL_REF (Pmode, end_label), pc_rtx);
-  emit_jump_insn (gen_rtx_SET (VOIDmode, pc_rtx, x));
+  if (!is_weak)
+    {
+      /* Check the results: if the atomic op is successfully the goto to
+	 end label. */
+      x = gen_rtx_REG (CC_Zmode, CC_REG);
+      x = gen_rtx_EQ (VOIDmode, x, const0_rtx);
+      x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
+				gen_rtx_LABEL_REF (Pmode, end_label), pc_rtx);
+      emit_jump_insn (gen_rtx_SET (VOIDmode, pc_rtx, x));
 
-  /* Make sure there are no side effects. */
-  emit_insn (gen_rtx_SET (VOIDmode, resv,
-			  gen_rtx_AND (SImode, gen_rtx_NOT (SImode, mask),
-				       res)));
-  mode = SELECT_CC_MODE (NE, resv, val);
-  cc = gen_rtx_REG (mode, CC_REG);
-  emit_insn (gen_rtx_SET (VOIDmode, cc, gen_rtx_COMPARE (mode, resv, val)));
+      /* Wait for the right moment when the accessed 32-bit location is
+	 stable. */
+      emit_insn (gen_rtx_SET (VOIDmode, resv,
+			      gen_rtx_AND (SImode, gen_rtx_NOT (SImode, mask),
+					   res)));
+      mode = SELECT_CC_MODE (NE, resv, val);
+      cc = gen_rtx_REG (mode, CC_REG);
+      emit_insn (gen_rtx_SET (VOIDmode, cc, gen_rtx_COMPARE (mode, resv, val)));
 
-  emit_insn (gen_rtx_SET (VOIDmode, val, resv));
+      /* Set the new value of the 32 bit location, proper masked. */
+      emit_insn (gen_rtx_SET (VOIDmode, val, resv));
 
-  x = gen_rtx_NE (VOIDmode, cc, const0_rtx);
-  x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
-			    gen_rtx_LABEL_REF (Pmode, loop_label), pc_rtx);
-  emit_unlikely_jump (gen_rtx_SET (VOIDmode, pc_rtx, x));
+      /* Try again if location is unstable. Fall through if only scond op
+	 failed. */
+      x = gen_rtx_NE (VOIDmode, cc, const0_rtx);
+      x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
+				gen_rtx_LABEL_REF (Pmode, loop_label), pc_rtx);
+      emit_unlikely_jump (gen_rtx_SET (VOIDmode, pc_rtx, x));
 
-  emit_label (end_label);
+      emit_label (end_label);
+    }
 
+  /* End: proper return the result for the given mode. */
   emit_insn (gen_rtx_SET (VOIDmode, res,
 			  gen_rtx_AND (SImode, res, mask)));
 
@@ -10860,7 +10883,6 @@ arc_expand_compare_and_swap_qh (rtx bool_result, rtx result, rtx mem,
 
   emit_move_insn (result, gen_lowpart (GET_MODE (result), res));
 }
-
 
 void
 arc_expand_compare_and_swap (rtx operands[])

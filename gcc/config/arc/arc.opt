@@ -338,8 +338,8 @@ Enable XY Memory extension (DSP version 3)
 
 ; ARC700 4.10 extension instructions
 mlock
-Target Report RejectNegative
-Enable Locked Load/Store Conditional extension
+Target Report RejectNegative Mask(ATOMIC)
+Enable Locked Load/Store Conditional extension. Use this option for ARCv1 processors.
 
 mswape
 Target Report RejectNegative
