@@ -462,6 +462,10 @@
       return (code == EQ || code == NE || code == UNEQ || code == LTGT
 	      || code == ORDERED || code == UNORDERED);
 
+    case CC_FPUmode:
+    case CC_FPUEmode:
+      return !((code == LTGT) || (code == UNEQ));
+
     case CCmode:
     case SImode: /* Used for BRcc.  */
       return 1;
@@ -474,6 +478,15 @@
       gcc_unreachable ();
   }
 })
+
+;; True for comparisons other than LTGT or UNEQ, when FPU is active
+(define_special_predicate "fpu_comparison_operator"
+  (if_then_else
+   (match_test "TARGET_HARD_FLOAT")
+   (match_code "eq,ne,le,lt,ge,gt,geu,gtu,leu,ltu,
+	       unordered,ordered,unle,unge,ungt,unlt")
+   (match_code "eq,ne,le,lt,ge,gt,geu,gtu,leu,ltu,
+	       unordered,ordered,unle,unge,ungt,unlt,uneq,ltgt")))
 
 (define_predicate "equality_comparison_operator"
   (match_code "eq, ne"))

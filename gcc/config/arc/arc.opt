@@ -131,9 +131,44 @@ mEA
 Target Report Mask(EA_SET)
 Generate Extended arithmetic instructions.  Currently only divaw, adds, subs and sat16 are supported
 
-msoft-float
-Target Report Mask(0)
-Dummy flag. This is the default unless FPX switches are provided explicitly
+;;msoft-float
+;;Target Report RejectNegative InverseMask(HARD_FLOAT)
+;;Dummy flag. This is the default unless FPX/FPU switches are provided explicitly
+;;
+;;mhard-float
+;;Target Report RejectNegative Mask(HARD_FLOAT)
+;;FPU: Generate FPU instructions.
+
+mfpu=
+Target RejectNegative Joined Enum(arc_fpu) Var(arc_fpu_build) Init(0)
+Specify the name of the target floating point configuration.
+
+Enum
+Name(arc_fpu) Type(int)
+
+EnumValue
+Enum(arc_fpu) String(fs) Value(FPU_SP | FPU_SC)
+
+EnumValue
+Enum(arc_fpu) String(fd) Value(FPU_SP | FPU_SC | FPU_DP | FPU_DC)
+
+EnumValue
+Enum(arc_fpu) String(fsdiv) Value(FPU_SP | FPU_SC | FPU_SD)
+
+EnumValue
+Enum(arc_fpu) String(fddiv) Value(FPU_SP | FPU_SC | FPU_SD | FPU_DP | FPU_DC | FPU_DD)
+
+EnumValue
+Enum(arc_fpu) String(fsma) Value(FPU_SP | FPU_SC | FPU_SF)
+
+EnumValue
+Enum(arc_fpu) String(fdma) Value(FPU_SP | FPU_SC | FPU_SF | FPU_DP | FPU_DC | FPU_DF)
+
+EnumValue
+Enum(arc_fpu) String(fsall) Value(FPU_SP | FPU_SC | FPU_SF | FPU_SD)
+
+EnumValue
+Enum(arc_fpu) String(fdall) Value(FPU_SP | FPU_SC | FPU_SF | FPU_SD | FPU_DP | FPU_DC | FPU_DF | FPU_DD)
 
 mlong-calls
 Target Report Mask(LONG_CALLS_SET)

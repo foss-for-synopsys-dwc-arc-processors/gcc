@@ -2,23 +2,23 @@
 
 	* config/arc/arc.c (arc_expand_compare_and_swap_qh): Handle weak argument.
 	* config/arc/arc.opt: mlock masks TARGET_ATOMIC. This option is used by
-	 ARCv1 cores with llock/scond options.
+	  ARCv1 cores with llock/scond options.
 
 2014-02-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h (arc_expand_atomic_op): Declare
 	* config/arc/arc.c (arc_expand_atomic_op): New function.
-	 (arc_pre_atomic_barrier): Likewise.
-	 (arc_post_atomic_barrier): Likewise.
-	 (arc_split_compare_and_swap): Use barriers.
+	  (arc_pre_atomic_barrier): Likewise.
+	  (arc_post_atomic_barrier): Likewise.
+	  (arc_split_compare_and_swap): Use barriers.
 	* config/arc/arc.md (UNSPEC_MEMBAR): Define.
 	* config/arc/atomic.md (mem_thread_fence): New pattern.
-	 (membar, atomic_*): Likewise.
+	  (membar, atomic_*): Likewise.
 
 2014-02-18 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h (arc_split_compare_and_swap): Declare.
-	 (arc_expand_compare_and_swap): Likewise.
+	  (arc_expand_compare_and_swap): Likewise.
 	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Define __atomic__.
 	* config/arc/arc.c (arc_expand_compare_and_swap_qh): New function.
 	  (emit_unlikely_jump): Likewise.
@@ -34,6 +34,33 @@
 	  (check_effective_target_sync_char_short): Likewise.
         * testsuite/gcc.dg/builtin-apply2.c: Skip this test for HS cpu.
 	* testsuite/gcc.dg/torture/stackalign/builtin-apply-2.c: Likewise.
+
+2014-02-06 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-opts.h (FPU_*): Define.
+	* config/arc/arc.c: Allow usage of soft optimized double floating point
+	  routines, when no hardware support exists.
+	* config/arc/arc.h (TARGET_FP_*): Define.
+	* config/arc/arc.md: Selective FPU support implementation.
+	* config/arc/arc.opt: Likewise.
+	* config/arc/fpu.md: Likewise.
+
+2014-02-05 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/cmp-fpu.c: New file.
+	* testsuite/gcc.target/arc/fma.c: Likewise.
+	* testsuite/gcc.target/arc/fma.h: Likewise.
+	* testsuite/gcc.target/arc/arc.exp: Add check_effective_target_arc_fpu_ok procedure.
+	* config/arc/fpu.md: New file.
+	* gcc/config/arc/arc-modes.def (CC_FPU, CC_FPUE): Add.
+	* config/arc/arc.c (get_arc_condition_code, arc_select_cc_mode):
+	  Handle CC_FPUmode and CC_FPUEmode.
+	* config/arc/arc.c (arc_reorg): Avoid usage of BRcc instructions for FPU ops.
+	* config/arc/arc.h (TARGET_OPTFPE, REVERSE_CONDITION): Handle new v2 FPU extensions.
+	* config/arc/arc.md: Add ARCv2 FPU extensions support.
+	* config/arc/fpx.md: Likewise.
+	* config/arc/arc.opt (mhard-float): Define.
+	* config/arc/predicates.md (fpu_comparison_operator): Define.
 
 2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
 
