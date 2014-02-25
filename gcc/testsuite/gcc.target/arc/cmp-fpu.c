@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target arc_fpu_ok } */
-/* { dg-options "-mcpu=ARCv2HS -O -mhard-float" } */
+/* { dg-options "-mcpu=ARCv2HS -O -mfpu=fpud_all" } */
 int x, y;
 
 #define EQ(X, Y) ((X) == (Y))

@@ -27,7 +27,7 @@ load_lib gcc-dg.exp
 proc check_effective_target_arc_fpu_ok { } {
     return [check_no_compiler_messages arc_fpu_ok object {
 	int dummy;
-    } "-mcpu=ARCv2HS -mhard-float"]
+    } "-mcpu=ARCv2HS -mfpu=fpud_all"]
 }
 
 
