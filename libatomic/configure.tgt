@@ -31,6 +31,22 @@ case "${target_cpu}" in
   rs6000 | powerpc*)	ARCH=powerpc ;;
   sh*)			ARCH=sh ;;
 
+  arc*)
+	case " ${CC} ${CFLAGS} " in
+	  *" -matomic "*|*" -mlock "*)
+	    ;;
+	  *)
+	    case x"${with_cpu}" in
+	      xarc700)
+		XCFLAGS="${XCFLAGS} -mlock" ;;
+	      xHS)
+	        XCFLAGS="${XCFLAGS} -matomic" ;;
+	       *)
+	    esac
+	 esac
+	ARCH=arc
+	;;
+
   arm*)
 	ARCH=arm
 	# ??? Detect when -march=armv7 is already enabled.
@@ -103,6 +119,11 @@ case "${target}" in
   arm*-*-linux*)
 	# OS support for atomic primitives.
 	config_path="${config_path} linux/arm posix"
+	;;
+
+  arc*-linux-uclibc*)
+	# OS support for atomic primitives.
+	config_path="${config_path} posix"
 	;;
 
   *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu \

@@ -309,6 +309,11 @@
   (and (match_code "mem")
        (match_test "compact_memory_operand_p (op, mode, true, false)")))
 
+;; Memory constraint used for atomic ops.
+(define_memory_constraint "ATO"
+  "A memory with only a base register"
+  (match_operand 0 "mem_noofs_operand"))
+
 ;; General constraints
 
 (define_constraint "Cbr"

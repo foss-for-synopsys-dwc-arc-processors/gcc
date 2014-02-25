@@ -1,3 +1,40 @@
+2014-02-21 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_expand_compare_and_swap_qh): Handle weak argument.
+	* config/arc/arc.opt: mlock masks TARGET_ATOMIC. This option is used by
+	 ARCv1 cores with llock/scond options.
+
+2014-02-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_expand_atomic_op): Declare
+	* config/arc/arc.c (arc_expand_atomic_op): New function.
+	 (arc_pre_atomic_barrier): Likewise.
+	 (arc_post_atomic_barrier): Likewise.
+	 (arc_split_compare_and_swap): Use barriers.
+	* config/arc/arc.md (UNSPEC_MEMBAR): Define.
+	* config/arc/atomic.md (mem_thread_fence): New pattern.
+	 (membar, atomic_*): Likewise.
+
+2014-02-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_split_compare_and_swap): Declare.
+	 (arc_expand_compare_and_swap): Likewise.
+	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Define __atomic__.
+	* config/arc/arc.c (arc_expand_compare_and_swap_qh): New function.
+	  (emit_unlikely_jump): Likewise.
+	  (arc_expand_compare_and_swap): Likewise.
+	  (arc_split_compare_and_swap): Likewise.
+	* config/arc/arc.md (VUNSPEC_EX, VUNSPEC_CAS, VUNSPEC_LL, VUNSPEC_SC): Define.
+	* config/arc/atomic.md: New file.
+	* config/arc/constraints.md (ATO): New memory constraint.
+	* config/arc/predicates.md (mem_noofs_operand): New predicate.
+	* testsuite/lib/target-supports.exp (check_effective_target_archs): New procedure.
+	  (check_effective_target_arc_atomic): Likewise.
+	  (check_effective_target_sync_int_long): Add arcv2hs cpu with atomic ops.
+	  (check_effective_target_sync_char_short): Likewise.
+        * testsuite/gcc.dg/builtin-apply2.c: Skip this test for HS cpu.
+	* testsuite/gcc.dg/torture/stackalign/builtin-apply-2.c: Likewise.
+
 2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md (doloop_begin_i): Account for the effects
