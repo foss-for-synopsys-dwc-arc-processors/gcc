@@ -1,3 +1,7 @@
+2014-02-25 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_expand_builtin): Fix expand ARC_BUILTIN_SETI.
+
 2014-02-21 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_expand_compare_and_swap_qh): Handle weak argument.

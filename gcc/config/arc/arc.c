@@ -5898,10 +5898,9 @@ arc_expand_builtin (tree exp,
       icode = CODE_FOR_seti;
       arg0 = CALL_EXPR_ARG (exp, 0);
       op0 = expand_expr (arg0, NULL_RTX, VOIDmode, EXPAND_NORMAL);
-      mode0 =  insn_data[icode].operand[1].mode;
-      target = gen_reg_rtx (SImode);
+      mode0 =  insn_data[icode].operand[0].mode;
 
-      if (! (*insn_data[icode].operand[1].predicate) (op0, mode0))
+      if (! (*insn_data[icode].operand[0].predicate) (op0, mode0))
 	op0 = copy_to_mode_reg (mode0, convert_to_mode (mode0, op0,0));
 
       emit_insn (gen_seti (op0));
