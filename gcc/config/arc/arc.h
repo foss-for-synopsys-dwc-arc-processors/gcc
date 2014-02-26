@@ -29,6 +29,8 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef GCC_ARC_H
 #define GCC_ARC_H
 
+#include <stdbool.h>
+
 /* Things to do:
 
    - incscc, decscc?
@@ -38,7 +40,8 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_CPU_arc601  2
 #define TARGET_CPU_arc700  3
 #define TARGET_CPU_EM      4
-#define TARGET_CPU_generic 5
+#define TARGET_CPU_HS      5
+#define TARGET_CPU_generic 6
 
 #ifndef TARGET_CPU_DEFAULT
 #define TARGET_CPU_DEFAULT	TARGET_CPU_generic
@@ -76,18 +79,16 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_CPU_CPP_BUILTINS()	\
  do {					\
     builtin_define ("__arc__");		\
-    if (TARGET_A5)			\
-      builtin_define ("__A5__");	\
-    else if (TARGET_ARC600)			\
+    if (TARGET_ARC600)			\
       {					\
 	builtin_define ("__A6__");	\
 	builtin_define ("__ARC600__");	\
       }					\
-    else if (TARGET_ARC601)			\
+    else if (TARGET_ARC601)		\
       {					\
 	builtin_define ("__ARC601__");	\
       }					\
-    else if (TARGET_ARC700)			\
+    else if (TARGET_ARC700)		\
       {					\
 	builtin_define ("__A7__");	\
 	builtin_define ("__ARC700__");	\
@@ -95,6 +96,14 @@ along with GCC; see the file COPYING3.  If not see
     else if (TARGET_EM)			\
       {					\
 	builtin_define ("__EM__");	\
+      }					\
+    else if (TARGET_HS)			\
+      {					\
+	builtin_define ("__HS__");	\
+      }					\
+    if (TARGET_ATOMIC)			\
+      {					\
+	builtin_define ("__atomic__");	\
       }					\
     if (TARGET_NORM)			\
       {					\
@@ -145,19 +154,21 @@ along with GCC; see the file COPYING3.  If not see
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define ASM_DEFAULT "-mEM"
+#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
+#define ASM_DEFAULT "-mHS"
 #else
 #define ASM_DEFAULT "-mARC700 -mEA"
 #endif
 
 #define ASM_SPEC  "\
 %{mbig-endian|EB:-EB} %{EL} \
-%{mcpu=A5|mcpu=a5|mA5:-mA5} \
 %{mcpu=ARC600:-mARC600} \
 %{mcpu=ARC601:-mARC601} \
 %{mcpu=ARC700:-mARC700} \
 %{mcpu=ARC700:-mEA} \
-%{!mcpu=*:%{!mA5:%{!mA6:%{!mARC600:%{!mARC700:" ASM_DEFAULT "}}}}} \
+%{!mcpu=*:%{!mA6:%{!mARC600:%{!mARC700:" ASM_DEFAULT "}}}} \
 %{mcpu=ARCv2EM:%<mbarrel-shifter %<mno-mpy %<mnorm %<mswap}\
+%{mcpu=ARCv2HS:%<mbarrel-shifter %<mno-mpy %<mnorm %<mswap}\
 %{mbarrel-shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
 %{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*} \
 %{msimd} \
@@ -166,6 +177,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700:%{mswape}} \
 %{mcpu=ARC700:%{mrtsc}} \
 %{mcpu=ARCv2EM:-mEM} \
+%{mcpu=ARCv2HS:-mHS} \
 "
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
@@ -243,11 +255,11 @@ along with GCC; see the file COPYING3.  If not see
 #endif
 
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
-  "%{mARC5|mA5: -mcpu=A5 %<mARC5 %<mA5}" \
   "%{mARC600|mA6: -mcpu=ARC600 %<mARC600 %<mA6}" \
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
   "%{mARC700|mA7: -mcpu=ARC700 %<mARC700 %<mA7}" \
   "%{mav2em|mARCv2EM|mEM: -mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM}" \
+  "%{mav2hs|mARCv2HS|mHS: -mcpu=ARCv2HS %<mav2hs %<ARCv2HS %<mHS}" \
   "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}" \
   "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}" \
   "%{mbarrel_shifte*: -mbarrel-shifte%* %<mbarrel_shifte*}" \
@@ -270,12 +282,14 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Non-zero means the cpu supports norm instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mnorm is given.  */
-#define TARGET_NORM (TARGET_ARC700 || TARGET_NORM_SET)
+#define TARGET_NORM (TARGET_ARC700 || TARGET_NORM_SET || TARGET_HS)
 /* Indicate if an optimized floating point emulation library is available.  */
 #define TARGET_OPTFPE \
- (TARGET_ARC700 \
-  /* We need a barrel shifter and NORM.  */ \
-  || (TARGET_ARC600 && TARGET_NORM_SET))
+  (TARGET_ARC700							\
+   /* We need a barrel shifter and NORM.  */				\
+   || (TARGET_ARC600 && TARGET_NORM_SET)				\
+   || (TARGET_HS && !TARGET_HARD_FLOAT) || (TARGET_HS && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE) \
+   || (TARGET_EM && TARGET_NORM_SET))
 
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */
@@ -295,13 +309,14 @@ along with GCC; see the file COPYING3.  If not see
 
 /* For an anulled-true delay slot insn for a delayed branch, should we only
    use conditional execution?  */
-#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700 && !TARGET_EM)
+#define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700 && !TARGET_V2)
 
-#define TARGET_A5 (arc_cpu == PROCESSOR_A5)
 #define TARGET_ARC600 (arc_cpu == PROCESSOR_ARC600)
 #define TARGET_ARC601 (arc_cpu == PROCESSOR_ARC601)
 #define TARGET_ARC700 (arc_cpu == PROCESSOR_ARC700)
 #define TARGET_EM (arc_cpu == PROCESSOR_ARCv2EM)
+#define TARGET_HS (arc_cpu == PROCESSOR_ARCv2HS)
+#define TARGET_V2 ((arc_cpu == PROCESSOR_ARCv2HS) || (arc_cpu == PROCESSOR_ARCv2EM))
 
 /* Recast the cpu class to be the cpu attribute.  */
 #define arc_cpu_attr ((enum attr_cpu)arc_cpu)
@@ -309,6 +324,8 @@ along with GCC; see the file COPYING3.  If not see
 #ifndef MULTILIB_DEFAULTS
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
 #define MULTILIB_DEFAULTS { "mcpu=ARCv2EM" }
+#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
+#define MULTILIB_DEFAULTS { "mcpu=ARCv2HS" }
 #else
 #define MULTILIB_DEFAULTS { "mcpu=ARC700" }
 #endif
@@ -872,13 +889,19 @@ arc_return_addr_rtx(COUNT,FRAME)
    hold all necessary information about the function itself
    and about the args processed so far, enough to enable macros
    such as FUNCTION_ARG to determine where the next arg should go.  */
-#define CUMULATIVE_ARGS int
+typedef struct arc_args
+{
+  /* Registers that are still available for parameter passing. */
+  bool avail[FIRST_PSEUDO_REGISTER];
+  /* Backwards compatibility: total number of used registers.  */
+  int arg_num;
+} CUMULATIVE_ARGS;
 
 /* Initialize a variable CUM of type CUMULATIVE_ARGS
    for a call to a function whose data type is FNTYPE.
    For a library call, FNTYPE is 0.  */
 #define INIT_CUMULATIVE_ARGS(CUM,FNTYPE,LIBNAME,INDIRECT,N_NAMED_ARGS) \
-((CUM) = 0)
+  arc_init_cumulative_args (&CUM, FNTYPE, LIBNAME, INDIRECT, N_NAMED_ARGS)
 
 /* The number of registers used for parameter passing.  Local to this file.  */
 #define MAX_ARC_PARM_REGS 8
@@ -1662,11 +1685,12 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
    && get_attr_is_##NAME (X) == IS_##NAME##_YES) \
 
 #define REVERSE_CONDITION(CODE,MODE) \
-	(((MODE) == CC_FP_GTmode || (MODE) == CC_FP_GEmode \
-	  || (MODE) == CC_FP_UNEQmode || (MODE) == CC_FP_ORDmode \
-	  || (MODE) == CC_FPXmode) \
-	 ? reverse_condition_maybe_unordered ((CODE)) \
-	 : reverse_condition ((CODE)))
+  (((MODE) == CC_FP_GTmode || (MODE) == CC_FP_GEmode		 \
+    || (MODE) == CC_FP_UNEQmode || (MODE) == CC_FP_ORDmode	 \
+    || (MODE) == CC_FPXmode || (MODE) == CC_FPUmode              \
+    || (MODE) == CC_FPUEmode)                                    \
+   ? reverse_condition_maybe_unordered ((CODE))			 \
+   : reverse_condition ((CODE)))
 
 #define ADJUST_INSN_LENGTH(X, LENGTH) \
   ((LENGTH) \
@@ -1704,7 +1728,23 @@ enum
   (GET_CODE (PATTERN (insn)) != COND_EXEC || !flag_pic || !TARGET_MEDIUM_CALLS)
 
 /* EM defines*/
-#define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_EM)
-#define EM_MULTI    ((arc_mpy_option > 1) && TARGET_EM)
+#define EM_MUL_MPYW ((arc_mpy_option > 0) && TARGET_V2)
+#define EM_MULTI    ((arc_mpy_option > 1) && TARGET_V2)
+
+/* Dump the stack info. */
+#undef  ASM_OUTPUT_FUNCTION_PREFIX
+#define  ASM_OUTPUT_FUNCTION_PREFIX(STREAM, NAME) \
+  arc_dump_stack_info(STREAM, NAME)
+
+/* FPU defines. */
+#define TARGET_HARD_FLOAT (arc_fpu_build != 0)
+#define TARGET_FP_SINGLE  ((arc_fpu_build & FPU_SP) != 0)
+#define TARGET_FP_DOUBLE  ((arc_fpu_build & FPU_DP) != 0)
+#define TARGET_FP_SFUZED  ((arc_fpu_build & FPU_SF) != 0)
+#define TARGET_FP_DFUZED  ((arc_fpu_build & FPU_DF) != 0)
+#define TARGET_FP_SCONV   ((arc_fpu_build & FPU_SC) != 0)
+#define TARGET_FP_DCONV   ((arc_fpu_build & FPU_DC) != 0)
+#define TARGET_FP_SSQRT   ((arc_fpu_build & FPU_SD) != 0)
+#define TARGET_FP_DSQRT   ((arc_fpu_build & FPU_DD) != 0)
 
 #endif /* GCC_ARC_H */

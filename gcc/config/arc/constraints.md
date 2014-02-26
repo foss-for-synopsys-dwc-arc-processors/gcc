@@ -21,7 +21,7 @@
 
 ; Most instructions accept arbitrary core registers for their inputs, even
 ; if the core register in question cannot be written to, like the multiply
-; result registers of the ARCtangent-A5 and ARC600 .
+; result registers of ARC600 .
 ; First, define a class for core registers that can be read cheaply.  This
 ; is most or all core registers for ARC600, but only r0-r31 for ARC700
 (define_register_constraint "c" "CHEAP_CORE_REGS"
@@ -210,10 +210,16 @@
  "@internal
   constant such that (~x)+1 is a power of two, and x < 0"
   (and (match_code "const_int")
-       (match_test "TARGET_EM
+       (match_test "TARGET_V2
                     && ((ival < 0) || (ival >= 0x80000000))
                     && (ival != -1)
                     && IS_POWEROF2_P ((~ival) + 1)")))
+
+(define_constraint "C3p"
+ "@internal
+  constant int used to select xbfu a,b,u6 instruction. The values accepted are 1 and 2."
+  (and (match_code "const_int")
+       (match_test "((ival == 1) || (ival == 2))")))
 
 (define_constraint "Ccp"
  "@internal
@@ -258,7 +264,7 @@
   "@internal
    A valid memory operand for ARCompact load instructions scaled"
   (and (match_code "mem")
-       (match_test "compact_memory_operand_p (op, mode, false, TARGET_EM & TARGET_CODE_DENSITY)")))
+       (match_test "compact_memory_operand_p (op, mode, false, TARGET_V2 & TARGET_CODE_DENSITY)")))
 
 (define_memory_constraint "S"
   "@internal
@@ -302,6 +308,11 @@
    A valid memory operand for use with code density load ops"
   (and (match_code "mem")
        (match_test "compact_memory_operand_p (op, mode, true, false)")))
+
+;; Memory constraint used for atomic ops.
+(define_memory_constraint "ATO"
+  "A memory with only a base register"
+  (match_operand 0 "mem_noofs_operand"))
 
 ;; General constraints
 

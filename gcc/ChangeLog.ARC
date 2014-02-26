@@ -1,3 +1,50 @@
+2014-02-26 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/interrupt-1.c: Skip for ARCv2HS.
+	* testsuite/gcc.target/arc/interrupt-2.c: Likewise.
+	* testsuite/gcc.target/arc/interrupt-3.c: Correct warning for ARCv2.
+
+2014-02-25 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_expand_builtin): Fix expand ARC_BUILTIN_SETI.
+
+2014-02-21 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_expand_compare_and_swap_qh): Handle weak argument.
+	* config/arc/arc.opt: mlock masks TARGET_ATOMIC. This option is used by
+	  ARCv1 cores with llock/scond options.
+
+2014-02-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_expand_atomic_op): Declare
+	* config/arc/arc.c (arc_expand_atomic_op): New function.
+	  (arc_pre_atomic_barrier): Likewise.
+	  (arc_post_atomic_barrier): Likewise.
+	  (arc_split_compare_and_swap): Use barriers.
+	* config/arc/arc.md (UNSPEC_MEMBAR): Define.
+	* config/arc/atomic.md (mem_thread_fence): New pattern.
+	  (membar, atomic_*): Likewise.
+
+2014-02-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-protos.h (arc_split_compare_and_swap): Declare.
+	  (arc_expand_compare_and_swap): Likewise.
+	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Define __atomic__.
+	* config/arc/arc.c (arc_expand_compare_and_swap_qh): New function.
+	  (emit_unlikely_jump): Likewise.
+	  (arc_expand_compare_and_swap): Likewise.
+	  (arc_split_compare_and_swap): Likewise.
+	* config/arc/arc.md (VUNSPEC_EX, VUNSPEC_CAS, VUNSPEC_LL, VUNSPEC_SC): Define.
+	* config/arc/atomic.md: New file.
+	* config/arc/constraints.md (ATO): New memory constraint.
+	* config/arc/predicates.md (mem_noofs_operand): New predicate.
+	* testsuite/lib/target-supports.exp (check_effective_target_archs): New procedure.
+	  (check_effective_target_arc_atomic): Likewise.
+	  (check_effective_target_sync_int_long): Add arcv2hs cpu with atomic ops.
+	  (check_effective_target_sync_char_short): Likewise.
+        * testsuite/gcc.dg/builtin-apply2.c: Skip this test for HS cpu.
+	* testsuite/gcc.dg/torture/stackalign/builtin-apply-2.c: Likewise.
+
 2014-02-12 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (nopv): New pattern.
@@ -14,14 +61,79 @@
 	 (arc_hazard): Use it.
 	* config/arc/arc700.md: Likewise.
 
+2014-02-06 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-opts.h (FPU_*): Define.
+	* config/arc/arc.c: Allow usage of soft optimized double floating point
+	  routines, when no hardware support exists.
+	* config/arc/arc.h (TARGET_FP_*): Define.
+	* config/arc/arc.md: Selective FPU support implementation.
+	* config/arc/arc.opt: Likewise.
+	* config/arc/fpu.md: Likewise.
+
+2014-02-05 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/cmp-fpu.c: New file.
+	* testsuite/gcc.target/arc/fma.c: Likewise.
+	* testsuite/gcc.target/arc/fma.h: Likewise.
+	* testsuite/gcc.target/arc/arc.exp: Add check_effective_target_arc_fpu_ok procedure.
+	* config/arc/fpu.md: New file.
+	* gcc/config/arc/arc-modes.def (CC_FPU, CC_FPUE): Add.
+	* config/arc/arc.c (get_arc_condition_code, arc_select_cc_mode):
+	  Handle CC_FPUmode and CC_FPUEmode.
+	* config/arc/arc.c (arc_reorg): Avoid usage of BRcc instructions for FPU ops.
+	* config/arc/arc.h (TARGET_OPTFPE, REVERSE_CONDITION): Handle new v2 FPU extensions.
+	* config/arc/arc.md: Add ARCv2 FPU extensions support.
+	* config/arc/fpx.md: Likewise.
+	* config/arc/arc.opt (mhard-float): Define.
+	* config/arc/predicates.md (fpu_comparison_operator): Define.
+
 2014-01-20 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md (doloop_begin_i): Account for the effects
           of .p2align in instruction length.
 
+2014-01-17 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.opt: Add mll64 option.
+        * config/arc/arc.h: Include stdbool.h header (required by CUMULATIVE_ARGS).
+	* config/arc/arc.c (TARGET_PRETEND_OUTGOING_VARARGS_NAMED) Defined.
+	* config/arc/arc.c (arc_save_restore): Use double loads/store whenever is possible.
+	* config/arc/arc.md (movdi): Add ldd/std/vadd instructions.
+
+2014-01-16 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md: Add mpyd, mpydu instructions.
+	* common/config/arc/arc-common.c: Update mpy-option range.
+        * config/arc/arc.opt: Likewise.
+	* config/arc/arc-protos.h (arc_init_cumulative_args): Declare.
+	* config/arc/arc.h (arc_args): Define, used by CUMULATIVE_ARGS
+	* config/arc/arc.h (INIT_CUMULATIVE_ARGS): Use arc_init_cumulative_args.
+	* config/arc/arc.c (TARGET_STRICT_ARGUMENT_NAMING): Define
+	* config/arc/arc.c (arc_conditional_register_usage): Allow
+          only even-odd register pair for 64+ bit data types.
+	* config/arc/arc.c (arc_setup_incoming_varargs): Use the new CUMULATIVE_ARGS
+	  structure.
+	* config/arc/arc.c (arc_strict_argument_naming, arc_init_cumulative_args
+	  arc_hard_regno_nregs, arc_function_args_impl): New functions.
+  	* config/arc/arc.c (arc_arg_partial_bytes, arc_function_arg, arc_function_arg_advance):
+	  Use arc_function_args_impl.
+
 2014-01-10 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c (arc_hazard): Filter out millicode jumps.
+
+2013-12-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * common/config/arc/arc-common.c (arc_handle_option): Make
+          default norm for ARC700, and barrel shifter for ARCv2EM.
+        * config/arc/arc.md (*movsi_insn, *movhi_insn): Allow
+          immediate to mem store operations.
+	* gcc/config/arc/arc-protos.h (arc_dump_stack_info): Add function prototype.
+	* gcc/config/arc/arc.c (arc_dump_stack_info,
+          arc_print_format_registers): Assembly pritty print function
+          frame information.
+	* gcc/config/arc/arc.h (ASM_OUTPUT_FUNCTION_PREFIX): Define.
 
 2013-12-12 Claudiu Zissulescu <claziss@synopsys.com>
 
@@ -66,6 +178,30 @@
 	Because their cherry-pick date correlates with unverifyable
 	reports of linux boot problems.
 
+2013-11-26 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* /config/arc/arc.md: Add extzvsi pattern (XBFU) for HS.
+	* /config/arc/constraints.md: Define C3p constraint to be used
+          by extzvsi pattern.
+
+2013-11-21 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config.gcc (TARGET_CPU_DEFAULT): Set to TARGET_CPU_HS when
+          configuring with --with-cpu.
+        * common/config/arc/arc-common.c
+          (TARGET_DEFAULT_TARGET_FLAGS): Set to appropriate values
+          when the default processor is HS.
+	* config/arc/arc.c (arc_cpu): Set to HS when is the default cpu.
+	* config/arc/arc.c (arc_sched_correct_unit): Avoid debug instructions.
+	* config/arc/arc.h (ASM_DEFAULT): Set to mHS when HS is the
+          default cpu. (MULTILIB_DEFAULTS): Set to HS when it is the
+          default cpu.
+
+2013-11-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h: TARGET_OPTFPE set for ARCEM and
+          ARCHS. TARGET_NORM set for ARCHS.
+
 2013-11-18 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.c: Clean up compilation warnings.
@@ -74,9 +210,37 @@
 
 	* config/arc/arc.md: Use unspec_volatile for __builtin_arc_seti.
 
+2013-11-11 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: arc_hazad() Avoid branches at the end of a
+          ZOL.
+
+2013-11-08 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Use TARGET_SCHED_DFA_NEW_CYCLE instead of
+          TARGET_SCHED_REORDER to collect the current scheduler clock.
+
+2013-11-07 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/t-arc-newlib: Add HS to multilib.
+
 2013-11-06 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Fix ffssi2 pattern.
+	* common/config/arc/arc-common.c: Add HS default options.
+	* config/arc/arc.h: Add HS processor options.
+	* config/arc/arc.md: Fix ffssi2 pattern.
+
+2013-11-04 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Do not update insn_info data if
+          curr_sched_clock is not set. Define INSN_INFO_CLOCK_P and
+	  INSN_INFO_UNIT_P. Use INSN_INFO_CLOCK_P in insn_cycle_count().
+	* config/arc/arc.h: Remove A5 reference.
+	* config/arc/arc.md: Likewise
+	* config/arc/arc.opt: Likewise
+	* config/arc/constraints.md: Likewise
+	* config/arc/t-arc-newlib: Likewise
 
 2013-11-01 Claudiu Zissulescu <claziss@synopsys.com>
 
@@ -89,6 +253,21 @@
         * config/arc/arc.c: Insert NOP if the last instruction of a
           ZOL body is a jump where lp_count is modified.
 
+2013-10-29 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arcHS.md: New file
+	* common/config/arc/arc-common.c: Remove A5 processor variant.
+	* config/arc/arc-opts.h: Remove A5 variant. Add HS variant.
+	* config/arc/arc.c: Remove A5 variant. Add HS scheduler hooks
+	  (arc_sched_init_global, arc_sched_finish_global,
+	  arc_variable_issue, arc_sched_reorder,
+	  arc_sched_adjust_cost). Change TARGET_EM to TARGET_V2.
+	* config/arc/arc.h: Add HS variant, remove A5 variant.
+	* config/arc/arc.md: Add HS DFA.
+	* config/arc/arc.opt: Remove A5 variant, add HS variant.
+	* config/arc/constraints.md: Change TARGET_EM to TARGET_V2
+
+>>>>>>> arc-4.8-64bit
 2013-10-14 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Remove CFA_FRAME_BASE_OFFSET and

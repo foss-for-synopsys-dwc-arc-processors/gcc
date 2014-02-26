@@ -119,3 +119,11 @@ extern bool compact_memory_operand_p (rtx, enum machine_mode, bool, bool);
 extern bool arc_legitimize_reload_address (rtx *, enum machine_mode, int, int);
 extern void arc_secondary_reload_conv (rtx, rtx, rtx, bool);
 extern bool arc_store_addr_hazard_p (rtx, rtx);
+extern void arc_dump_stack_info (FILE *stream, const char *name);
+extern void arc_init_cumulative_args (CUMULATIVE_ARGS *, tree, rtx, tree, int);
+extern void arc_split_compare_and_swap (rtx *);
+extern void arc_expand_compare_and_swap (rtx *);
+
+#ifdef  RTX_CODE
+extern void arc_expand_atomic_op (enum rtx_code, rtx, rtx, rtx, rtx, rtx);
+#endif

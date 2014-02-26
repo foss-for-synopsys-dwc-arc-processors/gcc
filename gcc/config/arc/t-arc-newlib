@@ -17,16 +17,13 @@
 # with GCC; see the file COPYING3.  If not see
 # <http://www.gnu.org/licenses/>.
 #
-# Selecting -mA5 uses the same functional multilib files/libraries
-# as get used for -mARC600 aka -mA6.
-MULTILIB_OPTIONS  = mcpu=ARC600/mcpu=ARC601/mcpu=ARC700/mcpu=ARCv2EM mmul64/mmul32x16 mnorm
-MULTILIB_DIRNAMES = arc600 arc601 arc700 em mul64 mul32x16 norm
+MULTILIB_OPTIONS  = mcpu=ARC600/mcpu=ARC601/mcpu=ARC700/mcpu=ARCv2EM/mcpu=ARCv2HS mmul64/mmul32x16 mnorm
+MULTILIB_DIRNAMES = arc600 arc601 arc700 em hs mul64 mul32x16 norm
 #
 # Aliases:
 MULTILIB_MATCHES  = mcpu?ARC600=mcpu?arc600
 MULTILIB_MATCHES += mcpu?ARC600=mARC600
 MULTILIB_MATCHES += mcpu?ARC600=mA6
-MULTILIB_MATCHES += mcpu?ARC600=mA5
 MULTILIB_MATCHES += mcpu?ARC600=mno-mpy
 MULTILIB_MATCHES += mcpu?ARC601=mcpu?arc601
 MULTILIB_MATCHES += EL=mlittle-endian
@@ -36,6 +33,9 @@ MULTILIB_MATCHES += mcpu?ARC700=mARC700
 MULTILIB_MATCHES += mcpu?ARCv2EM=mEM
 MULTILIB_MATCHES += mcpu?ARCv2EM=mARCv2EM
 MULTILIB_MATCHES += mcpu?ARCv2EM=mav2em
+MULTILIB_MATCHES += mcpu?ARCv2HS=mHS
+MULTILIB_MATCHES += mcpu?ARCv2HS=mARCv2HS
+MULTILIB_MATCHES += mcpu?ARCv2HS=mav2hs
 #
 # These don't make sense for the ARC700 or ARCv2 default target:
 MULTILIB_EXCEPTIONS = mmul64* mmul32x16*
@@ -45,6 +45,8 @@ MULTILIB_EXCLUSIONS = mARC600/mmul64/!mnorm mcpu=ARC601/mmul64/!mnorm mARC600/mm
 MULTILIB_EXCEPTIONS += mcpu=ARC700/mnorm* mcpu=ARC700/mmul64* mcpu=ARC700/mmul32x16*
 # Exclusions for ARCv2EM
 MULTILIB_EXCEPTIONS += mcpu=ARCv2EM/mmul64* mcpu=ARCv2EM/mmul32x16*
+# Exclusions for ARCv2HS
+MULTILIB_EXCEPTIONS += mcpu=ARCv2HS/mmul64* mcpu=ARCv2HS/mmul32x16* mcpu=ARCv2HS/mnorm*
 #
 # Local Variables:
 # mode: Makefile

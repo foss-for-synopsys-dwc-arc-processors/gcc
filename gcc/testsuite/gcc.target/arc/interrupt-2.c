@@ -1,3 +1,5 @@
+/* { dg-skip-if "ilink2 is not an ARCv2HS attribute" { archs } { "*" } { "" } } */
+
 void __attribute__ ((interrupt("ilink2")))
 handler1 (void)
 {

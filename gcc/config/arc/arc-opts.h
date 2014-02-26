@@ -21,9 +21,18 @@
 enum processor_type
 {
   PROCESSOR_NONE,
-  PROCESSOR_A5,
   PROCESSOR_ARC600,
   PROCESSOR_ARC601,
   PROCESSOR_ARC700,
-  PROCESSOR_ARCv2EM
+  PROCESSOR_ARCv2EM,
+  PROCESSOR_ARCv2HS
 };
+
+#define FPU_SP    0x01 /* Single precision floating point. */
+#define FPU_SF    0x02 /* Single precision fused floating point operations. */
+#define FPU_SC    0x04 /* Single precision floating point format conversion operations. */
+#define FPU_SD    0x08 /* Single precision floating point sqrt and div operations. */
+#define FPU_DP    0x10 /* Double precision floating point. */
+#define FPU_DF    0x20 /* Double precision fused floating point operations. */
+#define FPU_DC    0x40 /* Double precision floating point format conversion operations. */
+#define FPU_DD    0x80 /* Double precision floating point sqrt and div operations. */

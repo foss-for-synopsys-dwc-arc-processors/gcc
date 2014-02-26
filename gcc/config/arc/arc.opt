@@ -33,10 +33,6 @@ mno-cond-exec
 Target Report RejectNegative Mask(NO_COND_EXEC)
 Disable ARCompact specific pass to generate conditional execution instructions
 
-mA5
-Target Report
-Generate ARCompact 32-bit code for ARCtangent-A5 processor
-
 mA6
 Target Report
 Generate ARCompact 32-bit code for ARCtangent-ARC600 processor
@@ -63,9 +59,13 @@ mav2em
 Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
 Generate ARCv2 code for EM processor
 
+mav2hs
+Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2HS)
+Generate ARCv2 code for HS processor
+
 mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
--mmpy-option={0,1,2,3,4,5,6} Compile ARCv2 code with a multiplier design option. WLH1 is default on
+-mmpy-option={0,1,2,3,4,5,6,7,8,9} Compile ARCv2 code with a multiplier design option. WLH1 is default on
 
 mmpy16
 Target Report Mask(MPY16_SET)
@@ -87,11 +87,15 @@ matomic
 Target Report Mask(ATOMIC)
 Enable atomic instructions for ARCv2
 
+mll64
+Target Report Mask(LL64)
+Enable double load/store instructions for ARCv2HS
+
 mmixed-code
 Target Report Mask(MIXED_CODE_SET)
 Tweak register allocation to help 16-bit instruction generation
 ; originally this was:
-;Generate ARCompact 16-bit instructions intermixed with 32-bit instructions for ARCtangent-A5 and higher processors
+;Generate ARCompact 16-bit instructions intermixed with 32-bit instructions for ARCtangen and higher processors
 ; but we do that without -mmixed-code, too, it's just a different instruction
 ; count / size tradeoff.
 
@@ -127,9 +131,44 @@ mEA
 Target Report Mask(EA_SET)
 Generate Extended arithmetic instructions.  Currently only divaw, adds, subs and sat16 are supported
 
-msoft-float
-Target Report Mask(0)
-Dummy flag. This is the default unless FPX switches are provided explicitly
+;;msoft-float
+;;Target Report RejectNegative InverseMask(HARD_FLOAT)
+;;Dummy flag. This is the default unless FPX/FPU switches are provided explicitly
+;;
+;;mhard-float
+;;Target Report RejectNegative Mask(HARD_FLOAT)
+;;FPU: Generate FPU instructions.
+
+mfpu=
+Target RejectNegative Joined Enum(arc_fpu) Var(arc_fpu_build) Init(0)
+Specify the name of the target floating point configuration.
+
+Enum
+Name(arc_fpu) Type(int)
+
+EnumValue
+Enum(arc_fpu) String(fpus) Value(FPU_SP | FPU_SC)
+
+EnumValue
+Enum(arc_fpu) String(fpud) Value(FPU_SP | FPU_SC | FPU_DP | FPU_DC)
+
+EnumValue
+Enum(arc_fpu) String(fpus_div) Value(FPU_SP | FPU_SC | FPU_SD)
+
+EnumValue
+Enum(arc_fpu) String(fpud_div) Value(FPU_SP | FPU_SC | FPU_SD | FPU_DP | FPU_DC | FPU_DD)
+
+EnumValue
+Enum(arc_fpu) String(fpus_fma) Value(FPU_SP | FPU_SC | FPU_SF)
+
+EnumValue
+Enum(arc_fpu) String(fpud_fma) Value(FPU_SP | FPU_SC | FPU_SF | FPU_DP | FPU_DC | FPU_DF)
+
+EnumValue
+Enum(arc_fpu) String(fpus_all) Value(FPU_SP | FPU_SC | FPU_SF | FPU_SD)
+
+EnumValue
+Enum(arc_fpu) String(fpud_all) Value(FPU_SP | FPU_SC | FPU_SF | FPU_SD | FPU_DP | FPU_DC | FPU_DF | FPU_DD)
 
 mlong-calls
 Target Report Mask(LONG_CALLS_SET)
@@ -191,9 +230,6 @@ Enum
 Name(processor_type) Type(enum processor_type)
 
 EnumValue
-Enum(processor_type) String(A5) Value(PROCESSOR_A5)
-
-EnumValue
 Enum(processor_type) String(ARC600) Value(PROCESSOR_ARC600)
 
 EnumValue
@@ -204,6 +240,9 @@ Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
 
 EnumValue
 Enum(processor_type) String(ARCv2EM) Value(PROCESSOR_ARCv2EM)
+
+EnumValue
+Enum(processor_type) String(ARCv2HS) Value(PROCESSOR_ARCv2HS)
 
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
@@ -334,8 +373,8 @@ Enable XY Memory extension (DSP version 3)
 
 ; ARC700 4.10 extension instructions
 mlock
-Target Report RejectNegative
-Enable Locked Load/Store Conditional extension
+Target Report RejectNegative Mask(ATOMIC)
+Enable Locked Load/Store Conditional extension. Use this option for ARCv1 processors.
 
 mswape
 Target Report RejectNegative
@@ -398,6 +437,12 @@ mARCv2EM
 Target
 
 mEM
+Target
+
+mARCv2HS
+Target
+
+mHS
 Target
 
 ; Unfortunately, listing the full option name gives us clashes
