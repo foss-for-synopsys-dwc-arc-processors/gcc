@@ -1,3 +1,9 @@
+2014-02-26 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/interrupt-1.c: Skip for ARCv2HS.
+	* testsuite/gcc.target/arc/interrupt-2.c: Likewise.
+	* testsuite/gcc.target/arc/interrupt-3.c: Correct warning for ARCv2.
+
 2014-02-25 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_expand_builtin): Fix expand ARC_BUILTIN_SETI.
