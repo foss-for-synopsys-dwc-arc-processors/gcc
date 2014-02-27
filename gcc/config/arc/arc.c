@@ -1841,7 +1841,7 @@ static bool arc_strict_argument_naming(cumulative_args_t cum ATTRIBUTE_UNUSED)
 }
 
 static bool
-arc_pretend_outgoing_varargs_named (cumulative_args_t ca_v)
+arc_pretend_outgoing_varargs_named (cumulative_args_t ca_v ATTRIBUTE_UNUSED)
 {
   return !TARGET_HS;
 }
@@ -5173,11 +5173,11 @@ arc_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
 		  const_tree type ATTRIBUTE_UNUSED, bool named ATTRIBUTE_UNUSED)
 {
   CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
-  int arg_num = cum->arg_num;
   rtx ret;
   const char *debstr ATTRIBUTE_UNUSED;
 
 #if 0
+  int arg_num = cum->arg_num;
   arg_num = ROUND_ADVANCE_CUM (arg_num, mode, type);
   /* Return a marker for use in the call instruction.  */
   if (mode == VOIDmode)
@@ -5196,10 +5196,6 @@ arc_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
       debstr = "memory";
     }
 #else
-  //rtx retx = arc_function_args_impl (cum, mode, type, named, false);
-  //printf ("-----------\n");
-  //debug_rtx(ret);
-  //debug_rtx(retx);
   ret = arc_function_args_impl (cum, mode, type, named, false);
 #endif
   return ret;
@@ -9835,7 +9831,7 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, boo
       if ((GET_CODE (plus0) == REG)
 	  && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
 	      || (COMPACT_GP_REG_P (REGNO (plus0)) && !code_density)
-	      || (REGNO (plus0) >= 0 && REGNO (plus0) <= 31 && code_density))
+	      || (REGNO (plus0) <= 31 && code_density))
 	  && (GET_CODE (plus1) == CONST_INT))
 	{
 	  off = INTVAL (plus1);
@@ -9961,7 +9957,6 @@ arc_store_addr_hazard_p (rtx producer, rtx consumer)
 {
   rtx in_set, out_set;
   rtx out_addr, in_addr;
-  enum rtx_code in_code, out_code;
 
   if (!producer)
     return false;
@@ -10067,16 +10062,16 @@ typedef struct
 /* Record a arc_sched_insn_info structure for every insn. */
 static vec<arc_sched_insn_info> insn_info;
 
-#define INSN_INFO_LENGTH (insn_info).length ()
+#define INSN_INFO_LENGTH ((int)(insn_info).length ())
 #define INSN_INFO_ENTRY(N) (insn_info[(N)])
-#define INSN_INFO_EXISTS(N) (((N) < insn_info.length ()) && insn_info[(N)].valid)
-#define INSN_INFO_CLOCK_P(N) (((N) < insn_info.length ()) && (insn_info[(N)].valid & ~VALID_CLOCK))
-#define INSN_INFO_UNIT_P(N) (((N) < insn_info.length ()) && (insn_info[(N)].valid & ~VALID_UNIT)
+#define INSN_INFO_EXISTS(N) (((N) < (int)insn_info.length ()) && insn_info[(N)].valid)
+#define INSN_INFO_CLOCK_P(N) (((N) < (int)insn_info.length ()) && (insn_info[(N)].valid & ~VALID_CLOCK))
+#define INSN_INFO_UNIT_P(N) (((N) < (int)insn_info.length ()) && (insn_info[(N)].valid & ~VALID_UNIT)
 
 static void
 insn_set_unit (rtx insn, int unit)
 {
-  unsigned uid = INSN_UID (insn);
+  int uid = INSN_UID (insn);
 
   if (uid >= INSN_INFO_LENGTH)
     insn_info.safe_grow_cleared (uid * 5 / 4 + 10);
@@ -10092,7 +10087,7 @@ static int arc_sched_adjust_cost(rtx insn, rtx link, rtx dep_insn, int cost);
 static void
 insn_set_clock (rtx insn, int cycle)
 {
-  unsigned uid = INSN_UID (insn);
+  int uid = INSN_UID (insn);
 
   if (uid >= INSN_INFO_LENGTH)
     insn_info.safe_grow_cleared (uid * 5 / 4 + 10);
@@ -10130,6 +10125,7 @@ arc_asm_insn_p (rtx x)
   return 0;
 }
 
+#if 0
 /* Given an insn, go on its dep and find its unit. */
 static void
 arc_guess_unit (rtx insn)
@@ -10157,6 +10153,7 @@ arc_guess_unit (rtx insn)
   if (cost == 0)
     insn_set_unit (insn, 1); /* net producer @ALU1 */
 }
+#endif
 
 static int arc_sched_adjust_cost(rtx insn,
 				 rtx link,

@@ -1,3 +1,8 @@
+2014-02-27 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Cleanup warnings.
+	* config/arc/arc.opt: msoft-float dummy option needed nby uclibc build.
+
 2014-02-26 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* testsuite/gcc.target/arc/interrupt-1.c: Skip for ARCv2HS.

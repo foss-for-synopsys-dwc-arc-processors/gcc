@@ -131,13 +131,9 @@ mEA
 Target Report Mask(EA_SET)
 Generate Extended arithmetic instructions.  Currently only divaw, adds, subs and sat16 are supported
 
-;;msoft-float
-;;Target Report RejectNegative InverseMask(HARD_FLOAT)
-;;Dummy flag. This is the default unless FPX/FPU switches are provided explicitly
-;;
-;;mhard-float
-;;Target Report RejectNegative Mask(HARD_FLOAT)
-;;FPU: Generate FPU instructions.
+msoft-float
+Target Report RejectNegative
+Dummy flag. This is the default unless FPX/FPU switches are provided explicitly
 
 mfpu=
 Target RejectNegative Joined Enum(arc_fpu) Var(arc_fpu_build) Init(0)
