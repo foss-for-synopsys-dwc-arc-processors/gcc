@@ -8324,6 +8324,73 @@ arc600_corereg_hazard (rtx pred, rtx succ)
 		       PATTERN (succ));
 }
 
+/* We might have a CALL to a non-returning function before a loop end.
+   ??? Although the manual says that's OK (the target is outside the
+   loop, and the loop counter unused there), the assembler barfs on
+   this for ARC600, so we must instert a nop before such a call
+   too. For ARC700, and ARCv2 is not allowed to have the last ZOL
+   instruction a jump to a location where lp_count is modified. */
+static bool
+arc_loop_hazard (rtx pred, rtx succ)
+{
+  rtx jump  = NULL_RTX;
+  rtx label = NULL_RTX;
+  basic_block succ_bb;
+
+  if (recog_memoized (succ) != CODE_FOR_doloop_end_i)
+    return false;
+
+  /* Phase 1: ARC600 and ARCv2HS doesn't allow any control instruction
+     (i.e., jump/call) as the last instruction of a ZOL. */
+  if (TARGET_ARC600 || TARGET_HS)
+    if (JUMP_P (pred) || CALL_P (pred)
+	|| GET_CODE (PATTERN (pred)) == SEQUENCE)
+      return true;
+
+  /* Phase 2: Any architecture, it is not allowed to have the last ZOL
+     instruction a jump to a location where lp_count is modified. */
+
+  /* Phase 2a: Dig for the jump instruction. */
+  if (JUMP_P (pred))
+    jump = pred;
+  else if (GET_CODE (PATTERN (pred)) == SEQUENCE
+	   && JUMP_P (XVECEXP (PATTERN (pred), 0, 0)))
+    jump = XVECEXP (PATTERN (pred), 0, 0);
+  else
+    return false;
+  label = JUMP_LABEL (jump);
+
+  /* Phase 2b: Make sure is not a millicode jump */
+  if ((GET_CODE (PATTERN (jump)) == PARALLEL)
+      && (XVECEXP (PATTERN (jump), 0, 0) == ret_rtx))
+    return false;
+
+  /* Phase 2c: Make sure is not a simple_return. */
+  if ((GET_CODE (PATTERN (jump)) == SIMPLE_RETURN)
+      || (GET_CODE (label) == SIMPLE_RETURN))
+    return false;
+
+  /* Pahse 2d: Go to the target of the jump and check for aliveness of
+     LP_COUNT register. */
+  if (!label)
+    return false;
+
+  succ_bb = BLOCK_FOR_INSN (label);
+  if (!succ_bb)
+    {
+      gcc_assert (NEXT_INSN (label));
+      if (NOTE_INSN_BASIC_BLOCK_P (NEXT_INSN (label)))
+	succ_bb = NOTE_BASIC_BLOCK (NEXT_INSN (label));
+      else
+	succ_bb = BLOCK_FOR_INSN (NEXT_INSN (label));
+    }
+
+  if (succ_bb && REGNO_REG_SET_P (df_get_live_in (succ_bb), LP_COUNT))
+    return true;
+
+  return false;
+}
+
 /* For ARC600:
    A write to a core reg greater or equal to 32 must not be immediately
    followed by a use.  Anticipate the length requirement to insert a nop
@@ -8336,34 +8403,8 @@ arc_hazard (rtx pred, rtx succ)
 
   if (!pred || !INSN_P (pred) || !succ || !INSN_P (succ))
     return 0;
-  /* We might have a CALL to a non-returning function before a loop
-     end.  ??? Although the manual says that's OK (the target is
-     outside the loop, and the loop counter unused there), the
-     assembler barfs on this for ARC600, so we must instert a nop
-     before such a call too. For ARC700, and ARCv2 is not allowed to
-     have the last ZOL instruction a jump to a location where lp_count
-     is modified. */
-  if (recog_memoized (succ) == CODE_FOR_doloop_end_i
-      && (((TARGET_ARC600 || TARGET_HS)
-	   && (JUMP_P (pred) || CALL_P (pred)
-	       || GET_CODE (PATTERN (pred)) == SEQUENCE))
-	  /* Check if it is a jump. */
-	  || ((JUMP_P ((jump = pred))
-	       || (GET_CODE (PATTERN (pred)) == SEQUENCE
-		   && JUMP_P ((jump = XVECEXP (PATTERN (pred), 0, 0)))))
-	      /* Make sure is not a millicode jump */
-	      && (!(JUMP_P (jump) && (GET_CODE (PATTERN (jump)) == PARALLEL)
-		    && (XVECEXP (PATTERN (jump), 0, 0) == ret_rtx)))
-	      /* Make sure is not a simple_return. */
-	      && (GET_CODE (PATTERN (jump)) != SIMPLE_RETURN)
-	      /* Go to the target of the jump and check for aliveness
-		 of LP_COUNT register. */
-	      && (!(lab = JUMP_LABEL (jump))
-		  || (!(succ_bb = BLOCK_FOR_INSN (lab))
-		      && (!NOTE_INSN_BASIC_BLOCK_P (NEXT_INSN (lab))
-			  || ! (succ_bb = NOTE_BASIC_BLOCK (NEXT_INSN (lab))))
-		      && !(succ_bb = BLOCK_FOR_INSN (NEXT_INSN (lab))))
-		  || (REGNO_REG_SET_P (df_get_live_in (succ_bb), LP_COUNT))))))
+
+  if (arc_loop_hazard (pred, succ))
     return 4;
 
   if (TARGET_ARC600)

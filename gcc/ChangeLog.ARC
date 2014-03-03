@@ -1,3 +1,9 @@
+2014-03-03 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_loop_hazard): New function.
+	 (arc_hazard): Use it.
+	* testsuite/gcc.target/arc/pr9000716531.c: New test.
+
 2014-02-27 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Cleanup warnings.
