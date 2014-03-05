@@ -1,5 +1,5 @@
 /* { dg-do run } */
-/* { dg-options "-O2 -mARC700 --save-temps -mno-mpy" } */
+/* { dg-options "-O2 -mno-mpy -save-temps" } */
 
 #include <stdlib.h>
 
@@ -25,6 +25,7 @@ main (void)
   return 0;
 }
 
-/* { dg-final { scan-assembler-not "mpyhu\[ \t\]" } } */
+/* { dg-final { scan-assembler-not "mpyhu\[ \t\]" { target { ! { archs || arcem } } } } } */
+/* { dg-final { scan-assembler-not "mpymu\[ \t\]" { target { archs || arcem } } } } */
 /* { dg-final { scan-assembler-not "@__muldi3" } } */
 /* { dg-final { scan-assembler "@__umulsi3_highpart" } } */

@@ -1,5 +1,6 @@
 /* { dg-do compile } */
-/* { dg-options "-O2 -mA7" } */
+/* { dg-options "-O2" } */
+/* This error should be "visible" for A7 architecture. */
 
 typedef unsigned long CORE_ADDR;
 

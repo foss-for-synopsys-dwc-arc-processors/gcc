@@ -1,5 +1,5 @@
 /* { dg-do run } */
-/* { dg-options "-O2 -mARC700 --save-temps" } */
+/* { dg-options "-O2 -save-temps" } */
 
 #include <stdlib.h>
 
@@ -25,4 +25,5 @@ main (void)
   return 0;
 }
 
-/* { dg-final { scan-assembler "mpyhu\[ \t\]" } } */
+/* { dg-final { scan-assembler "mpyhu\[ \t\]" { target { ! { archs || arcem } } } } } */
+/* { dg-final { scan-assembler "mpymu\[ \t\]" { target { archs || arcem } } } } */

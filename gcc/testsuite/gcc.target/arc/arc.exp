@@ -30,6 +30,15 @@ proc check_effective_target_arc_fpu_ok { } {
     } "-mcpu=ARCv2HS -mfpu=fpud_all"]
 }
 
+# Return 1 if this is a compiler supporting ARCv2 EM as default processor
+proc check_effective_target_arcem { } {
+    return [check_no_compiler_messages arcem assembly {
+	#if !defined(__EM__)
+	#error EMFOO
+	#endif
+    }]
+}
+
 
 # If a testcase doesn't have special options, use these.
 global DEFAULT_CFLAGS
