@@ -5065,6 +5065,7 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
 	  found = true;
 	  reg_location = reg_idx;
 	  while ((reg_idx < (reg_location + nregs))
+		 && FUNCTION_ARG_REGNO_P (reg_idx)
 		 && found)
 	    {
 	      found &= cum->avail[reg_idx];
@@ -5084,7 +5085,8 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
       if (advance)
 	{
 	  /* Update CUMULATIVE_ARGS if we advance. */
-	  for (reg_idx = reg_location; reg_idx < (reg_location + nregs); reg_idx++)
+	  for (reg_idx = reg_location; (reg_idx < (reg_location + nregs))
+		 && FUNCTION_ARG_REGNO_P (reg_idx); reg_idx++)
 	    {
 	      cum->avail[reg_idx] = false;
 	    }
@@ -8398,9 +8400,6 @@ arc_loop_hazard (rtx pred, rtx succ)
 int
 arc_hazard (rtx pred, rtx succ)
 {
-  rtx jump, lab;
-  basic_block succ_bb;
-
   if (!pred || !INSN_P (pred) || !succ || !INSN_P (succ))
     return 0;
 

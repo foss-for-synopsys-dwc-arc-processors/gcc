@@ -1,3 +1,8 @@
+2014-03-05 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_function_args_impl): Fix handling of
+          partial arguments.
+
 2014-03-03 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_loop_hazard): New function.
