@@ -1,3 +1,8 @@
+2014-03-06 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (movsi_cond_exec): Update pattern.
+	 (commutative_cond_exec): Likewise.
+
 2014-03-05 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_function_args_impl): Fix handling of

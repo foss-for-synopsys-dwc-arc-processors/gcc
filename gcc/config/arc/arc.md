@@ -3488,22 +3488,23 @@
 (define_insn "*movsi_cond_exec"
   [(cond_exec
      (match_operator 3 "proper_comparison_operator"
-       [(match_operand 2 "cc_register" "Rcc,Rcc") (const_int 0)])
-     (set (match_operand:SI 0 "dest_reg_operand" "=w,w")
-	  (match_operand:SI 1 "nonmemory_operand" "Lc,?Cal")))]
+		     [(match_operand 2 "cc_register" "Rcc,Rcc,Rcc") (const_int 0)])
+     (set (match_operand:SI 0 "dest_reg_operand"  "=w,???w,w")
+	  (match_operand:SI 1 "nonmemory_operand" "Lc,?Rac,?Cal")))]
   ""
   "mov.%d3 %0,%S1"
   [(set_attr "type" "cmove")
-   (set_attr "length" "4,8")])
+   (set_attr "length" "4,4,8")])
 
 (define_insn "*commutative_cond_exec"
   [(cond_exec
-     (match_operator 5 "proper_comparison_operator"
-       [(match_operand 4 "cc_register" "Rcc,Rcc") (const_int 0)])
-     (set (match_operand:SI 0 "dest_reg_operand" "=w,w")
-	  (match_operator:SI 3 "commutative_operator"
-	    [(match_operand:SI 1 "register_operand" "%0,0")
-	     (match_operand:SI 2 "nonmemory_operand" "cL,?Cal")])))]
+    (match_operator 5 "proper_comparison_operator"
+		    [(match_operand 4 "cc_register"                  "Rcc,Rcc,Rcc")
+		     (const_int 0)])
+    (set (match_operand:SI 0 "dest_reg_operand"                      "=w,   w,  w")
+	 (match_operator:SI 3 "commutative_operator"
+			    [(match_operand:SI 1 "register_operand"  " 0,   c,  0")
+			     (match_operand:SI 2 "nonmemory_operand" "cL,   0,?Cal")])))]
   ""
 {
   arc_output_commutative_cond_exec (operands, true);
@@ -3511,13 +3512,7 @@
 }
   [(set_attr "cond" "use")
    (set_attr "type" "cmove")
-   (set_attr_alternative "length"
-     [(const_int 4)
-      (cond
-	[(eq (symbol_ref "arc_output_commutative_cond_exec (operands, false)")
-	     (const_int 4))
-	 (const_int 4)]
-	(const_int 8))])])
+   (set_attr "length" "4,4,8")])
 
 (define_insn "*sub_cond_exec"
   [(cond_exec
