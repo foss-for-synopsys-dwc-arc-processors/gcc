@@ -8360,7 +8360,10 @@ arc_loop_hazard (rtx pred, rtx succ)
     jump = XVECEXP (PATTERN (pred), 0, 0);
   else
     return false;
+
   label = JUMP_LABEL (jump);
+  if (!label)
+    return false;
 
   /* Phase 2b: Make sure is not a millicode jump */
   if ((GET_CODE (PATTERN (jump)) == PARALLEL)
@@ -8374,9 +8377,6 @@ arc_loop_hazard (rtx pred, rtx succ)
 
   /* Pahse 2d: Go to the target of the jump and check for aliveness of
      LP_COUNT register. */
-  if (!label)
-    return false;
-
   succ_bb = BLOCK_FOR_INSN (label);
   if (!succ_bb)
     {
