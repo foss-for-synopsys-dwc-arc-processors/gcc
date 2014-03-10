@@ -7986,6 +7986,18 @@ arc_output_commutative_cond_exec (rtx *operands, bool output_p)
   /* Canonical rtl should not have a constant in the first operand position.  */
   gcc_assert (!CONSTANT_P (operands[1]));
 
+  /* Arrange the operands as required by predicated insns. */
+  if ((GET_CODE (operands[1]) == REG)
+      && (GET_CODE (operands[2]) == REG))
+    {
+      if (REGNO (operands[0]) != REGNO (operands[1]))
+	{
+	  rtx tmp = operands[1];
+	  operands[1] = operands[2];
+	  operands[2] = tmp;
+	}
+    }
+
   switch (commutative_op)
     {
       case AND:
