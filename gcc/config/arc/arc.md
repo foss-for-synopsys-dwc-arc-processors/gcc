@@ -2141,7 +2141,7 @@
 (define_insn_and_split "mulsidi3_700"
   [(set (match_operand:DI 0 "register_operand" "=&r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "%c"))
-		 (sign_extend:DI (match_operand:SI 2 "register_operand" "cL"))))]
+		 (sign_extend:DI (match_operand:SI 2 "extend_operand" "cL"))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "#"
   "&& reload_completed"
@@ -2164,7 +2164,7 @@
 	 (lshiftrt:DI
 	  (mult:DI
 	   (sign_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
-	   (sign_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
+	   (sign_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  i,i")))
 	  (const_int 32))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "* return TARGET_ARC700 ? \"mpyh%? %0,%1,%2\" : \"mpym%? %0,%1,%2\"; "
@@ -2181,7 +2181,7 @@
 	 (lshiftrt:DI
 	  (mult:DI
 	   (zero_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
-	   (zero_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
+	   (zero_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  i,i")))
 	  (const_int 32))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "* return TARGET_ARC700 ? \"mpyhu%? %0,%1,%2\" : \"mpymu%? %0,%1,%2\"; "
@@ -2400,8 +2400,7 @@
 (define_insn_and_split "umulsidi3_700"
   [(set (match_operand:DI 0 "dest_reg_operand" "=&r")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "%c"))
-		 (zero_extend:DI (match_operand:SI 2 "register_operand" "c"))))]
-;;		 (zero_extend:DI (match_operand:SI 2 "register_operand" "rL"))))]
+		 (zero_extend:DI (match_operand:SI 2 "extend_operand" "cL"))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "#"
   "reload_completed"

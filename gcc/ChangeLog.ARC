@@ -1,3 +1,13 @@
+2014-03-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/predicates.md (extend_operand): During/after reload,
+	allow const_int_operand.
+	* config/arc/arc.md (mulsidi3_700): Use extend_operand predicate.
+	(umulsidi3_700): Likewise.  Change operand 2 constraint back to "cL".
+	(mulsi3_highpart): Change operand 2 constraint alternatives 2 and 3
+	to "i".
+	(umulsi3_highpart_i): Likewise.
+
 2014-03-24  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_print_operand_address): Handle
