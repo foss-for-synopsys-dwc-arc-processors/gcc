@@ -1,3 +1,7 @@
+2013-03-12 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* doc/invoke.texi: Update document with ARCv2HS options.
+
 2014-03-06 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (movsi_cond_exec): Update pattern.

@@ -487,6 +487,7 @@ Objective-C and Objective-C++ Dialects}.
 
 @emph{ARC Options} @gccoptlist{-mbarrel-shifter -mcode-density @gol
 -mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mEM -mARCv2EM -mav2em @gol
+-mav2hs -mHS -mARCv2HS -matomic -mfpu=@var{fpu} @gol
 -mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mea @gol
 -mforce-short -mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
@@ -11158,15 +11159,15 @@ purpose.  The default is @option{-m1reg-none}.
 A range of @samp{-m} options are defined for Synopsys DesignWare ARC.
 There are two major flavors of the tool chain. The original ARCompact
 instruction set for the ARC600 and ARC700 families and the ARCompact
-v2 instruction set for the ARC v2 EM family.  For the latter the tool
-chain must be built using the configuration option
-@option{--with-cpu=EM}.  In general ARC v2 EM options are only
-available when the tool chain has been built using
-@option{--with-cpu=EM}.
+v2 instruction set for the ARC v2 EM or HS family. For the latter the
+tool chain must be built using the configuration option
+@option{--with-cpu=EM}.  In general ARC v2 options are only available
+when the tool chain has been configured using @option{--with-cpu=EM},
+@option{--with-cpu=EM}, or using @option{--enable-multilib}.
 
 ARC is a configurable architecture.  Requesting features from the
-compiler that are not provided on a particular hardware
-implementation will result in code that does not work correctly.
+compiler that are not provided on a particular hardware implementation
+will result in code that does not work correctly.
 
 The following options control the architecture variant for which code
 is being compiled:
@@ -11194,30 +11195,33 @@ values for @var{cpu} are
 @opindex mA6
 @opindex mARC600
 @item ARC600
-Compile for ARC600.  Aliases: @option{-mA6}, @option{-mARC600}.  Not
-available when the tool chain is configured with
-@samp{--with-cpu=EM}@.
+Compile for ARC600.  Aliases: @option{-mA6}, @option{-mARC600}@.
 
 @item ARC601
 @opindex mARC600
-Compile for ARC601. Alias: @option{-mARC601}.  Not available when the
-tool chain is configured with @samp{--with-cpu=EM}@.
+Compile for ARC601. Alias: @option{-mARC601}@.
 
 @item ARC700
 @opindex mA7
 @opindex mARC700
 Compile for ARC700.  Aliases: @option{-mA7}, @option{-mARC700}.  This
-is the default when configured with @samp{--with-cpu=arc700} and not
-available when the tool chain is configured with
-@samp{--with-cpu=EM}@.
+option is default on when configured with @samp{--with-cpu=arc700}@.
 
 @item ARCv2EM
 @opindex mEM
 @opindex mARCv2EM
 @opindex mav2em
 Compile for ARC v2 EM.  Aliases: @option{-mEM},
-@option{-mARCv2EM}, @option{-mav2em}.  This is the default when the tool chain is configured with
-@samp{--with-cpu=EM}@.
+@option{-mARCv2EM}, @option{-mav2em}.  This option is default on when
+the tool chain is configured with @samp{--with-cpu=EM}@.
+
+@item ARCv2HS
+@opindex mHS
+@opindex mARCv2HS
+@opindex mav2hs
+Compile for ARC v2 HS cpu family.  Aliases: @option{-mHS},
+@option{-mARCv2HS}, @option{-mav2hs}.  This option is default on when
+the tool chain is configured with @samp{--with-cpu=HS}@.
 
 @end table
 
@@ -11225,6 +11229,58 @@ Compile for ARC v2 EM.  Aliases: @option{-mEM},
 @opindex mdiv-rem
 Enable DIV/REM instructions for ARC v2 EM.  Only available when the
 tool chain is configured with @samp{--with-cpu=EM}@.
+
+@item -mfpu=@var{fpu}
+@opindex mfpu
+Enables specific floating-point hardware extension for ARCv2
+core. Supported values for @var{fpu} are
+
+@table @samp
+
+@item fpus
+@opindex fpus
+Enables support for single precision floating point hardware
+extensions@.
+
+@item fpud
+@opindex fpud
+Enables support for double precision floating point hardware
+extensions. The single precision floating point extension is also
+enabled@.
+
+@item fpus_div
+@opindex fpus_div
+Enables support for single precision floating point, and single
+precision square-root and divide hardware extensions@.
+
+@item fpud_div
+@opindex fpud_div
+Enables support for double precision floating point, and double
+precision square-root and divide hardware extensions. This option
+includes option @samp{fpus_div}@.
+
+@item fpus_fma
+@opindex fpus_fma
+Enables support for single precision floating point, and single
+precision fused multiple and add hardware extensions@.
+
+@item fpud_fma
+@opindex fpud_fma
+Enables support for double precision floating point, and double
+precision fused multiple and add hardware extensions. This option
+includes option @samp{fpus_fma}@.
+
+@item fpus_all
+@opindex fpus_all
+Enables support for all single precision floating point hardware
+extensions@.
+
+@item fpud_all
+@opindex fpud_all
+Enables support for all single and double precision floating point
+hardware extensions@.
+
+@end table
 
 @item -mdpfp
 @opindex mdpfp
@@ -11273,36 +11329,62 @@ No multiplier available.
 
 @item 1
 @itemx w
-The multiply option is set to w: 16x16 multiplier, fully pipelined.
+The multiply option is set to w: 16x16 multiplier, fully
+pipelined. The following instructions are enabled: MPYW, and MPYUW.
 
 @item 2
 @itemx wlh1
-The multiply option is set to wlh1: 32x32 multiplier, fully pipelined(1 stage).
+The multiply option is set to wlh1: 32x32 multiplier, fully
+pipelined(1 stage). The following instructions are additionaly
+enabled: MPY, MPYU, MPYM, MPYMU, and MPY_S.
 
 @item 3
 @itemx wlh2
 The multiply option is set to wlh2: 32x32 multiplier, fully pipelined
-(2 stages).
+(2 stages).  The following instructions are additionaly enabled: MPY,
+MPYU, MPYM, MPYMU, and MPY_S.
 
 @item 4
 @itemx wlh3
 The multiply option is set to wlh3: Two 16x16 multiplier, blocking,
-sequential.
+sequential.  The following instructions are additionaly enabled: MPY,
+MPYU, MPYM, MPYMU, and MPY_S.
 
 @item 5
 @itemx wlh4
 The multiply option is set to wlh4: One 16x16 multiplier, blocking,
-sequential.
+sequential.  The following instructions are additionaly enabled: MPY,
+MPYU, MPYM, MPYMU, and MPY_S.
 
 @item 6
 @itemx wlh5
 The multiply option is set to wlh5: One 32x4 multiplier, blocking,
-sequential.
+sequential. The following instructions are additionaly enabled: MPY,
+MPYU, MPYM, MPYMU, and MPY_S.
+
+@item 7
+@itemx short vector
+The multiply option is set to accept short vector extensions (i.e., 32
+bit vectors). The following instructions are additionaly enabled: MAC,
+MACU, DMPYH, DMPYHU, DMACH, DMACHU, VADD2H, VSUB2H, VADDSUB2H, and
+VSUBADD2H.
+
+@item 8
+@itemx double MAC
+The multiply option is set to accept short vector extensions, and
+double MAC operations. The following instructions are additionaly
+enabled: MPYD, MPYDU, MACD, MACDU, VMPY2H, and VMPY2HU.
+
+@item 8
+@itemx 64 bit
+The multiply option is set to accept 64 bit operations. The following
+instructions are additionaly enabled: QMPYH, QMPYHU, DMPYWH, DMPYWHU,
+QMACH, QMACHU, DMACWH, DMACWHU, VADD4H, VSUB4H, VADDSUB4H, VSUBADD4H,
+VADD2, VSUB2, VADDSUB, and VSUBADD.
 
 @end table
 
-This option is only available when the tool chain is configured with
-@samp{--with-cpu=EM}@.
+This option is only available for ARCv2 cores@.
 
 @item -mmpy16
 @opindex mmpy16
@@ -11352,6 +11434,11 @@ can overridden by FPX options; @samp{mspfp}, @samp{mspfp-compact}, or
 @opindex mswap
 Generate swap instructions.
 
+@item -matomic
+@opindex matomic
+This enables Locked Load/Store Conditional extension, and to use them
+for implementing the GCC's atomic builtins.
+
 @end table
 
 The following options are passed through to the assembler, and also
@@ -11375,7 +11462,7 @@ extension.  Also sets the preprocessor symbol @code{__Xdvbf}.
 @opindex mlock
 Passed down to the assembler to enable the Locked Load/Store
 Conditional extension.  Also sets the preprocessor symbol
-@code{__Xlock}.
+@code{__Xlock}. This option is deprecated, please use matomic instead.
 
 @item -mmac-d16
 @opindex mmac-d16
