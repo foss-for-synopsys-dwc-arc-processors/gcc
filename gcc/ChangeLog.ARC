@@ -1,3 +1,9 @@
+2013-03-13 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h (ASM_SPEC): Pass mlock option to the
+          assembler when using matomic.
+	* config/arc/t-arc-newlib (MULTILIB_MATCHES): Remove mno-mpy synonym.
+
 2013-03-12 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* doc/invoke.texi: Update document with ARCv2HS options.

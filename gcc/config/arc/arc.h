@@ -176,6 +176,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700:%{mlock}} \
 %{mcpu=ARC700:%{mswape}} \
 %{mcpu=ARC700:%{mrtsc}} \
+%{matomic:-mlock} \
 %{mcpu=ARCv2EM:-mEM} \
 %{mcpu=ARCv2HS:-mHS} \
 "
