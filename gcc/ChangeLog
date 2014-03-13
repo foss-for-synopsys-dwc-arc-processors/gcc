@@ -1,3 +1,8 @@
+2014-03-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_predicate_delay_insns):
+	Fix third argument passed to conditionalize_nonjump.
+
 2014-03-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (conditionalize_nonjump): New function, broken
