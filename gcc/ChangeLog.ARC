@@ -1,3 +1,7 @@
+2013-03-17 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Update how multiplication is done for ARC 600.
+
 2013-03-14 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_init): Allow FPU options only for ARC HS.
