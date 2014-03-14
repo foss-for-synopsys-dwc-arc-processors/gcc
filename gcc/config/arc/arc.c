@@ -8280,6 +8280,10 @@ arc_hazard (rtx pred, rtx succ)
 		    && (XVECEXP (PATTERN (jump), 0, 0) == ret_rtx)))
 	      /* Make sure is not a simple_return. */
 	      && (GET_CODE (PATTERN (jump)) != SIMPLE_RETURN)
+	      && (GET_CODE (PATTERN (jump)) != SET
+		  || GET_CODE (SET_SRC (PATTERN (jump))) != IF_THEN_ELSE
+		  || (GET_CODE (XEXP (SET_SRC (PATTERN (jump)), 1))
+		      != SIMPLE_RETURN))
 	      /* Go to the target of the jump and check for aliveness
 		 of LP_COUNT register. */
 	      && (!(lab = JUMP_LABEL (jump))
