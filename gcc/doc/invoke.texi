@@ -487,7 +487,7 @@ Objective-C and Objective-C++ Dialects}.
 
 @emph{ARC Options} @gccoptlist{-mbarrel-shifter -mcode-density @gol
 -mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mEM -mARCv2EM -mav2em @gol
--mav2hs -mHS -mARCv2HS -matomic -mfpu=@var{fpu} @gol
+-mav2hs -mHS -mARCv2HS -matomic -mfpu=@var{fpu} -mll64 @gol
 -mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mea @gol
 -mforce-short -mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
@@ -11158,12 +11158,11 @@ purpose.  The default is @option{-m1reg-none}.
 
 A range of @samp{-m} options are defined for Synopsys DesignWare ARC.
 There are two major flavors of the tool chain. The original ARCompact
-instruction set for the ARC600 and ARC700 families and the ARCompact
-v2 instruction set for the ARC v2 EM or HS family. For the latter the
-tool chain must be built using the configuration option
-@option{--with-cpu=EM}.  In general ARC v2 options are only available
-when the tool chain has been configured using @option{--with-cpu=EM},
-@option{--with-cpu=EM}, or using @option{--enable-multilib}.
+instruction set for the ARC 600 and ARC 700 families and the ARCv2
+instruction set for the ARC EM or ARC HS family. For the latter, ARC v2
+options are only available when the tool chain has been configured
+using @option{--with-cpu=EM}, @option{--with-cpu=HS}, or using
+@option{--enable-multilib}.
 
 ARC is a configurable architecture.  Requesting features from the
 compiler that are not provided on a particular hardware implementation
@@ -11182,7 +11181,7 @@ unless @samp{-mcpu=ARC601} is in effect.
 
 @item -mcode-density
 @opindex mcode-density
-Enable code density instructions for ARC v2 EM.
+Enable code density instructions for ARC EM.
 
 @item -mcpu=@var{cpu}
 @opindex mcpu
@@ -11195,23 +11194,23 @@ values for @var{cpu} are
 @opindex mA6
 @opindex mARC600
 @item ARC600
-Compile for ARC600.  Aliases: @option{-mA6}, @option{-mARC600}@.
+Compile for ARC 600.  Aliases: @option{-mA6}, @option{-mARC600}@.
 
 @item ARC601
 @opindex mARC600
-Compile for ARC601. Alias: @option{-mARC601}@.
+Compile for ARC 601. Alias: @option{-mARC601}@.
 
 @item ARC700
 @opindex mA7
 @opindex mARC700
-Compile for ARC700.  Aliases: @option{-mA7}, @option{-mARC700}.  This
+Compile for ARC 700.  Aliases: @option{-mA7}, @option{-mARC700}.  This
 option is default on when configured with @samp{--with-cpu=arc700}@.
 
 @item ARCv2EM
 @opindex mEM
 @opindex mARCv2EM
 @opindex mav2em
-Compile for ARC v2 EM.  Aliases: @option{-mEM},
+Compile for ARC EM.  Aliases: @option{-mEM},
 @option{-mARCv2EM}, @option{-mav2em}.  This option is default on when
 the tool chain is configured with @samp{--with-cpu=EM}@.
 
@@ -11219,7 +11218,7 @@ the tool chain is configured with @samp{--with-cpu=EM}@.
 @opindex mHS
 @opindex mARCv2HS
 @opindex mav2hs
-Compile for ARC v2 HS cpu family.  Aliases: @option{-mHS},
+Compile for ARC HS cpu family.  Aliases: @option{-mHS},
 @option{-mARCv2HS}, @option{-mav2hs}.  This option is default on when
 the tool chain is configured with @samp{--with-cpu=HS}@.
 
@@ -11227,7 +11226,7 @@ the tool chain is configured with @samp{--with-cpu=HS}@.
 
 @item -mdiv-rem
 @opindex mdiv-rem
-Enable DIV/REM instructions for ARC v2 EM.  Only available when the
+Enable DIV/REM instructions for ARC EM.  Only available when the
 tool chain is configured with @samp{--with-cpu=EM}@.
 
 @item -mfpu=@var{fpu}
@@ -11315,11 +11314,11 @@ is otherwise not available as an option.
 @item -mmpy
 @opindex mmpy
 When using the negative variant, the compiler does not generate
-multiply instructions for ARC700, and ARCv2 variants.
+multiply instructions for ARC 700, and ARCv2 variants.
 
 @item -mmpy-option=@var{multo}
 @opindex mmpy-option
-Compile ARC v2 EM code with a multiplier design option. @samp{wlh1} is
+Compile ARC EM code with a multiplier design option. @samp{wlh1} is
 the default value.  The recognized values for @var{multo} are:
 
 @table @samp
@@ -11393,8 +11392,7 @@ is equivalent with -mmpy-option=1
 
 @item -mmul32x16
 @opindex mmul32x16
-Generate 32x16 bit multiply and mac instructions.  Not valid for ARC
-v2 EM.
+Generate 32x16 bit multiply and mac instructions.  Not valid for ARC EM.
 
 @item -mmul64
 @opindex mmul64
@@ -11438,6 +11436,10 @@ Generate swap instructions.
 @opindex matomic
 This enables Locked Load/Store Conditional extension, and to use them
 for implementing the GCC's atomic builtins.
+
+@item -mll64
+@opindex mll64
+This enables 64-bit load/store extension.
 
 @end table
 
@@ -11726,22 +11728,22 @@ Supported values for @var{cpu} are
 
 @table @samp
 @item ARC600
-Tune for ARC600 cpu.
+Tune for ARC 600 cpu.
 
 @item ARC601
-Tune for ARC601 cpu.
+Tune for ARC 601 cpu.
 
 @item ARC700
-Tune for ARC700 cpu with standard multiplier block.
+Tune for ARC 700 cpu with standard multiplier block.
 
 @item ARC700-xmac
-Tune for ARC700 cpu with XMAC block.
+Tune for ARC 700 cpu with XMAC block.
 
 @item ARC725D
-Tune for ARC725D cpu.
+Tune for ARC 725D cpu.
 
 @item ARC750D
-Tune for ARC750D cpu.
+Tune for ARC 750D cpu.
 
 @end table
 

@@ -1,3 +1,8 @@
+2013-03-14 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_init): Allow FPU options only for ARC HS.
+	* doc/invoke.texi: Update document, naming.
+
 2013-03-13 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h (ASM_SPEC): Pass mlock option to the

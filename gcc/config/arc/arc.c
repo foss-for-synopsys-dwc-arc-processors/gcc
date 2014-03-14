@@ -791,6 +791,10 @@ arc_init (void)
 	break;
       }
 
+  /* FPU support only for V2 */
+  if (!TARGET_HS && (arc_fpu_build > 0))
+      error ("FPU options are only available for ARC HS");
+
   /* Support mul64 generation only for ARC600.  */
   if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_V2))
       error ("-mmul64 not supported for ARC700 or ARCv2");
