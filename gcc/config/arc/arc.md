@@ -1902,14 +1902,28 @@
   [(set_attr "is_sfunc" "yes")
    (set_attr "predicable" "yes")])
 
-(define_insn "mulsidi_600"
-  [(set (reg:DI MUL64_OUT_REG)
-	(mult:DI (sign_extend:DI
-		   (match_operand:SI 0 "register_operand"  "Rcq#q,c,c,%c"))
-		 (sign_extend:DI
-; assembler issue for "I", see mulsi_600
-;		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,I,Cal"))))]
-		   (match_operand:SI 1 "register_operand" "Rcq#q,cL,L,C32"))))]
+
+(define_insn_and_split "mulsidi_600"
+  [(set (match_operand:DI 0 "nonimmediate_operand"                          "=mc,mc,mc,mc")
+	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand"   "Rcq#q, c, c,%c"))
+		 (sign_extend:DI (match_operand:SI 2 "nonmemory_operand"  "Rcq#q,cL, L,C32"))))
+   (clobber (reg:DI MUL64_OUT_REG))]
+  "TARGET_MUL64_SET && !TARGET_V2"
+  "#"
+  "TARGET_MUL64_SET && !TARGET_V2"
+  [(const_int 0)]
+  "emit_insn (gen_mul64 (operands[1], operands[2]));
+   emit_move_insn (operands[0], gen_rtx_REG (DImode, MUL64_OUT_REG));
+   DONE;
+  "
+  [(set_attr "type" "multi")
+   (set_attr "length" "8")])
+
+(define_insn "mul64"
+  [(unspec [(match_operand:SI 0 "register_operand"  "Rcq#q, c,c,%c")
+	    (match_operand:SI 1 "nonmemory_operand" "Rcq#q,cL,L,C32")]
+	   UNSPEC_MUL64)
+   (clobber (reg:DI MUL64_OUT_REG))]
   "TARGET_MUL64_SET"
   "mul64%? \t0, %0, %1%&"
   [(set_attr "length" "*,4,4,8")
@@ -1918,14 +1932,28 @@
    (set_attr "predicable" "yes,yes,no,yes")
    (set_attr "cond" "canuse,canuse,canuse_limm,canuse")])
 
-(define_insn "umulsidi_600"
-  [(set (reg:DI MUL64_OUT_REG)
-	(mult:DI (zero_extend:DI
-		   (match_operand:SI 0 "register_operand"  "c,c,%c"))
-		 (sign_extend:DI
-; assembler issue for "I", see mulsi_600
-;		   (match_operand:SI 1 "register_operand" "cL,I,Cal"))))]
-		   (match_operand:SI 1 "register_operand" "cL,L,C32"))))]
+
+(define_insn_and_split "umulsidi_600"
+  [(set (match_operand:DI 0 "nonimmediate_operand"                       "=mc,mc,mc")
+	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"    "c, c,%c"))
+		 (sign_extend:DI (match_operand:SI 2 "nonmemory_operand"  "cL, L,C32"))))
+   (clobber (reg:DI MUL64_OUT_REG))]
+  "TARGET_MUL64_SET && !TARGET_V2"
+  "#"
+  "TARGET_MUL64_SET && !TARGET_V2"
+  [(const_int 0)]
+  "emit_insn (gen_mulu64 (operands[1], operands[2]));
+   emit_move_insn (operands[0], gen_rtx_REG (DImode, MUL64_OUT_REG));
+   DONE;
+  "
+  [(set_attr "type" "umulti")
+   (set_attr "length" "8")])
+
+(define_insn "mulu64"
+  [(unspec [(match_operand:SI 0 "register_operand"   "c,c,%c")
+	    (match_operand:SI 1 "nonmemory_operand" "cL,L,C32")]
+	   UNSPEC_MULU64)
+   (clobber (reg:DI MUL64_OUT_REG))]
   "TARGET_MUL64_SET"
   "mulu64%? \t0, %0, %1%&"
   [(set_attr "length" "4,4,8")
@@ -1998,9 +2026,7 @@
     }
   else if (TARGET_MUL64_SET)
     {
-      operands[2] = force_reg (SImode, operands[2]);
-      emit_insn (gen_mulsidi_600 (operands[1], operands[2]));
-      emit_move_insn (operands[0], gen_rtx_REG (DImode, MUL64_OUT_REG));
+      emit_insn (gen_mulsidi_600 (operands[0], operands[1], operands[2]));
       DONE;
     }
   else if (TARGET_MULMAC_32BY16_SET)
@@ -2239,9 +2265,7 @@
     }
   else if (TARGET_MUL64_SET)
     {
-      operands[2] = force_reg (SImode, operands[2]);
-      emit_insn (gen_umulsidi_600 (operands[1], operands[2]));
-      emit_move_insn (operands[0], gen_rtx_REG (DImode, MUL64_OUT_REG));
+      emit_insn (gen_umulsidi_600 (operands[0], operands[1], operands[2]));
       DONE;
     }
   else if (TARGET_MULMAC_32BY16_SET)
@@ -4335,36 +4359,6 @@
    swap \t%0, %1"
   [(set_attr "length" "4,8,4")
    (set_attr "type" "two_cycle_core,two_cycle_core,two_cycle_core")])
-
-;; FIXME: an intrinsic for multiply is daft.  Can we remove this?
-(define_insn "mul64"
-  [(unspec [(match_operand:SI 0 "general_operand" "q,r,r,%r")
-	    (match_operand:SI 1 "general_operand" "q,rL,I,Cal")]
-	   UNSPEC_MUL64)]
-  "TARGET_MUL64_SET"
-  "@
-   mul64%? \t0, %0, %1%&
-   mul64%? \t0, %0, %1
-   mul64 \t0, %0, %1
-   mul64%? \t0, %0, %S1"
-  [(set_attr "length" "2,4,4,8")
-  (set_attr "iscompact" "true,false,false,false")
-  (set_attr "type" "binary,binary,binary,binary")
-  (set_attr "cond" "canuse,canuse, nocond, canuse")])
-
-(define_insn "mulu64"
-  [(unspec [(match_operand:SI 0 "general_operand" "%r,r,r,r")
-	    (match_operand:SI 1 "general_operand" "rL,I,r,Cal")]
-	   UNSPEC_MULU64)]
-  "TARGET_MUL64_SET"
-  "@
-   mulu64%? \t0, %0, %1
-   mulu64 \t0, %0, %1
-   mulu64 \t0, %0, %1
-   mulu64%? \t0, %0, %S1"
-  [(set_attr "length" "4,4,4,8")
-   (set_attr "type" "binary,binary,binary,binary")
-   (set_attr "cond" "canuse,nocond,nocond,canuse")])
 
 (define_insn "divaw"
   [(set (match_operand:SI 0 "dest_reg_operand" "=&w,&w,&w")
