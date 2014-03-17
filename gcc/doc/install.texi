@@ -3168,8 +3168,8 @@ This is a synonym for @samp{x86_64-*-solaris2.1[0-9]*}.
 @heading @anchor{arc-x-elf32}arc-*-elf32
 
 Use @samp{configure --target=arc-elf32 --with-cpu=@var{cpu} --enable-languages="c,c++"}
-to configure GCC, with @var{cpu} being one of @samp{arc600}, @samp{arc601},
-or @samp{arc700}@.
+to configure GCC, with @var{cpu} being one of @samp{arc600},
+@samp{arc601}, @samp{arc700}, @samp{EM}, or @samp{HS}@.
 
 @html
 <hr />

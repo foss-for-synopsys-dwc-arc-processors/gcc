@@ -1,6 +1,7 @@
 2013-03-17 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Update how multiplication is done for ARC 600.
+	* doc/install.texi: Update with HS and EM options.
 
 2013-03-14 Claudiu Zissulescu <claziss@synopsys.com>
 
