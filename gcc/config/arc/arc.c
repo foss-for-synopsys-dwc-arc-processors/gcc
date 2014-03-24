@@ -3845,7 +3845,8 @@ arc_print_operand_address (FILE *file , rtx addr)
 
 	if ((GET_CODE (c) == UNSPEC && XINT (c, 1) == UNSPEC_TLS_OFF)
 	    || (GET_CODE (c) == PLUS && GET_CODE (XEXP (c, 0)) == UNSPEC
-		&& XINT (XEXP (c, 0), 1) == UNSPEC_TLS_OFF))
+		&& (XINT (XEXP (c, 0), 1) == UNSPEC_TLS_OFF
+		    || XINT (XEXP (c, 0), 1) == ARC_UNSPEC_GOTOFFPC)))
 	  {
 	    arc_output_pic_addr_const (file, c, 0);
 	    break;
