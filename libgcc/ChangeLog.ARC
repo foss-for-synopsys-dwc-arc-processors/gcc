@@ -1,3 +1,7 @@
+2014-02-22  Vineet Gupta <vgupta@synopsys.com>
+
+	* gmon/mcount.c: Avoid atomic.h include
+
 2014-01-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/crttls_r25.S: Fix offset off __main_tcb_end.

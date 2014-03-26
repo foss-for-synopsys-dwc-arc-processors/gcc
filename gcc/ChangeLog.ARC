@@ -5,6 +5,10 @@
 
 2014-02-14  Joern Rennecke  <joern.rennecke@embecosm.com>
 
+	* config/arc/arc.c (arc_hazard): Don't crash on p_return_i PRED.
+
+2014-02-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
 	* config/arc/arc.c (DTPOFF_ZERO_SYM): Define.
 	(arc_legitimize_tls_address): Don't change local-dynamic to
 	local-exec if that'd loose 9-bit offset addressing.
