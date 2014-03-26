@@ -11374,7 +11374,7 @@ The multiply option is set to accept short vector extensions, and
 double MAC operations. The following instructions are additionaly
 enabled: MPYD, MPYDU, MACD, MACDU, VMPY2H, and VMPY2HU.
 
-@item 8
+@item 9
 @itemx 64 bit
 The multiply option is set to accept 64 bit operations. The following
 instructions are additionaly enabled: QMPYH, QMPYHU, DMPYWH, DMPYWHU,

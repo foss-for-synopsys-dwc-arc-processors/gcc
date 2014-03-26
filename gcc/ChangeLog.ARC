@@ -1,3 +1,11 @@
+2013-03-26 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Use ldb 0,[xxx] operation, instead of the
+          prefetch (which is ld 0,[xxx]) asm macro. Hence, we avoid
+          having missaligned exceptions when using prefetch
+          instructions.
+	* doc/install.texi: Typo fix.
+
 2013-03-17 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Update how multiplication is done for ARC 600.

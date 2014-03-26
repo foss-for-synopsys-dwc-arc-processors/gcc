@@ -5479,7 +5479,7 @@
 	     (match_operand:SI 1 "" "")
 	     (match_operand:SI 2 "" ""))]
   "TARGET_V2"
-  "prefetch [%0]"
+  "ldb 0,[%0]"
   [(set_attr "type" "load")
    (set_attr "length" "4")])
 
@@ -5489,7 +5489,7 @@
 	     (match_operand:SI 2 "" "")
 	     (match_operand:SI 3 "" ""))]
   "TARGET_V2"
-  "prefetch [%0,%1]"
+  "ldb 0,[%0,%1]"
   [(set_attr "type" "load")
    (set_attr "length" "4,4,8")])
 
@@ -5498,7 +5498,7 @@
 	     (match_operand:SI 1 "" "")
 	     (match_operand:SI 2 "" ""))]
   "TARGET_V2"
-  "prefetch [%0]"
+  "ldb 0,[%0]"
   [(set_attr "type" "load")
    (set_attr "length" "8")])
 
