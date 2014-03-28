@@ -247,7 +247,7 @@
 		     - get_attr_length (insn)")))
 
 ; for ARCv2 we need to disable/enable different instruction alternatives
-(define_attr "cpu_facility" "standard,arcv1,em,cd"
+(define_attr "cpu_facility" "standard,arcv1,em,cd,dis"
   (const_string "standard"))
 
 ; We should consider all the instructions enabled until otherwise
@@ -264,6 +264,9 @@
 	 (and (eq_attr "cpu_facility" "cd")
 	      (not (and (match_test "TARGET_V2")
 			(match_test "TARGET_CODE_DENSITY"))))
+	 (const_string "no")
+
+	 (eq_attr "cpu_facility" "dis")
 	 (const_string "no")
 	 ]
 	(const_string "yes")))
@@ -3497,17 +3500,21 @@
 ; cond_exec patterns
 (define_insn "*movsi_ne"
   [(cond_exec
-     (ne (match_operand:CC_Z 2 "cc_use_register" "Rcc,Rcc,Rcc") (const_int 0))
-     (set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,w,w")
-	  (match_operand:SI 1 "nonmemory_operand" "C_0,Lc,?Cal")))]
+     (ne (match_operand:CC_Z 2 "cc_use_register"    "Rcc,  Rcc,  Rcc,Rcc, Rcc,Rcc") (const_int 0))
+     (set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,Rcq#q,Rcq#q,  w,???w,w")
+	  (match_operand:SI 1 "nonmemory_operand"   "C_0,    W, ?Cal, Lc,?Rac,?Cal")))]
   ""
   "@
 	* current_insn_predicate = 0; return \"sub%?.ne %0,%0,%0%&\";
+	mov_s.ne %0,%1
+	mov_s.ne %0,%1
+	mov.ne %0,%1
 	mov.ne %0,%1
 	mov.ne %0,%S1"
-  [(set_attr "type" "cmove,cmove,cmove")
-   (set_attr "iscompact" "true,false,false")
-   (set_attr "length" "2,4,8")])
+  [(set_attr "type" "cmove,cmove,cmove,cmove,cmove,cmove")
+   (set_attr "iscompact" "true,true,true_limm,false,false,false")
+   (set_attr "length" "2,2,6,4,4,8")
+   (set_attr "cpu_facility" "*,dis,dis,*,*,*")])
 
 (define_insn "*movsi_cond_exec"
   [(cond_exec

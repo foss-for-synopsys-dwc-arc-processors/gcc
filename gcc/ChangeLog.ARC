@@ -1,3 +1,7 @@
+2013-03-28 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (movsi_ne): Update pattern.
+
 2013-03-26 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Use ldb 0,[xxx] operation, instead of the
