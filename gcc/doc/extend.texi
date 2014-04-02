@@ -8934,7 +8934,7 @@ brk
 @end deftypefn
 
 @deftypefn {Built-in Function}  void __builtin_arc_clri (unsigned int  @var{c})
-Only valid with @option{-mcpu=ARCv2EM}. Generates
+Only valid for ARCv2 architecture. Generates
 @example
 clri  @var{c}
 @end example
@@ -8960,7 +8960,7 @@ mov  r@var{regno}, @var{val}
 
 @deftypefn {Built-in Function} int __builtin_arc_divaw (int @var{a}, int @var{b})
 Only available with either @option{-mcpu=ARC700} or @option{-mea} is set, and
-never with @option{-mcpu=ARCv2EM}.  Generates:
+never ARCv2 architecture.  Generates:
 @example
 divaw  @var{dest}, @var{a}, @var{b}
 @end example
@@ -8969,7 +8969,8 @@ built-in.
 @end deftypefn
 
 @deftypefn {Built-in Function} int __builtin_arc_ffs (int @var{a})
-Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}.  Generates:
+Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}, or with
+@option{-mcpu=ARCv2HS}.  Generates:
 @example
 ffs  @var{dest}, @var{a}
 @end example
@@ -8985,7 +8986,8 @@ flag  @var{a}
 @end deftypefn
 
 @deftypefn {Built-in Function} int __builtin_arc_fls (int @var{a})
-Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}.  Generates:
+Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}, or with
+@option{-mcpu=ARCv2HS}.  Generates:
 @example
 fls  @var{dest}, @var{a}
 @end example
@@ -8994,7 +8996,7 @@ built-in.
 @end deftypefn
 
 @deftypefn {Built-in Function} void __builtin_arc_kflag (unsigned int @var{cc})
-Only valid with @option{-mcpu=ARCv2EM}. Generates:
+Only valid for ARCv2 architecture. Generates:
 @example
 kflag  @var{cc}
 @end example
@@ -9015,6 +9017,7 @@ Only available with @option{-mmul64}.  Generates:
 @example
 mul64  @var{a}, @var{b}
 @end example
+This builtin is deprecated.
 @end deftypefn
 
 @deftypefn {Built-in Function} void __builtin_arc_mulu64 (unsigned int @var{a}, unsigned int @var{b})
@@ -9022,6 +9025,7 @@ Only available with @option{-mmul64}.  Generates:
 @example
 mulu64  @var{a}, @var{b}
 @end example
+This builtin is deprecated.
 @end deftypefn
 
 @deftypefn {Built-in Function} void __builtin_arc_nop (void)

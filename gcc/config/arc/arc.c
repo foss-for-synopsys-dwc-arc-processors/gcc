@@ -5407,17 +5407,15 @@ arc_legitimate_address_p (enum machine_mode mode, rtx x, bool strict)
    has an effect that depends on the machine mode it is used for.  */
 
 static bool
-arc_mode_dependent_address_p (const_rtx addr, addr_space_t)
+arc_mode_dependent_address_p (const_rtx addr,
+			      addr_space_t addrspace ATTRIBUTE_UNUSED)
 {
   /* SYMBOL_REF is not mode dependent: it is either a small data reference,
      which is valid for loads and stores, or a limm offset, which is valid for
      loads.  */
-  /* Scaled indices are scaled by the access mode; likewise for scaled
-     offsets, which are needed for maximum offset stores.  */
+  /* Scaled indices are scaled by the access mode. */
   if (GET_CODE (addr) == PLUS
-      && (GET_CODE (XEXP ((addr), 0)) == MULT
-	  || (CONST_INT_P (XEXP ((addr), 1))
-	      && !SMALL_INT (INTVAL (XEXP ((addr), 1))))))
+      && GET_CODE (XEXP ((addr), 0)) == MULT)
     return true;
   return false;
 }
@@ -5519,7 +5517,7 @@ arc_init_builtins (void)
     def_mbuiltin (1,"__builtin_arc_core_write", void_ftype_usint_usint, ARC_BUILTIN_CORE_WRITE);
     def_mbuiltin (1,"__builtin_arc_lr", usint_ftype_usint, ARC_BUILTIN_LR);
     def_mbuiltin (1,"__builtin_arc_sr", void_ftype_usint_usint, ARC_BUILTIN_SR);
-    def_mbuiltin (TARGET_ARC700,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
+    def_mbuiltin (TARGET_ARC700 || TARGET_V2,"__builtin_arc_trap_s", void_ftype_usint, ARC_BUILTIN_TRAP_S);
     def_mbuiltin (TARGET_ARC700 || TARGET_V2,"__builtin_arc_unimp_s", void_ftype_void, ARC_BUILTIN_UNIMP_S);
     def_mbuiltin (1,"__builtin_arc_aligned", int_ftype_pcvoid_int, ARC_BUILTIN_ALIGNED);
 
@@ -10768,7 +10766,7 @@ arc_variable_issue (FILE *dump ATTRIBUTE_UNUSED,
 
       int unit = -1;
       int old_unit = -1;
-      switch (arc_attr_type(insn))
+      switch (arc_attr_type (insn))
 	{
 	case TYPE_MOVE:
 	case TYPE_CMOVE:

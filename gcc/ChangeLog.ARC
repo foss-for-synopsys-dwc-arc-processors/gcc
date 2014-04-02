@@ -1,3 +1,11 @@
+2013-04-02 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_mode_dependent_address_p): Update
+          condition when the address is mode dependent.
+	  (__builtin_arc_trap_s): Enable builtin for ARCv2.
+	* doc/extend.texi: Update document.
+	* testsuite/gcc.target/arc/pr9000727530.c: New test.
+
 2013-03-28 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (movsi_ne): Update pattern.
