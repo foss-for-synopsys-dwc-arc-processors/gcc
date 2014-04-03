@@ -1,3 +1,7 @@
+2013-04-03 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (*extendhisi2_i): Update pattern, use Ucd.
+
 2013-04-02 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_mode_dependent_address_p): Update

@@ -671,7 +671,7 @@
 ; N.B. operand 1 of alternative 7 expands into pcl,symbol@gotpc .
 (define_insn "*movsi_insn"                       ;   0     1     2    3  4 5   6    7   8   9    10   11  12  13     14     15  16  17  18  19  20  21   22   23   24
   [(set (match_operand:SI 0 "move_dest_operand"  "=Rcq,Rcq#q,    w,   W, w,w,  w,???w, ?w,  w,Rcq#q,   w,Rcq,  S,   Us<,RcqRck,!*x,!*Rsd,!*Rcd,  r,Usd,  m,???m,VUsc,VUsc")
-	(match_operand:SI 1 "move_src_operand"     "cL,   cP,Rcq#q,WCm1,cL,I,Crr,?Rac,Cpc,Clb, ?Cal,?Cal,Uts,Rcq,RcqRck,   Us>,Usd,  Usd,Ucd,  m,!*x,  c,?Rac, Cm3, C32"))]
+	(match_operand:SI 1 "move_src_operand"     "cL,   cP,Rcq#q,WCm1,cL,I,Crr,?Rac,Cpc,Clb, ?Cal,?Cal,Uts,Rcq,RcqRck,   Us>,Usd,  Usd,  Ucd,  m,!*x,  c,?Rac, Cm3, C32"))]
   "register_operand (operands[0], SImode)
    || register_operand (operands[1], SImode)
    || (CONSTANT_P (operands[1])
@@ -1553,7 +1553,7 @@
 
 (define_insn "*extendhisi2_i"
   [(set (match_operand:SI 0 "dest_reg_operand"                     "=Rcqq,w,Rcqq,r")
-	(sign_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "Rcqq,c,   T,m")))]
+	(sign_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "Rcqq,c, Ucd,m")))]
   ""
   "*
    switch (which_alternative)
@@ -1563,7 +1563,7 @@
    case 1:
     return TARGET_V2 ? \"sexh %0,%1\" : \"sexw %0,%1\";
    case 2:
-    return \"ldh%?.x %0, %1\";
+    return \"ldh%?.x %0,%1\";
    case 3:
     return TARGET_V2 ? \"ldh.x%U1%V1 %0,%1\" : \"ldw.x%U1%V1 %0,%1\";
    default:
