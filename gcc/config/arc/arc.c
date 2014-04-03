@@ -9913,10 +9913,10 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, boo
 		    valid = true;
 		  break;
 		case 4:
-		  /* u5 immediates allowed in 32bit access code
+		  /* Only u5 immediates allowed in 32bit access code
 		     density instructions. */
 		  if (REGNO (plus0) <= 31)
-		    valid = true;
+		    return ((off < 32) && (off % 4 == 0));
 		  break;
 		default:
 		  return false;
