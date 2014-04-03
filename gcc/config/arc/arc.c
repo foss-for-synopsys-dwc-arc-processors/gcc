@@ -9839,6 +9839,10 @@ arc_spill_class (reg_class_t /* orig_class */, enum machine_mode)
   return GENERAL_REGS;
 }
 
+/* Return true if OP is an acceptable memory operand for ARCompact
+   16-bit load instructions of MODE. SCALED indicates if address can
+   be scaled. CODE_DENSITY indicates ARCv2 code density operations are
+   available. */
 bool
 compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, bool scaled)
 {
@@ -9847,16 +9851,17 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, boo
 
   /* .di instructions have no 16-bit form.  */
   if (MEM_VOLATILE_P (op) && !TARGET_VOLATILE_CACHE_SET)
-    return 0;
+    return false;
 
   if (mode == VOIDmode)
     mode = GET_MODE (op);
 
   size = GET_MODE_SIZE (mode);
 
-  /* dword operations really put out 2 instructions, so eliminate them.  */
+  /* dword operations really put out 2 instructions, so eliminate
+     them. */
   if (size > UNITS_PER_WORD)
-    return 0;
+    return false;
 
   /* Decode the address now.  */
   addr = XEXP (op, 0);
@@ -9866,53 +9871,81 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, boo
       return (REGNO (addr) >= FIRST_PSEUDO_REGISTER
 	      || COMPACT_GP_REG_P (REGNO (addr))
 	      || (SP_REG_P (REGNO (addr)) && (size != 2)));
-      /* Reverting for the moment since ldw_s does not have sp as a valid
-	 parameter.  */
+      /* Reverting for the moment since ld/st{w,h}_s does not have sp
+	 as a valid parameter. */
     case PLUS:
       plus0 = XEXP (addr, 0);
       plus1 = XEXP (addr, 1);
 
-      if ((GET_CODE (plus0) == REG)
+      if (REG_P (plus0) && REG_P (plus1)
 	  && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
 	      || COMPACT_GP_REG_P (REGNO (plus0)))
-	  && ((GET_CODE (plus1) == REG)
-	      && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
-		  || COMPACT_GP_REG_P (REGNO (plus1)))))
+	  && ((REGNO (plus1) >= FIRST_PSEUDO_REGISTER)
+	      || COMPACT_GP_REG_P (REGNO (plus1))))
 	{
 	  return !code_density;
 	}
 
-      if ((GET_CODE (plus0) == REG)
-	  && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
-	      || (COMPACT_GP_REG_P (REGNO (plus0)) && !code_density)
-	      || (REGNO (plus0) <= 31 && code_density))
-	  && (GET_CODE (plus1) == CONST_INT))
+      if (REG_P (plus0) && CONST_INT_P (plus1))
 	{
+	  bool valid = false;
+
 	  off = INTVAL (plus1);
 
-	  /* Negative offset is not supported in 16-bit load/store insns.  */
+	  /* Negative offset is not supported in 16-bit load/store
+	     insns. */
 	  if (off < 0)
-	    return 0;
+	    return false;
 
-	  /* Only u5 immediates allowed in code density instructions. */
+	  if (REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
+	    valid = true;
+
 	  if (code_density)
-	    return ((size == 4) && (off < 32) && (off % 4 == 0));
-
-	  switch (size)
 	    {
-	    case 1:
-	      return (off < 32);
-	    case 2:
-	      return ((off < 64) && (off % 2 == 0));
-	    case 4:
-	      return ((off < 128) && (off % 4 == 0));
+	      switch (size)
+		{
+		case 1:
+		  return false;
+		case 2:
+		  /* This is an ldh_s.x instruction, check the u6
+		     immediate. */
+		  if (COMPACT_GP_REG_P (REGNO (plus0)))
+		    valid = true;
+		  break;
+		case 4:
+		  /* u5 immediates allowed in 32bit access code
+		     density instructions. */
+		  if (REGNO (plus0) <= 31)
+		    valid = true;
+		  break;
+		default:
+		  return false;
+		}
+	    }
+	  else
+	    if (COMPACT_GP_REG_P (REGNO (plus0)))
+	      valid = true;
+
+	  if (valid)
+	    {
+
+	      switch (size)
+		{
+		case 1:
+		  return (off < 32);
+		case 2:
+		  return ((off < 64) && (off % 2 == 0));
+		case 4:
+		  return ((off < 128) && (off % 4 == 0));
+		default:
+		  return false;
+		}
 	    }
 	}
 
-      if ((GET_CODE (plus0) == REG)
+      if (REG_P (plus0) && CONST_INT_P (plus1)
 	  && ((REGNO (plus0) >= FIRST_PSEUDO_REGISTER)
 	      || SP_REG_P (REGNO (plus0)))
-	  && (GET_CODE (plus1) == CONST_INT)
 	  && !code_density)
 	{
 	  off = INTVAL (plus1);
@@ -9932,7 +9965,7 @@ compact_memory_operand_p (rtx op, enum machine_mode mode, bool code_density, boo
       /* TODO: 'gp' and 'pcl' are to supported as base address operand
 	 for 16-bit load instructions.  */
     }
-  return 0;
+  return false;
 }
 
 bool

@@ -1,6 +1,11 @@
 2013-04-03 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (*extendhisi2_i): Update pattern, use Ucd.
+	* config/arc/arc.c (compact_memory_operand_p): Refurbish the
+          function to fit the ldh_s.x instruction needs.
+	* config/arc/constraints.md: Use compact_memory_operand_p for
+          memory constraint "T".
+	* config/arc/predicates.md (compact_load_memory_operand): Remove it.
 
 2013-04-02 Claudiu Zissulescu <claziss@synopsys.com>
 

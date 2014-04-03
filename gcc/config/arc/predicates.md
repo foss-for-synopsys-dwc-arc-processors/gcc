@@ -183,15 +183,6 @@
 )
 
 ;; Return true if OP is an acceptable memory operand for ARCompact
-;; 16-bit load instructions.
-(define_predicate "compact_load_memory_operand"
-  (match_code "mem")
-  {
-   return compact_memory_operand_p (op, mode, false, false);
-  }
-)
-
-;; Return true if OP is an acceptable memory operand for ARCompact
 ;; 16-bit store instructions
 (define_predicate "compact_store_memory_operand"
   (match_code "mem")

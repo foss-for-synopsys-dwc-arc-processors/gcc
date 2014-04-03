@@ -254,11 +254,13 @@
        (match_test "1")))
 
 ;; Memory constraints
+;; Return true if OP is an acceptable memory operand for ARCompact
+;; 16-bit load instructions.
 (define_memory_constraint "T"
   "@internal
    A valid memory operand for ARCompact load instructions"
   (and (match_code "mem")
-       (match_test "compact_load_memory_operand (op, VOIDmode)")))
+       (match_test "compact_memory_operand_p (op, mode, false, false)")))
 
 (define_memory_constraint "Uts"
   "@internal
