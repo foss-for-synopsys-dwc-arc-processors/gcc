@@ -258,7 +258,7 @@ along with GCC; see the file COPYING3.  If not see
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
   "%{mARC600|mA6: -mcpu=ARC600 %<mARC600 %<mA6}" \
   "%{mARC601: -mcpu=ARC601 %<mARC601}" \
-  "%{mARC700|mA7: -mcpu=ARC700 %<mARC700 %<mA7}" \
+  "%{mARC700|mA7|marc700: -mcpu=ARC700 %<mARC700 %<mA7 %<marc700}" \
   "%{mav2em|mARCv2EM|mEM: -mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM}" \
   "%{mav2hs|mARCv2HS|mHS: -mcpu=ARCv2HS %<mav2hs %<ARCv2HS %<mHS}" \
   "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}" \

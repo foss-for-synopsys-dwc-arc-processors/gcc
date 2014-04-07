@@ -1,3 +1,9 @@
+2013-04-07 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Identation fix.
+	* config/arc/arc.h: Add marc700 alias.
+	* config/arc/arc.opt: Likewise.
+
 2013-04-03 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (*extendhisi2_i): Update pattern, use Ucd.

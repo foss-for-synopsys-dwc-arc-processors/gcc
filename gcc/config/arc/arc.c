@@ -68,40 +68,40 @@ static const char *arc_cpu_string = "";
 
 /* ??? Loads can handle any constant, stores can only handle small ones.  */
 /* OTOH, LIMMs cost extra, so their usefulness is limited.  */
-#define RTX_OK_FOR_OFFSET_P(MODE, X) \
-(GET_CODE (X) == CONST_INT           \
- && SMALL_INT_RANGE (INTVAL (X), (GET_MODE_SIZE (MODE) - 1) & -4, \
-		     (INTVAL (X) & (GET_MODE_SIZE (MODE) - 1) & 3 \
-		      ? 0 \
-		      : -(-GET_MODE_SIZE (MODE) | -4) >> 1)))
+#define RTX_OK_FOR_OFFSET_P(MODE, X)					\
+  (GET_CODE (X) == CONST_INT						\
+   && SMALL_INT_RANGE (INTVAL (X), (GET_MODE_SIZE (MODE) - 1) & -4,	\
+		       (INTVAL (X) & (GET_MODE_SIZE (MODE) - 1) & 3	\
+			? 0						\
+			: -(-GET_MODE_SIZE (MODE) | -4) >> 1)))
 
 #define LEGITIMATE_OFFSET_ADDRESS_P(MODE, X, INDEX, STRICT) \
-(GET_CODE (X) == PLUS			     \
-  && RTX_OK_FOR_BASE_P (XEXP (X, 0), (STRICT))         \
-  && ((INDEX && RTX_OK_FOR_INDEX_P (XEXP (X, 1), (STRICT)) \
-       && GET_MODE_SIZE ((MODE)) <= 4) \
-      || RTX_OK_FOR_OFFSET_P (MODE, XEXP (X, 1))))
+  (GET_CODE (X) == PLUS					    \
+   && RTX_OK_FOR_BASE_P (XEXP (X, 0), (STRICT))		    \
+   && ((INDEX && RTX_OK_FOR_INDEX_P (XEXP (X, 1), (STRICT)) \
+	&& GET_MODE_SIZE ((MODE)) <= 4)			    \
+       || RTX_OK_FOR_OFFSET_P (MODE, XEXP (X, 1))))
 
-#define LEGITIMATE_SCALED_ADDRESS_P(MODE, X, STRICT) \
-(GET_CODE (X) == PLUS \
- && GET_CODE (XEXP (X, 0)) == MULT \
- && RTX_OK_FOR_INDEX_P (XEXP (XEXP (X, 0), 0), (STRICT)) \
- && GET_CODE (XEXP (XEXP (X, 0), 1)) == CONST_INT \
- && ((GET_MODE_SIZE (MODE) == 2 && INTVAL (XEXP (XEXP (X, 0), 1)) == 2) \
-     || (GET_MODE_SIZE (MODE) == 4 && INTVAL (XEXP (XEXP (X, 0), 1)) == 4)) \
- && (RTX_OK_FOR_BASE_P (XEXP (X, 1), (STRICT)) \
-     || (flag_pic ? CONST_INT_P (XEXP (X, 1)) : CONSTANT_P (XEXP (X, 1)))))
+#define LEGITIMATE_SCALED_ADDRESS_P(MODE, X, STRICT)			\
+  (GET_CODE (X) == PLUS							\
+   && GET_CODE (XEXP (X, 0)) == MULT					\
+   && RTX_OK_FOR_INDEX_P (XEXP (XEXP (X, 0), 0), (STRICT))		\
+   && GET_CODE (XEXP (XEXP (X, 0), 1)) == CONST_INT			\
+   && ((GET_MODE_SIZE (MODE) == 2 && INTVAL (XEXP (XEXP (X, 0), 1)) == 2) \
+       || (GET_MODE_SIZE (MODE) == 4 && INTVAL (XEXP (XEXP (X, 0), 1)) == 4)) \
+   && (RTX_OK_FOR_BASE_P (XEXP (X, 1), (STRICT))			\
+       || (flag_pic ? CONST_INT_P (XEXP (X, 1)) : CONSTANT_P (XEXP (X, 1)))))
 
-#define LEGITIMATE_SMALL_DATA_ADDRESS_P(X) \
-(GET_CODE (X) == PLUS			     \
- && (REG_P (XEXP(X,0)) && REGNO (XEXP (X,0)) == 26)           \
-&& ((GET_CODE (XEXP(X,1)) == SYMBOL_REF \
- && SYMBOL_REF_SMALL_P (XEXP (X,1)))  ||\
- (GET_CODE (XEXP (X,1)) == CONST && \
-  GET_CODE (XEXP(XEXP(X,1),0)) == PLUS && \
-  GET_CODE (XEXP(XEXP(XEXP(X,1),0),0)) == SYMBOL_REF \
-  && SYMBOL_REF_SMALL_P (XEXP(XEXP (XEXP(X,1),0),0)) \
-  && GET_CODE (XEXP(XEXP (XEXP(X,1),0), 1)) == CONST_INT)))
+#define LEGITIMATE_SMALL_DATA_ADDRESS_P(X)				\
+  (GET_CODE (X) == PLUS							\
+   && (REG_P (XEXP(X,0)) && REGNO (XEXP (X,0)) == 26)			\
+   && ((GET_CODE (XEXP(X,1)) == SYMBOL_REF				\
+	&& SYMBOL_REF_SMALL_P (XEXP (X,1)))  ||				\
+       (GET_CODE (XEXP (X,1)) == CONST &&				\
+	GET_CODE (XEXP(XEXP(X,1),0)) == PLUS &&				\
+	GET_CODE (XEXP(XEXP(XEXP(X,1),0),0)) == SYMBOL_REF		\
+	&& SYMBOL_REF_SMALL_P (XEXP(XEXP (XEXP(X,1),0),0))		\
+	&& GET_CODE (XEXP(XEXP (XEXP(X,1),0), 1)) == CONST_INT)))
 
 /* Array of valid operand punctuation characters.  */
 char arc_punct_chars[256];
@@ -125,25 +125,25 @@ struct GTY (()) arc_ccfsm
 #define ARC_CCFSM_RECORD_BRANCH_DELETED(STATE) \
   ((STATE)->state += 2)
 
-#define ARC_CCFSM_COND_EXEC_P(STATE) \
+#define ARC_CCFSM_COND_EXEC_P(STATE)				     \
   ((STATE)->state == 3 || (STATE)->state == 4 || (STATE)->state == 5 \
    || current_insn_predicate)
 
 /* Check if INSN has a 16 bit opcode considering struct arc_ccfsm *STATE.  */
-#define CCFSM_ISCOMPACT(INSN,STATE) \
-  (ARC_CCFSM_COND_EXEC_P (STATE) \
-   ? (get_attr_iscompact (INSN) == ISCOMPACT_TRUE \
+#define CCFSM_ISCOMPACT(INSN,STATE)			   \
+  (ARC_CCFSM_COND_EXEC_P (STATE)			   \
+   ? (get_attr_iscompact (INSN) == ISCOMPACT_TRUE	   \
       || get_attr_iscompact (INSN) == ISCOMPACT_TRUE_LIMM) \
    : get_attr_iscompact (INSN) != ISCOMPACT_FALSE)
 
 /* Likewise, but also consider that INSN might be in a delay slot of JUMP.  */
-#define CCFSM_DBR_ISCOMPACT(INSN,JUMP,STATE) \
-  ((ARC_CCFSM_COND_EXEC_P (STATE) \
-    || (JUMP_P (JUMP) \
-	&& INSN_ANNULLED_BRANCH_P (JUMP) \
+#define CCFSM_DBR_ISCOMPACT(INSN,JUMP,STATE)			   \
+  ((ARC_CCFSM_COND_EXEC_P (STATE)				   \
+    || (JUMP_P (JUMP)						   \
+	&& INSN_ANNULLED_BRANCH_P (JUMP)			   \
 	&& (TARGET_AT_DBR_CONDEXEC || INSN_FROM_TARGET_P (INSN)))) \
-   ? (get_attr_iscompact (INSN) == ISCOMPACT_TRUE \
-      || get_attr_iscompact (INSN) == ISCOMPACT_TRUE_LIMM) \
+   ? (get_attr_iscompact (INSN) == ISCOMPACT_TRUE		   \
+      || get_attr_iscompact (INSN) == ISCOMPACT_TRUE_LIMM)	   \
    : get_attr_iscompact (INSN) != ISCOMPACT_FALSE)
 
 /* The maximum number of insns skipped which will be conditionalised if

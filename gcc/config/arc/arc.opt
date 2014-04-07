@@ -53,6 +53,10 @@ mARC700
 Target Report
 Same as -mA7
 
+marc700
+Target Report
+Same as -mA7
+
 ; This is here just for documentation,
 ; it is really handled in DRIVER_SELF_SPECS.
 mav2em
