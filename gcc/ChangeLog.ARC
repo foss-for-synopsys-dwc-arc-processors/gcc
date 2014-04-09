@@ -1,5 +1,9 @@
 2013-04-07 Claudiu Zissulescu <claziss@synopsys.com>
 
+	* config/arc/predicates.md (mult_operator): Update.
+
+2013-04-07 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc.c: Identation fix.
 	* config/arc/arc.h: Add marc700 alias.
 	* config/arc/arc.opt: Likewise.
