@@ -940,7 +940,6 @@ See RS/6000 and PowerPC Options.
 -mfaster-structs  -mno-faster-structs  -mflat  -mno-flat @gol
 -mfpu  -mno-fpu  -mhard-float  -msoft-float @gol
 -mhard-quad-float  -msoft-quad-float @gol
--mlittle-endian @gol
 -mstack-bias  -mno-stack-bias @gol
 -munaligned-doubles  -mno-unaligned-doubles @gol
 -mv8plus  -mno-v8plus  -mvis  -mno-vis @gol
@@ -8195,7 +8194,7 @@ compiled.  All public functions and variables with the exception of @code{main}
 and those merged by attribute @code{externally_visible} become static functions
 and in effect are optimized more aggressively by interprocedural optimizers.
 
-In combination with @code{-flto} using this option should not be used.
+This option should not be used in combination with @code{-flto}.
 Instead relying on a linker plugin should provide safer and more precise
 information.
 
@@ -12411,7 +12410,7 @@ points to.
 The startup code from libgcc never sets @code{EIND}.
 Notice that startup code is a blend of code from libgcc and AVR-LibC.
 For the impact of AVR-LibC on @code{EIND}, see the
-@w{@uref{http://nongnu.org/avr-libc/user-manual,AVR-LibC user manual}}.
+@w{@uref{http://nongnu.org/avr-libc/user-manual/,AVR-LibC user manual}}.
 
 @item
 It is legitimate for user-specific startup code to set up @code{EIND}
@@ -14437,8 +14436,13 @@ Intel Core CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3,
 SSE4.1, SSE4.2, AVX, AES, PCLMUL, FSGSBASE, RDRND and F16C instruction
 set support.
 
+@item core-avx2
+Intel Core CPU with 64-bit extensions, MOVBE, MMX, SSE, SSE2, SSE3, SSSE3,
+SSE4.1, SSE4.2, AVX, AVX2, AES, PCLMUL, FSGSBASE, RDRND, FMA, BMI, BMI2
+and F16C instruction set support.
+
 @item atom
-Intel Atom CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3 and SSSE3
+Intel Atom CPU with 64-bit extensions, MOVBE, MMX, SSE, SSE2, SSE3 and SSSE3
 instruction set support.
 
 @item k6
@@ -20001,11 +20005,6 @@ These @samp{-m} options are supported in addition to the above
 on SPARC-V9 processors in 64-bit environments:
 
 @table @gcctabopt
-@item -mlittle-endian
-@opindex mlittle-endian
-Generate code for a processor running in little-endian mode.  It is only
-available for a few configurations and most notably not on Solaris and Linux.
-
 @item -m32
 @itemx -m64
 @opindex m32

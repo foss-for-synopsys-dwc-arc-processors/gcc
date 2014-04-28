@@ -491,11 +491,23 @@ go_set_results (const struct __go_func_type *func, unsigned char *call_result,
 }
 
 /* Call a function.  The type of the function is FUNC_TYPE, and the
-   address is FUNC_ADDR.  PARAMS is an array of parameter addresses.
-   RESULTS is an array of result addresses.  */
+   closure is FUNC_VAL.  PARAMS is an array of parameter addresses.
+   RESULTS is an array of result addresses.
+
+   If IS_INTERFACE is true this is a call to an interface method and
+   the first argument is the receiver, which is always a pointer.
+   This argument, the receiver, is not described in FUNC_TYPE.
+
+   If IS_METHOD is true this is a call to a method expression.  The
+   first argument is the receiver.  It is described in FUNC_TYPE, but
+   regardless of FUNC_TYPE, it is passed as a pointer.
+
+   If neither IS_INTERFACE nor IS_METHOD is true then we are calling a
+   function indirectly, and we must pass a closure pointer via
+   __go_set_closure.  The pointer to pass is simply FUNC_VAL.  */
 
 void
-reflect_call (const struct __go_func_type *func_type, const void *func_addr,
+reflect_call (const struct __go_func_type *func_type, FuncVal *func_val,
 	      _Bool is_interface, _Bool is_method, void **params,
 	      void **results)
 {
@@ -507,7 +519,9 @@ reflect_call (const struct __go_func_type *func_type, const void *func_addr,
 
   call_result = (unsigned char *) malloc (go_results_size (func_type));
 
-  ffi_call (&cif, func_addr, call_result, params);
+  if (!is_interface && !is_method)
+    __go_set_closure (func_val);
+  ffi_call (&cif, func_val->fn, call_result, params);
 
   /* Some day we may need to free result values if RESULTS is
      NULL.  */
@@ -521,7 +535,7 @@ reflect_call (const struct __go_func_type *func_type, const void *func_addr,
 
 void
 reflect_call (const struct __go_func_type *func_type __attribute__ ((unused)),
-	      const void *func_addr __attribute__ ((unused)),
+	      FuncVal *func_val __attribute__ ((unused)),
 	      _Bool is_interface __attribute__ ((unused)),
 	      _Bool is_method __attribute__ ((unused)),
 	      void **params __attribute__ ((unused)),

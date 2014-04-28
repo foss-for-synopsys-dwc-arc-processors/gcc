@@ -555,7 +555,7 @@ null_ptr_cst_p (tree t)
     {
       /* Core issue 903 says only literal 0 is a null pointer constant.  */
       if (cxx_dialect < cxx0x)
-	t = maybe_constant_value (t);
+	t = maybe_constant_value (fold_non_dependent_expr_sfinae (t, tf_none));
       STRIP_NOPS (t);
       if (integer_zerop (t) && !TREE_OVERFLOW (t))
 	return true;
@@ -1276,7 +1276,10 @@ standard_conversion (tree to, tree from, tree expr, bool c_cast_p,
 			   static_fn_type (tofn)))
 	return NULL;
 
-      from = build_memfn_type (fromfn, tbase, cp_type_quals (tbase));
+      from = build_memfn_type (fromfn,
+                               tbase,
+                               cp_type_quals (tbase),
+                               type_memfn_rqual (tofn));
       from = build_ptrmemfunc_type (build_pointer_type (from));
       conv = build_conv (ck_pmem, from, conv);
       conv->base_p = true;
@@ -1950,7 +1953,21 @@ add_function_candidate (struct z_candidate **candidates,
 	    {
 	      parmtype = cp_build_qualified_type
 		(ctype, cp_type_quals (TREE_TYPE (parmtype)));
-	      parmtype = build_pointer_type (parmtype);
+	      if (FUNCTION_REF_QUALIFIED (TREE_TYPE (fn)))
+		{
+		  /* If the function has a ref-qualifier, the implicit
+		     object parameter has reference type.  */
+		  bool rv = FUNCTION_RVALUE_QUALIFIED (TREE_TYPE (fn));
+		  parmtype = cp_build_reference_type (parmtype, rv);
+		  if (TREE_CODE (arg) == CONVERT_EXPR
+		      && TYPE_PTR_P (TREE_TYPE (arg)))
+		    /* Strip conversion from reference to pointer.  */
+		    arg = TREE_OPERAND (arg, 0);
+		  arg = build_fold_indirect_ref (arg);
+		  argtype = lvalue_type (arg);
+		}
+	      else
+		parmtype = build_pointer_type (parmtype);
 	    }
 
 	  /* Core issue 899: When [copy-]initializing a temporary to be bound
@@ -6178,8 +6195,8 @@ convert_like_real (conversion *convs, tree expr, tree fn, int argnum,
   if (convs->check_narrowing)
     check_narrowing (totype, expr);
 
-  if (issue_conversion_warnings && (complain & tf_warning))
-    expr = convert_and_check (totype, expr);
+  if (issue_conversion_warnings)
+    expr = cp_convert_and_check (totype, expr, complain);
   else
     expr = convert (totype, expr);
 
@@ -6373,7 +6390,7 @@ convert_default_arg (tree type, tree arg, tree fn, int parmnum,
   push_defarg_context (fn);
 
   if (fn && DECL_TEMPLATE_INFO (fn))
-    arg = tsubst_default_argument (fn, type, arg);
+    arg = tsubst_default_argument (fn, type, arg, complain);
 
   /* Due to:
 
@@ -6695,6 +6712,10 @@ build_over_call (struct z_candidate *cand, int flags, tsubst_flags_t complain)
 	return error_mark_node;
       /* else continue to get conversion error.  */
     }
+
+  /* N3276 magic doesn't apply to nested calls.  */
+  int decltype_flag = (complain & tf_decltype);
+  complain &= ~tf_decltype;
 
   /* Find maximum size of vector to hold converted arguments.  */
   parmlen = list_length (parm);
@@ -7067,7 +7088,7 @@ build_over_call (struct z_candidate *cand, int flags, tsubst_flags_t complain)
 	return error_mark_node;
     }
 
-  return build_cxx_call (fn, nargs, argarray, complain);
+  return build_cxx_call (fn, nargs, argarray, complain|decltype_flag);
 }
 
 /* Build and return a call to FN, using NARGS arguments in ARGARRAY.
@@ -7109,12 +7130,20 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
   if (VOID_TYPE_P (TREE_TYPE (fn)))
     return fn;
 
-  fn = require_complete_type_sfinae (fn, complain);
-  if (fn == error_mark_node)
-    return error_mark_node;
+  /* 5.2.2/11: If a function call is a prvalue of object type: if the
+     function call is either the operand of a decltype-specifier or the
+     right operand of a comma operator that is the operand of a
+     decltype-specifier, a temporary object is not introduced for the
+     prvalue. The type of the prvalue may be incomplete.  */
+  if (!(complain & tf_decltype))
+    {
+      fn = require_complete_type_sfinae (fn, complain);
+      if (fn == error_mark_node)
+	return error_mark_node;
 
-  if (MAYBE_CLASS_TYPE_P (TREE_TYPE (fn)))
-    fn = build_cplus_new (TREE_TYPE (fn), fn, complain);
+      if (MAYBE_CLASS_TYPE_P (TREE_TYPE (fn)))
+	fn = build_cplus_new (TREE_TYPE (fn), fn, complain);
+    }
   return convert_from_reference (fn);
 }
 

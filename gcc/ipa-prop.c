@@ -678,13 +678,19 @@ parm_ref_data_preserved_p (struct param_analysis_info *parm_ainfo,
   bool modified = false;
   ao_ref refd;
 
-  gcc_checking_assert (gimple_vuse (stmt));
   if (parm_ainfo && parm_ainfo->ref_modified)
     return false;
 
-  ao_ref_init (&refd, ref);
-  walk_aliased_vdefs (&refd, gimple_vuse (stmt), mark_modified, &modified,
-		      NULL);
+  if (optimize)
+    {
+      gcc_checking_assert (gimple_vuse (stmt));
+      ao_ref_init (&refd, ref);
+      walk_aliased_vdefs (&refd, gimple_vuse (stmt), mark_modified, &modified,
+			  NULL);
+    }
+  else
+    modified = true;
+
   if (parm_ainfo && modified)
     parm_ainfo->ref_modified = true;
   return !modified;
@@ -1268,7 +1274,9 @@ determine_known_aggregate_parts (gimple call, tree arg,
 
       lhs = gimple_assign_lhs (stmt);
       rhs = gimple_assign_rhs1 (stmt);
-      if (!is_gimple_reg_type (rhs))
+      if (!is_gimple_reg_type (rhs)
+	  || TREE_CODE (lhs) == BIT_FIELD_REF
+	  || contains_bitfld_component_ref_p (lhs))
 	break;
 
       lhs_base = get_ref_base_and_extent (lhs, &lhs_offset, &lhs_size,
@@ -1359,6 +1367,7 @@ determine_known_aggregate_parts (gimple call, tree arg,
 	    {
 	      struct ipa_agg_jf_item item;
 	      item.offset = list->offset - arg_offset;
+	      gcc_assert ((item.offset % BITS_PER_UNIT) == 0);
 	      item.value = unshare_expr_without_location (list->constant);
 	      jfunc->agg.items->quick_push (item);
 	    }
@@ -3674,9 +3683,15 @@ write_agg_replacement_chain (struct output_block *ob, struct cgraph_node *node)
 
   for (av = aggvals; av; av = av->next)
     {
+      struct bitpack_d bp;
+
       streamer_write_uhwi (ob, av->offset);
       streamer_write_uhwi (ob, av->index);
       stream_write_tree (ob, av->value, true);
+
+      bp = bitpack_create (ob->main_stream);
+      bp_pack_value (&bp, av->by_ref, 1);
+      streamer_write_bitpack (&bp);
     }
 }
 
@@ -3694,11 +3709,14 @@ read_agg_replacement_chain (struct lto_input_block *ib,
   for (i = 0; i <count; i++)
     {
       struct ipa_agg_replacement_value *av;
+      struct bitpack_d bp;
 
       av = ggc_alloc_ipa_agg_replacement_value ();
       av->offset = streamer_read_uhwi (ib);
       av->index = streamer_read_uhwi (ib);
       av->value = stream_read_tree (ib, data_in);
+      bp = streamer_read_bitpack (ib);
+      av->by_ref = bp_unpack_value (&bp, 1);
       av->next = aggvals;
       aggvals = av;
     }
@@ -3917,7 +3935,7 @@ ipcp_transform_function (struct cgraph_node *node)
 	  if (v->index == index
 	      && v->offset == offset)
 	    break;
-	if (!v)
+	if (!v || v->by_ref != by_ref)
 	  continue;
 
 	gcc_checking_assert (is_gimple_ip_invariant (v->value));
