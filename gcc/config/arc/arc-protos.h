@@ -64,7 +64,6 @@ extern bool check_if_valid_sleep_operand (rtx *, int);
 extern bool arc_legitimate_constant_p (enum machine_mode, rtx);
 extern bool arc_legitimate_pc_offset_p (rtx);
 extern bool arc_legitimate_pic_addr_p (rtx);
-extern void emit_pic_move (rtx *, enum machine_mode);
 extern bool arc_raw_symbolic_reference_mentioned_p (rtx, bool);
 extern bool arc_legitimate_pic_operand_p (rtx);
 extern bool arc_is_longcall_p (rtx);
@@ -127,3 +126,5 @@ extern void arc_expand_compare_and_swap (rtx *);
 #ifdef  RTX_CODE
 extern void arc_expand_atomic_op (enum rtx_code, rtx, rtx, rtx, rtx, rtx);
 #endif
+
+extern bool insn_is_tls_gd_dispatch (rtx);

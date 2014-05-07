@@ -211,7 +211,7 @@
   constant such that (~x)+1 is a power of two, and x < 0"
   (and (match_code "const_int")
        (match_test "TARGET_V2
-                    && ((ival < 0) || (ival >= 0x80000000))
+                    && ival < 0
                     && (ival != -1)
                     && IS_POWEROF2_P ((~ival) + 1)")))
 

@@ -1,3 +1,55 @@
+2014-03-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_predicate_delay_insns):
+	Fix third argument passed to conditionalize_nonjump.
+
+2014-03-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (conditionalize_nonjump): New function, broken
+	out of:
+	(arc_ifcvt) .
+	(arc_predicate_delay_insns): Use it.
+
+2014-03-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/predicates.md (extend_operand): During/after reload,
+	allow const_int_operand.
+	* config/arc/arc.md (mulsidi3_700): Use extend_operand predicate.
+	(umulsidi3_700): Likewise.  Change operand 2 constraint back to "cL".
+	(mulsi3_highpart): Change operand 2 constraint alternatives 2 and 3
+	to "i".
+	(umulsi3_highpart_i): Likewise.
+
+2013-11-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_predicate_delay_insns): New function.
+	(pass_arc_predicate_delay_insns): New rtl_opt_pass.
+	(arc_init): Register pass_arc_predicate_delay_insns if
+	flag_delayed_branch is active.
+
+2013-11-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/constraints.md (Rcq): Simplify register number test.
+
+2013-11-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Remove extra alignment;
+	use (.&-4) idiom.
+
+2013-11-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (LOGICAL_OP_NON_SHORT_CIRCUIT): Define.
+
+2013-11-07  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_ifcvt): Use commutativity, e.g.:
+	reg_a := reg_b + reg_a  ==>  reg_a := reg_a + reg_b
+
+2013-10-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_ccfsm_post_advance):
+	Add comment about TYPE_RETURN.
+
 2013-10-24  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* gcc/config/arc/arc.c (arc_ccfsm_post_advance): Also handle

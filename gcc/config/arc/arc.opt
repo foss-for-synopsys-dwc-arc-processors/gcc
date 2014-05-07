@@ -469,3 +469,13 @@ Target Joined
 mmac_
 Target Joined
 
+mtls9
+Target Report Mask(TLS9)
+Assume local tls symbols can be addressed with scaled s9 offset
+
+mtp-regno=
+Target RejectNegative Joined UInteger Var(arc_tp_regno) Init(25)
+Specify thread pointer register number
+
+mtp-regno=none
+Target RejectNegative Var(arc_tp_regno,-1)
