@@ -1988,7 +1988,7 @@
 ; short variant. LP_COUNT constraints are still valid.
 (define_insn "mulsi3_v2"
  [(set (match_operand:SI 0 "mpy_dest_reg_operand"        "=Rcqq,Rcr, r,r,Rcr,  r")
-	(mult:SI (match_operand:SI 1 "register_operand"  "    0,  0, c,0,  0,  c")
+	(mult:SI (match_operand:SI 1 "register_operand"     "%0,  0, c,0,  0,  c")
 		 (match_operand:SI 2 "nonmemory_operand" " Rcqq, cL,cL,I,Cal,Cal")))]
  "EM_MULTI"
  "mpy%? %0,%1,%2"

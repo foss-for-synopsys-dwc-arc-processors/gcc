@@ -1,3 +1,13 @@
+2013-05-09 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_init): Allow FPU single precission to
+          be used for EM.
+	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Define
+          _CPU_DEFAULT_A6, _CPU_DEFAULT_A7, _CPU_DEFAULT_EM,
+          _CPU_DEFAULT_HS.
+	* config/arc/arc.md (mulsi3_v2): Allow commutative operand.
+	* config/arc/arc.opt: Option documentation updated.
+
 2013-04-07 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/predicates.md (mult_operator): Update.

@@ -792,8 +792,13 @@ arc_init (void)
       }
 
   /* FPU support only for V2 */
-  if (!TARGET_HS && (arc_fpu_build > 0))
-      error ("FPU options are only available for ARC HS");
+  if (arc_fpu_build > 0)
+    {
+      if (TARGET_EM && (arc_fpu_build & ~(FPU_SP | FPU_SF | FPU_SC | FPU_SD)))
+	error ("FPU double precission options are available for ARC HS only.");
+      if (!TARGET_HS && !TARGET_EM)
+	error ("FPU options are available for ARC HS/EM only");
+    }
 
   /* Support mul64 generation only for ARC600.  */
   if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_V2))

@@ -89,7 +89,7 @@ Enable shift assist instructions for ARCv2
 
 matomic
 Target Report Mask(ATOMIC)
-Enable atomic instructions for ARCv2
+Enable atomic instructions.
 
 mll64
 Target Report Mask(LL64)
