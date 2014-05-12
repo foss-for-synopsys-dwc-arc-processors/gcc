@@ -1,3 +1,9 @@
+2014-05-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_eh_uses): Prototype.
+	* config/arc/arc.c (arc_eh_uses): New function.
+	* config/arc/arc.h (EH_USES): Define.
+
 2014-03-11  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/predicates.md (extend_operand): During/after reload,

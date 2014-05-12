@@ -10376,6 +10376,14 @@ arc_epilogue_uses (int regno)
     return regno == arc_return_address_regs[arc_compute_function_type (cfun)];
 }
 
+bool
+arc_eh_uses (int regno)
+{
+  if (regno == arc_tp_regno)
+    return true;
+  return false;
+}
+
 #ifndef TARGET_NO_LRA
 #define TARGET_NO_LRA !TARGET_LRA
 #endif
