@@ -960,6 +960,8 @@ arc_return_addr_rtx(COUNT,FRAME)
 
 #define EPILOGUE_USES(REGNO) arc_epilogue_uses ((REGNO))
 
+#define EH_USES(REGNO) arc_eh_uses((REGNO))
+
 /* Definitions for register eliminations.
 
    This is an array of structures.  Each structure initializes one pair
