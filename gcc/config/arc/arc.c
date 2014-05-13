@@ -794,8 +794,10 @@ arc_init (void)
   /* FPU support only for V2 */
   if (arc_fpu_build > 0)
     {
-      if (TARGET_EM && (arc_fpu_build & ~(FPU_SP | FPU_SF | FPU_SC | FPU_SD)))
+      if (TARGET_EM && (arc_fpu_build & ~(FPU_SP | FPU_SF | FPU_SC | FPU_SD | FPX_DP)))
 	error ("FPU double precission options are available for ARC HS only.");
+      if (TARGET_HS && (arc_fpu_build & FPX_DP))
+	error ("FPU double precission assist options are not available for ARC HS.");
       if (!TARGET_HS && !TARGET_EM)
 	error ("FPU options are available for ARC HS/EM only");
     }
@@ -831,7 +833,7 @@ arc_init (void)
 
   /* FPX-4. No FPX extensions mixed with FPU extensions  */
   if ((TARGET_DPFP || TARGET_SPFP)
-      && TARGET_HARD_FLOAT)
+      && TARGET_HARD_FLOAT && TARGET_HS)
     error ("No FPX/FPU mixing allowed");
 
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */

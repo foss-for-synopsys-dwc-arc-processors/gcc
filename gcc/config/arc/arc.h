@@ -166,6 +166,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mdsp-packa:-D__Xdsp_packa} %{mcrc:-D__Xcrc} %{mdvbf:-D__Xdvbf} \
 %{mtelephony:-D__Xtelephony} %{mxy:-D__Xxy} %{mmul64: -D__Xmult32} \
 %{mlock:-D__Xlock} %{mswape:-D__Xswape} %{mrtsc:-D__Xrtsc} \
+%{mfpu=fpuda:-D__Xfpuda} \
 "
 
 #define CC1_SPEC "\
@@ -192,7 +193,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARCv2HS:%<mbarrel-shifter %<mno-mpy %<mnorm %<mswap}\
 %{mbarrel-shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
 %{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*} \
-%{msimd} \
+%{msimd} %{mfpu=fpuda:-mfpuda} \
 %{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
 %{mcpu=ARC700:%{mlock}} \
 %{mcpu=ARC700:%{mswape}} \
@@ -295,7 +296,7 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_MIXED_CODE (TARGET_MIXED_CODE_SET)
 
 #define TARGET_SPFP (TARGET_SPFP_FAST_SET || TARGET_SPFP_COMPACT_SET)
-#define TARGET_DPFP (TARGET_DPFP_FAST_SET || TARGET_DPFP_COMPACT_SET)
+#define TARGET_DPFP (TARGET_DPFP_FAST_SET || TARGET_DPFP_COMPACT_SET || (arc_fpu_build & FPX_DP))
 
 #define SUBTARGET_SWITCHES
 

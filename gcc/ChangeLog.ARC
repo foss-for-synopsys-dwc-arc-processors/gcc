@@ -1,3 +1,16 @@
+2013-05-13 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-opts.h (FPX_DP): Define.
+	* config/arc/arc.c (arc_init): Allow use of double precision
+          assist instructions by EM cpu family.
+	* config/arc/arc.h (__Xfpuda): Define when -mfpu=fpuda is used.
+	(ASM_SPEC): Pass -mfpuda option to assembler.
+	* config/arc/arc.md (subdf3): Fix needed by EM as reverse sub
+          double precision operations are not available.
+	* config/arc/arc.opt (fpuda): New option.
+	* config/arc/fpx.md: Clean up and filter out use of drsubh
+          instructions for EM.
+
 2013-05-09 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_init): Allow FPU single precission to

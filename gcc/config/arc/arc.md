@@ -5882,13 +5882,16 @@
   "
    if (TARGET_DPFP)
     {
-     if (GET_CODE (operands[1]) == CONST_DOUBLE || GET_CODE (operands[2]) == CONST_DOUBLE)
+     if ((GET_CODE (operands[1]) == CONST_DOUBLE) || GET_CODE (operands[2]) == CONST_DOUBLE)
       {
         rtx high, low, tmp;
         int const_index = ((GET_CODE (operands[1]) == CONST_DOUBLE) ? 1: 2);
         split_double (operands[const_index], &low, &high);
         tmp = force_reg (SImode, high);
-        emit_insn(gen_subdf3_insn(operands[0], operands[1], operands[2],tmp,const0_rtx));
+        if (TARGET_EM && GET_CODE (operands[1]) == CONST_DOUBLE)
+           emit_insn(gen_subdf3_insn(operands[0], operands[2], operands[1],tmp,const0_rtx));
+        else
+           emit_insn(gen_subdf3_insn(operands[0], operands[1], operands[2],tmp,const0_rtx));
       }
     else
      emit_insn(gen_subdf3_insn(operands[0], operands[1], operands[2],const1_rtx,const1_rtx));
