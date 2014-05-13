@@ -1,3 +1,9 @@
+2014-05-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_eh_uses): Prototype.
+	* config/arc/arc.c (arc_eh_uses): New function.
+	* config/arc/arc.h (EH_USES): Define.
+
 2013-04-07 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/predicates.md (mult_operator): Update.
@@ -614,7 +620,6 @@
 	* config/arc/arc.opt: Remove A5 variant, add HS variant.
 	* config/arc/constraints.md: Change TARGET_EM to TARGET_V2
 
->>>>>>> arc-4.8-64bit
 2013-10-14 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Remove CFA_FRAME_BASE_OFFSET and
