@@ -836,6 +836,10 @@ arc_init (void)
       && TARGET_HARD_FLOAT && TARGET_HS)
     error ("No FPX/FPU mixing allowed");
 
+  /* ll64 ops only available for HS. */
+  if (TARGET_LL64 && !TARGET_HS)
+    error ("-mll64 available on HS cores only");
+
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
   if (flag_pic && (!(TARGET_ARC700 || TARGET_V2)))
     {
@@ -8073,7 +8077,13 @@ force_offsettable (rtx addr, HOST_WIDE_INT size, bool reuse)
 
 /* Like move_by_pieces, but take account of load latency,
    and actual offset ranges.
-   Return true on success.  */
+   Return true on success.
+   Arguments:
+   -Destination
+   -Source
+   -Length
+   -Alignment
+*/
 
 bool
 arc_expand_movmem (rtx *operands)
@@ -8092,19 +8102,29 @@ arc_expand_movmem (rtx *operands)
   if (!CONST_INT_P (operands[2]))
     return false;
   size = INTVAL (operands[2]);
+
   /* move_by_pieces_ninsns is static, so we can't use it.  */
   if (align >= 4)
-    n_pieces = (size + 2) / 4U + (size & 1);
+    {
+      if (TARGET_LL64)
+	piece = 8;
+      n_pieces = (size + 2) / piece + (size & 1);
+    }
   else if (align == 2)
     n_pieces = (size + 1) / 2U;
   else
     n_pieces = size;
   if (n_pieces >= (unsigned int) (optimize_size ? 3 : 15))
     return false;
-  if (piece > 4)
+
+  if (TARGET_LL64 && piece > 8)
+    piece = 8;
+  else if (!TARGET_LL64 && piece > 4)
     piece = 4;
+
   dst_addr = force_offsettable (XEXP (operands[0], 0), size, 0);
   src_addr = force_offsettable (XEXP (operands[1], 0), size, 0);
+
   store[0] = store[1] = NULL_RTX;
   tmpx[0] = tmpx[1] = NULL_RTX;
   for (i = 0; size > 0; i ^= 1, size -= piece)
@@ -8130,6 +8150,7 @@ arc_expand_movmem (rtx *operands)
       dst_addr = plus_constant (Pmode, dst_addr, piece);
       src_addr = plus_constant (Pmode, src_addr, piece);
     }
+
   if (store[i])
     emit_insn (store[i]);
   if (store[i^1])

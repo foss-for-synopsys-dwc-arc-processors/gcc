@@ -1,3 +1,8 @@
+2013-05-16 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_expand_movmem): Use double load/store
+	operations.
+
 2013-05-13 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-opts.h (FPX_DP): Define.
