@@ -1,5 +1,11 @@
 2013-05-16 Claudiu Zissulescu <claziss@synopsys.com>
 
+	* config/arc/arc.c (arc_expand_movmem): Fix computation on
+          n_pieces.
+	* config/arc/arc.md (addsi3_mixed): Fix attribute.
+
+2013-05-16 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc.c (arc_expand_movmem): Use double load/store
 	operations.
 

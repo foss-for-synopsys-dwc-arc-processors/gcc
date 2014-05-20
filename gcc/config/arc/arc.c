@@ -8106,9 +8106,13 @@ arc_expand_movmem (rtx *operands)
   /* move_by_pieces_ninsns is static, so we can't use it.  */
   if (align >= 4)
     {
+      int tmp = 4;
       if (TARGET_LL64)
-	piece = 8;
-      n_pieces = (size + 2) / piece + (size & 1);
+	{
+	  piece = 8;
+	  tmp = 8;
+	}
+      n_pieces = (size + 2) / tmp + (size & 1);
     }
   else if (align == 2)
     n_pieces = (size + 1) / 2U;

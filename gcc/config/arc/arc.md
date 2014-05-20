@@ -1672,7 +1672,7 @@
 	      (const_string "maybe")))
    (set_attr "length"       "*,*,*,*,*,*,*,*,*,4,4,4,4,4,4,4,*,8,8")
    (set_attr "predicable"   "no,no,no,no,no,no,no,no,no,yes,yes,yes,no,no,no,no,no,yes,no")
-   (set_attr "cond"         "canuse,nocond,canuse,nocond,canuse,canuse,nocond,nocond,nocond,canuse,canuse,canuse,nocond,nocond,canuse_limm,canuse_limm,canuse,canuse,nocond")
+   (set_attr "cond"         "canuse,nocond,nocond,nocond,canuse,canuse,nocond,nocond,nocond,canuse,canuse,canuse,nocond,nocond,canuse_limm,canuse_limm,canuse,canuse,nocond")
    (set_attr "cpu_facility" "*,*,em,cd,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*")
 ])
 
