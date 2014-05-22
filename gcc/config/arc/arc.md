@@ -593,8 +593,8 @@
 ; The iscompact attribute allows the epilogue expander to know for which
 ; insns it should lengthen the return insn.
 (define_insn "*movqi_insn"
-  [(set (match_operand:QI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,   W, w, w,???w, w,Rcq,  S,!*x,r,m,???m")
-	(match_operand:QI 1 "move_src_operand"   " cL,   cP,Rcq#q,WCm1,cL, I,?Rac,?i,  T,Rcq,Usd,m,c,?Rac"))]
+  [(set (match_operand:QI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,   h, w, w,???w, w,Rcq,  S,!*x,r,m,???m")
+	(match_operand:QI 1 "move_src_operand"   " cL,   cP,Rcq#q,hCm1,cL, I,?Rac,?i,  T,Rcq,Usd,m,c,?Rac"))]
   "register_operand (operands[0], QImode)
    || register_operand (operands[1], QImode)"
   "@
@@ -624,8 +624,8 @@
   "if (prepare_move_operands (operands, HImode)) DONE;")
 
 (define_insn "*movhi_insn"
-  [(set (match_operand:HI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,   W, w,w,???w,Rcq#q, w,Rcq,  S,r,m,???m,VUsc,VUsc")
-	(match_operand:HI 1 "move_src_operand"    "cL,   cP,Rcq#q,WCm1,cL,I,?Rac,   ?i,?i,  T,Rcq,m,c,?Rac, Cm3,   i"))]
+  [(set (match_operand:HI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,   h, w,w,???w,Rcq#q, w,Rcq,  S,r,m,???m,VUsc,VUsc")
+	(match_operand:HI 1 "move_src_operand"    "cL,   cP,Rcq#q,hCm1,cL,I,?Rac,   ?i,?i,  T,Rcq,m,c,?Rac, Cm3,   i"))]
   "register_operand (operands[0], HImode)
    || register_operand (operands[1], HImode)
    || (CONSTANT_P (operands[1])
@@ -670,8 +670,8 @@
 ; insns it should lengthen the return insn.
 ; N.B. operand 1 of alternative 7 expands into pcl,symbol@gotpc .
 (define_insn "*movsi_insn"                       ;   0     1     2    3  4 5   6    7   8   9    10   11  12  13     14     15  16  17  18  19  20  21   22   23   24
-  [(set (match_operand:SI 0 "move_dest_operand"  "=Rcq,Rcq#q,    w,   W, w,w,  w,???w, ?w,  w,Rcq#q,   w,Rcq,  S,   Us<,RcqRck,!*x,!*Rsd,!*Rcd,  r,Usd,  m,???m,VUsc,VUsc")
-	(match_operand:SI 1 "move_src_operand"     "cL,   cP,Rcq#q,WCm1,cL,I,Crr,?Rac,Cpc,Clb, ?Cal,?Cal,Uts,Rcq,RcqRck,   Us>,Usd,  Usd,  Ucd,  m,!*x,  c,?Rac, Cm3, C32"))]
+  [(set (match_operand:SI 0 "move_dest_operand"  "=Rcq,Rcq#q,    w,   h, w,w,  w,???w, ?w,  w,Rcq#q,   w,Rcq,  S,   Us<,RcqRck,!*x,!*Rsd,!*Rcd,  r,Usd,  m,???m,VUsc,VUsc")
+	(match_operand:SI 1 "move_src_operand"     "cL,   cP,Rcq#q,hCm1,cL,I,Crr,?Rac,Cpc,Clb, ?Cal,?Cal,Uts,Rcq,RcqRck,   Us>,Usd,  Usd,  Ucd,  m,!*x,  c,?Rac, Cm3, C32"))]
   "register_operand (operands[0], SImode)
    || register_operand (operands[1], SImode)
    || (CONSTANT_P (operands[1])
@@ -1046,8 +1046,8 @@
   "if (prepare_move_operands (operands, SFmode)) DONE;")
 
 (define_insn "*movsf_insn"
-  [(set (match_operand:SF 0 "move_dest_operand" "=   W,w,w,r,m")
-	(match_operand:SF 1 "move_src_operand"   "WCm1,c,E,m,c"))]
+  [(set (match_operand:SF 0 "move_dest_operand" "=   h,w,w,r,m")
+	(match_operand:SF 1 "move_src_operand"   "hCm1,c,E,m,c"))]
   "(register_operand (operands[0], SFmode)
    || register_operand (operands[1], SFmode))
    && !(register_operand (operands[1], SFmode) && REGNO(operands[1]) == 58)"
@@ -1650,7 +1650,7 @@
 ;  register class 'W' instead of 'w'.
 (define_insn_and_split "*addsi3_mixed"
   ;;                                                      0       1    2    3   4   5   6     7    8   9   a    b     c   d e   f  10  11  12
-  [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcq#q,Rcq,   W,!*Rsd,Rcq,Rcb,Rcq, Rcqq,Rcqq,Rcw,Rcw, Rcw,    W,  W,W,  W,Rcqq,Rcw,  W")
+  [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcq#q,Rcq,   h,!*Rsd,Rcq,Rcb,Rcq, Rcqq,Rcqq,Rcw,Rcw, Rcw,    W,  W,W,  W,Rcqq,Rcw,  W")
 	(plus:SI (match_operand:SI 1 "register_operand" "%0,      c,   0, Rcqq,  0,  0,Rcb, Rcqq,   0,  0,  c,   0,    c,  c,0,  0,   0,  0,  c")
 		 (match_operand:SI 2 "nonmemory_operand" "cL,     0, Cm1,    L,CL2,Csp,CM4,RcqqK,  cO, cL,  0,cCca,cLCmL,Cca,I,C2a, Cal,Cal,Cal")))]
   ""
@@ -3319,7 +3319,7 @@
 ;; modifed cc user if second, but not first operand is a compact register.
 (define_insn "cmpsi_cc_insn_mixed"
   [(set (reg:CC CC_REG)
-	(compare:CC (match_operand:SI 0 "register_operand"  "Rcq#q,  W, c, c, qRcq, c")
+	(compare:CC (match_operand:SI 0 "register_operand"  "Rcq#q,  h, c, c, qRcq, c")
 		    (match_operand:SI 1 "nonmemory_operand" "   cO,Cm1,cI,cL,  Cal, Cal")))]
   ""
   "cmp%? %0,%B1%&"
@@ -3405,7 +3405,7 @@
 
 (define_insn "*cmpsi_cc_c_insn"
   [(set (reg:CC_C CC_REG)
-	(compare:CC_C (match_operand:SI 0 "register_operand"  "Rcqq,  W, c,Rcqq,  c")
+	(compare:CC_C (match_operand:SI 0 "register_operand"  "Rcqq,  h, c,Rcqq,  c")
 		      (match_operand:SI 1 "nonmemory_operand" "  cO,Cm1,cI, Cal,Cal")))]
   ""
   "cmp%? %0,%S1%&"
@@ -3502,7 +3502,7 @@
   [(cond_exec
      (ne (match_operand:CC_Z 2 "cc_use_register"    "Rcc,  Rcc,  Rcc,Rcc, Rcc,Rcc") (const_int 0))
      (set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,Rcq#q,Rcq#q,  w,???w,w")
-	  (match_operand:SI 1 "nonmemory_operand"   "C_0,    W, ?Cal, Lc,?Rac,?Cal")))]
+	  (match_operand:SI 1 "nonmemory_operand"   "C_0,    h, ?Cal, Lc,?Rac,?Cal")))]
   ""
   "@
 	* current_insn_predicate = 0; return \"sub%?.ne %0,%0,%0%&\";

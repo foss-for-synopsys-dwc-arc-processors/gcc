@@ -535,7 +535,7 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
    27    - frame pointer
    28    - stack pointer
    29    - ilink1
-   30    - ilink2
+   30    - ilink2 (general purpose register ARCv2)
    31    - return address register
 
    By default, the extension registers are not available.  */
@@ -601,7 +601,7 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 /* If defined, an initializer for a vector of integers, containing the
    numbers of hard registers in the order in which GCC should
    prefer to use them (from most preferred to least).  */
-#define REG_ALLOC_ORDER \
+#define REG_ALLOC_ORDER							\
 { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1,			\
   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 				\
   32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,	\
@@ -631,7 +631,7 @@ extern unsigned int arc_mode_class[];
    MODE2)' must be zero.  */
 
 /* Tie QI/HI/SI modes together.  */
-#define MODES_TIEABLE_P(MODE1, MODE2) \
+#define MODES_TIEABLE_P(MODE1, MODE2)		\
 (GET_MODE_CLASS (MODE1) == MODE_INT		\
  && GET_MODE_CLASS (MODE2) == MODE_INT		\
  && GET_MODE_SIZE (MODE1) <= UNITS_PER_WORD	\
@@ -694,6 +694,7 @@ enum reg_class
    ALL_CORE_REGS,		/* 'Rac' */
    R0R3_CODE_DENSITY_REGS,      /* 'Rcd' */
    R0R1_CODE_DENSITY_REGS,      /* 'Rsd' */
+   AC16_H_REGS,                 /* 'h' */
    ALL_REGS,
    LIM_REG_CLASSES
 };
@@ -722,6 +723,7 @@ enum reg_class
   "CHEAP_CORE_REGS",	    \
   "R0R3_CODE_DENSITY_REGS", \
   "R0R1_CODE_DENSITY_REGS", \
+  "AC16_H_REGS",	    \
   "ALL_CORE_REGS",	    \
   "ALL_REGS"          	    \
 }
@@ -756,6 +758,7 @@ enum reg_class
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
   {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
   {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
+  {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h',  r0-28, r30 */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
@@ -794,9 +797,9 @@ extern enum reg_class arc_regno_reg_class[];
    or a pseudo reg currently allocated to a suitable hard reg.
    Since they use reg_renumber, they are safe only once reg_renumber
    has been allocated, which happens in local-alloc.c.  */
-#define REGNO_OK_FOR_BASE_P(REGNO) \
-((REGNO) < 29 || ((REGNO) == ARG_POINTER_REGNUM) || ((REGNO) == 63) ||\
- (unsigned) reg_renumber[REGNO] < 29)
+#define REGNO_OK_FOR_BASE_P(REGNO)					\
+  ((REGNO) < 29 || ((REGNO) == ARG_POINTER_REGNUM) || ((REGNO) == 63) || \
+   (unsigned) reg_renumber[REGNO] < 29)
 
 #define REGNO_OK_FOR_INDEX_P(REGNO) REGNO_OK_FOR_BASE_P(REGNO)
 
@@ -805,7 +808,7 @@ extern enum reg_class arc_regno_reg_class[];
    In general this is just CLASS; but on some machines
    in some cases it is preferable to use a more restrictive class.  */
 
-#define PREFERRED_RELOAD_CLASS(X, CLASS) \
+#define PREFERRED_RELOAD_CLASS(X, CLASS)	\
   arc_preferred_reload_class((X), (CLASS))
 
   extern enum reg_class arc_preferred_reload_class (rtx, enum reg_class);
@@ -813,9 +816,9 @@ extern enum reg_class arc_regno_reg_class[];
 /* Return the maximum number of consecutive registers
    needed to represent mode MODE in a register of class CLASS.  */
 
-#define CLASS_MAX_NREGS(CLASS, MODE) \
-(( GET_MODE_SIZE (MODE) == 16 && CLASS == SIMD_VR_REGS) ? 1: \
-((GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD))
+#define CLASS_MAX_NREGS(CLASS, MODE)					\
+  (( GET_MODE_SIZE (MODE) == 16 && CLASS == SIMD_VR_REGS) ? 1:		\
+   ((GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD))
 
 #define SMALL_INT(X) ((unsigned) ((X) + 0x100) < 0x200)
 #define SMALL_INT_RANGE(X, OFFSET, SHIFT) \

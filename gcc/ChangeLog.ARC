@@ -1,3 +1,12 @@
+2013-05-22 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_conditional_register_usage): Make sure
+          r30 is fix for the time being.
+	* config/arc/arc.h (AC16_H_REGS): New Register class.
+	* config/arc/arc.md :Use 'h' instead of 'W' for 5bit register
+          class.
+	* config/arc/constraints.md ('h'): New register constraint letter.
+
 2013-05-16 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_expand_movmem): Fix computation on

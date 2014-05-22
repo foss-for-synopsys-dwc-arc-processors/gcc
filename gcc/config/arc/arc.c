@@ -1342,12 +1342,13 @@ arc_conditional_register_usage (void)
   int i;
   int fix_start = 60, fix_end = 55;
 
-  /* For ARCv2 the core register set is changed.*/
   if (TARGET_V2)
     {
+      /* For ARCv2 the core register set is changed.*/
       strcpy(rname29, "ilink");
       strcpy(rname30, "r30");
-    }
+      fixed_regs[30] = call_used_regs[30] = 1;
+   }
   if (TARGET_MUL64_SET)
     {
       fix_start = 57;
