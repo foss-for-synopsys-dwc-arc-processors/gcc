@@ -1,3 +1,8 @@
+2013-05-27 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (simple_return): Use RETI when returning
+          from an interrupt. Valid only for ARCv2.
+
 2013-05-22 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_conditional_register_usage): Make sure

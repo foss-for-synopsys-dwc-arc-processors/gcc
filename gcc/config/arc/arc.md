@@ -177,7 +177,7 @@
 
 (define_attr "type"
   "move,load,store,cmove,unary,binary,compare,shift,uncond_branch,jump,branch,
-   brcc,brcc_no_delay_slot,call,sfunc,call_no_delay_slot,
+   brcc,brcc_no_delay_slot,call,sfunc,call_no_delay_slot,retintr,
    multi,umulti, two_cycle_core,lr,sr,divaw,loop_setup,loop_end,return,
    misc,spfp,dpfp_mult,dpfp_addsub,mulmac_600,cc_arith,
    simd_vload, simd_vload128, simd_vstore, simd_vmove, simd_vmove_else_zero,
@@ -445,7 +445,7 @@
 
 (define_attr "in_delay_slot" "false,true"
   (cond [(eq_attr "type" "uncond_branch,jump,branch,
-			  call,sfunc,call_no_delay_slot,
+			  call,sfunc,call_no_delay_slot,retintr,
 			  brcc, brcc_no_delay_slot,loop_setup,loop_end")
 	 (const_string "false")
 	 (match_test "arc_write_ext_corereg (insn)")
@@ -4777,15 +4777,33 @@
     = gen_rtx_REG (Pmode,
 		   arc_return_address_regs[arc_compute_function_type (cfun)]);
 
-  if (TARGET_PAD_RETURN)
-    arc_pad_return ();
-  output_asm_insn (\"j%!%* [%0]%&\", &reg);
-  return \"\";
+  if (arc_compute_function_type (cfun) == ARC_FUNCTION_ILINK1
+      && TARGET_V2)
+  {
+    return \"reti\";
+  }
+  else
+  {
+    if (TARGET_PAD_RETURN)
+       arc_pad_return ();
+    output_asm_insn (\"j%!%* [%0]%&\", &reg);
+    return \"\";
+  }
 }
-  [(set_attr "type" "return")
+[(set (attr "type")
+      (cond [(and (eq (symbol_ref "arc_compute_function_type (cfun)")
+		      (symbol_ref "ARC_FUNCTION_ILINK1"))
+		  (match_test "TARGET_V2"))
+	     (const_string "retintr")]
+	    (const_string "return")))
    ; predicable won't help here since the canonical rtl looks different
    ; for branches.
-   (set_attr "cond" "canuse")
+   (set (attr "cond")
+	(cond [(and (eq (symbol_ref "arc_compute_function_type (cfun)")
+			(symbol_ref "ARC_FUNCTION_ILINK1"))
+		    (match_test "TARGET_V2"))
+	       (const_string "nocond")]
+	      (const_string "canuse")))
    (set (attr "iscompact")
 	(cond [(eq (symbol_ref "arc_compute_function_type (cfun)")
 		   (symbol_ref "ARC_FUNCTION_NORMAL"))
