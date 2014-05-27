@@ -4780,7 +4780,7 @@
   if (arc_compute_function_type (cfun) == ARC_FUNCTION_ILINK1
       && TARGET_V2)
   {
-    return \"reti\";
+    return \"rtie\";
   }
   else
   {
