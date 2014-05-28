@@ -472,3 +472,6 @@ Target Joined
 mmac_
 Target Joined
 
+mbypass-cache
+Target Report Mask(BYPASS_CACHE)
+Controls the .di instruction extension of atomic instructions. When enabled, the atomic operations operates directly on external memory.

@@ -1,3 +1,9 @@
+2013-05-28 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (%+):New punctuation character.
+	* config/arc/arc.opt (mbypass-cache): New option.
+	* config/arc/atomic.md: Use %+ punctuation character.
+
 2013-05-27 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (simple_return): Use RETI when returning

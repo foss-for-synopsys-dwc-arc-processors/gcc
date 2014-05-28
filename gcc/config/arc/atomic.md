@@ -111,7 +111,7 @@
 	  [(match_operand:SI 1 "mem_noofs_operand" "ATO")]
 	  VUNSPEC_LL))]
   "TARGET_ATOMIC"
-  "llock.di %0,%1"
+  "llock%+ %0,%1"
   [(set_attr "type" "load")
    (set_attr "iscompact" "false")
    (set_attr "predicable" "no")
@@ -123,7 +123,7 @@
 			   VUNSPEC_SC))
    (clobber (reg:CC_Z CC_REG))]
   "TARGET_ATOMIC"
-  "scond.di %1,%0"
+  "scond%+ %1,%0"
   [(set_attr "type" "store")
    (set_attr "iscompact" "false")
    (set_attr "predicable" "no")
@@ -151,7 +151,7 @@
    (set (match_dup 1)
 	(match_operand:SI 2 "register_operand" "0"))]
   ""
-  "ex.di %0,%1"
+  "ex%+ %0,%1"
   [(set_attr "type" "load")
    (set_attr "iscompact" "false")
    (set_attr "predicable" "no")

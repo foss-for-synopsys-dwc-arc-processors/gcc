@@ -864,6 +864,7 @@ arc_init (void)
   arc_punct_chars['!'] = 1;
   arc_punct_chars['^'] = 1;
   arc_punct_chars['&'] = 1;
+  arc_punct_chars['+'] = 1;
 
   /* There are two target-independent ifcvt passes, and arc_reorg may do
      one ore more arc_ifcvt calls.  */
@@ -3299,6 +3300,11 @@ arc_print_operand (FILE *file, rtx x, int code)
 	}
       else
 	output_operand_lossage ("invalid operand to %%U code");
+      return;
+    case '+':
+      /* Output cache bypass indicator for atomic instructions. */
+      if (TARGET_BYPASS_CACHE)
+	fputs (".di", file);
       return;
     case 'V' :
       /* Output cache bypass indicator for a load/store insn.  Volatile memory
