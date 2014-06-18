@@ -489,7 +489,7 @@ Objective-C and Objective-C++ Dialects}.
 -mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mEM -mARCv2EM -mav2em @gol
 -mav2hs -mHS -mARCv2HS -matomic -mfpu=@var{fpu} -mll64 @gol
 -mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mea @gol
--mforce-short -mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
+-mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
 -mdsp-packa -mdvbf -mlock -mmac-d16 -mmac-24 -mrtsc -mswape @gol
 -mtelephony -mxy -misize -mannotate-align -marclinux -marclinux_prof @gol
@@ -11177,11 +11177,11 @@ is being compiled:
 @item -mbarrel-shifter
 @opindex mbarrel-shifter
 Generate instructions supported by barrel shifter.  This is the default
-unless @samp{-mcpu=ARC601} is in effect.
+unless @samp{-mcpu=ARC601} or @samp{-mcpu=ARCv2EM} is in effect.
 
 @item -mcode-density
 @opindex mcode-density
-Enable code density instructions for ARC EM.
+Enable code density instructions for ARC EM, default on for ARC HS.
 
 @item -mcpu=@var{cpu}
 @opindex mcpu
@@ -11226,8 +11226,7 @@ the tool chain is configured with @samp{--with-cpu=HS}@.
 
 @item -mdiv-rem
 @opindex mdiv-rem
-Enable DIV/REM instructions for ARC EM.  Only available when the
-tool chain is configured with @samp{--with-cpu=EM}@.
+Enable DIV/REM instructions for ARCv2 cores@.
 
 @item -mfpu=@var{fpu}
 @opindex mfpu
@@ -11302,14 +11301,7 @@ Disable LR and SR instructions from using FPX extension aux registers.
 Generate Extended arithmetic instructions.  Currently only
 @code{divaw}, @code{adds}, @code{subs}, and @code{sat16} are
 supported.  This is always enabled for @samp{-mcpu=ARC700} and not
-available when the tool chain is configured with
-@samp{--with-cpu=EM}@.
-
-@item -mforce-short
-@opindex mforce-short
-Force short suffix by ignoring the instruction length attribute. This
-is the default when GCC is configured using @samp{--with-cpu=EM}, and
-is otherwise not available as an option.
+available for ARCv2 cores@.
 
 @item -mmpy
 @opindex mmpy
@@ -11318,8 +11310,8 @@ multiply instructions for ARC 700, and ARCv2 variants.
 
 @item -mmpy-option=@var{multo}
 @opindex mmpy-option
-Compile ARC EM code with a multiplier design option. @samp{wlh1} is
-the default value.  The recognized values for @var{multo} are:
+Compile ARCv2 code with a multiplier design option. @samp{wlh1} is the
+default value.  The recognized values for @var{multo} are:
 
 @table @samp
 @item 0
@@ -11366,20 +11358,21 @@ MPYU, MPYM, MPYMU, and MPY_S.
 The multiply option is set to accept short vector extensions (i.e., 32
 bit vectors). The following instructions are additionaly enabled: MAC,
 MACU, DMPYH, DMPYHU, DMACH, DMACHU, VADD2H, VSUB2H, VADDSUB2H, and
-VSUBADD2H.
+VSUBADD2H. Not available for ARC EM.
 
 @item 8
 @itemx double MAC
 The multiply option is set to accept short vector extensions, and
 double MAC operations. The following instructions are additionaly
-enabled: MPYD, MPYDU, MACD, MACDU, VMPY2H, and VMPY2HU.
+enabled: MPYD, MPYDU, MACD, MACDU, VMPY2H, and VMPY2HU. Not available
+for ARC EM.
 
 @item 9
 @itemx 64 bit
 The multiply option is set to accept 64 bit operations. The following
 instructions are additionaly enabled: QMPYH, QMPYHU, DMPYWH, DMPYWHU,
 QMACH, QMACHU, DMACWH, DMACWHU, VADD4H, VSUB4H, VADDSUB4H, VSUBADD4H,
-VADD2, VSUB2, VADDSUB, and VSUBADD.
+VADD2, VSUB2, VADDSUB, and VSUBADD. Not available for ARC EM.
 
 @end table
 
@@ -11402,7 +11395,7 @@ Generate mul64 and mulu64 instructions.  Only valid for @samp{-mcpu=ARC600}.
 @item -mnorm
 @opindex mnorm
 Generate norm instruction.  This is the default if @samp{-mcpu=ARC700}
-is in effect.
+or @samp{-mcpu=ARCv2HS} is in effect.
 
 @item -mspfp
 @opindex mspfp
@@ -11431,16 +11424,18 @@ can overridden by FPX options; @samp{mspfp}, @samp{mspfp-compact}, or
 
 @item -mswap
 @opindex mswap
-Generate swap instructions.
+Generate swap instructions, default on for ARC HS.
 
 @item -matomic
 @opindex matomic
 This enables Locked Load/Store Conditional extension, and to use them
-for implementing the GCC's atomic builtins.
+for implementing the GCC's atomic builtins. Not available for ARC 6xx
+cores.
 
 @item -mll64
 @opindex mll64
-This enables 64-bit load/store extension.
+This enables 64-bit load/store extension. Only available for ARC HS
+cores.
 
 @end table
 
