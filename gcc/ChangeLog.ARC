@@ -1,3 +1,8 @@
+2013-06-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* doc/extend.texi: Update __builtin_arc_sr description.
+	* doc/invoke.texi: Update mmul32x16 description.
+
 2013-05-28 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (%+):New punctuation character.

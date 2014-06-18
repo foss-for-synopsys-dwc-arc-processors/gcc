@@ -11392,7 +11392,8 @@ is equivalent with -mmpy-option=1
 
 @item -mmul32x16
 @opindex mmul32x16
-Generate 32x16 bit multiply and mac instructions.  Not valid for ARC EM.
+Generate 32x16 bit multiply and mac instructions. Only valid for ARC
+6xx cores.
 
 @item -mmul64
 @opindex mmul64
