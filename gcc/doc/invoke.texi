@@ -11246,6 +11246,13 @@ Enables support for double precision floating point hardware
 extensions. The single precision floating point extension is also
 enabled@.
 
+@item fpuda
+@opindex fpuda
+Enables support for double precision floating point hardware
+extensions using double precision assist instructions. The single
+precision floating point extension is also enabled. This option is
+only available for ARC EM@.
+
 @item fpus_div
 @opindex fpus_div
 Enables support for single precision floating point, and single
