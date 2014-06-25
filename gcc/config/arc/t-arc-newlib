@@ -46,6 +46,9 @@ MULTILIB_EXCEPTIONS += mcpu=ARC700/mnorm* mcpu=ARC700/mmul64* mcpu=ARC700/mmul32
 MULTILIB_EXCEPTIONS += mcpu=ARCv2EM/mmul64* mcpu=ARCv2EM/mmul32x16*
 # Exclusions for ARCv2HS
 MULTILIB_EXCEPTIONS += mcpu=ARCv2HS/mmul64* mcpu=ARCv2HS/mmul32x16* mcpu=ARCv2HS/mnorm*
+
+MULTILIB_REUSE = mcpu.ARCv2HS=mcpu.ARCv2HS/mnorm
+MULTILIB_REUSE += mcpu.ARC700=mcpu.ARC700/mnorm
 #
 # Local Variables:
 # mode: Makefile

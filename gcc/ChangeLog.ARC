@@ -1,8 +1,10 @@
 2013-06-25 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc.c: Add -mirq-ctrl-saved option.
 	* config/arc/arc.md: Likewise
 	* config/arc/arc.opt: Likewise
 	* doc/invoke.texi: Likewise
+	* config/arc/t-arc-newlib (MULTILIB_REUSE): Define.
 
 2013-06-18 Claudiu Zissulescu <claziss@synopsys.com>
 
