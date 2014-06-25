@@ -488,10 +488,11 @@ Objective-C and Objective-C++ Dialects}.
 @emph{ARC Options} @gccoptlist{-mbarrel-shifter -mcode-density @gol
 -mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mEM -mARCv2EM -mav2em @gol
 -mav2hs -mHS -mARCv2HS -matomic -mfpu=@var{fpu} -mll64 @gol
--mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mea @gol
+-mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mEA @gol
 -mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
 -mdsp-packa -mdvbf -mlock -mmac-d16 -mmac-24 -mrtsc -mswape @gol
+-mirq-ctrl-saved -mbypass-cache @gol
 -mtelephony -mxy -misize -mannotate-align -marclinux -marclinux_prof @gol
 -mepilogue-cfi -mno-epilogue-cfi -mlong-calls -mmedium-calls @gol
 -mno-sdata -mucb-mcount -mvolatile-cache -mno-volatile-cache @gol
@@ -11244,7 +11245,7 @@ extensions@.
 @opindex fpud
 Enables support for double precision floating point hardware
 extensions. The single precision floating point extension is also
-enabled@.
+enabled. Not available for ARC EM@.
 
 @item fpuda
 @opindex fpuda
@@ -11262,7 +11263,7 @@ precision square-root and divide hardware extensions@.
 @opindex fpud_div
 Enables support for double precision floating point, and double
 precision square-root and divide hardware extensions. This option
-includes option @samp{fpus_div}@.
+includes option @samp{fpus_div}. Not available for ARC EM@.
 
 @item fpus_fma
 @opindex fpus_fma
@@ -11273,7 +11274,7 @@ precision fused multiple and add hardware extensions@.
 @opindex fpud_fma
 Enables support for double precision floating point, and double
 precision fused multiple and add hardware extensions. This option
-includes option @samp{fpus_fma}@.
+includes option @samp{fpus_fma}. Not available for ARC EM@.
 
 @item fpus_all
 @opindex fpus_all
@@ -11283,7 +11284,7 @@ extensions@.
 @item fpud_all
 @opindex fpud_all
 Enables support for all single and double precision floating point
-hardware extensions@.
+hardware extensions. Not available for ARC EM@.
 
 @end table
 
@@ -11303,8 +11304,8 @@ implementation.
 @opindex mno-dpfp-lrsr
 Disable LR and SR instructions from using FPX extension aux registers.
 
-@item -mea
-@opindex mea
+@item -mEA
+@opindex mEA
 Generate Extended arithmetic instructions.  Currently only
 @code{divaw}, @code{adds}, @code{subs}, and @code{sat16} are
 supported.  This is always enabled for @samp{-mcpu=ARC700} and not
@@ -11443,6 +11444,19 @@ cores.
 @opindex mll64
 This enables 64-bit load/store extension. Only available for ARC HS
 cores.
+
+@item -mirq-ctrl-saved="REGS"
+@opindex mirq-ctrl-saved
+Specifies the registers that the processor saves on interrupt entry
+and exit. Permited values: r0-r25, fp, ilink, blink, and
+lp_count. Registers needs to be specified as ranges such as "r0-r3". A
+register range always starts with r0. Registers blink and lp_count can
+be specified individually. Only valid for ARC EM and ARC HS cores.
+
+@item -mbypass-cache
+@opindex mbypass-cache
+Controls the .di instruction extension of atomic instructions. When
+enabled, the atomic operations operates directly on external memory.
 
 @end table
 

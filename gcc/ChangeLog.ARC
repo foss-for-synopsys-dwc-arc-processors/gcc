@@ -1,3 +1,9 @@
+2013-06-25 Claudiu Zissulescu <claziss@synopsys.com>
+	* config/arc/arc.c: Add -mirq-ctrl-saved option.
+	* config/arc/arc.md: Likewise
+	* config/arc/arc.opt: Likewise
+	* doc/invoke.texi: Likewise
+
 2013-06-18 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* doc/extend.texi: Update __builtin_arc_sr description.

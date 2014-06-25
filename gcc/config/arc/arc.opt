@@ -475,3 +475,7 @@ Target Joined
 mbypass-cache
 Target Report Mask(BYPASS_CACHE)
 Controls the .di instruction extension of atomic instructions. When enabled, the atomic operations operates directly on external memory.
+
+mirq-ctrl-saved=
+Target RejectNegative Joined Var(arc_deferred_options) Defer
+Specifies the registers that the processor saves on an interrupt entry and exit.

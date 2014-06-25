@@ -133,6 +133,7 @@
    (VUNSPEC_CLRI  30); disable interrupts
    (VUNSPEC_SETI  31); SETI
    (VUNSPEC_NOP  32); NOPV
+   (VUNSPEC_STACK_IRQ  33)
 
    (VUNSPEC_EX  36)
    (VUNSPEC_CAS 37)
@@ -6012,6 +6013,12 @@
 ;c; [(set_attr "length" "8,16,16,16")
 ;c;  (set_attr "type" "move,move,load,store")
 ;c; ])
+
+(define_insn "stack_irq_dwarf"
+  [(unspec_volatile [(const_int 1)] VUNSPEC_STACK_IRQ)]
+  ""
+  ""
+  [(set_attr "length" "0")])
 
 ;; include the arc-FPX instructions
 (include "fpx.md")
