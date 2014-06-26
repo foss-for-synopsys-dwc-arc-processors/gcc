@@ -175,11 +175,14 @@ along with GCC; see the file COPYING3.  If not see
 "
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-#define ASM_DEFAULT "-mEM"
+# define ASM_DEFAULT "-mEM"
+# define ASM_DEFOPT "%{mcpu=ARC700:%{mlock}} %{mcpu=ARC700:%{mswape}} %{mcpu=ARC700:%{mrtsc}}"
 #elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-#define ASM_DEFAULT "-mHS"
+# define ASM_DEFAULT "-mHS"
+# define ASM_DEFOPT "%{mcpu=ARC700:%{mlock}} %{mcpu=ARC700:%{mswape}} %{mcpu=ARC700:%{mrtsc}}"
 #else
-#define ASM_DEFAULT "-mARC700 -mEA"
+# define ASM_DEFAULT "-mARC700 -mEA"
+# define ASM_DEFOPT "%{mswape} %{mlock} %{mrtsc}"
 #endif
 
 #define ASM_SPEC  "\
@@ -194,11 +197,8 @@ along with GCC; see the file COPYING3.  If not see
 %{mbarrel-shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
 %{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*} \
 %{msimd} %{mfpu=fpuda:-mfpuda} \
-%{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
-%{mcpu=ARC700:%{mlock}} \
-%{mcpu=ARC700:%{mswape}} \
-%{mcpu=ARC700:%{mrtsc}} \
-%{matomic:-mlock} \
+%{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy}" \
+ASM_DEFOPT "%{matomic:-mlock} \
 %{mcpu=ARCv2EM:-mEM} \
 %{mcpu=ARCv2HS:-mHS} \
 "

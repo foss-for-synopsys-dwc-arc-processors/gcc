@@ -1,3 +1,8 @@
+2013-06-26 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h (ASM_DEFOPT): Define.
+	(ASM_SPEC): Use it.
+
 2013-06-25 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Add -mirq-ctrl-saved option.
