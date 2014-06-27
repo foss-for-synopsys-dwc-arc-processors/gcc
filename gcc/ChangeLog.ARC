@@ -1,3 +1,10 @@
+2013-06-27 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Atomic option set default on for HS.
+	* config.gcc: Add arcem. archs configuration variants.
+	* config/arc/arc.h: Translate marc600, macr601, marcem, and marchs options.
+	* config/arc/arc.opt: Add marc600, macr601, marcem, and marchs options.
+
 2014-05-23  Joern Rennecke  <joern.rennecke@embecosm.com>
 
 	* config/arc/arc.c (arc_legitimize_tls_address):

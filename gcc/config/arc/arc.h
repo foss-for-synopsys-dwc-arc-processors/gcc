@@ -265,12 +265,12 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_MMEDIUM_CALLS_DEFAULT 0
 #endif
 
-#define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
-  "%{mARC600|mA6: -mcpu=ARC600 %<mARC600 %<mA6}" \
-  "%{mARC601: -mcpu=ARC601 %<mARC601}" \
+#define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS		   \
+  "%{mARC600|mA6|marc600: -mcpu=ARC600 %<mARC600 %<mA6 %<marc600}" \
+  "%{mARC601|marc601: -mcpu=ARC601 %<mARC601 %<marc601}"	   \
   "%{mARC700|mA7|marc700: -mcpu=ARC700 %<mARC700 %<mA7 %<marc700}" \
-  "%{mav2em|mARCv2EM|mEM: -mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM}" \
-  "%{mav2hs|mARCv2HS|mHS: -mcpu=ARCv2HS %<mav2hs %<ARCv2HS %<mHS}" \
+  "%{mav2em|mARCv2EM|mEM|marcem: -mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM %<marcem}" \
+  "%{mav2hs|mARCv2HS|mHS|marchs: -mcpu=ARCv2HS %<mav2hs %<ARCv2HS %<mHS %<marchs}" \
   "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}" \
   "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}" \
   "%{mbarrel_shifte*: -mbarrel-shifte%* %<mbarrel_shifte*}" \
