@@ -33,6 +33,8 @@ mno-cond-exec
 Target Report RejectNegative Mask(NO_COND_EXEC)
 Disable ARCompact specific pass to generate conditional execution instructions
 
+; This is here just for documentation,
+; it is really handled in DRIVER_SELF_SPECS.
 mA6
 Target Report
 Generate ARCompact 32-bit code for ARCtangent-ARC600 processor
@@ -41,7 +43,15 @@ mARC600
 Target Report
 Same as -mA6
 
+marc600
+Target Report
+Same as -mA6
+
 mARC601
+Target Report
+Generate ARCompact 32-bit code for ARCtangent-ARC601 processor
+
+marc601
 Target Report
 Generate ARCompact 32-bit code for ARCtangent-ARC601 processor
 
@@ -57,8 +67,6 @@ marc700
 Target Report
 Same as -mA7
 
-; This is here just for documentation,
-; it is really handled in DRIVER_SELF_SPECS.
 mav2em
 Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
 Generate ARCv2 code for EM processor
@@ -66,6 +74,32 @@ Generate ARCv2 code for EM processor
 mav2hs
 Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2HS)
 Generate ARCv2 code for HS processor
+
+mARCv2EM
+Target
+Same as -mcpu=arcem
+
+mEM
+Target
+Same as -mcpu=arcem
+
+mARCv2HS
+Target
+Same as -mcpu=archs
+
+mHS
+Target
+Same as -mcpu=archs
+
+marcem
+Target
+Same as -mcpu=arcem
+
+marchs
+Target
+Same as -mcpu=archs
+
+; END backward-compatibility aliases, translated by DRIVER_SELF_SPECS
 
 mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
@@ -434,19 +468,6 @@ Reduce priority for r0..r3 / r12..r15 with TARGET_REGISTER_PRIORITY
 mucb-mcount
 Target Report Var(TARGET_UCB_MCOUNT)
 instrument with mcount calls as in the ucb code
-
-; backward-compatibility aliases, translated by DRIVER_SELF_SPECS
-mARCv2EM
-Target
-
-mEM
-Target
-
-mARCv2HS
-Target
-
-mHS
-Target
 
 ; Unfortunately, listing the full option name gives us clashes
 ; with OPT_opt_name being claimed for both opt_name and opt-name,

@@ -1,3 +1,10 @@
+2013-06-27 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Atomic option set default on for HS.
+	* config.gcc: Add arcem. archs configuration variants.
+	* config/arc/arc.h: Translate marc600, macr601, marcem, and marchs options.
+	* config/arc/arc.opt: Add marc600, macr601, marcem, and marchs options.
+
 2013-06-26 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h (ASM_DEFOPT): Define.
