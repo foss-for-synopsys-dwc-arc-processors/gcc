@@ -1,3 +1,8 @@
+2013-06-30 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h (DRIVER_SELF_SPECS): Add new mcpu options.
+	* config/arc/arc.opt: Likewise.
+
 2013-06-27 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Atomic option set default on for HS.

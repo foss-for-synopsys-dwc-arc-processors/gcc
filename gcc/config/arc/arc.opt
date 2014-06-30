@@ -68,11 +68,11 @@ Target Report
 Same as -mA7
 
 mav2em
-Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2EM)
+Target Report
 Generate ARCv2 code for EM processor
 
 mav2hs
-Target Report RejectNegative Var(arc_cpu, PROCESSOR_ARCv2HS)
+Target Report
 Generate ARCv2 code for HS processor
 
 mARCv2EM
@@ -270,16 +270,31 @@ EnumValue
 Enum(processor_type) String(ARC600) Value(PROCESSOR_ARC600)
 
 EnumValue
+Enum(processor_type) String(arc600) Value(PROCESSOR_ARC600)
+
+EnumValue
 Enum(processor_type) String(ARC601) Value(PROCESSOR_ARC601)
+
+EnumValue
+Enum(processor_type) String(arc601) Value(PROCESSOR_ARC601)
 
 EnumValue
 Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
 
 EnumValue
+Enum(processor_type) String(arc700) Value(PROCESSOR_ARC700)
+
+EnumValue
 Enum(processor_type) String(ARCv2EM) Value(PROCESSOR_ARCv2EM)
 
 EnumValue
+Enum(processor_type) String(arcem) Value(PROCESSOR_ARCv2EM)
+
+EnumValue
 Enum(processor_type) String(ARCv2HS) Value(PROCESSOR_ARCv2HS)
+
+EnumValue
+Enum(processor_type) String(archs) Value(PROCESSOR_ARCv2HS)
 
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
