@@ -2012,7 +2012,14 @@
 {
   if (TARGET_HS && (arc_mpy_option > 7))
     {
-     emit_insn (gen_mpyd_arcv2hs (operands[0], operands[1], operands[2]));
+     if (CONST_INT_P (operands[2]))
+       {
+	emit_insn (gen_mpyd_imm_arcv2hs (operands[0], operands[1], operands[2]));
+       }
+     else
+       {
+	emit_insn (gen_mpyd_arcv2hs (operands[0], operands[1], operands[2]));
+       }
      DONE;
     }
   else if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
@@ -2252,7 +2259,14 @@
 {
   if (TARGET_HS && (arc_mpy_option > 7))
     {
-     emit_insn (gen_mpydu_arcv2hs (operands[0], operands[1], operands[2]));
+     if (CONST_INT_P (operands[2]))
+       {
+	emit_insn (gen_mpydu_imm_arcv2hs (operands[0], operands[1], operands[2]));
+       }
+     else
+       {
+	emit_insn (gen_mpydu_arcv2hs (operands[0], operands[1], operands[2]));
+       }
      DONE;
     }
   else if ((TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI)
@@ -5782,9 +5796,22 @@
    (set_attr "cond"       "canuse,nocond,nocond,canuse,nocond")])
 
 (define_insn "mpyd_arcv2hs"
+  [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r")
+	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand"  "  0, c"))
+		 (sign_extend:DI (match_operand:SI 2 "register_operand"  "  c, c"))))
+   (clobber (reg:DI 56))]
+  "TARGET_HS && (arc_mpy_option > 7)"
+  "mpyd%? %0, %1, %2"
+  [(set_attr "length" "4,4")
+  (set_attr "iscompact" "false")
+  (set_attr "type" "multi")
+  (set_attr "predicable" "yes,no")
+  (set_attr "cond" "canuse,nocond")])
+
+(define_insn "mpyd_imm_arcv2hs"
   [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r,r,Rcr,  r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand"  "  0, c,0,  0,  c"))
-		 (sign_extend:DI (match_operand:SI 2 "nonmemory_operand" " cL,cL,I,Cal,Cal"))))
+		 (match_operand 2                   "immediate_operand"  "  L, L,I,Cal,Cal")))
    (clobber (reg:DI 56))]
   "TARGET_HS && (arc_mpy_option > 7)"
   "mpyd%? %0, %1, %2"
@@ -5795,9 +5822,22 @@
   (set_attr "cond" "canuse,nocond,nocond,canuse_limm,nocond")])
 
 (define_insn "mpydu_arcv2hs"
+  [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r")
+	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"  "  0, c"))
+		 (zero_extend:DI (match_operand:SI 2 "register_operand" "   c, c"))))
+   (clobber (reg:DI 56))]
+  "TARGET_HS && (arc_mpy_option > 7)"
+  "mpydu%? %0, %1, %2"
+  [(set_attr "length" "4,4")
+  (set_attr "iscompact" "false")
+  (set_attr "type" "multi")
+  (set_attr "predicable" "yes,no")
+  (set_attr "cond" "canuse,nocond")])
+
+(define_insn "mpydu_imm_arcv2hs"
   [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r,r,Rcr,  r")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"  "  0, c,0,  0,  c"))
-		 (zero_extend:DI (match_operand:SI 2 "nonmemory_operand" " cL,cL,I,Cal,Cal"))))
+		 (match_operand 2                   "immediate_operand"  "  L, L,I,Cal,Cal")))
    (clobber (reg:DI 56))]
   "TARGET_HS && (arc_mpy_option > 7)"
   "mpydu%? %0, %1, %2"
@@ -5806,6 +5846,7 @@
   (set_attr "type" "multi")
   (set_attr "predicable" "yes,no,no,yes,no")
   (set_attr "cond" "canuse,nocond,nocond,canuse_limm,nocond")])
+
 
 (define_insn "*movdi_hsll64"
   [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,m")

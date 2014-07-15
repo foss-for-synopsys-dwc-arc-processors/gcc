@@ -1,3 +1,11 @@
+2013-07-15 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (EXPAND mulsidi3): Use separate
+          instructions when dealing with immediates, HS only.
+	  (EXPAND umulsidi3): Likewise.
+	  (mpyd_imm_arcv2hs): New pattern.
+	  (mpydu_imm_arcv2hs): Likewise.
+
 2013-06-30 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h (DRIVER_SELF_SPECS): Add new mcpu options.
