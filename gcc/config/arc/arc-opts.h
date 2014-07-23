@@ -38,3 +38,10 @@ enum processor_type
 #define FPU_DD    0x0080 /* Double precision floating point sqrt and div operations. */
 
 #define FPX_DP    0x0100 /* Double precision floating point assist operations. */
+
+enum arc_abi_type
+  {
+    ARC_ABI_STD,
+    ARC_ABI_PACK
+  };
+

@@ -1862,7 +1862,6 @@ arc_setup_incoming_varargs (cumulative_args_t args_so_far,
   int first_anon_arg;
   CUMULATIVE_ARGS next_cum;
 
-
   if (TARGET_HS)
     {
       *pretend_size = 0;
@@ -1872,10 +1871,10 @@ arc_setup_incoming_varargs (cumulative_args_t args_so_far,
   /* We must treat `__builtin_va_alist' as an anonymous arg.  */
 
   next_cum = *get_cumulative_args (args_so_far);
-  arc_function_arg_advance (pack_cumulative_args (&next_cum), mode, type, 1);
+  arc_function_arg_advance (pack_cumulative_args (&next_cum), mode, type, true);
   first_anon_arg = next_cum.arg_num;
 
-  if (first_anon_arg < MAX_ARC_PARM_REGS)
+  if (FUNCTION_ARG_REGNO_P (first_anon_arg))
     {
       /* First anonymous (unnamed) argument is in a reg.  */
 
@@ -5250,10 +5249,10 @@ static rtx
 arc_function_args_impl (CUMULATIVE_ARGS *cum,
 			enum machine_mode mode,
 			const_tree type,
-			int named,
+			bool named,
 			bool advance)
 {
-  int reg_idx  = 0;
+  int lb, reg_idx  = 0;
   int reg_location = 0;
   int nregs;
   bool found = false;
@@ -5297,7 +5296,8 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
       if (advance)
 	{
 	  /* Update CUMULATIVE_ARGS if we advance. */
-	  for (reg_idx = reg_location; (reg_idx < (reg_location + nregs))
+	  lb = (arc_abi == ARC_ABI_PACK) ? reg_location : 0;
+	  for (reg_idx = lb; (reg_idx < (reg_location + nregs))
 		 && FUNCTION_ARG_REGNO_P (reg_idx); reg_idx++)
 	    {
 	      cum->avail[reg_idx] = false;
