@@ -500,3 +500,16 @@ Specify thread pointer register number
 
 mtp-regno=none
 Target RejectNegative Var(arc_tp_regno,-1)
+
+mabi=
+Target RejectNegative Joined Var(arc_abi) Enum(arc_abi_type) Init(ARC_ABI_STD)
+Specify the desired ABI used for ARC HS processors. Variants can be std or pack.
+
+Enum
+Name(arc_abi_type) Type(enum arc_abi_type)
+
+EnumValue
+Enum(arc_abi_type) String(std) Value(ARC_ABI_STD)
+
+EnumValue
+Enum(arc_abi_type) String(pack) Value(ARC_ABI_PACK)
