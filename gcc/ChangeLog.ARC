@@ -1,3 +1,10 @@
+2013-07-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc-opts.h (arc_abi_type): Define.
+	* config/arc/arc.opt (-mabi=): New option.
+	* config/arc/arc.c (arc_setup_incoming_varargs): Clean up.
+	(arc_function_args_impl): Select ABI std/pack.
+
 2013-07-15 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (EXPAND mulsidi3): Use separate
