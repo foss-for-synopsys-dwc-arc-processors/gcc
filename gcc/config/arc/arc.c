@@ -1862,17 +1862,11 @@ arc_setup_incoming_varargs (cumulative_args_t args_so_far,
   int first_anon_arg;
   CUMULATIVE_ARGS next_cum;
 
-  if (TARGET_HS)
-    {
-      *pretend_size = 0;
-      return;
-    }
-
   /* We must treat `__builtin_va_alist' as an anonymous arg.  */
 
   next_cum = *get_cumulative_args (args_so_far);
   arc_function_arg_advance (pack_cumulative_args (&next_cum), mode, type, true);
-  first_anon_arg = next_cum.arg_num;
+  first_anon_arg = TARGET_HS ? next_cum.last_reg : next_cum.arg_num;
 
   if (FUNCTION_ARG_REGNO_P (first_anon_arg))
     {
@@ -5215,6 +5209,7 @@ void arc_init_cumulative_args (CUMULATIVE_ARGS *cum,
   int i;
 
   cum->arg_num = 0;
+  cum->last_reg = 0;
   for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
     {
       cum->avail[i] = true;
@@ -5261,7 +5256,30 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
     return const0_rtx;
 
   if (!named && TARGET_HS)
-    return NULL_RTX; /* all unamed arguments are passed on stack. */
+    {
+      reg_idx = cum->last_reg; /* for unamed args don't try fill up the reg-holes. */
+      nregs = arc_hard_regno_nregs (0, mode, type); /* only interested in the number of regs. */
+      if ((nregs == 2)
+	  && (mode != BLKmode) /* Only DI-like modes are interesting for us. */
+	  && (reg_idx & 1) /* Only for "non-aligned" registers. */
+	  && FUNCTION_ARG_REGNO_P (reg_idx + nregs - 1))
+	{
+	  rtx reg1 = gen_rtx_REG (SImode, reg_idx);
+	  rtx reg2 = gen_rtx_REG (SImode, reg_idx + 1);
+	  rtvec vec = gen_rtvec (2, gen_rtx_EXPR_LIST (VOIDmode, reg1, const0_rtx),
+				 gen_rtx_EXPR_LIST (VOIDmode, reg2, GEN_INT (4)));
+
+	  if (advance)
+	    {
+	      cum->arg_num           += nregs;
+	      cum->avail[reg_idx]     = false;
+	      cum->avail[reg_idx + 1] = false;
+	      cum->last_reg          += nregs;
+	    }
+
+	  return gen_rtx_PARALLEL (mode, vec);
+	}
+    }
 
   while (FUNCTION_ARG_REGNO_P (reg_idx))
     {
@@ -5302,6 +5320,7 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
 	    {
 	      cum->avail[reg_idx] = false;
 	    }
+	  cum->last_reg = reg_idx;
 	  cum->arg_num += nregs;
 	}
       return gen_rtx_REG (mode, reg_location);
