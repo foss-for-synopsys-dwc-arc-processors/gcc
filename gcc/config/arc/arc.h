@@ -908,6 +908,9 @@ typedef struct arc_args
 {
   /* Registers that are still available for parameter passing. */
   bool avail[FIRST_PSEUDO_REGISTER];
+  /* HS-ABI: last set register. It is needed for passing the first
+     anonymous arguments in regs. */
+  unsigned int last_reg;
   /* Backwards compatibility: total number of used registers.  */
   int arg_num;
 } CUMULATIVE_ARGS;
