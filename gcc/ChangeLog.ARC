@@ -1,3 +1,14 @@
+2013-07-29 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_setup_incoming_varargs): Pass
+          anonymous arguments in registers (ABI HS).
+	  (arc_function_args_impl): Likewise.
+	* config/arc/arc.h (CUMULATIVE_ARGS.last_reg): New member.
+	* testsuite/gcc.target/arc/abitest.S: New file.
+	* testsuite/gcc.target/arc/va_args-1.c: Likewise.
+	* testsuite/gcc.target/arc/va_args-2.c: Likewise.
+	* testsuite/gcc.target/arc/va_args-3.c: Likewise.
+
 2013-07-23 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-opts.h (arc_abi_type): Define.
