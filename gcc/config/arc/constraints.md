@@ -459,3 +459,8 @@
 (define_register_constraint "Rsd" "R0R1_CODE_DENSITY_REGS"
   "@internal
    core register @code{r0}-@code{r1}")
+
+(define_register_constraint "h" "AC16_H_REGS"
+  "5-bit h register set except @code{r30} and @code{r29}: @code{r0}-@code{r31}, nonfixed core register")
+
+

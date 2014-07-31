@@ -76,55 +76,76 @@ along with GCC; see the file COPYING3.  If not see
 #undef CC1_SPEC
 
 /* Names to predefine in the preprocessor for this target machine.  */
-#define TARGET_CPU_CPP_BUILTINS()	\
- do {					\
-    builtin_define ("__arc__");		\
-    if (TARGET_ARC600)			\
-      {					\
-	builtin_define ("__A6__");	\
-	builtin_define ("__ARC600__");	\
-      }					\
-    else if (TARGET_ARC601)		\
-      {					\
-	builtin_define ("__ARC601__");	\
-      }					\
-    else if (TARGET_ARC700)		\
-      {					\
-	builtin_define ("__A7__");	\
-	builtin_define ("__ARC700__");	\
-      }					\
-    else if (TARGET_EM)			\
-      {					\
-	builtin_define ("__EM__");	\
-      }					\
-    else if (TARGET_HS)			\
-      {					\
-	builtin_define ("__HS__");	\
-      }					\
-    if (TARGET_ATOMIC)			\
-      {					\
-	builtin_define ("__atomic__");	\
-      }					\
-    if (TARGET_NORM)			\
-      {					\
-	builtin_define ("__ARC_NORM__");\
-	builtin_define ("__Xnorm");	\
-      }					\
-    if (TARGET_MUL64_SET)		\
-      builtin_define ("__ARC_MUL64__");\
-    if (TARGET_MULMAC_32BY16_SET)	\
-      builtin_define ("__ARC_MUL32BY16__");\
-    if (TARGET_SIMD_SET)        	\
-      builtin_define ("__ARC_SIMD__");	\
-    if (TARGET_BARREL_SHIFTER)		\
-      builtin_define ("__Xbarrel_shifter");\
-    builtin_assert ("cpu=arc");		\
-    builtin_assert ("machine=arc");	\
-    builtin_define (TARGET_BIG_ENDIAN	\
+#define TARGET_CPU_CPP_BUILTINS()		\
+  do {						\
+    builtin_define ("__arc__");			\
+    if (TARGET_ARC600)				\
+      {						\
+	builtin_define ("__A6__");		\
+	builtin_define ("__ARC600__");		\
+      }						\
+    else if (TARGET_ARC601)			\
+      {						\
+	builtin_define ("__ARC601__");		\
+      }						\
+    else if (TARGET_ARC700)			\
+      {						\
+	builtin_define ("__A7__");		\
+	builtin_define ("__ARC700__");		\
+      }						\
+    else if (TARGET_EM)				\
+      {						\
+	builtin_define ("__EM__");		\
+      }						\
+    else if (TARGET_HS)				\
+      {						\
+	builtin_define ("__HS__");		\
+      }						\
+    if (TARGET_ATOMIC)				\
+      {						\
+	builtin_define ("__atomic__");		\
+      }						\
+    if (TARGET_NORM)				\
+      {						\
+	builtin_define ("__ARC_NORM__");	\
+	builtin_define ("__Xnorm");		\
+      }						\
+    if (TARGET_MUL64_SET)			\
+      builtin_define ("__ARC_MUL64__");		\
+    if (TARGET_MULMAC_32BY16_SET)		\
+      builtin_define ("__ARC_MUL32BY16__");	\
+    if (TARGET_SIMD_SET)			\
+      builtin_define ("__ARC_SIMD__");		\
+    if (TARGET_BARREL_SHIFTER)			\
+      builtin_define ("__Xbarrel_shifter");	\
+						\
+    switch (TARGET_CPU_DEFAULT)			\
+      {						\
+      case TARGET_CPU_arc600:			\
+      case TARGET_CPU_arc601:			\
+	builtin_define ("_CPU_DEFAULT_A6");	\
+	break;					\
+      case TARGET_CPU_arc700:			\
+	builtin_define ("_CPU_DEFAULT_A7");	\
+	break;					\
+      case TARGET_CPU_EM:			\
+	builtin_define ("_CPU_DEFAULT_EM");	\
+	break;					\
+      case TARGET_CPU_HS:			\
+	builtin_define ("_CPU_DEFAULT_HS");	\
+	break;					\
+      default:					\
+	builtin_define ("_CPU_DEFAULT_unk");	\
+	break;					\
+      }						\
+						\
+    builtin_assert ("cpu=arc");			\
+    builtin_assert ("machine=arc");		\
+    builtin_define (TARGET_BIG_ENDIAN			       \
 		    ? "__BIG_ENDIAN__" : "__LITTLE_ENDIAN__"); \
-    if (TARGET_BIG_ENDIAN)		\
-      builtin_define ("__big_endian__"); \
-} while(0)
+    if (TARGET_BIG_ENDIAN)				       \
+      builtin_define ("__big_endian__");		       \
+  } while(0)
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
 
@@ -145,6 +166,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mdsp-packa:-D__Xdsp_packa} %{mcrc:-D__Xcrc} %{mdvbf:-D__Xdvbf} \
 %{mtelephony:-D__Xtelephony} %{mxy:-D__Xxy} %{mmul64: -D__Xmult32} \
 %{mlock:-D__Xlock} %{mswape:-D__Xswape} %{mrtsc:-D__Xrtsc} \
+%{mfpu=fpuda:-D__Xfpuda} \
 "
 
 #define CC1_SPEC "\
@@ -153,11 +175,14 @@ along with GCC; see the file COPYING3.  If not see
 "
 
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-#define ASM_DEFAULT "-mEM"
+# define ASM_DEFAULT "-mEM"
+# define ASM_DEFOPT "%{mcpu=ARC700:%{mlock}} %{mcpu=ARC700:%{mswape}} %{mcpu=ARC700:%{mrtsc}}"
 #elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-#define ASM_DEFAULT "-mHS"
+# define ASM_DEFAULT "-mHS"
+# define ASM_DEFOPT "%{mcpu=ARC700:%{mlock}} %{mcpu=ARC700:%{mswape}} %{mcpu=ARC700:%{mrtsc}}"
 #else
-#define ASM_DEFAULT "-mARC700 -mEA"
+# define ASM_DEFAULT "-mARC700 -mEA"
+# define ASM_DEFOPT "%{mswape} %{mlock} %{mrtsc}"
 #endif
 
 #define ASM_SPEC  "\
@@ -171,12 +196,9 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARCv2HS:%<mbarrel-shifter %<mno-mpy %<mnorm %<mswap}\
 %{mbarrel-shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
 %{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*} \
-%{msimd} \
-%{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
-%{mcpu=ARC700:%{mlock}} \
-%{mcpu=ARC700:%{mswape}} \
-%{mcpu=ARC700:%{mrtsc}} \
-%{matomic:-mlock} \
+%{msimd} %{mfpu=fpuda:-mfpuda} \
+%{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy}" \
+ASM_DEFOPT "%{matomic:-mlock} \
 %{mcpu=ARCv2EM:-mEM} \
 %{mcpu=ARCv2HS:-mHS} \
 "
@@ -255,18 +277,23 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_MMEDIUM_CALLS_DEFAULT 0
 #endif
 
-#define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS \
-  "%{mARC600|mA6: -mcpu=ARC600 %<mARC600 %<mA6}" \
-  "%{mARC601: -mcpu=ARC601 %<mARC601}" \
-  "%{mARC700|mA7|marc700: -mcpu=ARC700 %<mARC700 %<mA7 %<marc700}" \
-  "%{mav2em|mARCv2EM|mEM: -mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM}" \
-  "%{mav2hs|mARCv2HS|mHS: -mcpu=ARCv2HS %<mav2hs %<ARCv2HS %<mHS}" \
-  "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}" \
-  "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}" \
-  "%{mbarrel_shifte*: -mbarrel-shifte%* %<mbarrel_shifte*}" \
-  "%{mspfp_*: -mspfp-%* %<mspfp_*}" \
-  "%{mdpfp_*: -mdpfp-%* %<mdpfp_*}" \
-  "%{mdsp_pack*: -mdsp-pack%* %<mdsp_pack*}" \
+#define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS			\
+  "%{mARC600|mA6|marc600: -mcpu=ARC600 %<mARC600 %<mA6 %<marc600}"	\
+  "%{mARC601|marc601: -mcpu=ARC601 %<mARC601 %<marc601}"		\
+  "%{mARC700|mA7|marc700: -mcpu=ARC700 %<mARC700 %<mA7 %<marc700}"	\
+  "%{mav2em|mARCv2EM|mEM|marcem: -mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM %<marcem}" \
+  "%{mav2hs|mARCv2HS|mHS|marchs: -mcpu=ARCv2HS %<mav2hs %<ARCv2HS %<mHS %<marchs}" \
+  "%{mcpu=arc700: -mcpu=ARC700 %<mcpu=arc700}"				\
+  "%{mcpu=arc600: -mcpu=ARC600 %<mcpu=arc600}"				\
+  "%{mcpu=arc601: -mcpu=ARC601 %<mcpu=arc601}"				\
+  "%{mcpu=arcem: -mcpu=ARCv2EM %<mcpu=arcem}"				\
+  "%{mcpu=archs: -mcpu=ARCv2HS %<mcpu=archs}"				\
+  "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}"			\
+  "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}"			\
+  "%{mbarrel_shifte*: -mbarrel-shifte%* %<mbarrel_shifte*}"		\
+  "%{mspfp_*: -mspfp-%* %<mspfp_*}"					\
+  "%{mdpfp_*: -mdpfp-%* %<mdpfp_*}"					\
+  "%{mdsp_pack*: -mdsp-pack%* %<mdsp_pack*}"				\
   "%{mmac_*: -mmac-%* %<mmac_*}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
@@ -274,7 +301,7 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_MIXED_CODE (TARGET_MIXED_CODE_SET)
 
 #define TARGET_SPFP (TARGET_SPFP_FAST_SET || TARGET_SPFP_COMPACT_SET)
-#define TARGET_DPFP (TARGET_DPFP_FAST_SET || TARGET_DPFP_COMPACT_SET)
+#define TARGET_DPFP (TARGET_DPFP_FAST_SET || TARGET_DPFP_COMPACT_SET || (arc_fpu_build & FPX_DP))
 
 #define SUBTARGET_SWITCHES
 
@@ -513,7 +540,7 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
    27    - frame pointer
    28    - stack pointer
    29    - ilink1
-   30    - ilink2
+   30    - ilink2 (general purpose register ARCv2)
    31    - return address register
 
    By default, the extension registers are not available.  */
@@ -579,7 +606,7 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 /* If defined, an initializer for a vector of integers, containing the
    numbers of hard registers in the order in which GCC should
    prefer to use them (from most preferred to least).  */
-#define REG_ALLOC_ORDER \
+#define REG_ALLOC_ORDER							\
 { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1,			\
   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 				\
   32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,	\
@@ -609,7 +636,7 @@ extern unsigned int arc_mode_class[];
    MODE2)' must be zero.  */
 
 /* Tie QI/HI/SI modes together.  */
-#define MODES_TIEABLE_P(MODE1, MODE2) \
+#define MODES_TIEABLE_P(MODE1, MODE2)		\
 (GET_MODE_CLASS (MODE1) == MODE_INT		\
  && GET_MODE_CLASS (MODE2) == MODE_INT		\
  && GET_MODE_SIZE (MODE1) <= UNITS_PER_WORD	\
@@ -672,6 +699,7 @@ enum reg_class
    ALL_CORE_REGS,		/* 'Rac' */
    R0R3_CODE_DENSITY_REGS,      /* 'Rcd' */
    R0R1_CODE_DENSITY_REGS,      /* 'Rsd' */
+   AC16_H_REGS,                 /* 'h' */
    ALL_REGS,
    LIM_REG_CLASSES
 };
@@ -700,6 +728,7 @@ enum reg_class
   "CHEAP_CORE_REGS",	    \
   "R0R3_CODE_DENSITY_REGS", \
   "R0R1_CODE_DENSITY_REGS", \
+  "AC16_H_REGS",	    \
   "ALL_CORE_REGS",	    \
   "ALL_REGS"          	    \
 }
@@ -734,6 +763,7 @@ enum reg_class
   {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
   {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
   {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
+  {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h',  r0-28, r30 */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
@@ -772,9 +802,9 @@ extern enum reg_class arc_regno_reg_class[];
    or a pseudo reg currently allocated to a suitable hard reg.
    Since they use reg_renumber, they are safe only once reg_renumber
    has been allocated, which happens in local-alloc.c.  */
-#define REGNO_OK_FOR_BASE_P(REGNO) \
-((REGNO) < 29 || ((REGNO) == ARG_POINTER_REGNUM) || ((REGNO) == 63) ||\
- (unsigned) reg_renumber[REGNO] < 29)
+#define REGNO_OK_FOR_BASE_P(REGNO)					\
+  ((REGNO) < 29 || ((REGNO) == ARG_POINTER_REGNUM) || ((REGNO) == 63) || \
+   (unsigned) reg_renumber[REGNO] < 29)
 
 #define REGNO_OK_FOR_INDEX_P(REGNO) REGNO_OK_FOR_BASE_P(REGNO)
 
@@ -783,7 +813,7 @@ extern enum reg_class arc_regno_reg_class[];
    In general this is just CLASS; but on some machines
    in some cases it is preferable to use a more restrictive class.  */
 
-#define PREFERRED_RELOAD_CLASS(X, CLASS) \
+#define PREFERRED_RELOAD_CLASS(X, CLASS)	\
   arc_preferred_reload_class((X), (CLASS))
 
   extern enum reg_class arc_preferred_reload_class (rtx, enum reg_class);
@@ -791,9 +821,9 @@ extern enum reg_class arc_regno_reg_class[];
 /* Return the maximum number of consecutive registers
    needed to represent mode MODE in a register of class CLASS.  */
 
-#define CLASS_MAX_NREGS(CLASS, MODE) \
-(( GET_MODE_SIZE (MODE) == 16 && CLASS == SIMD_VR_REGS) ? 1: \
-((GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD))
+#define CLASS_MAX_NREGS(CLASS, MODE)					\
+  (( GET_MODE_SIZE (MODE) == 16 && CLASS == SIMD_VR_REGS) ? 1:		\
+   ((GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD))
 
 #define SMALL_INT(X) ((unsigned) ((X) + 0x100) < 0x200)
 #define SMALL_INT_RANGE(X, OFFSET, SHIFT) \

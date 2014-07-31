@@ -871,6 +871,12 @@ arc*-*-elf*)
 	  xarc600|xarc601|xarc700|xEM|xHS)
 		target_cpu_default="TARGET_CPU_$with_cpu"
 		;;
+	  xarcem)
+		target_cpu_default="TARGET_CPU_EM"
+		;;
+	  xarchs)
+		target_cpu_default="TARGET_CPU_HS"
+		;;
 	esac
 	if test x${with_endian} = x; then
 		case ${target} in
@@ -895,6 +901,12 @@ arc*-*-linux-uclibc*)
 	case x"${with_cpu}" in
 	  xarc600|xarc601|xarc700|xEM|xHS)
 		target_cpu_default="TARGET_CPU_$with_cpu"
+		;;
+	  xarcem)
+		target_cpu_default="TARGET_CPU_EM"
+		;;
+	  xarchs)
+		target_cpu_default="TARGET_CPU_HS"
 		;;
 	esac
 	if test x${with_endian} = x; then
@@ -3250,7 +3262,7 @@ case "${target}" in
 	arc*-*-*) # was:	arc*-*-linux-uclibc)
 		supported_defaults="cpu"
 		case $with_cpu in
-		  arc600|arc601|arc700|EM|HS)
+		  arc600|arc601|arc700|EM|HS|arcem|archs)
 			;;
 		  *) echo "Unknown cpu type"
 			exit 1
