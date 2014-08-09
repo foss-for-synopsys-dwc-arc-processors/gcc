@@ -1,3 +1,8 @@
+2013-08-09 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: mdiv-rem default on
+	for ARC HS.
+
 2013-07-29 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_setup_incoming_varargs): Pass

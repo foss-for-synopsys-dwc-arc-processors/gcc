@@ -100,6 +100,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  opts->x_target_flags &= ~MASK_MPY16_SET;
 	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
 	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
+	  opts->x_target_flags &= ~MASK_DIVREM;
 	  break;
 
 	case PROCESSOR_ARC600:
@@ -114,6 +115,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
 	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  opts->x_target_flags &= ~MASK_ATOMIC;
+	  opts->x_target_flags &= ~MASK_DIVREM;
 	  break;
 
 	case PROCESSOR_ARCv2HS:
@@ -136,6 +138,8 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	    opts->x_target_flags |= MASK_SWAP_SET;               /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_ATOMIC))
 	    opts->x_target_flags |= MASK_ATOMIC;                 /* Default: on. */
+	  if ( !(opts_set->x_target_flags & MASK_DIVREM))
+	    opts->x_target_flags |= MASK_DIVREM;                 /* Default: on. */
 	  break;
 
 	case PROCESSOR_ARCv2EM:
@@ -158,6 +162,8 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off. */
 	  if ( !(opts_set->x_target_flags & MASK_ATOMIC))
 	    opts->x_target_flags &= ~MASK_ATOMIC;                /* Default: off */
+	  if ( !(opts_set->x_target_flags & MASK_DIVREM))
+	    opts->x_target_flags &= ~MASK_DIVREM;                /* Default: off. */
 	  break;
 
 	case PROCESSOR_ARC601:
@@ -172,6 +178,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
 	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  opts->x_target_flags &= ~MASK_ATOMIC;
+	  opts->x_target_flags &= ~MASK_DIVREM;
 	  break;
 
 	default:
@@ -227,7 +234,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 # define TARGET_DEFAULT_TARGET_FLAGS					\
   (MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA	\
    | MASK_MPY_SET | MASK_MPY16_SET | MASK_SHIFT_ASSIST | MASK_CODE_DENSITY \
-   | MASK_NORM_SET | MASK_SWAP_SET | MASK_ATOMIC)
+   | MASK_NORM_SET | MASK_SWAP_SET | MASK_ATOMIC | MASK_DIVREM)
 #elif TARGET_CPU_DEFAULT == TARGET_CPU_EM
 /* Default for EM: no barrel shifter*/
 # define TARGET_DEFAULT_TARGET_FLAGS					\
