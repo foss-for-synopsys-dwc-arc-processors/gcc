@@ -496,9 +496,6 @@ static void arc_finalize_pic (void);
 #undef TARGET_STRICT_ARGUMENT_NAMING
 #define TARGET_STRICT_ARGUMENT_NAMING arc_strict_argument_naming
 
-#undef TARGET_PRETEND_OUTGOING_VARARGS_NAMED
-#define TARGET_PRETEND_OUTGOING_VARARGS_NAMED arc_pretend_outgoing_varargs_named
-
 #undef TARGET_PASS_BY_REFERENCE
 #define TARGET_PASS_BY_REFERENCE arc_pass_by_reference
 
@@ -1893,12 +1890,6 @@ arc_setup_incoming_varargs (cumulative_args_t args_so_far,
 static bool arc_strict_argument_naming(cumulative_args_t cum ATTRIBUTE_UNUSED)
 {
     return TARGET_HS;
-}
-
-static bool
-arc_pretend_outgoing_varargs_named (cumulative_args_t ca_v ATTRIBUTE_UNUSED)
-{
-  return !TARGET_HS;
 }
 
 /* Cost functions.  */
@@ -5260,9 +5251,9 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
       reg_idx = cum->last_reg; /* for unamed args don't try fill up the reg-holes. */
       nregs = arc_hard_regno_nregs (0, mode, type); /* only interested in the number of regs. */
       if ((nregs == 2)
-	  && (mode != BLKmode) /* Only DI-like modes are interesting for us. */
-	  && (reg_idx & 1) /* Only for "non-aligned" registers. */
-	  && FUNCTION_ARG_REGNO_P (reg_idx + nregs - 1))
+	  && (mode != BLKmode)               /* Only DI-like modes are interesting for us. */
+	  && (reg_idx & 1)                   /* Only for "non-aligned" registers. */
+	  && FUNCTION_ARG_REGNO_P (reg_idx)) /* Allow passing partial arguments. */
 	{
 	  rtx reg1 = gen_rtx_REG (SImode, reg_idx);
 	  rtx reg2 = gen_rtx_REG (SImode, reg_idx + 1);
@@ -5326,6 +5317,12 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
       return gen_rtx_REG (mode, reg_location);
     }
 
+  if (advance && named)
+    cum->last_reg = MAX_ARC_PARM_REGS; /* MAX out any other free register
+					  if a named arguments goes on stack.
+					  This avoids any usage of the remaining
+					  regs for further argument pasing. */
+
   return NULL_RTX;
 }
 
@@ -5354,11 +5351,19 @@ arc_arg_partial_bytes (cumulative_args_t cum_v, enum machine_mode mode,
   int nregs = 0;
 
   retx = arc_function_args_impl (cum, mode, type, named, false);
-  if (REG_P (retx))
+  if (REG_P (retx)
+      || (GET_CODE (retx) == PARALLEL))
     {
-      nregs = arc_hard_regno_nregs (REGNO (retx), mode, type);
-      ret = (((REGNO (retx) + nregs) <= MAX_ARC_PARM_REGS) ? 0 :
-	     (MAX_ARC_PARM_REGS - REGNO (retx)) * UNITS_PER_WORD);
+      int regno;
+
+      if (REG_P (retx))
+	regno = REGNO (retx);
+      else
+	regno = REGNO (XEXP (XVECEXP (retx, 0, 0), 0));
+
+      nregs = arc_hard_regno_nregs (0, mode, type);
+      ret = (((regno + nregs) <= MAX_ARC_PARM_REGS) ? 0 :
+	     (MAX_ARC_PARM_REGS - regno) * UNITS_PER_WORD);
     }
 #endif
 
@@ -5409,9 +5414,9 @@ arc_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
   rtx ret;
   const char *debstr ATTRIBUTE_UNUSED;
 
-#if 0
   int arg_num = cum->arg_num;
   arg_num = ROUND_ADVANCE_CUM (arg_num, mode, type);
+#if 0
   /* Return a marker for use in the call instruction.  */
   if (mode == VOIDmode)
     {
@@ -5430,6 +5435,22 @@ arc_function_arg (cumulative_args_t cum_v, enum machine_mode mode,
     }
 #else
   ret = arc_function_args_impl (cum, mode, type, named, false);
+
+#if 0
+  if (ret == NULL_RTX)
+    debstr = "memory";
+  else if (mode == VOIDmode)
+    debstr = "<0>";
+  else if (REG_P (ret))
+    debstr = reg_names [REGNO (ret)];
+  else if (GET_CODE (ret) == PARALLEL)
+    debstr = "double in reg";
+  else
+    debstr = "unk";
+  fprintf (stderr,
+	   "function_arg: words = %2d, mode = %4s, named = %d, size = %3d, arg = %s\n",
+	   arg_num, GET_MODE_NAME (mode), named, GET_MODE_SIZE (mode), debstr);
+#endif
 #endif
   return ret;
 }
