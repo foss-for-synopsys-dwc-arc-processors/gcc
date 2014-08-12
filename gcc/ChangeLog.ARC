@@ -1,3 +1,9 @@
+2014-08-11 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (TARGET_PRETEND_OUTGOING_VARARGS_NAMED): Remove.
+	(arc_function_args_impl): allow passing partial anonymous DIargs.
+	(arc_partial_bytes): Likewise.
+
 2013-08-09 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: mdiv-rem default on
