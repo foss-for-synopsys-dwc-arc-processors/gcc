@@ -5250,21 +5250,38 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
     {
       reg_idx = cum->last_reg; /* for unamed args don't try fill up the reg-holes. */
       nregs = arc_hard_regno_nregs (0, mode, type); /* only interested in the number of regs. */
-      if ((nregs == 2)
+      if (((nregs == 2) || (nregs == 4))
 	  && (mode != BLKmode)               /* Only DI-like modes are interesting for us. */
 	  && (reg_idx & 1)                   /* Only for "non-aligned" registers. */
 	  && FUNCTION_ARG_REGNO_P (reg_idx)) /* Allow passing partial arguments. */
 	{
-	  rtx reg1 = gen_rtx_REG (SImode, reg_idx);
-	  rtx reg2 = gen_rtx_REG (SImode, reg_idx + 1);
-	  rtvec vec = gen_rtvec (2, gen_rtx_EXPR_LIST (VOIDmode, reg1, const0_rtx),
-				 gen_rtx_EXPR_LIST (VOIDmode, reg2, GEN_INT (4)));
+	  rtx reg[4];
+	  rtvec vec;
+
+	  if (nregs == 2)
+	    {
+	      reg[0] = gen_rtx_REG (SImode, reg_idx);
+	      reg[1] = gen_rtx_REG (SImode, reg_idx + 1);
+	      vec = gen_rtvec (2, gen_rtx_EXPR_LIST (VOIDmode, reg[0], const0_rtx),
+			       gen_rtx_EXPR_LIST (VOIDmode, reg[1], GEN_INT (4)));
+	    }
+	  else
+	    {
+	      reg[0] = gen_rtx_REG (SImode, reg_idx);
+	      reg[1] = gen_rtx_REG (SImode, reg_idx + 1);
+	      reg[2] = gen_rtx_REG (SImode, reg_idx + 2);
+	      reg[3] = gen_rtx_REG (SImode, reg_idx + 3);
+	      vec = gen_rtvec (4, gen_rtx_EXPR_LIST (VOIDmode, reg[0], const0_rtx),
+			       gen_rtx_EXPR_LIST (VOIDmode, reg[1], GEN_INT (4)),
+			       gen_rtx_EXPR_LIST (VOIDmode, reg[2], GEN_INT (8)),
+			       gen_rtx_EXPR_LIST (VOIDmode, reg[3], GEN_INT (12)));
+	    }
 
 	  if (advance)
 	    {
 	      cum->arg_num           += nregs;
-	      cum->avail[reg_idx]     = false;
-	      cum->avail[reg_idx + 1] = false;
+	      for (int i = 0; i < nregs; i++)
+		cum->avail[reg_idx + i]     = false;
 	      cum->last_reg          += nregs;
 	    }
 
