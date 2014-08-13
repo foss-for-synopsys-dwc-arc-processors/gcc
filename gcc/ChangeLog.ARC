@@ -1,5 +1,9 @@
 2014-08-11 Claudiu Zissulescu <claziss@synopsys.com>
 
+ 	* config/arc/arc.c (arc_function_args_impl): Handle TI quatities.
+
+2014-08-11 Claudiu Zissulescu <claziss@synopsys.com>
+
 	* config/arc/arc.c (TARGET_PRETEND_OUTGOING_VARARGS_NAMED): Remove.
 	(arc_function_args_impl): allow passing partial anonymous DIargs.
 	(arc_partial_bytes): Likewise.
