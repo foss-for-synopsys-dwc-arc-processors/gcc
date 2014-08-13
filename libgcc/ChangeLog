@@ -1,3 +1,7 @@
+2014-08-13  Steve Ellcey  <sellcey@mips.com>
+
+	* crtstuff.c: Undef caddr_t.
+
 2014-12-19  Release Manager
 
 	* GCC 4.8.4 released.
