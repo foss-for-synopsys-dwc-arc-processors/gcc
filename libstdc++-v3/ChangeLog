@@ -1,3 +1,495 @@
+2013-10-16  Release Manager
+
+	* GCC 4.8.2 released.
+
+2013-10-09  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	* testsuite/20_util/shared_ptr/cons/58659.cc: Use VERIFY instead of
+	aborting.
+
+2013-10-08  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	PR libstdc++/58659
+	* include/bits/shared_ptr_base.h (__shared_count::__shared_count(P,D)):
+	Delegate to constructor taking allocator.
+	(__shared_count::_S_create_from_up): Inline into ...
+	(__shared_count::__shared_count(unique_ptr<Y,D>&&): Here. Use
+	std::conditional instead of constrained overloads. Allocate memory
+	using the allocator type that will be used for deallocation.
+	* testsuite/20_util/shared_ptr/cons/58659.cc: New.
+	* testsuite/20_util/shared_ptr/cons/43820_neg.cc: Adjust.
+
+2013-10-07  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	PR libstdc++/57641
+	* include/std/mutex (timed_mutex, recursive_timed_mutex): Add
+	overloaded _M_try_lock_until to handle conversion between different
+	clocks. Replace constrained __try_lock_for_impl overloads with
+	conditional increment.
+	* testsuite/30_threads/timed_mutex/try_lock_until/57641.cc: New.
+
+2013-10-06  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	PR libstdc++/57465
+	* include/std/functional
+	(_Function_base::_Base_manager::_M_not_empty_function): Fix overload
+	for pointers.
+	* testsuite/20_util/function/cons/57465.cc: New.
+
+2013-10-02  Jonathan Wakely  <jwakely.gcc@gmail.com>
+	    Daniel Krugler  <daniel.kruegler@gmail.com>
+
+	PR libstdc++/58569
+	* include/std/functional (function::_CheckResult): Move to namespace
+	scope and rename to __check_func_return_type.
+	* testsuite/20_util/function/58569.cc: New.
+
+2013-09-30  Chris Jefferson  <chris@bubblescope.net>
+
+	PR libstdc++/58437
+	* include/bits/stl_algo.h (__move_median_first): Rename to
+	__move_median_to_first, change to take an addition argument.
+	(__unguarded_partition_pivot): Adjust.
+	* testsuite/performance/25_algorithms/sort.cc: New.
+	* testsuite/performance/25_algorithms/sort_heap.cc: Likewise.
+	* testsuite/performance/25_algorithms/stable_sort.cc: Likewise.
+
+2013-09-19  Mitsuru Kariya  <kariya_mitsuru@hotmail.com>
+	    Chris Jefferson  <chris@bubblescope.net>
+
+	PR libstdc++/58358
+	* include/bits/stl_algo.h (search_n): Fix to guarantee a number
+	of comparisons <= number of elements in the range.
+	* testsuite/25_algorithms/search_n/58358.cc: New.
+	* testsuite/25_algorithms/search_n/iterator.cc: Extend.
+
+2013-09-13  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/58415
+	* include/ext/sso_string_base.h (__sso_string_base<>::
+	__sso_string_base(__sso_string_base&&)): Fix thinkos about
+	_M_length vs _M_set_length.
+	* testsuite/ext/vstring/cons/58415-1.cc: New.
+	* testsuite/ext/vstring/cons/58415-2.cc: Likewise.
+
+2013-09-10  Kai Tietz  <ktietz@redhat.com>
+
+	Backport from trunk.
+	PR libstdc++/54314
+	* config/abi/pre/gnu-versioned-namespace.ver: Add thunk _ZTv0_n12_NS*
+	like in gnu.ver.
+
+2013-09-07  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/58341
+	* include/bits/stl_algobase.h (copy_backward): Fix documentation
+	per DR 1206.
+
+2013-09-03  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/58302
+	* include/bits/random.tcc (negative_binomial_distribution<>::
+	operator()(_UniformRandomNumberGenerator&, const param_type&):
+	Fix typo in template argument.
+	* testsuite/26_numerics/random/negative_binomial_distribution/
+	operators/58302.cc: New.
+
+2013-08-16  Uros Bizjak  <ubizjak@gmail.com>
+
+	* src/c++98/compatibility.cc (_ZTIe): Use
+	reinterpret_cast<const cast *> to avoid -Wcast-qual warnings.
+	(_ZTIPe): Ditto.
+	(ZTIPKe): Ditto.
+
+2013-08-07  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	* include/ext/atomicity.h: Add #pragma GCC system_header.
+
+2013-08-07  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/58098
+	* include/bits/random.h (cauchy_distribution<>::min,
+	extreme_value_distribution<>::min, normal_distribution<>::min,
+	student_t_distribution<>::min): Fix.
+	* include/ext/random (normal_mv_distribution<>::min): Likewise.
+	* testsuite/26_numerics/random/cauchy_distribution/cons/parms.cc:
+	Adjust.
+	testsuite/26_numerics/random/cauchy_distribution/cons/default.cc:
+	Likewise.
+	* testsuite/26_numerics/random/extreme_value_distribution/cons/
+	parms.cc: Likewise.
+	testsuite/26_numerics/random/extreme_value_distribution/cons/
+	default.cc: Likewise.
+	* testsuite/26_numerics/random/normal_distribution/cons/parms.cc:
+	Likewise.
+	* testsuite/26_numerics/random/normal_distribution/cons/default.cc:
+	Likewise.
+	* testsuite/26_numerics/random/student_t_distribution/cons/parms.cc:
+	Likewise.
+	* testsuite/26_numerics/random/student_t_distribution/cons/default.cc:
+	Likewise.
+	* testsuite/ext/random/normal_mv_distribution/cons/parms.cc: Likewise.
+	* testsuite/ext/random/normal_mv_distribution/cons/default.cc: Likewise.
+
+	* testsuite/26_numerics/random/exponential_distribution/cons/parms.cc:
+	Minor tweak.
+	* testsuite/26_numerics/random/exponential_distribution/cons/default.cc:
+	Likewise.
+
+	* testsuite/ext/von_mises_distribution/*: Move to...
+	* testsuite/ext/random/von_mises_distribution/*: ... here.
+	* testsuite/ext/triangular_distribution/*: Move to...
+	* testsuite/ext/random/triangular_distribution/*: ... here.
+
+2013-07-31  François Dumont  <fdumont@gcc.gnu.org>
+
+	* include/profile/unordered_base.h: New.
+	* include/Makefile.am: Add new profile header.
+	* include/Makefile.in: Regenerate.
+	* include/profile/impl/profiler.h
+	(__profcxx_inefficient_hash_is_on): New macro.
+	* include/profile/unordered_map (std::profile::unordered_map<>):
+	Use new _Unordered_profile base class. Use default implementations
+	for special functions.
+	(std::profile::unordered_multimap<>): Likewise.
+	* include/profile/unordered_set (std::profile::unordered_set<>):
+	Likewise.
+	(std::profile::unordered_multiset<>): Likewise.
+	* testsuite/23_containers/unordered_multiset/55043.cc: Fix
+	MoveOnly equality operator signature.
+
+2013-07-31  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/56627
+	* include/bits/stl_bvector.h: Use friend struct hash intead of
+	friend class hash to work around useless warnings produced by
+	some compilers.
+	* include/std/bitset: Likewise.
+
+2013-07-29  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	Revert last commit.
+
+2013-07-29  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	* include/profile/unordered_map (unordered_map<>,
+	unordered_multimap<>): Clean-up constructors and assignment
+	operators to match debug-mode.
+	* include/profile/unordered_set (unordered_set<>,
+	unordered_multiset<>): Likewise.
+
+2013-07-22  Jason Merrill  <jason@redhat.com>
+
+	PR libstdc++/57914
+	* libsupc++/atexit_thread.cc (run): Delete cleanup elts.
+
+2013-06-27  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	* include/profile/vector (emplace(iterator, _Args&&...)): Define.
+
+2013-06-25  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	* testsuite/23_containers/map/modifiers/erase/abi_tag.cc: Avoid
+	spurious fails with check-debug.
+	* testsuite/23_containers/multimap/modifiers/erase/abi_tag.cc:
+	Likewise.
+	* testsuite/23_containers/set/modifiers/erase/abi_tag.cc: Likewise.
+	* testsuite/23_containers/multiset/modifiers/erase/abi_tag.cc:
+	Likewise.
+
+2013-06-22  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/57674
+	* include/bits/random.h (binomial_distribution<>::_M_waiting):
+	Add double parameter.
+	* include/bits/random.tcc (binomial_distribution<>::operator()
+	(_UniformRandomNumberGenerator&, const param_type&)): Pass
+	__param._M_q to _M_waiting.
+	(_M_waiting): Adjust.
+	* testsuite/26_numerics/random/binomial_distribution/
+	operators/values.cc: Add tests.
+
+2013-06-21  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/57666
+	* include/std/valarray (valarray<>::operator=(const _Expr<>&)):
+	Implement correctly C++11 26.6.2.3/1.
+	* testsuite/26_numerics/valarray/dr630-3.C: New.
+
+2013-06-19  Alan Modra  <amodra@gmail.com>
+
+	Apply mainline patch
+	2013-06-14  Alan Modra  <amodra@gmail.com>
+	* configure.host (abi_baseline_pair): Match powerpc64*.
+
+2013-06-15  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/57619
+	* include/bits/unordered_map.h (unordered_map<>::insert,
+	unordered_multimap<>::insert): Use std::forward, not std::move.
+	* testsuite/23_containers/unordered_map/insert/57619.C: New.
+	* testsuite/23_containers/unordered_multimap/insert/57619.C: Likewise.
+
+2013-06-12  Benjamin Kosnik  <bkoz@redhat.com>
+
+	* include/bits/c++config (_GLIBCXX_ABI_TAG_CXX11): Add.
+	* include/bits/stl_map.h (erase): Use abi_tag when C++11.
+	* include/bits/stl_multimap.h: Same.
+	* include/bits/stl_multiset.h: Same.
+	* include/bits/stl_set.h: Same.
+	* include/bits/stl_tree.h: Same.
+	* include/std/complex (real, imag): Use macro for abi_tag.
+
+	* testsuite/lib/libstdc++.exp: Disable inlinling with -fno-inline.
+	* testsuite/util/testsuite_containers.h (erase_external): New
+	declarations.
+	(erase_external_iterators): Same.
+	(linkage_check_cxx98_cxx11_erase): Same.
+	(linkage_check_cxx98_cxx11_erase_iterators): Same.
+	* testsuite/util/testsuite_shared.cc: Define.
+	* testsuite/23_containers/map/modifiers/erase/abi_tag.cc: New.
+	* testsuite/23_containers/map/modifiers/erase/
+	dr130-linkage-check.cc: New.
+	* testsuite/23_containers/multimap/modifiers/erase/abi_tag.cc: New.
+	* testsuite/23_containers/multimap/modifiers/erase/
+	dr130-linkage-check.cc: New.
+	* testsuite/23_containers/multiset/modifiers/erase/abi_tag.cc: New.
+	* testsuite/23_containers/multiset/modifiers/erase/
+	dr130-linkage-check.cc: New.
+	* testsuite/23_containers/set/modifiers/erase/abi_tag.cc: New.
+	* testsuite/23_containers/set/modifiers/erase/dr130-linkage-check.cc:
+	New.
+	* testsuite/ext/profile/mutex_extensions_neg.cc: Adjust line number.
+
+	* testsuite/23_containers/map/dr130.cc: Move...
+	* testsuite/23_containers/map/modifiers/dr130.cc: ...here.
+	* testsuite/23_containers/multimap/dr130.cc: Move ...
+	* testsuite/23_containers/multimap/modifiers/dr130.cc: ...here.
+	* testsuite/23_containers/multiset/dr130.cc: Move...
+	* testsuite/23_containers/multiset/modifiers/dr130.cc: ...here.
+	* testsuite/23_containers/set/dr130.cc: Move...
+	* testsuite/23_containers/set/modifiers/dr130.cc: ...here.
+
+2013-06-11  Matthias Klose  <doko@ubuntu.com>
+
+	* include/Makefile.am (bits_headers): Remove ${bits_host_headers}.
+	(ext_headers): Remove ${ext_host_headers}.
+	(stamp-${host_alias}): Create ${host_builddir}/../ext.
+	(stamp-host): Link ${bits_host_headers} and ${ext_host_headers}.
+	(install-headers): Install ${bits_host_headers} and ${ext_host_headers}.
+	* include/Makefile.in: Regenerate.
+	* include/ext/random: Include ext/opt_random.h.
+
+2013-06-07  Uros Bizjak  <ubizjak@gmail.com>
+
+	* config/abi/post/alpha-linux-gnu/baseline_symbols.txt: Update.
+
+2013-05-31  Release Manager
+
+	* GCC 4.8.1 released.
+
+2013-05-28  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	* src/c++11/compatibility-chrono.cc (steady_clock::now()): If
+	!_GLIBCXX_USE_GETTIMEOFDAY perform conversion inline instead of
+	calling non-existent from_time_t.
+
+2013-05-28  Rainer Orth  <ro@CeBiTec.Uni-Bielefeld.DE>
+
+	* config/abi/post/solaris2.10/sparcv9/baseline_symbols.txt:
+	Regenerate.
+
+2013-05-26  Jakub Jelinek  <jakub@redhat.com>
+
+	Backported from mainline
+	2013-05-24  Benjamin Kosnik  <bkoz@redhat.com>
+
+	* include/std/chrono: Wrap clocks in inline namespace _V2.
+	* src/c++11/chrono.cc: Same.
+	* src/c++11/compatibility-chrono.cc: Revert to previous chrono.cc
+	file, with default configure macros selected.
+
+	* config/abi/pre/gnu.ver (GLIBCXX_3.4.19): Use symbols from inline
+	namespace.
+	* config/abi/post/x86_64-linux-gnu/baseline_symbols.txt: Fix up.
+
+	* config/abi/post/i386-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/s390x-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/powerpc64-linux-gnu/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/powerpc64-linux-gnu/32/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/x86_64-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/x86_64-linux-gnu/32/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/powerpc-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/s390-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/i486-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.10/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.10/amd64/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.10/sparcv9/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/solaris2.9/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.9/sparcv9/baseline_symbols.txt: Regenerated.
+
+2013-05-24  Jakub Jelinek  <jakub@redhat.com>
+
+	* src/c++11/chrono.cc: If _GLIBCXX_USE_CLOCK_GETTIME_SYSCALL,
+	include unistd.h and sys/syscall.h.  If _GLIBCXX_COMPATIBILITY_CXX0X,
+	don't define system_clock::is_steady, system_clock::now() and
+	steady_clock::is_steady.
+	(std::chrono::system_clock::now()): If
+	_GLIBCXX_USE_CLOCK_GETTIME_SYSCALL, call
+	syscall (SYS_clock_gettime, ...) instead of clock_gettime (...).
+	(std::chrono::system_clock::now()): Likewise.  Add weak attribute
+	if _GLIBCXX_COMPATIBILITY_CXX0X and compatibility-chrono.cc will
+	be non-empty.
+	* src/Makefile.am (cxx11_sources): Add compatibility-chrono.cc.
+	(compatibility-chrono.lo, compatibility-chrono.o): New goals.
+	* src/c++11/compatibility-chrono.cc: New file.
+	* acinclude.m4 (GLIBCXX_ENABLE_LIBSTDCXX_TIME): On linux*, check for
+	syscall (SYS_clock_gettime, CLOCK_MONOTONIC, &tp).
+	* testsuite/util/testsuite_abi.cc (check_version): Add
+	GLIBCXX_3.4.19 version and make it the latest.
+	* config/abi/pre/gnu.ver (_ZNSt6chrono12steady_clock3nowEv): Export
+	also @@GLIBCXX_3.4.19.
+	* config/abi/post/i386-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/s390x-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/powerpc64-linux-gnu/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/powerpc64-linux-gnu/32/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/x86_64-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/x86_64-linux-gnu/32/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/powerpc-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/s390-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/i486-linux-gnu/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.10/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.10/amd64/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.10/sparcv9/baseline_symbols.txt:
+	Regenerated.
+	* config/abi/post/solaris2.9/baseline_symbols.txt: Regenerated.
+	* config/abi/post/solaris2.9/sparcv9/baseline_symbols.txt: Regenerated.
+	* config.h.in: Regenerated.
+	* src/Makefile.in: Regenerated.
+	* configure: Regenerated.
+
+2013-05-21  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	PR libstdc++/57336
+	* include/std/functional (__invoke): Do not form function types with
+	abstract return type.
+	* testsuite/20_util/reference_wrapper/invoke-3.cc: New.
+
+2013-05-15  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	* include/bits/basic_string.h (getline): Fix doxygen comments.
+
+2013-05-14  Evgeniy Stepanov  <eugenis@google.com>
+
+	* src/c++11/system_error.cc (generic_category_instance): Add
+	initializer.
+	(system_category_instance): Likewise.
+	* src/c++11/future.cc (__fec): Likewise.
+
+2013-05-08  Andoni Morales Alastruey <ylatuya@gmail.com>
+
+	PR libstdc++/57212
+	* include/Makefile.am (_GLIBCXX___MINGW32_GLIBCXX___): Modify
+	to __MINGW32__.
+	* include/Makefile.in: Regenerated.
+
+2013-04-27  François Dumont  <fdumont@gcc.gnu.org>
+
+	* include/bits/hashtable_policy.h
+	(_Insert_base<>::insert<_It>(_It, _It)): Enable move semantics.
+	* testsuite/23_containers/unordered_set/insert/move_range.cc: New.
+
+2013-04-22  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/57010
+	* include/bits/stl_heap.h (pop_heap): Avoid self move-assignment.
+	* testsuite/25_algorithms/pop_heap/57010.cc: New.
+
+2013-04-09  Tom Tromey  <tromey@redhat.com>
+
+	* configure, config.h.in: Rebuild.
+	* configure.ac: Use GLIBCXX_CHECK_SDT_H.  Don't check for
+	sys/sdt.h.
+	* acinclude.m4 (GLIBCXX_CHECK_SDT_H): New defun.
+
+2013-04-04  Gerald Pfeifer  <gerald@pfeifer.com>
+
+	* doc/xml/manual/allocator.xml: Adjust link to Dr.Dobb's article.
+
+	* doc/xml/manual/appendix_contributing.xml: Adjust link to GNU
+	Coding Standards.
+
+	* doc/xml/manual/debug.xml: Adjust link for ThreadSanitizer.
+
+	* doc/xml/manual/debug_mode.xml: Adjust link for SafeSTL.
+
+	* doc/xml/manual/documentation_hacking.xml: Adjust Doxygen link.
+
+	* doc/xml/manual/messages.xml: Adjust link to Java API specs.
+
+	* doc/xml/manual/policy_data_structures: Remove direct link to
+	IBM Haifa Research Labs.
+
+	* doc/xml/manual/policy_data_structures_biblio.xml: Adjust links
+	for biblio.maverik_lowerbounds and biblio.nelson96stlpq.
+
+	* doc/xml/manual/profile_mode.xml: Adjust two links to acm.org
+	papers.
+
+	* doc/xml/manual/shared_ptr.xml: Use canonical address for
+	www.boost.org.
+
+2013-04-03  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/56834
+	* include/debug/array (tuple_size, tuple_element): Do not declare.
+	* include/profile/array: Likewise.
+	* testsuite/23_containers/array/tuple_interface/
+	tuple_element_debug_neg.cc: Adjust dg-error line number.
+
+2013-03-27  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/55977 (partial, std::vector and std::deque bits)
+	* include/bits/stl_vector.h (_M_range_initialize(_InputIterator,
+	_InputIterator, std::input_iterator_tag)): Use emplace_back.
+	* include/bits/deque.tcc (_M_range_initialize(_InputIterator,
+	_InputIterator, std::input_iterator_tag)): Likewise.
+	* testsuite/23_containers/vector/cons/55977.cc: New.
+	* testsuite/23_containers/deque/cons/55977.cc: Likewise.
+	* testsuite/23_containers/vector/requirements/dr438/assign_neg.cc:
+	Adjust dg-error line number.
+	* testsuite/23_containers/vector/requirements/dr438/insert_neg.cc:
+	Likewise.
+
+2013-03-27  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/55979
+	* include/bits/stl_list.h (_M_initialize_dispatch(_InputIterator,
+	_InputIterator, __false_type)): Use emplace_back.
+	* testsuite/23_containers/list/cons/55979.cc: New.
+	* testsuite/23_containers/list/modifiers/1.h: Adjust.
+	* testsuite/23_containers/list/requirements/dr438/assign_neg.cc:
+	Adjust dg-error line number.
+
+2013-03-24  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	PR libstdc++/56002
+	* include/std/mutex (lock_guard, unique_lock, lock): Define without
+	depending on _GLIBCXX_HAS_GTHREADS.
+	* testsuite/30_threads/lock_guard/cons/1.cc: Run on all targets.
+
+2013-03-22  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/56678
+	* include/std/chrono (__is_ratio): Uglify T.
+
 2013-03-22  Release Manager
 
 	* GCC 4.8.0 released.

@@ -19830,6 +19830,48 @@ $as_echo "$ac_has_nanosleep" >&6; }
     fi
   fi
 
+  if test x"$ac_has_clock_monotonic" != x"yes"; then
+    case ${target_os} in
+      linux*)
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for clock_gettime syscall" >&5
+$as_echo_n "checking for clock_gettime syscall... " >&6; }
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <unistd.h>
+	   #include <time.h>
+	   #include <sys/syscall.h>
+
+int
+main ()
+{
+#if _POSIX_TIMERS > 0 && defined(_POSIX_MONOTONIC_CLOCK)
+	    timespec tp;
+	   #endif
+	   syscall(SYS_clock_gettime, CLOCK_MONOTONIC, &tp);
+	   syscall(SYS_clock_gettime, CLOCK_REALTIME, &tp);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ac_has_clock_monotonic_syscall=yes
+else
+  ac_has_clock_monotonic_syscall=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_has_clock_monotonic_syscall" >&5
+$as_echo "$ac_has_clock_monotonic_syscall" >&6; }
+	if test x"$ac_has_clock_monotonic_syscall" = x"yes"; then
+
+$as_echo "#define _GLIBCXX_USE_CLOCK_GETTIME_SYSCALL 1" >>confdefs.h
+
+	  ac_has_clock_monotonic=yes
+	  ac_has_clock_realtime=yes
+	fi;;
+    esac
+  fi
+
   if test x"$ac_has_clock_monotonic" = x"yes"; then
 
 $as_echo "#define _GLIBCXX_USE_CLOCK_MONOTONIC 1" >>confdefs.h
@@ -20415,11 +20457,65 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: for suitable sys/sdt.h" >&5
+$as_echo "for suitable sys/sdt.h" >&6; }
+  # Note that this test has to be run with the C language.
+  # Otherwise, sdt.h will try to include some headers from
+  # libstdc++ itself.
+
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+  if test "${glibcxx_cv_sys_sdt_h+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    # Because we have to run the test in C, we use grep rather
+    # than the compiler to check for the bug.  The bug is that
+    # were strings without trailing whitespace, causing g++
+    # to look for operator"".  The pattern searches for the fixed
+    # output.
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+      #include <sys/sdt.h>
+      int f() { STAP_PROBE(hi, bob); }
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP " \",\" " >/dev/null 2>&1; then :
+  glibcxx_cv_sys_sdt_h=yes
+else
+  glibcxx_cv_sys_sdt_h=no
+fi
+rm -f conftest*
+
+
+fi
+
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+  if test $glibcxx_cv_sys_sdt_h = yes; then
+
+$as_echo "#define HAVE_SYS_SDT_H 1" >>confdefs.h
+
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $glibcxx_cv_sys_sdt_h" >&5
+$as_echo "$glibcxx_cv_sys_sdt_h" >&6; }
+
+
 # Check for available headers.
 for ac_header in endian.h execinfo.h float.h fp.h ieeefp.h inttypes.h \
 locale.h machine/endian.h machine/param.h nan.h stdint.h stdlib.h string.h \
 strings.h sys/ipc.h sys/isa_defs.h sys/machine.h sys/param.h \
-sys/resource.h sys/sdt.h sys/sem.h sys/stat.h sys/time.h sys/types.h unistd.h \
+sys/resource.h sys/sem.h sys/stat.h sys/time.h sys/types.h unistd.h \
 wchar.h wctype.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
