@@ -1,3 +1,10 @@
+2014-08-28 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/lib1funcs.S: Use arc700 fp routines for archs.
+	* config/arc/ieee-754/arc-ieee-754.h: Likewise.
+	* config/arc/ieee-754/divsf3-stdmul.S: Likewise.
+	* config/arc/ieee-754/mulsf3.S: Likewise.
+
 2013-11-20 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/dp-hack.h: Revert to the previous state.
