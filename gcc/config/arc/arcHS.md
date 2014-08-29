@@ -5,7 +5,7 @@
 (define_insn_reservation "hs_data_load" 4
   (and (match_test "TARGET_HS")
        (eq_attr "type" "load"))
-  "hs_issue+hs_ld_st,nothing*3")
+  "hs_issue+hs_ld_st,hs_ld_st,nothing*2")
 
 (define_insn_reservation "hs_data_store" 1
   (and (match_test "TARGET_HS")
