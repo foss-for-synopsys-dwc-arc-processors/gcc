@@ -442,6 +442,8 @@ static rtx arc_legitimize_address_0 (rtx, rtx, enum machine_mode mode);
 
 static void arc_finalize_pic (void);
 
+static int arc_asm_insn_p (rtx x);
+
 /* initialize the GCC target structure.  */
 #undef  TARGET_COMP_TYPE_ATTRIBUTES
 #define TARGET_COMP_TYPE_ATTRIBUTES arc_comp_type_attributes
@@ -8646,6 +8648,7 @@ arc_loop_hazard (rtx pred, rtx succ)
      (i.e., jump/call) as the last instruction of a ZOL. */
   if (TARGET_ARC600 || TARGET_HS)
     if (JUMP_P (pred) || CALL_P (pred)
+	|| arc_asm_insn_p (PATTERN (pred))
 	|| GET_CODE (PATTERN (pred)) == SEQUENCE)
       return true;
 
@@ -10481,6 +10484,7 @@ arc_asm_insn_p (rtx x)
   switch (GET_CODE (x))
     {
     case ASM_OPERANDS:
+    case ASM_INPUT:
       return 1;
 
     case PARALLEL:

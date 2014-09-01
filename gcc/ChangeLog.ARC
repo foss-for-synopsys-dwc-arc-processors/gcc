@@ -1,3 +1,8 @@
+2014-09-01 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Insert a nop is the last instruction of a
+          ZOL is inline asm.
+
 2014-08-29 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arcHS.md: Change rezervation for archs load.
