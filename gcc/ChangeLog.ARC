@@ -1,3 +1,8 @@
+2014-09-03 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Emit .t/.nt flag.
+	* config/arc/arc.md: Allow emiting .t/.nt flags.
+
 2014-09-01 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Insert a nop is the last instruction of a

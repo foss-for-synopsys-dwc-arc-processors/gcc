@@ -4927,9 +4927,9 @@
      switch (get_attr_length (insn))
      {
        case 2: return \"br%d0%? %1, %2, %^%l3%&\";
-       case 4: return \"br%d0%* %1, %B2, %^%l3\";
+       case 4: return \"br%d0%| %1, %B2, %^%l3\";
        case 8: if (!brcc_nolimm_operator (operands[0], VOIDmode))
-		 return \"br%d0%* %1, %B2, %^%l3\";
+		 return \"br%d0%| %1, %B2, %^%l3\";
        case 6: case 10:
        case 12:return \"cmp%? %1, %B2\\n\\tb%d0%* %^%l3%&;br%d0 out of range\";
        default: fprintf (stderr, \"unexpected length %d\\n\", get_attr_length (insn)); fflush (stderr); gcc_unreachable ();
@@ -4975,7 +4975,7 @@
 		      (const_string "true") (const_string "false")))])
 
 ; combiner pattern observed for unwind-dw2-fde.c:linear_search_fdes.
-(define_insn "*bbit"
+(define_insn "bbit"
   [(set (pc)
 	(if_then_else
 	  (match_operator 3 "equality_comparison_operator"
@@ -4991,7 +4991,7 @@
   switch (get_attr_length (insn))
     {
       case 4: return (GET_CODE (operands[3]) == EQ
-		      ? \"bbit0%* %1,%2,%0\" : \"bbit1%* %1,%2,%0\");
+		      ? \"bbit0%| %1,%2,%0\" : \"bbit1%| %1,%2,%0\");
       case 6:
       case 8: return \"btst%? %1,%2\n\tb%d3%* %0; bbit out of range\";
       default: gcc_unreachable ();

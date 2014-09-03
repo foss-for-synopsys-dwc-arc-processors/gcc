@@ -872,6 +872,7 @@ arc_init (void)
   memset (arc_punct_chars, 0, sizeof (arc_punct_chars));
   arc_punct_chars['#'] = 1;
   arc_punct_chars['*'] = 1;
+  arc_punct_chars['|'] = 1;
   arc_punct_chars['?'] = 1;
   arc_punct_chars['!'] = 1;
   arc_punct_chars['^'] = 1;
@@ -3220,6 +3221,7 @@ static int output_scaled = 0;
 void
 arc_print_operand (FILE *file, rtx x, int code)
 {
+  bool stpred = false;
   switch (code)
     {
     case 'Z':
@@ -3246,6 +3248,8 @@ arc_print_operand (FILE *file, rtx x, int code)
 
       return;
 
+    case '|' :
+      stpred = true;
     case '#' :
       /* Conditional branches depending on condition codes.
 	 Note that this is only for branches that were known to depend on
@@ -3262,6 +3266,22 @@ arc_print_operand (FILE *file, rtx x, int code)
 	{
 	  rtx jump = XVECEXP (final_sequence, 0, 0);
 	  rtx delay = XVECEXP (final_sequence, 0, 1);
+
+	  /* Print the static branch prediction. */
+	  if (JUMP_P (jump) && TARGET_V2 && stpred
+	      && (recog_memoized (jump) == CODE_FOR_cbranchsi4_scratch
+		  || recog_memoized (jump) == CODE_FOR_bbit))
+	    {
+	      rtx note = find_reg_note (jump, REG_BR_PROB, 0);
+	      if (note)
+		{
+		  HOST_WIDE_INT prob = INTVAL (XEXP (note, 0));
+		  if (prob > (REG_BR_PROB_BASE / 2))
+		    fputs (".t", file);
+		  else
+		    fputs (".nt", file);
+		}
+	    }
 
 	  /* For TARGET_PAD_RETURN we might have grabbed the delay insn.  */
 	  if (INSN_DELETED_P (delay))
