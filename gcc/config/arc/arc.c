@@ -10507,6 +10507,9 @@ arc_asm_insn_p (rtx x)
     case ASM_INPUT:
       return 1;
 
+    case SET:
+      return arc_asm_insn_p (SET_SRC (x));
+
     case PARALLEL:
       j = 0;
       for (i = XVECLEN (x, 0) - 1; i >= 0; i--)

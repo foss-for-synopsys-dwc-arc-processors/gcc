@@ -1,3 +1,8 @@
+2014-09-08 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_asm_insn_p): Check assignments also
+          for inline ASMs.
+
 2014-09-03 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Emit .t/.nt flag.
