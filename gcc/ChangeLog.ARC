@@ -1,3 +1,7 @@
+2014-09-15 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h (SIZE_TYPE): defined to unsigned int.
+
 2014-09-08 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_asm_insn_p): Check assignments also
