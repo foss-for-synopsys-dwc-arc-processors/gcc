@@ -488,7 +488,7 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 #define DEFAULT_SIGNED_CHAR 0
 
 #define SIZE_TYPE "unsigned int"
-#define PTRDIFF_TYPE "long int"
+#define PTRDIFF_TYPE "int"
 #define WCHAR_TYPE "int"
 #define WCHAR_TYPE_SIZE 32
 

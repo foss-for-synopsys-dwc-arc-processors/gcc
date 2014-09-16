@@ -1,3 +1,7 @@
+2014-09-16 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h (PTRDIFF_TYPE): defined to int.
+
 2014-09-15 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h (SIZE_TYPE): defined to unsigned int.
