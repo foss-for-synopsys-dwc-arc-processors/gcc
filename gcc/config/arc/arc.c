@@ -6520,6 +6520,16 @@ workaround_arc_anomaly (void)
 {
   rtx insn, succ0, succ1;
 
+  /* For any architecture: call arc_hazard here. */
+  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
+    {
+      succ0 = next_real_insn(insn);
+      if (arc_hazard (insn, succ0))
+	{
+	  emit_insn_before (gen_nopv (), succ0);
+	}
+    }
+
   if (!TARGET_ARC700)
     return;
 
@@ -8710,7 +8720,7 @@ arc_loop_hazard (rtx pred, rtx succ)
 	succ_bb = BLOCK_FOR_INSN (NEXT_INSN (label));
     }
 
-  if (succ_bb && REGNO_REG_SET_P (df_get_live_in (succ_bb), LP_COUNT))
+  if (succ_bb && REGNO_REG_SET_P (df_get_live_out (succ_bb), LP_COUNT))
     return true;
 
   return false;

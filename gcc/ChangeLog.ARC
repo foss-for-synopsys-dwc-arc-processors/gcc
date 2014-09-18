@@ -1,3 +1,8 @@
+2014-09-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (workaround_arc_anomaly): call arc_hazard
+          here.
+
 2014-09-16 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h (PTRDIFF_TYPE): defined to int.
