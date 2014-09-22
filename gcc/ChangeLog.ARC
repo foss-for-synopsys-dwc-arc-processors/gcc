@@ -1,3 +1,12 @@
+2014-09-22 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c
+          (arc_option_optimization_table): Turn on the scheduling by
+          default.
+	  (arc_option_default_params): New function.
+	* config/arc/arc.c (arc_override_options): Enable sw prefetch
+          at -O3.
+
 2014-09-18 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (workaround_arc_anomaly): call arc_hazard

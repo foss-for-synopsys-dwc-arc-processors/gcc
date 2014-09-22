@@ -28,6 +28,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "common/common-target.h"
 #include "opts.h"
 #include "flags.h"
+#include "params.h"
 
 static void
 arc_option_init_struct (struct gcc_options *opts)
@@ -47,6 +48,8 @@ arc_option_init_struct (struct gcc_options *opts)
 static const struct default_options arc_option_optimization_table[] =
   {
     { OPT_LEVELS_1_PLUS, OPT_fomit_frame_pointer, NULL, 1 },
+    { OPT_LEVELS_1_PLUS, OPT_fschedule_insns, NULL, 1 },
+    { OPT_LEVELS_1_PLUS, OPT_fschedule_insns2, NULL, 1 },
     { OPT_LEVELS_ALL, OPT_mRcq, NULL, 1 },
     { OPT_LEVELS_ALL, OPT_mRcw, NULL, 1 },
     { OPT_LEVELS_ALL, OPT_msize_level_, NULL, 1 },
@@ -151,7 +154,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  if (mmpy_seen)
 	    opts->x_target_flags |= MASK_MPY16_SET;
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;        /* Default: on. */
+	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on. */
 	  if ( !(opts_set->x_target_flags & MASK_SHIFT_ASSIST))
 	    opts->x_target_flags &= ~MASK_SHIFT_ASSIST;          /* Default: off. */
 	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
@@ -193,7 +196,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  || (mcpu_seen == PROCESSOR_ARCv2HS))
 	opts->x_target_flags |= MASK_MPY16_SET;
       /* For V2 chain, by default turn on MPY16. */
-#ifdef TARGET_CPU_DEFAULT == TARGET_CPU_EM
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
       opts->x_target_flags |= MASK_MPY16_SET;
 #endif
       /* Demode any multiplier option given via -mmpy_option. */
@@ -222,6 +225,21 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
   return true;
 }
+
+/* Implement TARGET_OPTION_DEFAULT_PARAMS. */
+static void
+arc_option_default_params (void)
+{
+  /* Set the default values for cache-related parameters. The ARC
+     EM has as well prefetch instructions, however, its common
+     configureations uses CCMs. */
+  set_default_param_value (PARAM_SIMULTANEOUS_PREFETCHES, 4);
+  set_default_param_value (PARAM_PREFETCH_LATENCY, 4);
+  set_default_param_value (PARAM_L1_CACHE_LINE_SIZE, 64);
+}
+
+#undef TARGET_OPTION_DEFAULT_PARAMS
+#define TARGET_OPTION_DEFAULT_PARAMS arc_option_default_params
 
 #define TARGET_OPTION_INIT_STRUCT arc_option_init_struct
 #define TARGET_OPTION_OPTIMIZATION_TABLE arc_option_optimization_table

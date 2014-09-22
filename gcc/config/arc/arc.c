@@ -961,6 +961,13 @@ arc_override_options (void)
   if (TARGET_COMPACT_CASESI)
     TARGET_CASE_VECTOR_PC_RELATIVE = 1;
 
+  /* Enable sw prefetching at -O3 for CPUs that have prefetch. */
+  if (flag_prefetch_loop_arrays < 0
+      && TARGET_HS
+      && HAVE_prefetch
+      && optimize >= 3)
+    flag_prefetch_loop_arrays = 1;
+
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
 }
