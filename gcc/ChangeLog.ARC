@@ -1,3 +1,7 @@
+2014-09-23 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Make -mll64 default for HS.
+
 2014-09-22 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c
