@@ -3779,11 +3779,9 @@
   operands[6] = gen_reg_rtx (SImode);
   operands[7] = operands[3];
   emit_insn (gen_subsi3 (operands[5], operands[0], operands[1]));
-  emit_insn (gen_cmpsi_cc_insn_mixed (operands[5], operands[2]));
-  x = gen_rtx_GTU (VOIDmode, gen_rtx_REG (CCmode, CC_REG), const0_rtx);
-  x = gen_rtx_IF_THEN_ELSE (VOIDmode, x,
-			    gen_rtx_LABEL_REF (VOIDmode, operands[4]), pc_rtx);
-  emit_jump_insn (gen_rtx_SET (VOIDmode, pc_rtx, x));
+
+  emit_cmp_and_jump_insns (operands[5], operands[2], GTU, NULL_RTX, SImode, 1, operands[4]);
+
   if (TARGET_COMPACT_CASESI)
     {
       emit_jump_insn (gen_casesi_compact_jump (operands[5], operands[7]));
