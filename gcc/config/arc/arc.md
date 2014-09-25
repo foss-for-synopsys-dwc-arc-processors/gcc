@@ -3834,22 +3834,8 @@
     }
 }"
   [(set_attr "type" "load")
-   (set_attr_alternative "iscompact"
-     [(cond
-	[(ne (symbol_ref "GET_MODE (PATTERN (next_real_insn (operands[3])))")
-	     (symbol_ref "QImode"))
-	 (const_string "false")
-	 (match_test "!ADDR_DIFF_VEC_FLAGS (PATTERN (next_real_insn (operands[3]))).offset_unsigned")
-	 (const_string "false")]
-	(const_string "true"))
-      (const_string "false")
-      (const_string "false")])
-   (set_attr_alternative "length"
-     [(cond
-	[(eq_attr "iscompact" "false") (const_int 4)]
-	(const_int 2))
-      (const_int 4)
-      (const_int 8)])])
+   (set_attr "iscompact" "false")
+   (set_attr "length" "4,4,8")])
 
 ; Unlike the canonical tablejump, this pattern always uses a jump address,
 ; even for CASE_VECTOR_PC_RELATIVE.

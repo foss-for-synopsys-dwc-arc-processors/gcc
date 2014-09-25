@@ -1,3 +1,7 @@
+2014-09-25 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md (casesi_load): Fix pattern length.
+
 2014-09-23 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Make -mll64 default for HS.
