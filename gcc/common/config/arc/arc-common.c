@@ -188,6 +188,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  opts->x_target_flags &= ~MASK_ATOMIC;
 	  opts->x_target_flags &= ~MASK_DIVREM;
+	  opts->x_target_flags &= ~MASK_LL64;
 	  break;
 
 	default:

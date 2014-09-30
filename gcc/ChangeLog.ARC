@@ -1,3 +1,8 @@
+2014-09-30 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Make sure -mll64 is not
+          enabled for ARC6xx.
+
 2014-09-25 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md (casesi_load): Fix pattern length.
