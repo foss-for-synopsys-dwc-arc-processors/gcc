@@ -6055,3 +6055,6 @@
 
 ;; include atomic extensions
 (include "atomic.md")
+
+;; include arcv2 simd instructions
+(include "simdarc.md")

@@ -419,16 +419,42 @@ static void irq_range (const char *);
 static bool
 arc_vector_mode_supported_p (enum machine_mode mode)
 {
-  if (!TARGET_SIMD_SET)
-    return false;
+  switch (mode)
+    {
+    case V2HImode:
+      return TARGET_V2 && (arc_mpy_option > 6);
+    case V4HImode:
+    case V2SImode:
+      return TARGET_HS && (arc_mpy_option > 8);
+    case V4SImode:
+    case V8HImode:
+      return TARGET_SIMD_SET;
 
-  if ((mode == V4SImode)
-      || (mode == V8HImode))
-    return true;
-
-  return false;
+    default:
+      return false;
+    }
 }
 
+static enum machine_mode
+arc_preferred_simd_mode (enum machine_mode mode)
+{
+  switch (mode)
+    {
+    case HImode:
+      return (arc_mpy_option > 8) ? V4HImode : V2HImode;
+    case SImode:
+      return V2SImode;
+
+    default:
+      return word_mode;
+    }
+}
+
+static unsigned int
+arc_autovectorize_vector_sizes (void)
+{
+  return (arc_mpy_option > 8) ? (8 | 4) : 0;
+}
 
 /* TARGET_PRESERVE_RELOAD_P is still awaiting patch re-evaluation / review.  */
 static bool arc_preserve_reload_p (rtx in) ATTRIBUTE_UNUSED;
@@ -533,6 +559,12 @@ static int arc_asm_insn_p (rtx x);
 
 #undef TARGET_VECTOR_MODE_SUPPORTED_P
 #define TARGET_VECTOR_MODE_SUPPORTED_P arc_vector_mode_supported_p
+
+#undef TARGET_VECTORIZE_PREFERRED_SIMD_MODE
+#define TARGET_VECTORIZE_PREFERRED_SIMD_MODE arc_preferred_simd_mode
+
+#undef TARGET_VECTORIZE_AUTOVECTORIZE_VECTOR_SIZES
+#define TARGET_VECTORIZE_AUTOVECTORIZE_VECTOR_SIZES arc_autovectorize_vector_sizes
 
 #undef TARGET_INVALID_WITHIN_DOLOOP
 #define TARGET_INVALID_WITHIN_DOLOOP arc_invalid_within_doloop
@@ -1348,7 +1380,12 @@ arc_init_reg_tables (void)
 	    arc_mode_class[i] = 0;
 	  break;
 	case MODE_VECTOR_INT:
-	  arc_mode_class [i] = (1<< (int) V_MODE);
+	  if (GET_MODE_SIZE (i) == 4)
+	    arc_mode_class [i] = (1<< (int) S_MODE);
+	  else if (GET_MODE_SIZE (i) == 8)
+	    arc_mode_class [i] = (1<< (int) D_MODE);
+	  else
+	    arc_mode_class [i] = (1<< (int) V_MODE);
 	  break;
 	case MODE_CC:
 	default:
