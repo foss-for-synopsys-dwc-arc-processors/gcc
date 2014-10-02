@@ -1,3 +1,16 @@
+2014-10-08 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_expand_builtin): Cleanup
+	(arc_init_builtins): Likewise.
+	(arc_expand_builtin_aligned): New function.
+	(arc_builtin_decl): Likewise.
+	(TARGET_BUILTIN_DECL): Define
+	* config/arc/arc.md: Cleanup builtins.
+	* config/arc/atomic.md: Likewise.
+	* config/arc/fpx.md: Likewise.
+	* config/arc/builtins.def: New file.
+	* config/arc/simdarc.md: Likewise.
+
 2014-09-30 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Make sure -mll64 is not

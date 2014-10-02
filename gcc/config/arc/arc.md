@@ -105,46 +105,60 @@
 ;;                            GOTBASE.(Referenced as @GOTOFF)
 ;;  ----------------------------------------------------------------------------
 
+(define_c_enum "unspec" [
+  UNSPEC_ARC_NORM
+  UNSPEC_ARC_NORMW
+  UNSPEC_ARC_SWAP
+  UNSPEC_ARC_MUL64
+  UNSPEC_ARC_MULU64
+  UNSPEC_ARC_DIVAW
+  UNSPEC_ARC_DIRECT
+  UNSPEC_ARC_LP
+  UNSPEC_ARC_CASESI
+  UNSPEC_ARC_FFS
+  UNSPEC_ARC_FLS
+  UNSPEC_ARC_MEMBAR
+  UNSPEC_ARC_DMACH
+  UNSPEC_ARC_DMACHU
+  UNSPEC_ARC_DMACWH
+  UNSPEC_ARC_DMACWHU
+  UNSPEC_ARC_QMACH
+  UNSPEC_ARC_QMACHU
+  UNSPEC_ARC_QMPYH
+  UNSPEC_ARC_QMPYHU
+  UNSPEC_ARC_VMAC2H
+  UNSPEC_ARC_VMAC2HU
+  UNSPEC_ARC_VMPY2H
+  UNSPEC_ARC_VMPY2HU
+
+  VUNSPEC_ARC_RTIE
+  VUNSPEC_ARC_SYNC
+  VUNSPEC_ARC_BRK
+  VUNSPEC_ARC_FLAG
+  VUNSPEC_ARC_SLEEP
+  VUNSPEC_ARC_SWI
+  VUNSPEC_ARC_CORE_READ
+  VUNSPEC_ARC_CORE_WRITE
+  VUNSPEC_ARC_LR
+  VUNSPEC_ARC_SR
+  VUNSPEC_ARC_TRAP_S
+  VUNSPEC_ARC_UNIMP_S
+  VUNSPEC_ARC_KFLAG
+  VUNSPEC_ARC_CLRI
+  VUNSPEC_ARC_SETI
+  VUNSPEC_ARC_NOP
+  VUNSPEC_ARC_STACK_IRQ
+  VUNSPEC_ARC_DEXCL
+  VUNSPEC_ARC_DEXCL_NORES
+  VUNSPEC_ARC_LR_HIGH
+  VUNSPEC_ARC_EX
+  VUNSPEC_ARC_CAS
+  VUNSPEC_ARC_SC
+  VUNSPEC_ARC_LL
+])
 
 (define_constants
-  [(UNSPEC_NORM 11) ; norm generation through builtins. candidate for scheduling
-   (UNSPEC_NORMW 12) ; normw generation through builtins. candidate for scheduling
-   (UNSPEC_SWAP 13) ; swap generation through builtins. candidate for scheduling
-   (UNSPEC_MUL64 14) ; mul64 generation through builtins. candidate for scheduling
-   (UNSPEC_MULU64 15) ; mulu64 generation through builtins. candidate for scheduling
-   (UNSPEC_DIVAW 16) ; divaw generation through builtins. candidate for scheduling
-   (UNSPEC_DIRECT 17)
-   (UNSPEC_PROF 18) ; profile callgraph counter
-   (UNSPEC_LP 19) ; to set LP_END
-   (UNSPEC_CASESI 20)
-   (VUNSPEC_RTIE 17) ; blockage insn for rtie generation
-   (VUNSPEC_SYNC 18) ; blockage insn for sync generation
-   (VUNSPEC_BRK 19) ; blockage insn for brk generation
-   (VUNSPEC_FLAG 20) ; blockage insn for flag generation
-   (VUNSPEC_SLEEP 21) ; blockage insn for sleep generation
-   (VUNSPEC_SWI 22) ; blockage insn for swi generation
-   (VUNSPEC_CORE_READ 23) ; blockage insn for reading a core register
-   (VUNSPEC_CORE_WRITE 24) ; blockage insn for writing to a core register
-   (VUNSPEC_LR 25) ; blockage insn for reading an auxiliary register
-   (VUNSPEC_SR 26) ; blockage insn for writing to an auxiliary register
-   (VUNSPEC_TRAP_S 27) ; blockage insn for trap_s generation
-   (VUNSPEC_UNIMP_S 28) ; blockage insn for unimp_s generation
-   (VUNSPEC_KFLAG 29); blockage insn for kflag generation
-   (VUNSPEC_CLRI  30); disable interrupts
-   (VUNSPEC_SETI  31); SETI
-   (VUNSPEC_NOP  32); NOPV
-   (VUNSPEC_STACK_IRQ  33)
-
-   (VUNSPEC_EX  36)
-   (VUNSPEC_CAS 37)
-   (VUNSPEC_SC  38)
-   (VUNSPEC_LL  39)
-
-   (UNSPEC_FFS     40); FFS
-   (UNSPEC_FLS     41); FLS
-   (UNSPEC_SETI    42); SETI
-   (UNSPEC_VADD2   43); VADD2
-   (UNSPEC_MEMBAR  44); MEMBAR
+  [(UNSPEC_PROF 18) ; profile callgraph counter
 
    (R0_REG 0)
    (R1_REG 1)
@@ -157,9 +171,6 @@
    (RETURN_ADDR_REGNUM 31)
    (MUL64_OUT_REG 58)
 
-   (VUNSPEC_DEXCL 32) ; blockage insn for reading an auxiliary register without LR support
-   (VUNSPEC_DEXCL_NORES 33) ; blockage insn for reading an auxiliary register without LR support
-   (VUNSPEC_LR_HIGH 34) ; blockage insn for reading an auxiliary register
 
    (LP_COUNT 60)
    (CC_REG 61)
@@ -367,8 +378,9 @@
   "")
 
 ;; Length (in # of bytes, long immediate constants counted too).
-;; ??? There's a nasty interaction between the conditional execution fsm
-;; and insn lengths: insns with shimm values cannot be conditionally executed.
+;; ???  There's a nasty interaction between the conditional execution
+;; fsm and insn lengths: insns with shimm values cannot be
+;; conditionally executed.
 (define_attr "length" ""
   (cond
     [(eq_attr "iscompact" "true,maybe")
@@ -378,7 +390,7 @@
 	       (const_int 12)]
 	      (const_int 10))
 	(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 4)]
-      (const_int 2))
+       (const_int 2))
 
     (eq_attr "iscompact" "true_limm")
     (const_int 6)
@@ -733,7 +745,7 @@
 (define_insn "store_direct"
   [(set (match_operand:SI 0 "move_dest_operand" "=m")
       (unspec:SI [(match_operand:SI 1 "register_operand" "c")]
-       UNSPEC_DIRECT))]
+       UNSPEC_ARC_DIRECT))]
   ""
   "st%U0 %1,%0\;st%U0.di %1,%0"
   [(set_attr "type" "store")])
@@ -1117,10 +1129,10 @@
     ; dexcl2 r0, r1, r0
     (set (match_dup 4) ; aka r0result
 	 ; aka DF, r1, r0
-	 (unspec_volatile:SI [(match_dup 1) (match_dup 5) (match_dup 4)] VUNSPEC_DEXCL ))
+	 (unspec_volatile:SI [(match_dup 1) (match_dup 5) (match_dup 4)] VUNSPEC_ARC_DEXCL ))
     ; Generate the second, which makes sure operand5 and operand4 values
     ; are put back in the Dx register properly.
-    (unspec_volatile:SI [(match_dup 1) (match_dup 5) (match_dup 4)] VUNSPEC_DEXCL_NORES )
+    (unspec_volatile:SI [(match_dup 1) (match_dup 5) (match_dup 4)] VUNSPEC_ARC_DEXCL_NORES )
 
     ; Note: we cannot use a (clobber (match_scratch)) here because
     ; the combine pass will end up replacing uses of it with 0
@@ -1926,7 +1938,7 @@
 (define_insn "mul64"
   [(unspec [(match_operand:SI 0 "register_operand"  "Rcq#q, c,c,%c")
 	    (match_operand:SI 1 "nonmemory_operand" "Rcq#q,cL,L,C32")]
-	   UNSPEC_MUL64)
+	   UNSPEC_ARC_MUL64)
    (clobber (reg:DI MUL64_OUT_REG))]
   "TARGET_MUL64_SET"
   "mul64%? \t0, %0, %1%&"
@@ -1956,7 +1968,7 @@
 (define_insn "mulu64"
   [(unspec [(match_operand:SI 0 "register_operand"   "c,c,%c")
 	    (match_operand:SI 1 "nonmemory_operand" "cL,L,C32")]
-	   UNSPEC_MULU64)
+	   UNSPEC_ARC_MULU64)
    (clobber (reg:DI MUL64_OUT_REG))]
   "TARGET_MUL64_SET"
   "mulu64%? \t0, %0, %1%&"
@@ -3768,7 +3780,7 @@
 		      (pc)))
    (set (match_dup 6)
 	(unspec:SI [(match_operand 3 "" "")
-		    (match_dup 5) (match_dup 7)] UNSPEC_CASESI))
+		    (match_dup 5) (match_dup 7)] UNSPEC_ARC_CASESI))
    (parallel [(set (pc) (match_dup 6)) (use (match_dup 7))])]
   ""
   "
@@ -3804,7 +3816,7 @@
   [(set (match_operand:SI 0 "register_operand"             "=Rcq,r,r")
 	(unspec:SI [(match_operand:SI 1 "nonmemory_operand" "Rcq,c,Cal")
 		    (match_operand:SI 2 "register_operand"  "Rcq,c,c")
-		    (label_ref (match_operand 3 "" ""))] UNSPEC_CASESI))]
+		    (label_ref (match_operand 3 "" ""))] UNSPEC_ARC_CASESI))]
   ""
   "*
 {
@@ -3851,7 +3863,7 @@
 (define_insn "casesi_compact_jump"
   [(set (pc)
 	(unspec:SI [(match_operand:SI 0 "register_operand" "c,q")]
-		   UNSPEC_CASESI))
+		   UNSPEC_ARC_CASESI))
    (use (label_ref (match_operand 1 "" "")))
    (clobber (match_scratch:SI 2 "=q,0"))]
   "TARGET_COMPACT_CASESI"
@@ -4108,7 +4120,7 @@
    (set_attr "length" "2")])
 
 (define_insn "nopv"
-  [(unspec_volatile [(const_int 0)] VUNSPEC_NOP)]
+  [(unspec_volatile [(const_int 0)] VUNSPEC_ARC_NOP)]
   ""
   "nop%?"
   [(set_attr "type" "misc")
@@ -4264,7 +4276,7 @@
 (define_insn "norm"
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
-			    UNSPEC_NORM))]
+			    UNSPEC_ARC_NORM))]
   "TARGET_NORM"
   "@
    norm \t%0, %1
@@ -4275,7 +4287,7 @@
 (define_insn "norm_f"
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
-			    UNSPEC_NORM))
+			    UNSPEC_ARC_NORM))
    (set (reg:CC_ZN CC_REG)
 	(compare:CC_ZN (match_dup 1) (const_int 0)))]
   "TARGET_NORM"
@@ -4287,8 +4299,8 @@
 
 (define_insn "normw"
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
-	(unspec:SI [(match_operand:HI 1 "general_operand" "cL,Cal")]
-			    UNSPEC_NORMW))]
+	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
+			    UNSPEC_ARC_NORMW))]
   "TARGET_NORM"
   "*
    switch (which_alternative)
@@ -4357,7 +4369,7 @@
 (define_insn "swap"
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "L,Cal,c")]
-			    UNSPEC_SWAP))]
+			    UNSPEC_ARC_SWAP))]
   "TARGET_SWAP"
   "@
    swap \t%0, %1
@@ -4370,7 +4382,7 @@
   [(set (match_operand:SI 0 "dest_reg_operand" "=&w,&w,&w")
 	(unspec:SI [(div:SI (match_operand:SI 1 "general_operand" "r,Cal,r")
 			    (match_operand:SI 2 "general_operand" "r,r,Cal"))]
-		   UNSPEC_DIVAW))]
+		   UNSPEC_ARC_DIVAW))]
   "(TARGET_ARC700 || TARGET_EA_SET) && !TARGET_V2"
   "@
    divaw \t%0, %1, %2
@@ -4381,7 +4393,7 @@
 
 (define_insn "flag"
   [(unspec_volatile [(match_operand:SI 0 "nonmemory_operand" "rL,I,Cal")]
-		   VUNSPEC_FLAG)]
+		   VUNSPEC_ARC_FLAG)]
   ""
   "@
     flag%? %0
@@ -4394,7 +4406,7 @@
 
 (define_insn "brk"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "N")]
-		   VUNSPEC_BRK)]
+		   VUNSPEC_ARC_BRK)]
   ""
   "brk"
   [(set_attr "length" "4")
@@ -4402,7 +4414,7 @@
 
 (define_insn "rtie"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "N")]
-		   VUNSPEC_RTIE)]
+		   VUNSPEC_ARC_RTIE)]
   ""
   "rtie"
   [(set_attr "length" "4")
@@ -4411,7 +4423,7 @@
 
 (define_insn "sync"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "N")]
-		   VUNSPEC_SYNC)]
+		   VUNSPEC_ARC_SYNC)]
   ""
   "sync"
   [(set_attr "length" "4")
@@ -4419,7 +4431,7 @@
 
 (define_insn "swi"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "N")]
-		   VUNSPEC_SWI)]
+		   VUNSPEC_ARC_SWI)]
   ""
   "*
 {
@@ -4434,7 +4446,7 @@
 
 (define_insn "sleep"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "L")]
-		   VUNSPEC_SLEEP)]
+		   VUNSPEC_ARC_SLEEP)]
   "check_if_valid_sleep_operand(operands,0)"
   "sleep %0"
   [(set_attr "length" "4")
@@ -4443,7 +4455,7 @@
 (define_insn "core_read"
   [(set (match_operand:SI  0 "dest_reg_operand" "=r,r")
 	(unspec_volatile:SI [(match_operand:SI 1 "general_operand" "Hn,!r")]
-			    VUNSPEC_CORE_READ))]
+			    VUNSPEC_ARC_CORE_READ))]
   ""
   "*
     if (check_if_valid_regno_const (operands, 1))
@@ -4456,7 +4468,7 @@
 (define_insn "core_write"
   [(unspec_volatile [(match_operand:SI 0 "general_operand" "r,r")
 		     (match_operand:SI 1 "general_operand" "Hn,!r")]
-		   VUNSPEC_CORE_WRITE)]
+		    VUNSPEC_ARC_CORE_WRITE)]
   ""
   "*
     if (check_if_valid_regno_const (operands, 1))
@@ -4469,7 +4481,7 @@
 (define_insn "lr"
   [(set (match_operand:SI  0 "dest_reg_operand" "=r,r,r,r")
 	(unspec_volatile:SI [(match_operand:SI 1 "general_operand" "I,HCal,r,D")]
-			    VUNSPEC_LR))]
+			    VUNSPEC_ARC_LR))]
   ""
   "lr\t%0, [%1]"
   [(set_attr "length" "4,8,4,8")
@@ -4478,7 +4490,7 @@
 (define_insn "sr"
   [(unspec_volatile [(match_operand:SI 0 "general_operand" "Cal,r,r,r")
 		     (match_operand:SI 1 "general_operand" "Ir,I,HCal,r")]
-		   VUNSPEC_SR)]
+		   VUNSPEC_ARC_SR)]
   ""
   "sr\t%S0, [%1]"
   [(set_attr "length" "8,4,8,4")
@@ -4486,7 +4498,7 @@
 
 (define_insn "trap_s"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "L,Cal")]
-		   VUNSPEC_TRAP_S)]
+		    VUNSPEC_ARC_TRAP_S)]
   "TARGET_ARC700 || TARGET_V2"
 {
   if (which_alternative == 0)
@@ -4504,7 +4516,7 @@
 
 (define_insn "unimp_s"
   [(unspec_volatile [(match_operand:SI 0 "immediate_operand" "N")]
-		   VUNSPEC_UNIMP_S)]
+		   VUNSPEC_ARC_UNIMP_S)]
   "TARGET_ARC700 || TARGET_V2"
   "unimp_s"
   [(set_attr "length" "4")
@@ -4513,7 +4525,7 @@
 ;;EM specific
 (define_insn "kflag"
   [(unspec_volatile [(match_operand:SI 0 "nonmemory_operand" "rL,I,Cal")]
-		   VUNSPEC_KFLAG)]
+		   VUNSPEC_ARC_KFLAG)]
   "TARGET_V2"
   "@
     kflag%? %0
@@ -4527,7 +4539,7 @@
 (define_insn "clri"
   [(set (match_operand:SI  0 "dest_reg_operand" "=r")
 	(unspec_volatile:SI [(match_operand:SI 1 "immediate_operand" "N")]
-			    VUNSPEC_CLRI))]
+			    VUNSPEC_ARC_CLRI))]
   "TARGET_V2"
   "clri  %0"
   [(set_attr "length" "4")
@@ -4536,7 +4548,7 @@
 (define_insn "ffs"
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
-			    UNSPEC_FFS))]
+			    UNSPEC_ARC_FFS))]
   "TARGET_NORM && TARGET_V2"
   "@
    ffs \t%0, %1
@@ -4547,7 +4559,7 @@
 (define_insn "ffs_f"
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
-			    UNSPEC_FFS))
+			    UNSPEC_ARC_FFS))
    (set (reg:CC_ZN CC_REG)
 	(compare:CC_ZN (match_dup 1) (const_int 0)))]
   "TARGET_NORM && TARGET_V2"
@@ -4579,7 +4591,7 @@
 (define_insn "fls"
   [(set (match_operand:SI  0 "dest_reg_operand" "=w,w")
 	(unspec:SI [(match_operand:SI 1 "general_operand" "cL,Cal")]
-			    UNSPEC_FLS))]
+			    UNSPEC_ARC_FLS))]
   "TARGET_NORM && TARGET_V2"
   "@
    fls \t%0, %1
@@ -4589,19 +4601,9 @@
 
 (define_insn "seti"
   [(unspec_volatile:SI [(match_operand:SI 0 "general_operand" "rL")]
-		       VUNSPEC_SETI)]
+		       VUNSPEC_ARC_SETI)]
   "TARGET_V2"
   "seti  %0"
-  [(set_attr "length" "4")
-   (set_attr "type" "misc")])
-
-(define_insn "vadd2"
-  [(set (match_operand: DI 0 "dest_reg_operand" "=r")
-	(unspec:DI [(match_operand:DI 1 "register_operand" "r")
-		    (match_operand:DI 2 "register_operand" "r")]
-		   UNSPEC_VADD2))]
-  "TARGET_HS"
-  "vadd2 %0, %1, %2 ; Used in DI"
   [(set_attr "length" "4")
    (set_attr "type" "misc")])
 
@@ -5077,7 +5079,7 @@
 ; There is no point is reloading this insn - then lp_count would still not
 ; be available for the loop end.
 (define_insn "doloop_begin_i"
-  [(unspec:SI [(pc)] UNSPEC_LP)
+  [(unspec:SI [(pc)] UNSPEC_ARC_LP)
    (clobber (reg:SI LP_START))
    (clobber (reg:SI LP_END))
    (use (match_operand:SI 0 "register_operand" "l,l,????*X"))
@@ -6040,7 +6042,7 @@
 ;c; ])
 
 (define_insn "stack_irq_dwarf"
-  [(unspec_volatile [(const_int 1)] VUNSPEC_STACK_IRQ)]
+  [(unspec_volatile [(const_int 1)] VUNSPEC_ARC_STACK_IRQ)]
   ""
   ""
   [(set_attr "length" "0")])
