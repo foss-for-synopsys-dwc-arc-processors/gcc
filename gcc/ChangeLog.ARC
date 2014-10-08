@@ -3,6 +3,8 @@
 	* config/arc/arc-protos.h (arc_bdr_iscond): Declare.
 	* config/arc/arc.c (arc_bdr_iscond): New function.
 	* config/arc/arc.md: Use arc_bdr_iscond.
+	(casesi_compact_jump instruction): Update instruction
+	length.
 
 2014-09-30 Claudiu Zissulescu <claziss@synopsys.com>
 

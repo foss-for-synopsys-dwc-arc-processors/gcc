@@ -3948,7 +3948,7 @@
   output_asm_insn (s, xop);
   return \"add_s %2,%2,pcl\n\tj_s%* [%2]\";
 }"
-  [(set_attr "length" "10")
+  [(set_attr "length" "12")
    (set_attr "type" "jump")
    (set_attr "iscompact" "true")
    (set_attr "cond" "nocond")])
