@@ -377,7 +377,8 @@
 	(cond [(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC")
 	       (const_int 12)]
 	      (const_int 10))
-	(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC") (const_int 4)]
+	(match_test "GET_CODE (PATTERN (insn)) == COND_EXEC || arc_bdr_iscond (insn)")
+	(const_int 4)]
       (const_int 2))
 
     (eq_attr "iscompact" "true_limm")

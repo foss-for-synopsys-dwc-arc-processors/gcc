@@ -126,4 +126,5 @@ extern void arc_expand_compare_and_swap (rtx *);
 
 #ifdef  RTX_CODE
 extern void arc_expand_atomic_op (enum rtx_code, rtx, rtx, rtx, rtx, rtx);
+extern bool arc_bdr_iscond (rtx);
 #endif

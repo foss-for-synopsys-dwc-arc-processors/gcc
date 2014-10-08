@@ -9336,6 +9336,23 @@ arc_write_ext_corereg (rtx insn)
   return for_each_rtx (&PATTERN (insn), write_ext_corereg_1, 0);
 }
 
+/* Return true if the insn is in a delay slot and needs to be executed
+   conditionally. */
+
+bool
+arc_bdr_iscond (rtx insn)
+{
+  rtx jump = prev_active_insn (insn);
+
+  if (!jump || !JUMP_P(jump))
+    return false;
+
+  if (INSN_ANNULLED_BRANCH_P (jump) && INSN_FROM_TARGET_P (insn))
+    return true;
+
+  return false;
+}
+
 /* This is like the hook, but returns NULL when it can't / won't generate
    a legitimate address.  */
 
