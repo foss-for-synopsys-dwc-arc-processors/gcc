@@ -47,22 +47,6 @@
    ])
 
 ;; Multiplication with addition/subtraction
-(define_insn "*movtoacc_fpu"
-  [(set (match_operand:SF 0 "mlo_operand" "")
-	(match_operand:SF 1 "nonmemory_operand" "r,Cal"))]
-  "TARGET_HARD_FLOAT"
-  "mov %0,%1"
-  [(set_attr "length" "4,8")
-   (set_attr "type" "move")])
-
-(define_insn "*movfromacc_fpu"
-  [(set (match_operand:SF 0 "register_operand" "=r")
-	(match_operand:SF 1 "mlo_operand" ""))]
-  "TARGET_HARD_FLOAT"
-  "mov %0,%1"
-  [(set_attr "length" "4")
-   (set_attr "type" "move")])
-
 (define_expand "fmasf4"
   [(set (match_operand:SF 0 "register_operand" "")
 	(fma:SF (match_operand:SF 1 "nonmemory_operand" "")
@@ -112,6 +96,89 @@
   [(set_attr "length" "4,4,8,8,8")
    (set_attr "predicable" "yes,no,yes,no,no")
    (set_attr "cond" "canuse,nocond,canuse_limm,nocond,nocond")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "fpus")])
+
+(define_expand "fmadf4"
+  [(match_operand:DF 0 "register_operand" "")
+   (match_operand:DF 1 "register_operand" "")
+   (match_operand:DF 2 "register_operand" "")
+   (match_operand:DF 3 "register_operand" "")]
+  "TARGET_FP_DFUZED"
+  "{
+   emit_insn (gen_fmadf4_split (operands[0], operands[1], operands[2], operands[3]));
+   DONE;
+   }")
+
+(define_insn_and_split "fmadf4_split"
+  [(set (match_operand:DF 0 "register_operand"        "")
+	(fma:DF (match_operand:DF 1 "register_operand" "")
+		(match_operand:DF 2 "register_operand" "")
+		(match_operand:DF 3 "register_operand" "")))
+   (clobber (reg:DF ARCV2_ACC))]
+  "TARGET_FP_DFUZED"
+  "#"
+  "TARGET_FP_DFUZED"
+  [(const_int 0)]
+  "{
+   rtx acc_reg = gen_rtx_REG (DFmode, ACC_REG_FIRST);
+   emit_move_insn (acc_reg, operands[3]);
+   emit_insn (gen_fmadf4_fpu (operands[0], operands[1], operands[2]));
+   DONE;
+  }"
+)
+
+(define_expand "fnmadf4"
+  [(match_operand:DF 0 "register_operand" "")
+   (match_operand:DF 1 "register_operand" "")
+   (match_operand:DF 2 "register_operand" "")
+   (match_operand:DF 3 "register_operand" "")]
+  "TARGET_FP_DFUZED"
+  "{
+   emit_insn (gen_fnmadf4_split (operands[0], operands[1], operands[2], operands[3]));
+   DONE;
+   }")
+
+(define_insn_and_split "fnmadf4_split"
+  [(set (match_operand:DF 0 "register_operand"                 "")
+	(fma:DF (neg:DF (match_operand:DF 1 "register_operand" ""))
+		(match_operand:DF 2 "register_operand"         "")
+		(match_operand:DF 3 "register_operand"         "")))
+   (clobber (reg:DF ARCV2_ACC))]
+  "TARGET_FP_DFUZED"
+  "#"
+  "TARGET_FP_DFUZED"
+  [(const_int 0)]
+  "{
+   rtx acc_reg = gen_rtx_REG (DFmode, ACC_REG_FIRST);
+   emit_move_insn (acc_reg, operands[3]);
+   emit_insn (gen_fnmadf4_fpu (operands[0], operands[1], operands[2]));
+   DONE;
+  }")
+
+(define_insn "fmadf4_fpu"
+  [(set (match_operand:DF 0 "register_operand"        "=r,r")
+	(fma:DF (match_operand:DF 1 "register_operand" "0,r")
+		(match_operand:DF 2 "register_operand" "r,r")
+		(reg:DF ARCV2_ACC)))]
+  "TARGET_FP_DFUZED"
+  "fdmadd%? %0,%1,%2"
+  [(set_attr "length" "4,4")
+   (set_attr "predicable" "yes,no")
+   (set_attr "cond" "canuse,nocond")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "fpus")])
+
+(define_insn "fnmadf4_fpu"
+  [(set (match_operand:DF 0 "register_operand"                "=r,r")
+	(fma:DF (neg:DF (match_operand:DF 1 "register_operand" "0,r"))
+		(match_operand:DF 2 "register_operand"         "r,r")
+		(reg:DF ARCV2_ACC)))]
+  "TARGET_FP_DFUZED"
+  "fdmsub%? %0,%1,%2"
+  [(set_attr "length" "4,4")
+   (set_attr "predicable" "yes,no")
+   (set_attr "cond" "canuse,nocond")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")])
 
@@ -168,35 +235,6 @@
    (set_attr "cond" "set")
    (set_attr "type" "fpus")
    (set_attr "predicable" "yes,no,yes")])
-
-;; Branch
-;<;(define_expand "cbranchsf4"
-;<;  [(use (match_operator 0 "fpu_comparison_operator"
-;<;			[(match_operand:SF 1 "register_operand" "")
-;<;			 (match_operand:SF 2 "register_operand" "")]))
-;<;   (label_ref (match_operand 3 "" ""))]
-;<;  "TARGET_HARD_FLOAT"
-;<;{
-;<;  gcc_assert (XEXP (operands[0], 0) == operands[1]);
-;<;  gcc_assert (XEXP (operands[0], 1) == operands[2]);
-;<;  operands[0] = gen_compare_reg (operands[0], VOIDmode);
-;<;  emit_jump_insn (gen_branch_insn (operands[3], operands[0]));
-;<;  DONE;
-;<;})
-
-;<;(define_expand "cstoresf4"
-;<;  [(set (match_operand:SI 0 "dest_reg_operand" "")
-;<;	(match_operator:SI 1 "fpu_comparison_operator"
-;<;			   [(match_operand:SF 2 "register_operand" "")
-;<;			    (match_operand:SF 3 "register_operand" "")]))]
-;<;  "TARGET_HARD_FLOAT"
-;<;{
-;<;  gcc_assert (XEXP (operands[1], 0) == operands[2]);
-;<;  gcc_assert (XEXP (operands[1], 1) == operands[3]);
-;<;  operands[1] = gen_compare_reg (operands[1], SImode);
-;<;  emit_insn (gen_scc_insn (operands[0], operands[1]));
-;<;  DONE;
-;<;})
 
 ;; ::::::::::::::::::::
 ;; ::
@@ -261,27 +299,6 @@
    (set_attr "cond" "canuse,nocond")
    ])
 
-;; Negation
-;;(define_insn "negdf2"
-;;  [(set (match_operand:DF 0 "register_operand"        "=r,r")
-;;	(neg:DF (match_operand:DF 1 "register_operand" "0,c")))]
-;;  "TARGET_HARD_FLOAT"
-;;  "* return TARGET_BIG_ENDIAN ? \"bxor%? %0,%1,31\t;fdneg %0,%1\" : \"bxor%? %R0,%R1,31\t;fdneg %0,%1\" ;"
-;;  [(set_attr "length" "4,4")
-;;   (set_attr "predicable" "yes,no")
-;;   (set_attr "type" "unary")])
-;;
-;; Absolute value
-;;(define_insn "absdf2"
-;;  [(set (match_operand:DF 0 "dest_reg_operand"    "=Rcq#q,Rcw,w")
-;;	(abs:DF (match_operand:DF 1 "register_operand" "0,  0,c")))]
-;;  "TARGET_HARD_FLOAT"
-;;  "* return TARGET_BIG_ENDIAN ? \"bclr%? %0,%1,31%&\t;fdabs %0,%1\" : \"bclr%? %R0,%R1,31%&\t;fdabs %0,%1\"; "
-;;  [(set_attr "type" "unary")
-;;   (set_attr "iscompact" "maybe,false,false")
-;;   (set_attr "length" "2,4,4")
-;;   (set_attr "predicable" "no,yes,no")])
-
 ;; Square root
 (define_insn "sqrtdf2"
   [(set (match_operand:DF 0 "register_operand"          "=r")
@@ -315,35 +332,6 @@
    (set_attr "cond" "set")
    (set_attr "type" "fpus")
    (set_attr "predicable" "yes")])
-
-;; Branch
-;<;(define_expand "cbranchdf4"
-;<;  [(use (match_operator 0 "fpu_comparison_operator"
-;<;			[(match_operand:DF 1 "register_operand" "")
-;<;			 (match_operand:DF 2 "register_operand" "")]))
-;<;   (label_ref (match_operand 3 "" ""))]
-;<;  "TARGET_HARD_FLOAT"
-;<;{
-;<;  gcc_assert (XEXP (operands[0], 0) == operands[1]);
-;<;  gcc_assert (XEXP (operands[0], 1) == operands[2]);
-;<;  operands[0] = gen_compare_reg (operands[0], VOIDmode);
-;<;  emit_jump_insn (gen_branch_insn (operands[3], operands[0]));
-;<;  DONE;
-;<;})
-
-;<;(define_expand "cstoredf4"
-;<;  [(set (match_operand:SI 0 "dest_reg_operand" "")
-;<;	(match_operator:SI 1 "fpu_comparison_operator"
-;<;			   [(match_operand:DF 2 "register_operand" "")
-;<;			    (match_operand:DF 3 "register_operand" "")]))]
-;<;  "TARGET_HARD_FLOAT"
-;<;{
-;<;  gcc_assert (XEXP (operands[1], 0) == operands[2]);
-;<;  gcc_assert (XEXP (operands[1], 1) == operands[3]);
-;<;  operands[1] = gen_compare_reg (operands[1], SImode);
-;<;  emit_insn (gen_scc_insn (operands[0], operands[1]));
-;<;  DONE;
-;<;})
 
 ;; ::::::::::::::::::::
 ;; ::

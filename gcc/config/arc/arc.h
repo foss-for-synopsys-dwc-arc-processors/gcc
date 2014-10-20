@@ -776,6 +776,11 @@ enum reg_class
 #define ARC_FIRST_SIMD_DMA_CONFIG_OUT_REG  136
 #define ARC_LAST_SIMD_DMA_CONFIG_REG       143
 
+#define ACC_REG_FIRST 58
+#define ACC_REG_LAST  59
+#define ACCL_REGNO    (TARGET_BIG_ENDIAN ? ACC_REG_FIRST + 1 : ACC_REG_FIRST)
+#define ACCH_REGNO    (TARGET_BIG_ENDIAN ? ACC_REG_FIRST : ACC_REG_FIRST + 1)
+
 /* The same information, inverted:
    Return the class number of the smallest class containing
    reg number REGNO.  This could be a conditional expression

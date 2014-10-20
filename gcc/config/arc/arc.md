@@ -109,8 +109,6 @@
   UNSPEC_ARC_NORM
   UNSPEC_ARC_NORMW
   UNSPEC_ARC_SWAP
-  UNSPEC_ARC_MUL64
-  UNSPEC_ARC_MULU64
   UNSPEC_ARC_DIVAW
   UNSPEC_ARC_DIRECT
   UNSPEC_ARC_LP
@@ -170,7 +168,7 @@
    (ILINK2_REGNUM 30)
    (RETURN_ADDR_REGNUM 31)
    (MUL64_OUT_REG 58)
-
+   (ARCV2_ACC 58)
 
    (LP_COUNT 60)
    (CC_REG 61)
@@ -986,7 +984,7 @@
 }")
 
 (define_insn_and_split "*movdi_insn"
-  [(set (match_operand:DI 0 "move_dest_operand" "=w,w,r,m")
+  [(set (match_operand:DI 0 "move_dest_operand"      "=w, w,r,m")
 	(match_operand:DI 1 "move_double_src_operand" "c,Hi,m,c"))]
   "(register_operand (operands[0], DImode)
     || register_operand (operands[1], DImode))
@@ -1936,10 +1934,10 @@
    (set_attr "length" "8")])
 
 (define_insn "mul64"
-  [(unspec [(match_operand:SI 0 "register_operand"  "Rcq#q, c,c,%c")
-	    (match_operand:SI 1 "nonmemory_operand" "Rcq#q,cL,L,C32")]
-	   UNSPEC_ARC_MUL64)
-   (clobber (reg:DI MUL64_OUT_REG))]
+  [(set (reg:DI MUL64_OUT_REG)
+	(mult:DI
+	 (sign_extend:DI (match_operand:SI 0 "register_operand"  "Rcq#q, c,c,%c"))
+	 (sign_extend:DI (match_operand:SI 1 "nonmemory_operand" "Rcq#q,cL,L,C32"))))]
   "TARGET_MUL64_SET"
   "mul64%? \t0, %0, %1%&"
   [(set_attr "length" "*,4,4,8")
@@ -1952,7 +1950,7 @@
 (define_insn_and_split "umulsidi_600"
   [(set (match_operand:DI 0 "nonimmediate_operand"                       "=mc,mc,mc")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"    "c, c,%c"))
-		 (sign_extend:DI (match_operand:SI 2 "nonmemory_operand"  "cL, L,C32"))))
+		 (zero_extend:DI (match_operand:SI 2 "nonmemory_operand"  "cL, L,C32"))))
    (clobber (reg:DI MUL64_OUT_REG))]
   "TARGET_MUL64_SET && !TARGET_V2"
   "#"
@@ -1966,10 +1964,10 @@
    (set_attr "length" "8")])
 
 (define_insn "mulu64"
-  [(unspec [(match_operand:SI 0 "register_operand"   "c,c,%c")
-	    (match_operand:SI 1 "nonmemory_operand" "cL,L,C32")]
-	   UNSPEC_ARC_MULU64)
-   (clobber (reg:DI MUL64_OUT_REG))]
+  [(set (reg:DI MUL64_OUT_REG)
+	(mult:DI
+	 (zero_extend:DI (match_operand:SI 0 "register_operand"   "c,c,%c"))
+	 (zero_extend:DI (match_operand:SI 1 "nonmemory_operand" "cL,L,C32"))))]
   "TARGET_MUL64_SET"
   "mulu64%? \t0, %0, %1%&"
   [(set_attr "length" "4,4,8")
@@ -3621,7 +3619,7 @@
 ;   using conditional execution, preventing short insn formation where used.
 ; - for ARC700: likely or somewhat likely taken branches are made long and
 ;   unaligned if possible to avoid branch penalty.
-(define_insn "*branch_insn"
+(define_insn "branch_insn0"
   [(set (pc)
 	(if_then_else (match_operator 1 "proper_comparison_operator"
 				      [(reg CC_REG) (const_int 0)])
@@ -3671,7 +3669,7 @@
 	(cond [(match_test "get_attr_length (insn) == 2") (const_string "true")]
 	      (const_string "false")))])
 
-(define_insn "*rev_branch_insn"
+(define_insn "rev_branch_insn"
   [(set (pc)
 	(if_then_else (match_operator 1 "proper_comparison_operator"
 				      [(reg CC_REG) (const_int 0)])
@@ -5785,7 +5783,10 @@
   [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand"  "  0, c"))
 		 (sign_extend:DI (match_operand:SI 2 "register_operand"  "  c, c"))))
-   (clobber (reg:DI 56))]
+   (set (reg:DI ARCV2_ACC)
+	(mult:DI
+	  (sign_extend:DI (match_dup 1))
+	  (sign_extend:DI (match_dup 2))))]
   "TARGET_HS && (arc_mpy_option > 7)"
   "mpyd%? %0, %1, %2"
   [(set_attr "length" "4,4")
@@ -5798,7 +5799,9 @@
   [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r,r,Rcr,  r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand"  "  0, c,0,  0,  c"))
 		 (match_operand 2                   "immediate_operand"  "  L, L,I,Cal,Cal")))
-   (clobber (reg:DI 56))]
+   (set (reg:DI ARCV2_ACC)
+	(mult:DI (sign_extend:DI (match_dup 1))
+		 (match_dup 2)))]
   "TARGET_HS && (arc_mpy_option > 7)"
   "mpyd%? %0, %1, %2"
   [(set_attr "length" "4,4,4,8,8")
@@ -5811,7 +5814,9 @@
   [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"  "  0, c"))
 		 (zero_extend:DI (match_operand:SI 2 "register_operand" "   c, c"))))
-   (clobber (reg:DI 56))]
+   (set (reg:DI ARCV2_ACC)
+	(mult:DI (zero_extend:DI (match_dup 1))
+		 (zero_extend:DI (match_dup 2))))]
   "TARGET_HS && (arc_mpy_option > 7)"
   "mpydu%? %0, %1, %2"
   [(set_attr "length" "4,4")
@@ -5824,7 +5829,9 @@
   [(set (match_operand:DI 0 "nonimmediate_operand"                      "=Rcr, r,r,Rcr,  r")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"  "  0, c,0,  0,  c"))
 		 (match_operand 2                   "immediate_operand"  "  L, L,I,Cal,Cal")))
-   (clobber (reg:DI 56))]
+   (set (reg:DI ARCV2_ACC)
+	(mult:DI (zero_extend:DI (match_dup 1))
+		 (match_dup 2)))]
   "TARGET_HS && (arc_mpy_option > 7)"
   "mpydu%? %0, %1, %2"
   [(set_attr "length" "4,4,4,8,8")
@@ -5850,8 +5857,8 @@
 )
 
 (define_insn "*movdi_vadd2"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(match_operand:DI 1 "register_operand"  "r"))]
+  [(set (match_operand:DI 0 "register_operand" "=w")
+	(match_operand:DI 1 "register_operand"  "c"))]
   "TARGET_HS && (arc_mpy_option > 8)"
   "vadd2 %0,%1,0  ; movdi %0,%1"
   [(set_attr "length" "4")
@@ -6046,6 +6053,151 @@
   ""
   ""
   [(set_attr "length" "0")])
+
+(define_expand "maddsidi4"
+  [(set (match_operand:DI 0 "register_operand" "")
+	(plus:DI
+	 (mult:DI
+	  (sign_extend:DI (match_operand:SI 1 "register_operand" ""))
+	  (sign_extend:DI (match_operand:SI 2 "register_operand" "")))
+	 (match_operand:DI 3 "register_operand" "")))]
+  "TARGET_V2  && (arc_mpy_option > 6)"
+  "
+   emit_insn (gen_maddsidi (operands[0], operands[1], operands[2], operands[3]));
+   DONE;
+   ")
+
+(define_insn_and_split "maddsidi"
+  [(set (match_operand:DI 0 "register_operand" "")
+	(plus:DI
+	 (mult:DI
+	  (sign_extend:DI (match_operand:SI 1 "register_operand" ""))
+	  (sign_extend:DI (match_operand:SI 2 "register_operand" "")))
+	 (match_operand:DI 3 "register_operand" "")))
+   (clobber (reg:DI ARCV2_ACC))]
+  "TARGET_V2  && (arc_mpy_option > 6)"
+  "#"
+  "TARGET_V2  && (arc_mpy_option > 6)"
+  [(const_int 0)]
+  "{
+   rtx acc_reg = gen_rtx_REG (DImode, ACC_REG_FIRST);
+   emit_move_insn (acc_reg, operands[3]);
+   if (arc_mpy_option > 7)
+     emit_insn (gen_macd (operands[0], operands[1], operands[2]));
+   else
+     {
+      emit_insn (gen_mac (operands[1], operands[2]));
+      emit_move_insn (operands[0], acc_reg);
+     }
+   DONE;
+   }"
+  [(set_attr "type" "multi")
+   (set_attr "length" "36")])
+
+(define_insn "macd"
+  [(set (match_operand:DI 0 "register_operand"                 "=Rcr,r")
+	(plus:DI
+	 (mult:DI
+	  (sign_extend:DI (match_operand:SI 1 "register_operand" " 0,c"))
+	  (sign_extend:DI (match_operand:SI 2 "register_operand" " c,c")))
+	 (reg:DI ARCV2_ACC)))
+   (set (reg:DI ARCV2_ACC)
+	(plus:DI
+	 (mult:DI (sign_extend:DI (match_dup 1))
+		  (sign_extend:DI (match_dup 2)))
+	 (reg:DI ARCV2_ACC)))]
+ "TARGET_HS  && (arc_mpy_option > 7)"
+ "macd %0,%1,%2"
+  [(set_attr "length" "4")
+   (set_attr "type" "multi")
+   (set_attr "predicable" "yes,no")
+   (set_attr "cond" "canuse,nocond")])
+
+(define_insn "mac"
+  [(set (reg:DI ARCV2_ACC)
+	(plus:DI
+	 (mult:DI (sign_extend:DI (match_operand:SI 0 "register_operand" "r"))
+		  (sign_extend:DI (match_operand:SI 1 "register_operand" "r")))
+	 (reg:DI ARCV2_ACC)))]
+ "TARGET_V2  && (arc_mpy_option > 6)"
+ "mac 0,%0,%1"
+  [(set_attr "length" "4")
+   (set_attr "type" "multi")
+   (set_attr "predicable" "no")
+   (set_attr "cond" "nocond")])
+
+(define_expand "umaddsidi4"
+  [(set (match_operand:DI 0 "register_operand" "")
+	(plus:DI
+	 (mult:DI
+	  (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
+	  (zero_extend:DI (match_operand:SI 2 "register_operand" "")))
+	 (match_operand:DI 3 "register_operand" "")))
+   (clobber (reg:DI ARCV2_ACC))]
+  "TARGET_V2  && (arc_mpy_option > 6)"
+  "
+   emit_insn (gen_umaddsidi (operands[0], operands[1], operands[2], operands[3]));
+   DONE;
+ ")
+
+(define_insn_and_split "umaddsidi"
+  [(set (match_operand:DI 0 "register_operand" "")
+	(plus:DI
+	 (mult:DI
+	  (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
+	  (zero_extend:DI (match_operand:SI 2 "register_operand" "")))
+	 (match_operand:DI 3 "register_operand" "")))]
+  "TARGET_V2  && (arc_mpy_option > 6)"
+  "#"
+  "TARGET_V2  && (arc_mpy_option > 6)"
+  [(const_int 0)]
+  "{
+   rtx acc_reg = gen_rtx_REG (DImode, ACC_REG_FIRST);
+   emit_move_insn (acc_reg, operands[3]);
+   if (arc_mpy_option > 7)
+     emit_insn (gen_macdu (operands[0], operands[1], operands[2]));
+   else
+     {
+      emit_insn (gen_macu (operands[1], operands[2]));
+      emit_move_insn (operands[0], acc_reg);
+     }
+   DONE;
+   }"
+  [(set_attr "type" "multi")
+   (set_attr "length" "36")])
+
+(define_insn "macdu"
+  [(set (match_operand:DI 0 "register_operand"                 "=Rcr,r")
+	(plus:DI
+	 (mult:DI
+	  (zero_extend:DI (match_operand:SI 1 "register_operand" " 0,c"))
+	  (zero_extend:DI (match_operand:SI 2 "register_operand" " c,c")))
+	 (reg:DI ARCV2_ACC)))
+   (set (reg:DI ARCV2_ACC)
+	(plus:DI
+	 (mult:DI (zero_extend:DI (match_dup 1))
+		  (zero_extend:DI (match_dup 2)))
+	 (reg:DI ARCV2_ACC)))]
+ "TARGET_HS  && (arc_mpy_option > 7)"
+ "macdu %0,%1,%2"
+  [(set_attr "length" "4")
+   (set_attr "type" "multi")
+   (set_attr "predicable" "yes,no")
+   (set_attr "cond" "canuse,nocond")])
+
+(define_insn "macu"
+  [(set (reg:DI ARCV2_ACC)
+	(plus:DI
+	 (mult:DI (zero_extend:DI (match_operand:SI 0 "register_operand" "r"))
+		  (zero_extend:DI (match_operand:SI 1 "register_operand" "r")))
+	 (reg:DI ARCV2_ACC)))]
+ "TARGET_V2  && (arc_mpy_option > 6)"
+ "macu 0,%0,%1"
+  [(set_attr "length" "4")
+   (set_attr "type" "multi")
+   (set_attr "predicable" "no")
+   (set_attr "cond" "nocond")])
+
 
 ;; include the arc-FPX instructions
 (include "fpx.md")

@@ -1630,6 +1630,18 @@ arc_conditional_register_usage (void)
 	arc_regno_reg_class [i] =  SIMD_DMA_CONFIG_REGS;
     }
 
+  /*V2 Accumulator */
+  if (TARGET_V2
+      && ((arc_mpy_option > 6) || TARGET_FP_DFUZED || TARGET_FP_SFUZED))
+  {
+    arc_regno_reg_class[ACCL_REGNO] = WRITABLE_CORE_REGS;
+    arc_regno_reg_class[ACCH_REGNO] = WRITABLE_CORE_REGS;
+    SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], ACCL_REGNO);
+    SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], ACCH_REGNO);
+    SET_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], ACCL_REGNO);
+    SET_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], ACCH_REGNO);
+    arc_hard_regno_mode_ok[ACC_REG_FIRST] = D_MODES;
+  }
   /* pc : r63 */
   arc_regno_reg_class[PROGRAM_COUNTER_REGNO] = GENERAL_REGS;
 }
@@ -4405,6 +4417,9 @@ output_short_suffix (FILE *file)
   extract_insn_cached (insn);
 }
 
+
+static bool arc_primarysecondary_p (rtx insn, int len);
+
 /* Implement FINAL_PRESCAN_INSN.  */
 
 void
@@ -4412,7 +4427,14 @@ arc_final_prescan_insn (rtx insn, rtx *opvec ATTRIBUTE_UNUSED,
 			int noperands ATTRIBUTE_UNUSED)
 {
   if (TARGET_DUMPISIZE)
-    fprintf (asm_out_file, "\n; at %04x\n", INSN_ADDRESSES (INSN_UID (insn)));
+    {
+      fprintf (asm_out_file, "\n;# %d at %04x",
+	       INSN_UID (insn), INSN_ADDRESSES (INSN_UID (insn)));
+      if (get_attr_length (insn) == 2
+	  &&  arc_primarysecondary_p(insn, 2))
+	fprintf (asm_out_file, " *");
+      fprintf (asm_out_file, "\n");
+    }
 
   /* Output a nop if necessary to prevent a hazard.
      Don't do this for delay slots: inserting a nop would
@@ -4496,7 +4518,7 @@ arc_frame_pointer_required (void)
 
 /* Return the destination address of a branch.  */
 
-int
+static int
 branch_dest (rtx branch)
 {
   rtx pat = PATTERN (branch);
@@ -9190,6 +9212,88 @@ int
 arc_write_ext_corereg (rtx insn)
 {
   return for_each_rtx (&PATTERN (insn), write_ext_corereg_1, 0);
+}
+
+/* Detection of secondary branch.
+  To keep the implementation simple without costing much performance, the
+  secondary branch is subject to restrictions:
+  1.  It must be a conditional branch
+  2.  The opcode must be one of: Bcc, BRcc, BBIT0, BBIT1, BEQ_S,
+  BNE_S, BRNE_S, BREQ_S.
+  3.  The secondary branch is not allowed to have a delay slot.
+*/
+static bool
+arc_secondarybranch_p (rtx insn)
+{
+  rtx tinsn = NULL_RTX;
+
+  if (simplejump_p (insn))
+    return false;
+
+  switch (recog_memoized (insn))
+    {
+    case CODE_FOR_cbranchsi4_scratch:  /* BRcc, BRcc_S, Bcc */
+    case CODE_FOR_bbit:                /* BBIT{0,1}, Bcc */
+    case CODE_FOR_rev_branch_insn:     /* Bcc */
+    case CODE_FOR_branch_insn0:        /* Bcc */
+      break;
+    default:
+      return false;
+    }
+
+  /* Check for delay slot. */
+  if (PREV_INSN (insn))
+    tinsn = NEXT_INSN (PREV_INSN (insn));
+  if (tinsn && (GET_CODE (PATTERN (tinsn)) == SEQUENCE))
+    return false;
+
+  return true;
+}
+
+/* Primary/Secondary branch handling:
+
+   In HS34/36, a branch cache entry can store information about 2
+   branches per fetch block, called the primary and secondary
+   branch.  The primary branch can be any type of branch or jump and
+   the branch target address (BTA) for that branch is stored in the
+   branch cache entry.  The secondary branch is a PC-relative branch
+   for which the BTA is not stored in the branch cache but
+   calculated on the fly from the displacement encoded in the
+   instruction itself: BTA = PC + displacement.
+*/
+
+static bool
+arc_primarysecondary_p (rtx insn, int len)
+{
+  rtx pinsn = prev_active_insn (insn);
+  rtx ninsn = next_active_insn (insn);
+
+  if (!INSN_ADDRESSES_SET_P())
+    return false;
+
+  if (!pinsn || !ninsn
+      || !JUMP_P (pinsn) || !JUMP_P (ninsn))
+    return false;
+
+  int addrinsn = INSN_ADDRESSES (INSN_UID (insn));
+  int addrninsn = INSN_ADDRESSES (INSN_UID (ninsn));
+  int addrpinsn = INSN_ADDRESSES (INSN_UID (pinsn));
+
+  if (addrninsn == 0)
+    addrninsn = addrinsn + len;
+
+  int blksz = addrninsn - addrpinsn;
+
+  /* The second branch is in the 64 bit fetch block. See if it makes
+     sense to emit this instruction as a long instruction. */
+  if ((blksz > 8) || (addrpinsn & 0xFFF0 != addrninsn & 0xFFF0))
+    return false;
+
+  /* Check if we have primary/secondary branch situation here. */
+  if (!arc_secondarybranch_p (pinsn) && !arc_secondarybranch_p(ninsn))
+      return true;
+
+  return false;
 }
 
 /* This is like the hook, but returns NULL when it can't / won't generate
