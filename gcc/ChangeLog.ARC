@@ -1,3 +1,12 @@
+2014-10-24 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/builtin_errors.c: New file.
+	* testsuite/gcc.target/arc/builtin_general.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_lr.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_simdarc.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_special.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_sr.c: Likewise.
+
 2014-10-22 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Enable ACCL,ACCH to be used when FPU fused
