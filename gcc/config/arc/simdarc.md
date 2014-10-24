@@ -22,8 +22,8 @@
 	(match_operand:V2HI 1 "general_operand" ""))]
   ""
   "{
-  if (GET_CODE (operands[0]) == MEM)
-    operands[1] = force_reg (V2HImode, operands[1]);
+    if (prepare_move_operands (operands, V2HImode))
+         DONE;
    }")
 
 (define_insn_and_split "*movv2hi_insn"
