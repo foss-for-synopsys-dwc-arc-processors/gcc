@@ -1950,7 +1950,7 @@
 (define_insn_and_split "umulsidi_600"
   [(set (match_operand:DI 0 "nonimmediate_operand"                       "=mc,mc,mc")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"    "c, c,%c"))
-		 (zero_extend:DI (match_operand:SI 2 "nonmemory_operand"  "cL, L,C32"))))
+		 (sign_extend:DI (match_operand:SI 2 "nonmemory_operand"  "cL, L,C32"))))
    (clobber (reg:DI MUL64_OUT_REG))]
   "TARGET_MUL64_SET && !TARGET_V2"
   "#"
