@@ -49,7 +49,7 @@
 (define_expand "membar"
   [(set (match_dup 1)
 	(unspec:BLK [(match_dup 1) (match_operand:SI 0 "const_int_operand")]
-		    UNSPEC_MEMBAR))]
+		    UNSPEC_ARC_MEMBAR))]
   ""
 {
   operands[1] = gen_rtx_MEM (BLKmode, gen_rtx_SCRATCH (Pmode));
@@ -62,7 +62,7 @@
 (define_insn "*membar_empty"
   [(set (match_operand:BLK 0 "" "")
 	(unspec:BLK [(match_dup 0) (const_int 0)]
-		    UNSPEC_MEMBAR))]
+		    UNSPEC_ARC_MEMBAR))]
   ""
   ""
   [(set_attr "type" "multi")
@@ -85,7 +85,7 @@
 
 (define_insn_and_split "atomic_compare_and_swapsi_1"
   [(set (reg:CC_Z CC_REG)					;; bool out
-	(unspec_volatile:CC_Z [(const_int 0)] VUNSPEC_CAS))
+	(unspec_volatile:CC_Z [(const_int 0)] VUNSPEC_ARC_CAS))
    (set (match_operand:SI 0 "register_operand"      "=&r")	;; val out
 	(match_operand:SI 1 "mem_noofs_operand"      "+ATO"))	;; memory
    (set (match_dup 1)
@@ -95,7 +95,7 @@
 	   (match_operand:SI 4 "const_int_operand")		;; is_weak
 	   (match_operand:SI 5 "const_int_operand")		;; mod_s
 	   (match_operand:SI 6 "const_int_operand")]		;; mod_f
-	  VUNSPEC_CAS))]
+	  VUNSPEC_ARC_CAS))]
   "TARGET_ATOMIC"
   "#"
   "&& reload_completed"
@@ -109,7 +109,7 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec_volatile:SI
 	  [(match_operand:SI 1 "mem_noofs_operand" "ATO")]
-	  VUNSPEC_LL))]
+	  VUNSPEC_ARC_LL))]
   "TARGET_ATOMIC"
   "llock%+ %0,%1"
   [(set_attr "type" "load")
@@ -120,7 +120,7 @@
 (define_insn "arc_store_exclusivesi"
   [(set (match_operand:SI 0 "mem_noofs_operand"     "=ATO")
 	(unspec_volatile:SI[(match_operand:SI 1 "register_operand" "r")]
-			   VUNSPEC_SC))
+			   VUNSPEC_ARC_SC))
    (clobber (reg:CC_Z CC_REG))]
   "TARGET_ATOMIC"
   "scond%+ %1,%0"
@@ -147,7 +147,7 @@
 (define_insn "exchangesi"
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(unspec_volatile:SI [(match_operand:SI 1 "mem_noofs_operand" "+ATO")]
-			    VUNSPEC_EX))
+			    VUNSPEC_ARC_EX))
    (set (match_dup 1)
 	(match_operand:SI 2 "register_operand" "0"))]
   ""

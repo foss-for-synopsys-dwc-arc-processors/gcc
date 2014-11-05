@@ -1,10 +1,46 @@
+2014-10-24 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/builtin_errors.c: New file.
+	* testsuite/gcc.target/arc/builtin_general.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_lr.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_simdarc.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_special.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_sr.c: Likewise.
+
+2014-10-22 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Enable ACCL,ACCH to be used when FPU fused
+          instruction are selected.
+	* config/arc/fpu.md: Add double fused instructions.
+
+2014-10-20 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h (ACC_REG_FIRST, ACC_REG_LAST, ACCL_REGNO,
+	ACCH_REGNO): Define.
+	* config/arc/arc.c (arc_conditional_register_usage): Add ACCL,ACCH.
+	(arc_primarysecondary_p): New function.
+	* config/arc/arc.md (mul64, mulu64, mpyd_arcv2hs, mpyd_imm_arcv2hs,
+	mpydu_arcv2hs, mpydu_imm_arcv2hs): Refurbish.
+	(maddsidi4, maddsidi, macd, mac, umaddsidi4, umaddsidi, macdu, macu):
+	New patterns.
+
 2014-10-08 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc-protos.h (arc_bdr_iscond): Declare.
-	* config/arc/arc.c (arc_bdr_iscond): New function.
+	* config/arc/arc.c (arc_expand_builtin): Cleanup
+	(arc_init_builtins): Likewise.
+	(arc_bdr_iscond): New function.
+	(arc_expand_builtin_aligned): New function.
+	(arc_builtin_decl): Likewise.
+	(TARGET_BUILTIN_DECL): Define
 	* config/arc/arc.md: Use arc_bdr_iscond.
 	(casesi_compact_jump instruction): Update instruction
 	length.
+	* config/arc/arc.md: Cleanup builtins.
+	* config/arc/atomic.md: Likewise.
+	* config/arc/fpx.md: Likewise.
+	* config/arc/builtins.def: New file.
+	* config/arc/simdarc.md: Likewise.
 
 2014-09-30 Claudiu Zissulescu <claziss@synopsys.com>
 

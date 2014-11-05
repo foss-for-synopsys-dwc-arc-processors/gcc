@@ -1,0 +1,87 @@
+/* Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+   This file is part of GCC.
+
+   GCC is free software; you can redistribute it and/or modify it under
+   the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 3, or (at your option) any later
+   version.
+
+   GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+   for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with GCC; see the file COPYING3.  If not see
+   <http://www.gnu.org/licenses/>.  */
+
+/* This file contains the definitions and documentation for the
+   builtins defined in the ARC part of the GNU compiler.
+   Before including this file, define a macro
+
+   DEF_BUILTIN(NAME, N_ARGS, TYPE, ICODE, MASK)
+
+   NAME:    `__builtin_arc_name' will be the user-level name of the builtin.
+            `ARC_BUILTIN_NAME' will be the internal builtin's id.
+   N_ARGS:  Number of input arguments.  If special treatment is needed,
+            set to -1 and handle it by hand, see arc.c:arc_expand_builtin().
+   TYPE:    A tree node describing the prototype of the built-in.
+   ICODE:   Name of attached insn or expander.  If special treatment in arc.c
+            is needed to expand the built-in, use `nothing'.
+   MASK:    CPU selector mask. */
+
+/* Special builtins */
+DEF_BUILTIN (NOP,        0, void_ftype_void,        nothing,     1)
+DEF_BUILTIN (RTIE,       0, void_ftype_void,        rtie,        1)
+DEF_BUILTIN (SYNC,       0, void_ftype_void,        sync,        TARGET_ARC700)
+DEF_BUILTIN (BRK,        0, void_ftype_void,        brk,         1)
+DEF_BUILTIN (SWI,        0, void_ftype_void,        swi,         1)
+DEF_BUILTIN (UNIMP_S,    0, void_ftype_void,        unimp_s,     TARGET_ARC700 || TARGET_V2)
+DEF_BUILTIN (TRAP_S,     1, void_ftype_usint,       trap_s,      TARGET_ARC700 || TARGET_V2)
+DEF_BUILTIN (ALIGNED,    2, int_ftype_pcvoid_int,   nothing,     1)
+DEF_BUILTIN (CLRI,       0, int_ftype_void,         clri,        TARGET_V2)
+DEF_BUILTIN (SLEEP,      1, void_ftype_usint,       sleep,       1)
+
+DEF_BUILTIN (FLAG,       1, void_ftype_usint,       flag,       1)
+DEF_BUILTIN (SR,         2, void_ftype_usint_usint, sr,         1)
+DEF_BUILTIN (KFLAG,      1, void_ftype_usint,       kflag,      TARGET_V2)
+DEF_BUILTIN (CORE_WRITE, 2, void_ftype_usint_usint, core_write, 1)
+DEF_BUILTIN (SETI,       1, void_ftype_int,         seti,       TARGET_V2)
+
+/* Regular builtins */
+DEF_BUILTIN (NORM,       1, int_ftype_int,          norm,       TARGET_NORM)
+DEF_BUILTIN (NORMW,      1, int_ftype_int,          normw,      TARGET_NORM)
+DEF_BUILTIN (SWAP,       1, int_ftype_int,          swap,       TARGET_SWAP)
+DEF_BUILTIN (DIVAW,      2, int_ftype_int_int,      divaw,      (TARGET_EA_SET && !TARGET_V2))
+DEF_BUILTIN (CORE_READ,  1, usint_ftype_usint,      core_read,  1)
+DEF_BUILTIN (LR,         1, usint_ftype_usint,      lr,         1)
+DEF_BUILTIN (FFS,        1, int_ftype_int,          ffs,        (TARGET_EM && TARGET_NORM) || TARGET_HS)
+DEF_BUILTIN (FLS,        1, int_ftype_int,          fls,        (TARGET_EM && TARGET_NORM) || TARGET_HS)
+
+/* ARC HS SIMD instructions that use/clobber the accumulator reg. */
+DEF_BUILTIN (QMACH,      2, long_ftype_v4hi_v4hi,   qmach,      TARGET_HS && (arc_mpy_option > 8))
+DEF_BUILTIN (QMACHU,     2, long_ftype_v4hi_v4hi,   qmachu,     TARGET_HS && (arc_mpy_option > 8))
+DEF_BUILTIN (QMPYH,      2, long_ftype_v4hi_v4hi,   qmpyh,      TARGET_HS && (arc_mpy_option > 8))
+DEF_BUILTIN (QMPYHU,     2, long_ftype_v4hi_v4hi,   qmpyhu,     TARGET_HS && (arc_mpy_option > 8))
+
+DEF_BUILTIN (DMACH,      2, int_ftype_v2hi_v2hi,    dmach,      TARGET_V2 && (arc_mpy_option > 6))
+DEF_BUILTIN (DMACHU,     2, int_ftype_v2hi_v2hi,    dmachu,     TARGET_V2 && (arc_mpy_option > 6))
+DEF_BUILTIN (DMPYH,      2, int_ftype_v2hi_v2hi,    dmpyh,      TARGET_V2 && (arc_mpy_option > 6))
+DEF_BUILTIN (DMPYHU,     2, int_ftype_v2hi_v2hi,    dmpyhu,     TARGET_V2 && (arc_mpy_option > 6))
+
+DEF_BUILTIN (DMACWH,     2, long_ftype_v2si_v2hi,   dmacwh,     TARGET_V2 && (arc_mpy_option > 8))
+DEF_BUILTIN (DMACWHU,    2, long_ftype_v2si_v2hi,   dmacwhu,    TARGET_V2 && (arc_mpy_option > 8))
+
+DEF_BUILTIN (VMAC2H,     2, v2si_ftype_v2hi_v2hi,   vmac2h,     TARGET_HS && (arc_mpy_option > 7))
+DEF_BUILTIN (VMAC2HU,    2, v2si_ftype_v2hi_v2hi,   vmac2hu,    TARGET_HS && (arc_mpy_option > 7))
+DEF_BUILTIN (VMPY2H,     2, v2si_ftype_v2hi_v2hi,   vmpy2h,     TARGET_HS && (arc_mpy_option > 7))
+DEF_BUILTIN (VMPY2HU,    2, v2si_ftype_v2hi_v2hi,   vmpy2hu,    TARGET_HS && (arc_mpy_option > 7))
+
+/* Combined add/sub HS SIMD instructions. */
+DEF_BUILTIN (VADDSUB2H,  2, v2hi_ftype_v2hi_v2hi,   addsubv2hi3, TARGET_V2 && (arc_mpy_option > 6))
+DEF_BUILTIN (VSUBADD2H,  2, v2hi_ftype_v2hi_v2hi,   subaddv2hi3, TARGET_V2 && (arc_mpy_option > 6))
+DEF_BUILTIN (VADDSUB,    2, v2si_ftype_v2si_v2si,   addsubv2si3, TARGET_HS && (arc_mpy_option > 8))
+DEF_BUILTIN (VSUBADD,    2, v2si_ftype_v2si_v2si,   subaddv2si3, TARGET_HS && (arc_mpy_option > 8))
+DEF_BUILTIN (VADDSUB4H,  2, v4hi_ftype_v4hi_v4hi,   addsubv4hi3, TARGET_HS && (arc_mpy_option > 8))
+DEF_BUILTIN (VSUBADD4H,  2, v4hi_ftype_v4hi_v4hi,   subaddv4hi3, TARGET_HS && (arc_mpy_option > 8))
