@@ -9461,29 +9461,6 @@ gen_mhi (void)
   return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 58: 59);
 }
 
-/* FIXME: a parameter should be added, and code added to final.c,
-   to reproduce this functionality in shorten_branches.  */
-#if 0
-/* Return nonzero iff BRANCH should be unaligned if possible by upsizing
-   a previous instruction.  */
-int
-arc_unalign_branch_p (rtx branch)
-{
-  rtx note;
-
-  if (!TARGET_UNALIGN_BRANCH)
-    return 0;
-  /* Do not do this if we have a filled delay slot.  */
-  if (get_attr_delay_slot_filled (branch) == DELAY_SLOT_FILLED_YES
-      && !INSN_DELETED_P (NEXT_INSN (branch)))
-    return 0;
-  note = find_reg_note (branch, REG_BR_PROB, 0);
-  return (!note
-	  || (arc_unalign_prob_threshold && !br_prob_note_reliable_p (note))
-	  || INTVAL (XEXP (note, 0)) < arc_unalign_prob_threshold);
-}
-#endif
-
 /* When estimating sizes during arc_reorg, when optimizing for speed, there
    are three reasons why we need to consider branches to be length 6:
    - annull-false delay slot insns are implemented using conditional execution,

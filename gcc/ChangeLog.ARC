@@ -1,3 +1,11 @@
+2014-11-12 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.opt: Remove malign-call and
+          munalign-prob-threshold options.
+	* config/arc/arc.c: Likewise.
+	* doc/invoke.texi: Likewise.
+	* common/config/arc/arc-common.c: Likewise.
+
 2014-10-24 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* testsuite/gcc.target/arc/builtin_errors.c: New file.

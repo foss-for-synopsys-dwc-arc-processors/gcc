@@ -55,7 +55,6 @@ static const struct default_options arc_option_optimization_table[] =
     { OPT_LEVELS_ALL, OPT_msize_level_, NULL, 1 },
     { OPT_LEVELS_3_PLUS_SPEED_ONLY, OPT_msize_level_, NULL, 0 },
     { OPT_LEVELS_SIZE, OPT_msize_level_, NULL, 3 },
-    { OPT_LEVELS_3_PLUS_SPEED_ONLY, OPT_malign_call, NULL, 1 },
     { OPT_LEVELS_ALL, OPT_mearly_cbranchsi, NULL, 1 },
     { OPT_LEVELS_ALL, OPT_mbbit_peephole, NULL, 1 },
     { OPT_LEVELS_SIZE, OPT_mq_class, NULL, 1 },

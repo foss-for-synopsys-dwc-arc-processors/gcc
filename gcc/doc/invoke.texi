@@ -496,13 +496,12 @@ Objective-C and Objective-C++ Dialects}.
 -mtelephony -mxy -misize -mannotate-align -marclinux -marclinux_prof @gol
 -mepilogue-cfi -mno-epilogue-cfi -mlong-calls -mmedium-calls @gol
 -mno-sdata -mucb-mcount -mvolatile-cache -mno-volatile-cache @gol
--malign-call -mauto-modify-reg -mbbit-peephole -mno-brcc @gol
+-mauto-modify-reg -mbbit-peephole -mno-brcc @gol
 -mcase-vector-pcrel -mcompact-casesi -mno-cond-exec -mearly-cbranchsi @gol
 -mexpand-adddi -mindexed-loads -mlra -mlra-priority-none @gol
 -mlra-priority-compact mlra-priority-noncompact -mno-millicode @gol
 -mmixed-code -mmultcost=@var{num} -mq-class -mRcq -mRcw @gol
--msize-level=@var{level} -mtune=@var{cpu}
--munalign-prob-threshold=@var{probability}}
+-msize-level=@var{level} -mtune=@var{cpu}}
 
 @emph{ARM Options}
 @gccoptlist{-mapcs-frame  -mno-apcs-frame @gol
@@ -11620,10 +11619,6 @@ Enable cache bypass for volatile references.
 The following options fine tune code generation:
 @c code generation tuning options
 @table @gcctabopt
-@item -malign-call
-@opindex malign-call
-Do alignment optimizations for call instructions.
-
 @item -mauto-modify-reg
 @opindex mauto-modify-reg
 Enable the use of pre/post modify with register displacement.
@@ -11675,7 +11670,7 @@ Expand @code{adddi3} and @code{subdi3} at rtl generation time into
 @item -mindexed-loads
 @opindex mindexed-loads
 Enable the use of indexed loads.  This can be problematic because some
-optimizers will then assume the that indexed stores exist, which is not
+optimizers will then assume that indexed stores exist, which is not
 the case.
 
 @item -mlra
@@ -11708,7 +11703,7 @@ generation.
 
 @item -mmixed-code
 @opindex mmixed-code
-Tweak register allocation to help 16-bit instruction generation.
+Tweaks register allocation to help 16-bit instruction generation.
 This generally has the effect of decreasing the average instruction size
 while increasing the instruction count.
 
@@ -11781,15 +11776,6 @@ Tune for ARC 750D cpu.
 @opindex mmultcost
 Cost to assume for a multiply instruction, with @samp{4} being equal to a
 normal instruction.
-
-@item -munalign-prob-threshold=@var{probability}
-@opindex munalign-prob-threshold
-Set probability threshold for unaligning branches.
-When tuning for @samp{ARC700} and optimizing for speed, branches without
-filled delay slot are preferably emitted unaligned and long, unless
-profiling indicates that the probability for the branch to be taken
-is below @var{probability}.  @xref{Cross-profiling}.
-The default is (REG_BR_PROB_BASE/2), i.e.@: 5000.
 
 @end table
 
