@@ -9033,22 +9033,6 @@ Where the value in @var{dest} will be the result returned from the
 built-in.
 @end deftypefn
 
-@deftypefn {Built-in Function} void __builtin_arc_mul64 (int @var{a}, int @var{b})
-Only available with @option{-mmul64}.  Generates:
-@example
-mul64  @var{a}, @var{b}
-@end example
-This builtin is deprecated.
-@end deftypefn
-
-@deftypefn {Built-in Function} void __builtin_arc_mulu64 (unsigned int @var{a}, unsigned int @var{b})
-Only available with @option{-mmul64}.  Generates:
-@example
-mulu64  @var{a}, @var{b}
-@end example
-This builtin is deprecated.
-@end deftypefn
-
 @deftypefn {Built-in Function} void __builtin_arc_nop (void)
 Generates:
 @example

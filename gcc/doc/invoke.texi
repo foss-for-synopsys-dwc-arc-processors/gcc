@@ -11752,23 +11752,26 @@ by @option{-mcpu=}.
 Supported values for @var{cpu} are
 
 @table @samp
-@item ARC600
+@item arc600
 Tune for ARC 600 cpu.
 
-@item ARC601
+@item arc601
 Tune for ARC 601 cpu.
 
-@item ARC700
+@item arc700
 Tune for ARC 700 cpu with standard multiplier block.
 
-@item ARC700-xmac
+@item arc700-xmac
 Tune for ARC 700 cpu with XMAC block.
 
-@item ARC725D
+@item arc725d
 Tune for ARC 725D cpu.
 
-@item ARC750D
+@item arc750d
 Tune for ARC 750D cpu.
+
+@item arcembest
+Tune for commonly used ARC EM hardware extension options.
 
 @end table
 

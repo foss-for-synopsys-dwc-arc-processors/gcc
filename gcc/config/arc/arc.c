@@ -974,6 +974,21 @@ arc_override_options (void)
       && optimize >= 3)
     flag_prefetch_loop_arrays = 1;
 
+  /* Set default hw options. */
+  switch (arc_tune)
+    {
+    case TUNE_ARCEM_BEST:
+      target_flags |= MASK_BARREL_SHIFTER;
+      target_flags |= MASK_NORM_SET;
+      target_flags |= MASK_SWAP_SET;
+      target_flags |= MASK_DIVREM;
+      target_flags |= MASK_CODE_DENSITY;
+      break;
+
+    default:
+      break;
+    }
+
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
 }

@@ -1,3 +1,11 @@
+2014-11-13 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Add mtune=arcembest.
+	* config/arc/arc.md: Likewise.
+	* config/arc/arc.opt: Likewise.
+	* doc/invoke.texi: Update options.
+	* doc/extend.texi: Update builtins.
+
 2014-11-12 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.opt: Remove malign-call and

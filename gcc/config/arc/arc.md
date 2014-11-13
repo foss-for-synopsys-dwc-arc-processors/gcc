@@ -573,14 +573,16 @@
 ;;   somehow modify them to become inelegible for delay slots if a decision
 ;;   is made that makes conditional execution required.
 
-(define_attr "tune" "none,arc600,arc700_4_2_std,arc700_4_2_xmac"
+(define_attr "tune" "none,arc600,arc700_4_2_std,arc700_4_2_xmac,arcem_best"
   (const
    (cond [(symbol_ref "arc_tune == TUNE_ARC600")
 	  (const_string "arc600")
 	  (symbol_ref "arc_tune == TUNE_ARC700_4_2_STD")
 	  (const_string "arc700_4_2_std")
 	  (symbol_ref "arc_tune == TUNE_ARC700_4_2_XMAC")
-	  (const_string "arc700_4_2_xmac")]
+	  (const_string "arc700_4_2_xmac")
+	  (symbol_ref "arc_tune == TUNE_ARCEM_BEST")
+	  (const_string "arcem_best")]
 	 (const_string "none"))))
 
 (define_attr "tune_arc700" "false,true"
