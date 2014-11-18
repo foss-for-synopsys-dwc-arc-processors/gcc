@@ -3502,11 +3502,13 @@ arc_print_operand (FILE *file, rtx x, int code)
       if (flag_pic
 	  || (GET_CODE (x) == CONST
 	      && GET_CODE (XEXP (x, 0)) == UNSPEC
-	      && XINT (XEXP (x, 0), 1) == UNSPEC_TLS_OFF)
+	      && (XINT (XEXP (x, 0), 1) == UNSPEC_TLS_OFF
+	          || XINT (XEXP (x, 0), 1) == UNSPEC_TLS_GD))
 	  || (GET_CODE (x) == CONST
 	      && GET_CODE (XEXP (x, 0)) == PLUS
 	      && GET_CODE (XEXP (XEXP (x, 0), 0)) == UNSPEC
-	      && XINT (XEXP (XEXP (x, 0), 0), 1) == UNSPEC_TLS_OFF))
+	      && (XINT (XEXP (XEXP (x, 0), 0), 1) == UNSPEC_TLS_OFF
+	          || XINT (XEXP (XEXP (x, 0), 0), 1) == UNSPEC_TLS_GD)))
 	arc_output_pic_addr_const (file, x, code);
       else
 	{
@@ -3571,7 +3573,8 @@ arc_print_operand_address (FILE *file , rtx addr)
       {
 	rtx c = XEXP (addr, 0);
 
-	if ((GET_CODE (c) == UNSPEC && XINT (c, 1) == UNSPEC_TLS_OFF)
+	if ((GET_CODE (c) == UNSPEC && (XINT (c, 1) == UNSPEC_TLS_OFF
+	                                || XINT (c, 1) == UNSPEC_TLS_IE))
 	    || (GET_CODE (c) == PLUS && GET_CODE (XEXP (c, 0)) == UNSPEC
 		&& (XINT (XEXP (c, 0), 1) == UNSPEC_TLS_OFF
 		    || XINT (XEXP (c, 0), 1) == ARC_UNSPEC_GOTOFFPC)))
@@ -4859,9 +4862,16 @@ arc_emit_call_tls_get_addr (rtx sym, int reloc, rtx eqv)
 static rtx
 arc_legitimize_tls_address (rtx addr, enum tls_model model)
 {
-  if (!flag_pic
-      && (model != TLS_MODEL_LOCAL_DYNAMIC || TARGET_TLS9))
-    goto local_exec;
+  /* It might be the case that we should not convert LD to LE when the
+     TARGET_TLS9 condition (the -mtls9 command line option) is not true and
+     the tls9 attribute is present on the declaration of the variable being
+     accessed.  However, performing this conversion without the TARGET_TLS9
+     check will at worst lead to a linker error if the declaration of the
+     variable has the tls9 attribute, with a base specified on it, and the
+     access will not fit within a 9-bit scaled offset.  */
+  if (!flag_pic && model == TLS_MODEL_LOCAL_DYNAMIC)
+    model = TLS_MODEL_LOCAL_EXEC;
+
   switch (model)
     {
     case TLS_MODEL_LOCAL_DYNAMIC:

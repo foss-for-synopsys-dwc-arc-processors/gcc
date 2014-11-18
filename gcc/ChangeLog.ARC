@@ -1,3 +1,12 @@
+2014-11-18  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+        * config/arc/arc.c (arc_print_operand): Handle global dynamic,
+	UNSPEC_TLS_GD, fixups.
+	(arc_print_operand_address): Handle Imediate Exec, UNSPEC_TLS_IE,
+	fixups.
+	(arc_legitimize_tls_address): Change Local Dynamic to Local Exec
+	when we're not compiling PIC code.
+
 2013-07-29 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_setup_incoming_varargs): Pass
