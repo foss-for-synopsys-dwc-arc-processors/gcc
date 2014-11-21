@@ -1,3 +1,9 @@
+2014-11-21 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h: Remove deprecated options.
+	* config/arc/arc.opt: Likewise.
+	* doc/invoke.texi: Update document.
+
 2014-11-13 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Add mtune=arcembest.

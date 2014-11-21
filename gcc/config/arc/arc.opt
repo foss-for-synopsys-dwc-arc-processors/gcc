@@ -481,15 +481,6 @@ instrument with mcount calls as in the ucb code
 ; Unfortunately, listing the full option name gives us clashes
 ; with OPT_opt_name being claimed for both opt_name and opt-name,
 ; so we leave out the last character or more.
-mmpy_option
-Target Joined
-
-mcode_densit
-Target Joined
-
-mbarrel_shifte
-Target Joined
-
 mspfp_
 Target Joined
 

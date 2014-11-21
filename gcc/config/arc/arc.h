@@ -288,9 +288,6 @@ ASM_DEFOPT "%{matomic:-mlock} \
   "%{mcpu=arc601: -mcpu=ARC601 %<mcpu=arc601}"				\
   "%{mcpu=arcem: -mcpu=ARCv2EM %<mcpu=arcem}"				\
   "%{mcpu=archs: -mcpu=ARCv2HS %<mcpu=archs}"				\
-  "%{mmpy_option*: -mmpy-option%* %<mmpy_option*}"			\
-  "%{mcode_densit*: -mcode-densit%* %<mcode_densit*}"			\
-  "%{mbarrel_shifte*: -mbarrel-shifte%* %<mbarrel_shifte*}"		\
   "%{mspfp_*: -mspfp-%* %<mspfp_*}"					\
   "%{mdpfp_*: -mdpfp-%* %<mdpfp_*}"					\
   "%{mdsp_pack*: -mdsp-pack%* %<mdsp_pack*}"				\

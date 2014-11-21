@@ -11619,9 +11619,6 @@ Enable cache bypass for volatile references.
 The following options fine tune code generation:
 @c code generation tuning options
 @table @gcctabopt
-@item -mauto-modify-reg
-@opindex mauto-modify-reg
-Enable the use of pre/post modify with register displacement.
 
 @item -mbbit-peephole
 @opindex mbbit-peephole
@@ -11662,11 +11659,6 @@ offset range because they are conditionalized, you should consider using
 @opindex mearly-cbranchsi
 Enable pre-reload use of the cbranchsi pattern.
 
-@item -mexpand-adddi
-@opindex mexpand-adddi
-Expand @code{adddi3} and @code{subdi3} at rtl generation time into
-@code{add.f}, @code{adc} etc.
-
 @item -mindexed-loads
 @opindex mindexed-loads
 Enable the use of indexed loads.  This can be problematic because some
@@ -11700,49 +11692,6 @@ referred to as a @emph{millicode} call.  As these calls can pose
 performance issues, and/or cause linking issues when linking in a
 nonstandard way, this option is provided to turn off millicode call
 generation.
-
-@item -mmixed-code
-@opindex mmixed-code
-Tweaks register allocation to help 16-bit instruction generation.
-This generally has the effect of decreasing the average instruction size
-while increasing the instruction count.
-
-@item -mq-class
-@opindex mq-class
-Enable 'q' instruction alternatives.
-This is the default for @option{-Os}.
-
-@item -mRcq
-@opindex mRcq
-Enable Rcq constraint handling - most short code generation depends on this.
-This is the default.
-
-@item -mRcw
-@opindex mRcw
-Enable Rcw constraint handling - ccfsm condexec mostly depends on this.
-This is the default.
-
-@item -msize-level=@var{level}
-@opindex msize-level
-Fine-tune size optimization with regards to instruction lengths and alignment.
-The recognized values for @var{level} are:
-@table @samp
-@item 0
-No size optimization.  This level is deprecated and treated like @samp{1}.
-
-@item 1
-Short instructions are used opportunistically.
-
-@item 2
-In addition, alignment of loops and of code after barriers are dropped.
-
-@item 3
-In addition, optional data alignment is dropped, and the option @option{Os} is enabled.
-
-@end table
-
-This defaults to @samp{3} when @option{-Os} is in effect.  Otherwise,
-the behavior when this is not set is equivalent to level @samp{1}.
 
 @item -mtune=@var{cpu}
 @opindex mtune
@@ -11810,10 +11759,6 @@ deprecated.  Users wanting little-endian code should use the
 @w{@code{arc-elf32}} and @w{@code{arc-linux-uclibc}} targets when
 building the tool chain, for which little-endian is the default.
 
-@item -mbarrel_shifter
-@opindex mbarrel_shifter
-Replaced by @samp{-mbarrel-shifter}
-
 @item -mdpfp_compact
 @opindex mdpfp_compact
 Replaced by @samp{-mdpfp-compact}
@@ -11838,10 +11783,6 @@ Replaced by @samp{-mmac-24}
 @opindex mmac_d16
 Replaced by @samp{-mmac-d16}
 
-@item -mmpy_option
-@opindex mmpy_option
-Replaced by @samp{-mmpy-option}
-
 @item -mspfp_compact
 @opindex mspfp_compact
 Replaced by @samp{-mspfp-compact}
@@ -11859,6 +11800,58 @@ Values @samp{arc600}, @samp{arc601}, @samp{arc700} and
 @item -multcost=@var{num}
 @opindex multcost
 Replaced by @samp{-mmultcost}.
+
+@item -mmixed-code
+@opindex mmixed-code
+Tweaks register allocation to help 16-bit instruction generation.
+This generally has the effect of decreasing the average instruction size
+while increasing the instruction count.
+
+@item -mq-class
+@opindex mq-class
+Enable 'q' instruction alternatives.
+This is the default for @option{-Os}.
+
+@item -mRcq
+@opindex mRcq
+Enable Rcq constraint handling - most short code generation depends on this.
+This is the default.
+
+@item -mRcw
+@opindex mRcw
+Enable Rcw constraint handling - ccfsm condexec mostly depends on this.
+This is the default.
+
+@item -msize-level=@var{level}
+@opindex msize-level
+Fine-tune size optimization with regards to instruction lengths and alignment.
+The recognized values for @var{level} are:
+@table @samp
+@item 0
+No size optimization.  This level is deprecated and treated like @samp{1}.
+
+@item 1
+Short instructions are used opportunistically.
+
+@item 2
+In addition, alignment of loops and of code after barriers are dropped.
+
+@item 3
+In addition, optional data alignment is dropped, and the option @option{Os} is enabled.
+
+@end table
+
+This defaults to @samp{3} when @option{-Os} is in effect.  Otherwise,
+the behavior when this is not set is equivalent to level @samp{1}.
+
+@item -mexpand-adddi
+@opindex mexpand-adddi
+Expand @code{adddi3} and @code{subdi3} at rtl generation time into
+@code{add.f}, @code{adc} etc.
+
+@item -mauto-modify-reg
+@opindex mauto-modify-reg
+Enable the use of pre/post modify with register displacement.
 
 @end table
 
