@@ -357,11 +357,11 @@ Target Var(TARGET_ANNOTATE_ALIGN)
 Explain what alignment considerations lead to the decision to make an insn short or long.
 
 mRcq
-Target Var(TARGET_Rcq)
+Target
 Enable Rcq constraint handling - most short code generation depends on this.
 
 mRcw
-Target Var(TARGET_Rcw)
+Target
 Enable Rcw constraint handling - ccfsm condexec mostly depends on this.
 
 mearly-cbranchsi

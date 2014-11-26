@@ -1,3 +1,11 @@
+2014-11-26 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Decommission mRcw, mRcq and
+          mexpand-adddi options.
+	* config/arc/arc.md: Likewise.
+	* config/arc/arc.opt: Likewise.
+	* config/arc/constraints.md: Likewise.
+
 2014-11-21 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Remove deprecated options.

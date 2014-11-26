@@ -2453,28 +2453,6 @@
 	      (clobber (reg:CC CC_REG))])]
   ""
 {
-  if (TARGET_EXPAND_ADDDI)
-    {
-      rtx l0 = gen_lowpart (SImode, operands[0]);
-      rtx h0 = disi_highpart (operands[0]);
-      rtx l1 = gen_lowpart (SImode, operands[1]);
-      rtx h1 = disi_highpart (operands[1]);
-      rtx l2 = gen_lowpart (SImode, operands[2]);
-      rtx h2 = disi_highpart (operands[2]);
-      rtx cc_c = gen_rtx_REG (CC_Cmode, CC_REG);
-
-      if (CONST_INT_P (h2) && INTVAL (h2) < 0 && SIGNED_INT12 (INTVAL (h2)))
-	{
-	  emit_insn (gen_sub_f (l0, l1, gen_int_mode (-INTVAL (l2), SImode)));
-	  emit_insn (gen_sbc (h0, h1,
-			      gen_int_mode (-INTVAL (h2) - (l1 != 0), SImode),
-			      cc_c));
-	  DONE;
-	}
-      emit_insn (gen_add_f (l0, l1, l2));
-      emit_insn (gen_adc (h0, h1, h2));
-      DONE;
-    }
 })
 
 ; This assumes that there can be no strictly partial overlap between
@@ -2712,20 +2690,6 @@
 {
   if (!register_operand (operands[2], DImode))
     operands[1] = force_reg (DImode, operands[1]);
-  if (TARGET_EXPAND_ADDDI)
-    {
-      rtx l0 = gen_lowpart (SImode, operands[0]);
-      rtx h0 = disi_highpart (operands[0]);
-      rtx l1 = gen_lowpart (SImode, operands[1]);
-      rtx h1 = disi_highpart (operands[1]);
-      rtx l2 = gen_lowpart (SImode, operands[2]);
-      rtx h2 = disi_highpart (operands[2]);
-      rtx cc_c = gen_rtx_REG (CC_Cmode, CC_REG);
-
-      emit_insn (gen_sub_f (l0, l1, l2));
-      emit_insn (gen_sbc (h0, h1, h2, cc_c));
-      DONE;
-    }
 })
 
 (define_insn_and_split "subdi3_i"

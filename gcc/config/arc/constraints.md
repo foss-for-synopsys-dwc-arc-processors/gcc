@@ -365,8 +365,7 @@
    Registers usable in ARCompact 16-bit instructions: @code{r0}-@code{r3},
    @code{r12}-@code{r15}"
   (and (match_code "REG")
-       (match_test "TARGET_Rcq
-		    && !arc_ccfsm_cond_exec_p ()
+       (match_test "!arc_ccfsm_cond_exec_p ()
 		    && ((((REGNO (op) & 7) ^ 4) - 4) & 15) == REGNO (op)")))
 
 ; If we need a reload, we generally want to steer reload to use three-address
@@ -378,8 +377,7 @@
    Cryptic w - for use in early alternatives with matching constraint"
   (and (match_code "REG")
        (match_test
-	"TARGET_Rcw
-	 && REGNO (op) < FIRST_PSEUDO_REGISTER
+	"REGNO (op) < FIRST_PSEUDO_REGISTER
 	 && TEST_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS],
 			       REGNO (op))")))
 
@@ -388,8 +386,7 @@
    Cryptic r - for use in early alternatives with matching constraint"
   (and (match_code "REG")
        (match_test
-	"TARGET_Rcw
-	 && REGNO (op) < FIRST_PSEUDO_REGISTER
+	"REGNO (op) < FIRST_PSEUDO_REGISTER
 	 && TEST_HARD_REG_BIT (reg_class_contents[GENERAL_REGS],
 			       REGNO (op))")))
 
