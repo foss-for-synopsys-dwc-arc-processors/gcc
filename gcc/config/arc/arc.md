@@ -5485,7 +5485,7 @@
    (set_attr "length" "4,4,8")])
 
 (define_insn "prefetch_3"
-  [(prefetch (match_operand:SI 0 "symbolic_operand" "Clb, Cal")
+  [(prefetch (match_operand:SI 0 "address_operand" "p")
 	     (match_operand:SI 1 "" "")
 	     (match_operand:SI 2 "" ""))]
   "TARGET_V2"

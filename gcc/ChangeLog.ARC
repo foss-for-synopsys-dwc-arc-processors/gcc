@@ -1,3 +1,7 @@
+2014-12-04 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Update prefetch_3 pattern.
+
 2014-11-26 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Decommission mRcw, mRcq and
