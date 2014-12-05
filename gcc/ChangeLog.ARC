@@ -1,6 +1,8 @@
 2014-12-05 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Allow addr-scalled prefetch instructions.
+	* testsuite/gcc.target/arc/builtin_mul64.c: Remove.
+	* testsuite/gcc.target/arc/builtin_mulu64.c: Likewise.
 
 2014-12-04 Claudiu Zissulescu <claziss@synopsys.com>
 
