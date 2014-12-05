@@ -5489,7 +5489,10 @@
 	     (match_operand:SI 1 "" "")
 	     (match_operand:SI 2 "" ""))]
   "TARGET_V2"
-  "ldb 0,[%0]"
+  {
+   operands[0] = gen_rtx_MEM (SImode, operands[0]);
+   return "prefetch%U0 %0";
+   }
   [(set_attr "type" "load")
    (set_attr "length" "8")])
 

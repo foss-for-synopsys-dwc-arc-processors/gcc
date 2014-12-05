@@ -1,3 +1,7 @@
+2014-12-05 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Allow addr-scalled prefetch instructions.
+
 2014-12-04 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Update prefetch_3 pattern.
