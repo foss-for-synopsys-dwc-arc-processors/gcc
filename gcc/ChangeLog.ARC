@@ -1,3 +1,8 @@
+2014-12-08 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md: Handle prefetch/prefetchw
+          instructions, HS only.
+
 2014-12-05 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Allow addr-scalled prefetch instructions.
