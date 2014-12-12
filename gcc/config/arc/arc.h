@@ -118,6 +118,8 @@ along with GCC; see the file COPYING3.  If not see
       builtin_define ("__ARC_SIMD__");		\
     if (TARGET_BARREL_SHIFTER)			\
       builtin_define ("__Xbarrel_shifter");	\
+    if (TARGET_LL64)				\
+      builtin_define ("__LL64__");		\
 						\
     switch (TARGET_CPU_DEFAULT)			\
       {						\
@@ -192,8 +194,6 @@ along with GCC; see the file COPYING3.  If not see
 %{mcpu=ARC700:-mARC700} \
 %{mcpu=ARC700:-mEA} \
 %{!mcpu=*:%{!mA6:%{!mARC600:%{!mARC700:" ASM_DEFAULT "}}}} \
-%{mcpu=ARCv2EM:%<mbarrel-shifter %<mno-mpy %<mnorm %<mswap}\
-%{mcpu=ARCv2HS:%<mbarrel-shifter %<mno-mpy %<mnorm %<mswap}\
 %{mbarrel-shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
 %{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*} \
 %{msimd} %{mfpu=fpuda:-mfpuda} \

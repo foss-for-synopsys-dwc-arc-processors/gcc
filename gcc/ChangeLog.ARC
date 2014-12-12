@@ -1,3 +1,7 @@
+2014-12-12 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.h: Define __LL64__; Cleanup ASM_SPEC.
+
 2014-12-08 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md: Handle prefetch/prefetchw
