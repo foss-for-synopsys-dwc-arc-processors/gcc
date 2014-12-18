@@ -1,3 +1,7 @@
+2014-12-18 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c: Fix endianess for atomic ops.
+
 2014-12-12 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.h: Define __LL64__; Cleanup ASM_SPEC.

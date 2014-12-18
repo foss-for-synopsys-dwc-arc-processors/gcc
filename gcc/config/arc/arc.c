@@ -9318,7 +9318,7 @@ arc_primarysecondary_p (rtx insn, int len)
 
   /* The second branch is in the 64 bit fetch block. See if it makes
      sense to emit this instruction as a long instruction. */
-  if ((blksz > 8) || (addrpinsn & 0xFFF0 != addrninsn & 0xFFF0))
+  if ((blksz > 8) || ((addrpinsn & 0xFFF0) != (addrninsn & 0xFFF0)))
     return false;
 
   /* Check if we have primary/secondary branch situation here. */
@@ -11316,6 +11316,11 @@ arc_expand_compare_and_swap_qh (rtx bool_result, rtx result, rtx mem,
   /* Compute the datum offset. */
   emit_insn (gen_rtx_SET (VOIDmode, off,
 			  gen_rtx_AND (SImode, addr1, GEN_INT (3))));
+  if (TARGET_BIG_ENDIAN)
+    emit_insn (gen_rtx_SET (VOIDmode, off,
+			    gen_rtx_MINUS (SImode,
+					   (GET_MODE (mem) == QImode) ? GEN_INT (3) :
+					   GEN_INT (2), off)));
 
   /* Normal read from truncated address. */
   memsi = gen_rtx_MEM (SImode, addr);
