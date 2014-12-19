@@ -1,3 +1,12 @@
+2014-12-19  Anton Kolesov  <Anton.Kolesov@synopsys.com>
+
+	* testsuite/gcc.target/arc/builtin_clri.c: Fix failures with new-style
+	ARCCompact options.
+	* testsuite/gcc.target/arc/builtin_ffs.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_fls.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_kflag.c: Likewise.
+	* testsuite/gcc.target/arc/builtin_seti.c: Likewise.
+
 2014-12-18 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c: Fix endianess for atomic ops.
