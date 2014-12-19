@@ -25,9 +25,9 @@ NORET1OP (flag, unsigned int)
 
 #if defined (__EM__) || defined (__HS__)
 NORET1OP (kflag, unsigned int)
+NORET1OP (seti, int)
 #endif
 
-NORET1OP (seti, int)
 
 #ifdef __ARC_NORM__
 RET1OP (norm, int, int)

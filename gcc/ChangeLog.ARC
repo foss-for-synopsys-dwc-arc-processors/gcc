@@ -1,5 +1,10 @@
 2014-12-19  Anton Kolesov  <Anton.Kolesov@synopsys.com>
 
+	* testsuite/gcc.target/arc/builtin_general.c: Fix failures on
+	ARCompact.
+
+2014-12-19  Anton Kolesov  <Anton.Kolesov@synopsys.com>
+
 	* testsuite/gcc.target/arc/builtin_clri.c: Fix failures with new-style
 	ARCCompact options.
 	* testsuite/gcc.target/arc/builtin_ffs.c: Likewise.
