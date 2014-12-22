@@ -1,3 +1,7 @@
+2014-12-22 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* doc/extend.texi: Update builtins.
+
 2014-12-19  Anton Kolesov  <Anton.Kolesov@synopsys.com>
 
 	* testsuite/gcc.target/arc/builtin_general.c: Fix failures on

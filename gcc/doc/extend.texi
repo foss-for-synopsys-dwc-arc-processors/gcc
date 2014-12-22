@@ -2831,7 +2831,7 @@ void f () __attribute__ ((interrupt ("ilink1")));
 
 For the ARC 600 and ARC 700 families, the only permissible values for
 this parameter are: @w{@code{ilink1}} and @w{@code{ilink2}}.  For the
-ARC v2 EM processor, the only permissible value is @w{@code{ilink}}.
+ARCv2 cpu processors, the only permissible value is @w{@code{ilink}}.
 
 Note, on the AVR, the hardware globally disables interrupts when an
 interrupt is executed.  The first instruction of an interrupt handler
@@ -8990,8 +8990,7 @@ built-in.
 @end deftypefn
 
 @deftypefn {Built-in Function} int __builtin_arc_ffs (int @var{a})
-Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}, or with
-@option{-mcpu=ARCv2HS}.  Generates:
+Only valid for ARCv2 cpu cores and @option{-mnorm}.  Generates:
 @example
 ffs  @var{dest}, @var{a}
 @end example
@@ -9007,8 +9006,7 @@ flag  @var{a}
 @end deftypefn
 
 @deftypefn {Built-in Function} int __builtin_arc_fls (int @var{a})
-Only valid with @option{-mcpu=ARCv2EM} and @option{-mnorm}, or with
-@option{-mcpu=ARCv2HS}.  Generates:
+Only valid for ARCv2 cpu cores and @option{-mnorm}.  Generates:
 @example
 fls  @var{dest}, @var{a}
 @end example
@@ -9070,7 +9068,7 @@ rtie
 @end deftypefn
 
 @deftypefn {Built-in Function}  void __builtin_arc_seti (int @var{c})
-Only valid with @option{-mcpu=ARCv2EM}.  Generates:
+Only valid for ARCv2 cpu cores.  Generates:
 @example
 seti  @var{c}
 @end example
@@ -9369,6 +9367,80 @@ indicating one the registers I0-I7, and the fourth argument must be an
 void __builtin_arc_vst16_n (__v8hi, const int, const int, const int)
 void __builtin_arc_vst32_n (__v8hi, const int, const int, const int)
 @end example
+
+@subsection ARCv2 SIMD Built-in Functions
+
+SIMD builtins provided by the compiler can be used to generate the
+vector instructions.  This section describes the available builtins
+and their usage in programs.  With the @option{-mmpy-option} option
+with values from 7 to 9, the compiler provides 32-bit or 64-bit vector
+types, which can be specified using the @code{vector_size}
+attribute. For example:
+@example
+typedef int __v2hi   __attribute__((vector_size(4)));
+typedef short __v4hi __attribute__((vector_size(8)));
+typedef short __v2si __attribute__((vector_size(8)));
+@end example
+
+The following take two @code{__v4hi} arguments and return a long long
+int. These builtins are available only for @option{-mpy-option=9}.
+@example
+long long __builtin_arc_qmach (__v4hi, __v4hi);
+long long __builtin_arc_qmachu (__v4hi, __v4hi);
+long long __builtin_arc_qmpyh (__v4hi, __v4hi);
+long long __builtin_arc_qmpyhu (__v4hi, __v4hi);
+@end example
+
+The following take two @code{__v2hi} arguments and return an
+int. These builtins are available only for @option{-mpy-option=7} or
+higher.
+@example
+int __builtin_arc_dmach (__v2hi, __v2hi);
+int __builtin_arc_dmachu (__v2hi, __v2hi);
+int __builtin_arc_dmpyh (__v2hi, __v2hi);
+int __builtin_arc_dmpyhu (__v2hi, __v2hi);
+@end example
+
+The following take a @code{__v2hi} argument, a @code{__v2si} argument
+and return a long long int. These builtins are available only for
+@option{-mpy-option=9}.
+@example
+long long __builtin_arc_dmacwh (__v2si, __v2hi);
+long long __builtin_arc_dmacwhu (__v2si, __v2hi);
+@end example
+
+The following take two @code{__v2hi} arguments and return a
+@code{__v2si}. These builtins are available only for @option{-mpy-option=8} or
+higher.
+@example
+__v2si __builtin_arc_vmac2h (__v2hi, __v2hi);
+__v2si __builtin_arc_vmac2hu (__v2hi, __v2hi);
+__v2si __builtin_arc_vmpy2h (__v2hi, __v2hi);
+__v2si __builtin_arc_vmpy2hu (__v2hi, __v2hi);
+@end example
+
+The following take two @code{__v2hi} arguments and return a
+@code{__v2hi}. These builtins are available only for @option{-mpy-option=7} or
+higher.
+@example
+__v2hi __builtin_arc_addsubv2hi3 (__v2hi, __v2hi);
+__v2hi __builtin_arc_subaddv2hi3 (__v2hi, __v2hi);
+@end example
+
+The following take two @code{__v2si} arguments and return a
+@code{__v2si}. These builtins are available only for @option{-mpy-option=9}.
+@example
+__v2si __builtin_arc_addsubv2si3 (__v2si, __v2si);
+__v2si __builtin_arc_subaddv2si3 (__v2si, __v2si);
+@end example
+
+The following take two @code{__v4hi} arguments and return a
+@code{__v4hi}. These builtins are available only for @option{-mpy-option=9}.
+@example
+__v4hi __builtin_arc_addsubv4hi3 (__v4hi, __v4hi);
+__v4hi __builtin_arc_subaddv4hi3 (__v4hi, __v4hi);
+@end example
+
 
 @node ARM iWMMXt Built-in Functions
 @subsection ARM iWMMXt Built-in Functions
