@@ -641,6 +641,7 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
      the fp/sp+largeoffset address. */
   if (code == SUBREG)
     {
+      rtx addr;
       x = SUBREG_REG(x);
 
       if (REG_P (x))
@@ -653,30 +654,34 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
 	    return NO_REGS;
 
 	  /* It is a pseudo that ends in a stack location. */
-	  rtx mem, addr;
 	  if (reg_equiv_mem (REGNO (x)))
 	    {
 	      /* Get the equivalent address and check the range of the
 		 offset. */
-	      mem = reg_equiv_mem (REGNO (x));
+	      rtx mem = reg_equiv_mem (REGNO (x));
 	      addr = find_replacement (&XEXP (mem, 0));
-
-	      if (GET_CODE (addr) == PLUS
-		  && CONST_INT_P (XEXP (addr, 1))
-		  && (INTVAL(XEXP (addr, 1)) < -256 || INTVAL(XEXP (addr, 1)) > 255))
-		{
-		  switch (mode)
-		    {
-		    case QImode:
-		      sri->icode = in_p ? CODE_FOR_reload_qi_load : CODE_FOR_reload_qi_store;
-		      break;
-		    case HImode:
-		      sri->icode = in_p ? CODE_FOR_reload_hi_load : CODE_FOR_reload_hi_store;
-		      break;
-		    default:
-		      break;
-		    }
-		}
+	    }
+	}
+      else
+	{
+	  gcc_assert (MEM_P (x));
+	  addr = XEXP (x, 0);
+	  addr = simplify_rtx (addr);
+	}
+      if (GET_CODE (addr) == PLUS
+	  && CONST_INT_P (XEXP (addr, 1))
+	  && (INTVAL(XEXP (addr, 1)) < -256 || INTVAL(XEXP (addr, 1)) > 255))
+	{
+	  switch (mode)
+	    {
+	    case QImode:
+	      sri->icode = in_p ? CODE_FOR_reload_qi_load : CODE_FOR_reload_qi_store;
+	      break;
+	    case HImode:
+	      sri->icode = in_p ? CODE_FOR_reload_hi_load : CODE_FOR_reload_hi_store;
+	      break;
+	    default:
+	      break;
 	    }
 	}
     }

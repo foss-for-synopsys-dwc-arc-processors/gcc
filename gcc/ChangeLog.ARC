@@ -1,3 +1,7 @@
+2015-01-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_secondary_reload): Handle subreg(mem).
+
 2014-12-22 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* doc/extend.texi: Update builtins.
