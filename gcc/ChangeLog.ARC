@@ -1,3 +1,7 @@
+2015-01-21 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_secondary_reload): Fix missing cases.
+
 2015-01-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_secondary_reload): Handle subreg(mem).

@@ -641,7 +641,7 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
      the fp/sp+largeoffset address. */
   if (code == SUBREG)
     {
-      rtx addr;
+      rtx addr = NULL_RTX;
       x = SUBREG_REG(x);
 
       if (REG_P (x))
@@ -668,7 +668,7 @@ arc_secondary_reload (bool in_p, rtx x, reg_class_t cl, enum machine_mode mode,
 	  addr = XEXP (x, 0);
 	  addr = simplify_rtx (addr);
 	}
-      if (GET_CODE (addr) == PLUS
+      if (addr && GET_CODE (addr) == PLUS
 	  && CONST_INT_P (XEXP (addr, 1))
 	  && (INTVAL(XEXP (addr, 1)) < -256 || INTVAL(XEXP (addr, 1)) > 255))
 	{
