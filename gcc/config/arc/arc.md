@@ -5825,7 +5825,7 @@
 
 
 (define_insn "*movdi_hsll64"
-  [(set (match_operand:DI 0 "nonimmediate_operand"  "=r,m")
+  [(set (match_operand:DI 0 "move_dest_operand"     "=r,m")
 	(match_operand:DI 1 "nonimmediate_operand"   "m,c"))]
   "TARGET_HS && TARGET_LL64
    && ((register_operand (operands[0], DImode) && memory_operand (operands[1], DImode))

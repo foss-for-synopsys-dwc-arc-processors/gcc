@@ -1,3 +1,7 @@
+2015-02-04 Claudiu Zissulescu <claziss@synopsys.com>
+
+        * config/arc/arc.md (movdi_hsll64): Use move_dest_operand.
+
 2015-01-21 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_secondary_reload): Fix missing cases.
