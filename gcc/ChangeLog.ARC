@@ -1,3 +1,7 @@
+2015-02-19 Claudiu Zissulescu <claziss@synopsys.com>
+
+	* doc/invoke.texi: Update ARC options.
+
 2015-02-04 Claudiu Zissulescu <claziss@synopsys.com>
 
         * config/arc/arc.md (movdi_hsll64): Use move_dest_operand.

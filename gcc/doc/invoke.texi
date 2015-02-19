@@ -486,8 +486,8 @@ Objective-C and Objective-C++ Dialects}.
 -msplit-vecmove-early -m1reg-@var{reg}}
 
 @emph{ARC Options} @gccoptlist{-mbarrel-shifter -mcode-density @gol
--mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -mEM -mARCv2EM -mav2em @gol
--mav2hs -mHS -mARCv2HS -matomic -mfpu=@var{fpu} -mll64 @gol
+-mcpu=@var{cpu} -mA6 -mARC600 -mA7 -mARC700 -marc600 -marc700 @gol
+-marcem -marchs -matomic -mfpu=@var{fpu} -mll64 @gol
 -mdiv-rem -mdpfp -mdpfp-compact -mdpfp-fast -mno-dpfp-lrsr -mEA @gol
 -mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
@@ -498,9 +498,9 @@ Objective-C and Objective-C++ Dialects}.
 -mno-sdata -mucb-mcount -mvolatile-cache -mno-volatile-cache @gol
 -mauto-modify-reg -mbbit-peephole -mno-brcc @gol
 -mcase-vector-pcrel -mcompact-casesi -mno-cond-exec -mearly-cbranchsi @gol
--mexpand-adddi -mindexed-loads -mlra -mlra-priority-none @gol
+-mindexed-loads -mlra -mlra-priority-none @gol
 -mlra-priority-compact mlra-priority-noncompact -mno-millicode @gol
--mmixed-code -mmultcost=@var{num} -mq-class -mRcq -mRcw @gol
+-mmixed-code -mmultcost=@var{num} -mq-class @gol
 -msize-level=@var{level} -mtune=@var{cpu}}
 
 @emph{ARM Options}
@@ -11174,7 +11174,7 @@ There are two major flavors of the tool chain. The original ARCompact
 instruction set for the ARC 600 and ARC 700 families and the ARCv2
 instruction set for the ARC EM or ARC HS family. For the latter, ARC v2
 options are only available when the tool chain has been configured
-using @option{--with-cpu=EM}, @option{--with-cpu=HS}, or using
+using @option{--with-cpu=arcem}, @option{--with-cpu=archs}, or using
 @option{--enable-multilib}.
 
 ARC is a configurable architecture.  Requesting features from the
@@ -11190,7 +11190,7 @@ is being compiled:
 @item -mbarrel-shifter
 @opindex mbarrel-shifter
 Generate instructions supported by barrel shifter.  This is the default
-unless @samp{-mcpu=ARC601} or @samp{-mcpu=ARCv2EM} is in effect.
+unless @samp{-mcpu=ARC601} or @samp{-mcpu=arcem} is in effect.
 
 @item -mcode-density
 @opindex mcode-density
@@ -11219,21 +11219,16 @@ Compile for ARC 601. Alias: @option{-mARC601}@.
 Compile for ARC 700.  Aliases: @option{-mA7}, @option{-mARC700}.  This
 option is default on when configured with @samp{--with-cpu=arc700}@.
 
-@item ARCv2EM
-@opindex mEM
-@opindex mARCv2EM
-@opindex mav2em
-Compile for ARC EM.  Aliases: @option{-mEM},
-@option{-mARCv2EM}, @option{-mav2em}.  This option is default on when
-the tool chain is configured with @samp{--with-cpu=EM}@.
+@item arcem
+@opindex marcem
+Compile for ARC EM.  Aliases: @option{-marem}.  This option is default
+on when the tool chain is configured with @samp{--with-cpu=arcem}@.
 
-@item ARCv2HS
-@opindex mHS
-@opindex mARCv2HS
-@opindex mav2hs
-Compile for ARC HS cpu family.  Aliases: @option{-mHS},
-@option{-mARCv2HS}, @option{-mav2hs}.  This option is default on when
-the tool chain is configured with @samp{--with-cpu=HS}@.
+@item archs
+@opindex marchs
+Compile for ARC HS cpu family.  Aliases: @option{-marchs}.  This
+option is default on when the tool chain is configured with
+@samp{--with-cpu=archs}@.
 
 @end table
 
@@ -11812,16 +11807,6 @@ while increasing the instruction count.
 Enable 'q' instruction alternatives.
 This is the default for @option{-Os}.
 
-@item -mRcq
-@opindex mRcq
-Enable Rcq constraint handling - most short code generation depends on this.
-This is the default.
-
-@item -mRcw
-@opindex mRcw
-Enable Rcw constraint handling - ccfsm condexec mostly depends on this.
-This is the default.
-
 @item -msize-level=@var{level}
 @opindex msize-level
 Fine-tune size optimization with regards to instruction lengths and alignment.
@@ -11843,11 +11828,6 @@ In addition, optional data alignment is dropped, and the option @option{Os} is e
 
 This defaults to @samp{3} when @option{-Os} is in effect.  Otherwise,
 the behavior when this is not set is equivalent to level @samp{1}.
-
-@item -mexpand-adddi
-@opindex mexpand-adddi
-Expand @code{adddi3} and @code{subdi3} at rtl generation time into
-@code{add.f}, @code{adc} etc.
 
 @item -mauto-modify-reg
 @opindex mauto-modify-reg
