@@ -514,3 +514,17 @@ Enum(arc_abi_type) String(std) Value(ARC_ABI_STD)
 EnumValue
 Enum(arc_abi_type) String(pack) Value(ARC_ABI_PACK)
 
+mtls
+Target Report Var(TARGET_TLS)
+Enable target-specific TLS support
+
+mtls9
+Target Report Var(TARGET_TLS9)
+Assume local tls symbols can be addressed with scaled s9 offset
+
+mtp-regno=
+Target RejectNegative Joined UInteger Var(arc_tp_regno) Init(25)
+Specify thread pointer register number
+
+mtp-regno=none
+Target RejectNegative Var(arc_tp_regno,-1)

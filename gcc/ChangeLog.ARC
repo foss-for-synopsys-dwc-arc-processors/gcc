@@ -1,3 +1,289 @@
+2014-11-18  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+        * config/arc/arc.c (arc_print_operand): Handle global dynamic,
+	UNSPEC_TLS_GD, fixups.
+	(arc_print_operand_address): Handle Imediate Exec, UNSPEC_TLS_IE,
+	fixups.
+	(arc_legitimize_tls_address): Change Local Dynamic to Local Exec
+	when we're not compiling PIC code.
+
+2014-05-23  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_legitimize_tls_address):
+	Don't force (const (... UNSPEC_TLS_IE ...) into a register.
+
+2014-05-12  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_eh_uses): Prototype.
+	* config/arc/arc.c (arc_eh_uses): New function.
+	* config/arc/arc.h (EH_USES): Define.
+
+2014-03-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/predicates.md (extend_operand): During/after reload,
+	allow const_int_operand.
+	* config/arc/arc.md (mulsidi3_700): Use extend_operand predicate.
+	(umulsidi3_700): Likewise.  Change operand 2 constraint back to "cL".
+	(mulsi3_highpart): Change operand 2 constraint alternatives 2 and 3
+	to "i".
+	(umulsi3_highpart_i): Likewise.
+
+2014-03-24  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_print_operand_address): Handle
+	ARC_UNSPEC_GOTOFFPC with addend.
+
+2014-02-14  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (DTPOFF_ZERO_SYM): Define.
+	(arc_legitimize_tls_address): Don't change local-dynamic to
+	local-exec if that'd loose 9-bit offset addressing.
+	Where we have a base address, emit it as the second element in
+	the UNSPEC_TLS_OFF vector.
+	Force base into register.
+	(arc_output_pic_addr_const) <UNSPEC_TLS_OFF>: If a base is given,
+	output it too.
+
+2014-02-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (arc_conditional_register_usage): Make
+	arc_tp_regno again a fixed register.
+	(arc_epilogue_uses): ARC_TP_REGNO is used.
+
+2014-02-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.opt (mtp-regno=none): New option.
+
+2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_attribute_table) <tls9>: Change max_arg to 1.
+	(arc_legitimize_tls_address): Handle TLS_MODEL_LOCAL_DYNAMIC
+	properly.
+	(arc_output_pic_addr_const): Output @dtpoff{,9} for local dynamic
+	tls model.
+
+	* config/arc/arc.c (arc_legitimize_tls_address): Use .tdata as
+	default base for TLS_MODEL_LOCAL_DYNAMIC.
+
+2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_emit_call_tls_get_addr): Load the
+	Address of GD slot pair into r0, not the first got slot contents.
+
+2014-02-11  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (SYMBOL_FLAG_TLS_S9, SYMBOL_REF_TLS_S9_P): Define.
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Check SYMBOL_REF_TLS_S9_P.
+	(arc_attribute_table): Add tls9.
+	(arc_encode_section_info): Set SYMBOL_FLAG_TLS_S9 for tls9 attribute.
+
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Remove left-over
+	"return true;" .
+
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Fix access of
+	SYMBOL_REF in UNSPEC.
+	(arc_encode_section_info): Fix bug in last change.
+	(arc_output_pic_addr_const): Use SYMBOL_REF_TLS_S9_P.
+	* config/arc/predicates.md (long_immediate_loadstore_operand):
+	Likewise.
+	(move_dest_operand): Likewise.
+
+2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (tls_gd_obsolete_get_addr): Remove predicability.
+
+2014-02-04  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (tls_gd_obsolete_get_addr): Add predication/
+	delay slot suffixes.
+
+2014-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (tls_gd_load): Don't use short insn if rtp
+	is r30.
+
+2014-02-03  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.md (tls_gd_obsolete_get_addr): New pattern.
+	* config/arc/arc.c (tls_get_addr_libfunc, get_tls_get_addr): Remove.
+	(arc_emit_call_tls_get_addr): Use gen_tls_gd_obsolete_get_addr.
+
+2014-02-01  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	Support for __builtin_thread_pointer / __builtin_set_thread_pointer:
+	* config/arc/arc.md (arc_conditional_register_usage): Make
+	arc_tp_regno a global rather than a fixed register.
+	* config/arc/arc.md (get_thread_pointersi): New pattern.
+	* config/arc/arc.md (set_thread_pointersi): Likewise.
+
+2014-01-30  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (tls_get_addr_libfunc): Add back.
+	(get_tls_get_addr, arc_emit_call_tls_get_addr): Likewise.
+	(arc_legitimize_tls_address): Use obsolete general-dynamic
+	implementation.
+
+2014-01-30  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* dwarf2cfi.c: Include diagnostic-core.h.
+	(maybe_record_trace_start): Don't ICE, just warn, for a row mismatch.
+
+2014-01-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (emit_pic_move): Don't declare.
+	* config/arc/arc.c (RTX_OK_FOR_OFFSET_P): Allow @tlsoff9 with addend.
+	(emit_pic_move): Now static.  If !flag_pic, don't force source of
+	move into memory into reg, nor allocate a temporary.
+	Rename to...
+	(prepare_pic_move) .. this.
+	(arc_print_operand): Handle @tlsoff{,9} with addend.
+	(arc_print_operand_address): Likewise.
+	(arc_raw_symbolic_reference_mentioned_p): Return true for raw
+	TLS symbols.  Return false for other symbols when !flag_pic.
+	(arc_get_tp): Move before arc_legitimize_pic_address.
+	(arc_legitimize_tls_address): Likewise.  Delete dead code.
+	(tls_get_addr_libfunc, get_tls_get_addr): Delete.
+	(arc_emit_call_tls_get_addr): Likewise.
+	(arc_legitimize_pic_address): Delete dead code.
+	Check for TLS symbols.  If not flag_pic, return other symbols
+	unchanged.  If legitimizing a PLUS and both parts are legitimized
+	unchanged, return original address unchanged.
+	(arc_legitimate_constant_p): Check for TLS symbols inside of a
+	PLUS etc.
+	(arc_legitimate_address_p, prepare_move_operands): Likewise.
+	(arc_legitimize_address_0): Likewise.
+	(arc_rewrite_small_data_p): Check that we didn't got a TLS symbol.
+	(prepare_move_operand): Check for small data and pic/tls
+	independently.
+	* config/arc/predicates.md (move_src_operand): Use
+	arc_legitimate_constant_p.
+
+	* config/arc/arc.c (arc_delegitimize_address_0):
+	Handle @pcl with addend.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_legitimize_tls_address): Use gen_tls_gd_load.
+	* config/arc/arc.md (tls_gd_load): New pattern.
+	(tls_gd_dispatch): Emit .tls_gd_call pseudo-op.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_legitimize_tls_address)
+	<TLS_MODEL_INITIAL_EXEC>: Force MEM into a register before adding
+	thread pointer.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc-protos.h (insn_is_tls_gd_dispatch): Declare.
+	* config/arc/arc.c (arc_legitimize_tls_address)
+	<TLS_MODEL_GLOBAL_DYNAMIC>: Use gen_tls_gd_dispatch.
+	(insn_is_tls_gd_dispatch): New function.
+	* config/arc/arc.h (INSN_REFERENCES_ARE_DELAYED): Check
+	insn_is_tls_gd_dispatch.
+	* config/arc/arc.md (R10_REG): New constant.
+	(tls_gd_dispatch): New pattern.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.opt (mtp-regn): Change arc_tp_regno default to 25.
+	* config/arc/arc.h [DEFAULT_LIBC != LIBC_UCLIBC]
+	(ARC_TLS_EXTRA_START_SPEC): Use crttls_r25.o .
+
+	* config/arc/arc.c (arc_conditional_register_usage):
+	Fix test of arc_tp_regno.
+
+2014-01-19  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h [DEFAULT_LIBC != LIBC_UCLIBC] (EXTRA_SPECS): Define.
+	[DEFAULT_LIBC != LIBC_UCLIBC] (ARC_TLS_EXTRA_START_SPEC): Likewise.
+	[DEFAULT_LIBC != LIBC_UCLIBC] (STARTFILE_SPEC): Add
+	%(arc_tls_extra_start_spec).
+
+2014-01-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* configure.ac: Add arc-*-* case to test for tls.
+	* configure: Regenerate.
+
+2014-01-16  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (arc_output_pic_addr_const):
+	Use @tpoff9 for UNSPEC_TLS_OFF if TARGET_TLS9.
+	(arc_legitimize_tls_address): When not emitting pic code,
+	always assume local exec model.
+
+2014-01-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (compact_memory_operand_p):
+	Fix warning.
+	* config/arc/constraints.md (C2p): Likewise.
+
+2013-12-13  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.c (ARC_UNSPEC_GOTOFFPC): New UNSPEC value.
+	(arc_conditional_register_usage): Replace conditional "r30"
+	name with placing arc_tp_regno into fixed / call_used regs.
+	(arc_legitimate_pc_offset_p): Allow ARC_UNSPEC_GOTOFFPC.
+	(arc_legitimate_pic_addr_p): Likewise.
+	(arc_legitimize_pic_address): Use GOTOFFPC instead of GOTOFF.
+	(arc_output_pic_addr_const): Handle ARC_UNSPEC_GOTOFFPC.
+	(arc_legitimate_constant_p): Likewise.
+	(arc_get_tp, get_tls_get_addr): New functions.
+	(arc_emit_call_tls_get_addr): Likewise.
+	(arc_legitimize_tls_address): Use arc_emit_call_tls_get_addr
+	and arc_get_tp.
+	(prepare_move_operands): Remove TARGET_TLS check.
+	(arc_legitimize_address_0): Likewise.
+	(arc_output_libcall): Use @pcl syntax.
+	(arc_delegitimize_address_0): Delegitimize ARC_UNSPEC_GOTOFFPC.
+	(HARD_REGNO_OK_FOR_BASE_P): Check arc_tp_regno.
+	* config/arc/arc.md (TLS_BASE_REGNUM): Remove constant.
+	(movsi_insn, doloop_begin_i): Use @pcl syntax.
+	(tls_load_tp_soft): New pattern.
+	(call_tls_get_addr): Comment out for now.
+	(movdi): Call prepare_move_operands.
+	* config/arc/arc.opt (mtls): Remove option.
+	(mtp-regno): New option.
+	* config/arc/predicates.md (move_dest_operand): Disallow PIC
+	constants as store memory addresses.
+
+2013-12-10  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/arc.h (HARD_REGNO_OK_FOR_BASE_P): New macro.
+	(REGNO_OK_FOR_BASE_P): Use it.
+	(rname30): Declare.
+	(REGISTER_NAMES): Use rname30.
+	(REG_OK_FOR_INDEX_P_NONSTRICT, REG_OK_FOR_BASE_P_NONSTRICT,
+	 REG_OK_FOR_INDEX_P_STRICT, REG_OK_FOR_BASE_P_STRICT,
+	 RTX_OK_FOR_BASE_P, RTX_OK_FOR_INDEX_P):
+	Move from here..
+	* config/arc/arc.c: .. to here.
+	(RTX_OK_FOR_OFFSET_P): Change into inline function.
+	(LEGITIMATE_OFFSET_ADDRESS_P): Likewise.
+	(RTX_OK_FOR_OFFSET_P): Take TARGET_TLS9 into account.
+	[HAVE_AS_TLS] (TARGET_HAVE_TLS): Redefine.
+	(r30name): Define.
+	(arc_conditional_register_usage): Update r30name.
+	(arc_address_cost) <CONST>: Take RTX_OK_FOR_OFFSET_P into account.
+	(arc_print_operand, arc_print_operand_address): Handle UNSPEC_TLS_OFF.
+	(arc_legitimate_pc_offset_p): Allow UNSPEC_TLS_GD and UNSPEC_TLS_IE.
+	(arc_legitimate_pic_addr_p): Likewise.
+	(arc_output_pic_addr_const): Handle UNSPEC_TLS_GD, UNSPEC_TLS_IE and
+	UNSPEC_TLS_OFF.
+	(arc_legitimate_constant_p): Reject naked TLS SYMBOL_REFs.
+	Allow UNSPEC_TLS_GD, UNSPEC_TLS_IE and UNSPEC_TLS_OFF.
+	(arc_legitimate_address_p): Reject naked TLS SYMBOL_REFs.
+	(arc_legitimize_tls_address): New function.
+	(prepare_move_operands, arc_legitimize_address): Use it.
+	* config/arc/arc.md (UNSPEC_TLS_GD, UNSPEC_TLS_LD): New constants.
+	(UNSPEC_TLS_IE, UNSPEC_TLS_OFF, TLS_BASE_REGNUM): Likewise.
+	(call_tls_get_addr): New insn.
+	* config/arc/arc.opt (mtls, mtls9): New option.
+	* config/arc/predicates.md (long_immediate_loadstore_operand):
+	Take TARGET_TLS9 into account.
+	(move_dest_operand): Likewise.
+	(move_src_opeand): Reject naked TLS SYMBOL_REF.
+
 2015-02-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* doc/invoke.texi: Update ARC options.

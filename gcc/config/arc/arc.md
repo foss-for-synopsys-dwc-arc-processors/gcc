@@ -101,8 +101,9 @@
 ;;  -----------------------------------------------------------------------------
 ;;  UNSPEC_PLT       3        symbol to be referenced through the PLT
 ;;  UNSPEC_GOT       4        symbol to be rerenced through the GOT
-;;  UNSPEC_GOTOFF    5        Local symbol.To be referenced relative to the
-;;                            GOTBASE.(Referenced as @GOTOFF)
+;;  UNSPEC_GOTOFF    5        Local symbol. To be referenced relative to the
+;;                            GOTBASE.  (Referenced as @GOTOFF)
+;;  UNSPEC_GOTOFFPC  6        Local symbol.  To be referenced pc-relative.
 ;;  ----------------------------------------------------------------------------
 
 (define_c_enum "unspec" [
@@ -156,12 +157,44 @@
 ])
 
 (define_constants
-  [(UNSPEC_PROF 18) ; profile callgraph counter
+  [(UNSPEC_NORM 11) ; norm generation through builtins. candidate for scheduling
+   (UNSPEC_NORMW 12) ; normw generation through builtins. candidate for scheduling
+   (UNSPEC_SWAP 13) ; swap generation through builtins. candidate for scheduling
+   (UNSPEC_MUL64 14) ; mul64 generation through builtins. candidate for scheduling
+   (UNSPEC_MULU64 15) ; mulu64 generation through builtins. candidate for scheduling
+   (UNSPEC_DIVAW 16) ; divaw generation through builtins. candidate for scheduling
+   (UNSPEC_DIRECT 17)
+   (UNSPEC_PROF 18) ; profile callgraph counter
+   (UNSPEC_LP 19) ; to set LP_END
+   (UNSPEC_CASESI 20)
+   (UNSPEC_TLS_GD 21)
+   (UNSPEC_TLS_LD 22)
+   (UNSPEC_TLS_IE 23)
+   (UNSPEC_TLS_OFF 24)
+   (VUNSPEC_RTIE 17) ; blockage insn for rtie generation
+   (VUNSPEC_SYNC 18) ; blockage insn for sync generation
+   (VUNSPEC_BRK 19) ; blockage insn for brk generation
+   (VUNSPEC_FLAG 20) ; blockage insn for flag generation
+   (VUNSPEC_SLEEP 21) ; blockage insn for sleep generation
+   (VUNSPEC_SWI 22) ; blockage insn for swi generation
+   (VUNSPEC_CORE_READ 23) ; blockage insn for reading a core register
+   (VUNSPEC_CORE_WRITE 24) ; blockage insn for writing to a core register
+   (VUNSPEC_LR 25) ; blockage insn for reading an auxiliary register
+   (VUNSPEC_SR 26) ; blockage insn for writing to an auxiliary register
+   (VUNSPEC_TRAP_S 27) ; blockage insn for trap_s generation
+   (VUNSPEC_UNIMP_S 28) ; blockage insn for unimp_s generation
+   (VUNSPEC_KFLAG 29); blockage insn for kflag generation
+   (VUNSPEC_CLRI  30); disable interrupts
+   (VUNSPEC_SETI  31); SETI
+
+   (UNSPEC_FFS  40); FFS
+   (UNSPEC_FLS  41); FLS
 
    (R0_REG 0)
    (R1_REG 1)
    (R2_REG 2)
    (R3_REG 3)
+   (R10_REG 10)
    (R12_REG 12)
    (SP_REG 28)
    (ILINK1_REGNUM 29)
@@ -701,7 +734,7 @@
    ror %0,((%1*2+1) & 0x3f) ;6
    mov%? %0,%1		;7
    add %0,%S1		;8
-   * return arc_get_unalign () ? \"add %0,pcl,%1-.+2\" : \"add %0,pcl,%1-.\";
+   add %0,pcl,%1@pcl	;9
    mov%? %0,%S1%&	;10
    mov%? %0,%S1		;11
    ld%?%U1 %0,%1%&	;12
@@ -978,13 +1011,7 @@
   [(set (match_operand:DI 0 "move_dest_operand" "")
 	(match_operand:DI 1 "general_operand" ""))]
   ""
-  "
-{
-  /* Everything except mem = const or mem = mem can be done easily.  */
-
-  if (GET_CODE (operands[0]) == MEM)
-    operands[1] = force_reg (DImode, operands[1]);
-}")
+  "if (prepare_move_operands (operands, DImode)) DONE;")
 
 (define_insn_and_split "*movdi_insn"
   [(set (match_operand:DI 0 "move_dest_operand"      "=w, w,r,m")
@@ -2114,7 +2141,7 @@
 (define_insn_and_split "mulsidi3_700"
   [(set (match_operand:DI 0 "register_operand" "=&r")
 	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "%c"))
-		 (sign_extend:DI (match_operand:SI 2 "register_operand" "cL"))))]
+		 (sign_extend:DI (match_operand:SI 2 "extend_operand" "cL"))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "#"
   "&& reload_completed"
@@ -2137,7 +2164,7 @@
 	 (lshiftrt:DI
 	  (mult:DI
 	   (sign_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
-	   (sign_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
+	   (sign_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  i,i")))
 	  (const_int 32))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "* return TARGET_ARC700 ? \"mpyh%? %0,%1,%2\" : \"mpym%? %0,%1,%2\"; "
@@ -2154,7 +2181,7 @@
 	 (lshiftrt:DI
 	  (mult:DI
 	   (zero_extend:DI (match_operand:SI 1 "register_operand" "%0,c,  0,c"))
-	   (zero_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  s,s")))
+	   (zero_extend:DI (match_operand:SI 2 "extend_operand"    "c,c,  i,i")))
 	  (const_int 32))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "* return TARGET_ARC700 ? \"mpyhu%? %0,%1,%2\" : \"mpymu%? %0,%1,%2\"; "
@@ -2373,8 +2400,7 @@
 (define_insn_and_split "umulsidi3_700"
   [(set (match_operand:DI 0 "dest_reg_operand" "=&r")
 	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "%c"))
-		 (zero_extend:DI (match_operand:SI 2 "register_operand" "c"))))]
-;;		 (zero_extend:DI (match_operand:SI 2 "register_operand" "rL"))))]
+		 (zero_extend:DI (match_operand:SI 2 "extend_operand" "cL"))))]
   "(TARGET_ARC700 && TARGET_MPY_SET) || EM_MULTI"
   "#"
   "reload_completed"
@@ -5075,7 +5101,7 @@
       /* ??? Can do better for when a scratch register
 	 is known.  But that would require extra testing.  */
       arc_clear_unalign ();
-      return ".p2align 2\;push_s r0\;add r0,pcl,%4-.+2\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1-.+2\;sr r0,[3]; LP_END\;pop_s r0";
+      return ".p2align 2\;push_s r0\;add r0,pcl,%4@pcl\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1@pcl\;sr r0,[3]; LP_END\;pop_s r0";
     }
   /* Check if the loop end is in range to be set by the lp instruction.  */
   size = INTVAL (operands[3]) < 2 ? 0 : 2048;
@@ -5421,6 +5447,72 @@
 }
   [(set_attr "type" "call")
    (set_attr "is_SIBCALL" "yes")])
+
+(define_insn "tls_load_tp_soft"
+  [(set (reg:SI R0_REG) (unspec:SI [(const_int 0)] UNSPEC_TLS_OFF))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))]
+  ""
+  "*return arc_output_libcall (\"__read_tp\");"
+  [(set_attr "is_sfunc" "yes")
+   (set_attr "predicable" "yes")])
+
+(define_insn "tls_gd_load"
+  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,c")
+	(unspec:SI [(match_operand:SI 1 "register_operand" "Rcq#q,c")
+		    (match_operand:SI 2 "symbolic_operand" "X,X")]
+	 UNSPEC_TLS_GD))]
+  ""
+  ".tls_gd_ld %2`ld%? %0,[%1]"
+  [(set_attr "type" "load")
+   ; if the linker has to patch this into IE, we need a long insns
+   ; (FIXME: or two short insn, ld_s / jl_s.  missing -Os optimization.)
+   (set_attr_alternative "iscompact"
+     [(cond [(ne (symbol_ref "arc_tp_regno == 30") (const_int 0))
+	     (const_string "*")] (const_string "maybe"))
+      (const_string "*")])])
+
+(define_insn "tls_gd_obsolete_get_addr"
+  [(set (reg:SI R0_REG)
+	(call:SI (mem:SI (unspec:SI [(match_operand:SI 0
+				      "symbolic_operand" "X,X")]
+			  UNSPEC_TLS_GD))
+		 (const_int 0)))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))]
+  ""
+  ".tls_gd_ld %0`bl%* __tls_get_addr@plt"
+  [(set_attr "type" "call")
+   ; With TARGET_MEDIUM_CALLS, plt calls are not predicable.
+   (set_attr "predicable" "no")])
+
+; We make this call specific to the tls symbol to avoid commoning this with
+; calls for other symbols; we want the linker to be able to 
+(define_insn "tls_gd_dispatch"
+  [(set (reg:SI R0_REG)
+	(unspec:SI
+	  [(reg:SI R0_REG)
+	   (call (mem:SI (match_operand:SI 0 "register_operand" "Rcq,q,c"))
+		 (const_int 0))
+	   (match_operand:SI 1 "symbolic_operand" "X,X,X")]
+	 UNSPEC_TLS_GD))
+   (clobber (reg:SI RETURN_ADDR_REGNUM))
+   (clobber (reg:DI R10_REG))
+   (clobber (reg:SI R12_REG))]
+  ""
+  ".tls_gd_call %1`jl%!%* [%0]"
+  [(set_attr "type" "call")
+   (set_attr "iscompact" "maybe,false,*")
+   (set_attr "predicable" "no,no,yes")])
+
+;; For thread pointer builtins
+(define_expand "get_thread_pointersi"
+  [(set (match_operand:SI 0 "register_operand") (match_dup 1))]
+ ""
+ "operands[1] = gen_rtx_REG (Pmode, arc_tp_regno);")
+
+(define_expand "set_thread_pointersi"
+  [(set (match_dup 1) (match_operand:SI 0 "register_operand"))]
+ ""
+ "operands[1] = gen_rtx_REG (Pmode, arc_tp_regno);")
 
 ;; If hardware floating point is available, don't define a negdf pattern;
 ;; it would be something like:

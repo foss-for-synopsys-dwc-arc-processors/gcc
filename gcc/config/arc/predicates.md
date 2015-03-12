@@ -128,6 +128,10 @@
     case SYMBOL_REF :
     case LABEL_REF :
     case CONST :
+      if (GET_CODE (XEXP (op, 0)) == UNSPEC
+	  && XINT (XEXP (op, 0), 1) == UNSPEC_TLS_OFF
+	  && SYMBOL_REF_TLS_S9_P (XEXP (XEXP (op, 0), 0)))
+	return 0;
       return 1;
     case CONST_INT :
       /* This must be handled as "st c,[limm]".  Ditto for load.
@@ -262,9 +266,12 @@
   switch (GET_CODE (op))
     {
     case SYMBOL_REF :
+      if (SYMBOL_REF_TLS_MODEL (op))
+	return 0;
     case LABEL_REF :
+      return 1;
     case CONST :
-      return (!flag_pic || arc_legitimate_pic_operand_p(op));
+      return arc_legitimate_constant_p (mode, op);
     case CONST_INT :
       return (LARGE_INT (INTVAL (op)));
     case CONST_DOUBLE :
@@ -356,12 +363,27 @@
 		|| (!CONST_INT_P (XEXP (addr, 1))
 		    && (TARGET_NO_SDATA_SET
 			|| GET_CODE (XEXP (addr, 1)) != SYMBOL_REF
-			|| !SYMBOL_REF_SMALL_P (XEXP (addr, 1))))))
+			|| !SYMBOL_REF_SMALL_P (XEXP (addr, 1)))
+		    && (GET_CODE (XEXP (addr, 1)) != CONST
+			|| GET_CODE (XEXP (XEXP (addr, 1), 0)) != UNSPEC
+			|| XINT (XEXP (XEXP (addr, 1), 0), 1) != UNSPEC_TLS_OFF
+			|| !SYMBOL_REF_TLS_S9_P
+			      (XEXP (XEXP (XEXP (addr, 1), 0), 0))))))
 	  return 0;
 	if ((GET_CODE (addr) == PRE_MODIFY || GET_CODE (addr) == POST_MODIFY)
 	    && (GET_CODE (XEXP (addr, 1)) != PLUS
 		|| !CONST_INT_P (XEXP (XEXP (addr, 1), 1))))
 	  return 0;
+	/* CONST_INT / CONST_DOUBLE is fine, but the PIC CONST ([..] UNSPEC))
+	   constructs are effectively indexed */
+	if (flag_pic)
+	  {
+	    rtx ad0 = addr;
+	    while (GET_CODE (ad0) == PLUS)
+	      ad0 = XEXP (ad0, 0);
+	    if (GET_CODE (ad0) == CONST || GET_CODE (ad0) == UNSPEC)
+	      return 0;
+	  }
 	return address_operand (addr, mode);
       }
     default :
@@ -704,10 +726,14 @@
   (and (match_code "reg")
        (match_test "REGNO (op) == (TARGET_BIG_ENDIAN ? 58 : 59)")))
 
+; Unfortunately, we can not allow a const_int_operand before reload, because
+; reload needs a non-void mode to guide it how to reload the inside of a
+; {sign_}extend.
 (define_predicate "extend_operand"
-  (ior (match_test "register_operand (op, mode)")
-       (and (match_test "immediate_operand (op, mode)")
-	    (not (match_test "const_int_operand (op, mode)")))))
+  (ior (match_operand 0 "register_operand")
+       (and (match_operand 0 "immediate_operand")
+	    (ior (not (match_operand 0 "const_int_operand"))
+		 (match_test "reload_in_progress || reload_completed")))))
 
 (define_predicate "millicode_store_operation"
   (match_code "parallel")

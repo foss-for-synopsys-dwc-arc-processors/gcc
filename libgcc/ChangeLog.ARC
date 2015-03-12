@@ -1,3 +1,24 @@
+2014-01-22  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/crttls_r25.S: Fix offset off __main_tcb_end.
+	* config/arc/crttls_r30.S: Likewise.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.host (arc*-*-elf*) <extra_parts>: Add crttls_r25.o.
+	* config/arc/crttls_r25.S: New file.
+	* config/arc/t-arc (crttls_r25.o): New rule.
+
+2014-01-21  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config/arc/crttls_r30.S: Fix pasto.
+
+2014-01-19  Joern Rennecke  <joern.rennecke@embecosm.com>
+
+	* config.host (arc*-*-elf*) <extra_parts>: Add crttls_r30.o.
+	* config/arc/crttls_r30.S: New file.
+	* config/arc/t-arc (crttls_r30.o): New rule.
+
 2014-08-29 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/dp-hack.h: Use accelerated double routines for archs.
