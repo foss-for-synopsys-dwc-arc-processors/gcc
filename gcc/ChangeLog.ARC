@@ -1,3 +1,8 @@
+2015-03-16  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/lib/target-supports.exp: Disable tls tests for
+          bare-metal.
+
 2014-11-18  Andrew Burgess  <andrew.burgess@embecosm.com>
 
         * config/arc/arc.c (arc_print_operand): Handle global dynamic,

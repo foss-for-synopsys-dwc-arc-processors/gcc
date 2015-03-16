@@ -604,6 +604,9 @@ proc add_options_for_tls { flags } {
 # Return 1 if thread local storage (TLS) is supported, 0 otherwise.
 
 proc check_effective_target_tls {} {
+    if { [istarget arc*-elf*] } {
+	return 0
+    }
     return [check_no_compiler_messages tls assembly {
 	__thread int i;
 	int f (void) { return i; }
@@ -646,6 +649,9 @@ proc check_effective_target_tls_emulated {} {
 # Return 1 if TLS executables can run correctly, 0 otherwise.
 
 proc check_effective_target_tls_runtime {} {
+    if { [istarget arc*-elf*] } {
+	return 0
+    }
     return [check_runtime tls_runtime {
 	__thread int thr = 0;
 	int main (void) { return thr; }
