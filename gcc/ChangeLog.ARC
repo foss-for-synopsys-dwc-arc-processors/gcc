@@ -1,11 +1,16 @@
+2015-03-24  Claudiu Zissulescu <claziss@synopsys.com>
+	    Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* testsuite/gcc.target/arc/return-addr.c: New file.
+
 2015-03-16  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* testsuite/lib/target-supports.exp: Disable tls tests for
-          bare-metal.
+	bare-metal.
 
 2014-11-18  Andrew Burgess  <andrew.burgess@embecosm.com>
 
-        * config/arc/arc.c (arc_print_operand): Handle global dynamic,
+	* config/arc/arc.c (arc_print_operand): Handle global dynamic,
 	UNSPEC_TLS_GD, fixups.
 	(arc_print_operand_address): Handle Imediate Exec, UNSPEC_TLS_IE,
 	fixups.
