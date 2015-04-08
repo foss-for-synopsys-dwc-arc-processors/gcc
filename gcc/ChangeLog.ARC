@@ -1,3 +1,8 @@
+2015-04-08  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_expand_prologue): Restore blink register
+	if needed after millicode optimisation.
+
 2015-03-24  Claudiu Zissulescu <claziss@synopsys.com>
 	    Andrew Burgess  <andrew.burgess@embecosm.com>
 

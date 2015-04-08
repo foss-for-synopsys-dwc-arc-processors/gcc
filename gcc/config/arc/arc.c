@@ -2806,6 +2806,24 @@ arc_expand_prologue (void)
       frame_size_to_allocate -= cfun->machine->frame_info.reg_size;
     }
 
+  /* The following triggers when the function contains a read of the return
+     address register (other than for the purpose of returning) and when
+     the millicode optimisation is in use.  In this case, within the
+     prologue we will generate a call to a helper function to spill
+     registers onto the stack.  This call corrupts the return address
+     register, so we restore it now.  It is expected that this code will
+     trigger rarely.  */
+  if (has_hard_reg_initial_val (Pmode, RETURN_ADDR_REGNUM)
+      && cfun->machine->frame_info.millicode_end_reg > 0)
+    {
+      rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
+      rtx addr = gen_rtx_PLUS (Pmode, stack_pointer_rtx,
+                               GEN_INT (cfun->machine->frame_info.reg_size));
+      rtx mem = gen_frame_mem (Pmode, addr);
+
+      gcc_assert (MUST_SAVE_RETURN_ADDR);
+      emit_insn (gen_rtx_SET (VOIDmode, ra, mem));
+    }
 
   /* Save frame pointer if needed.  */
   if (frame_pointer_needed)
