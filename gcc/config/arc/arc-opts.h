@@ -42,6 +42,7 @@ enum processor_type
 enum arc_abi_type
   {
     ARC_ABI_STD,
-    ARC_ABI_PACK
+    ARC_ABI_PACK,
+    ARC_ABI_MWABI
   };
 

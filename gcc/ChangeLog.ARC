@@ -1,3 +1,62 @@
+2015-04-14  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config.gcc <arc>: Add --with-abi=
+	* config/arc/arc-opts.h (ARC_ABI_MWABI): New ABI variant.
+	* config/arc/arc.c (arc_function_args_impl): Likewise.
+	(arc_return_in_memory): Return 128-bit datum into registers
+	for ARCv2.
+	(arc_split_move): Use LL64 instructions if they are available.
+	(arc_dump_stack_info): Update dump stack info.
+	* config/arc/arc.h (OPTION_DEFAULT_SPECS): Define.
+	(REG_CLASS_NAMES): Reorder.
+	* config/arc/arc.md (*movdi_insn): Refactor.
+	(*movdf_insn): Add support for using double load/store ops.
+	(*movdi_hsll64): Remove.
+	(*movdi_vadd2): Remove.
+	(mpyd_arcv2hs): Use even_register_operand predicate.
+	(mpyd_imm_arcv2hs): Likewise.
+	(mpydu_arcv2hs): Likewise.
+	(mpydu_imm_arcv2hs): Likewise.
+	(macd): Likewise.
+	(macdu): Likewise.
+	* config/arc/arc.opt (mabi): Add mwabi variant. Remove pack
+	variant.
+	* config/arc/fpu.md (fmadf4): Use even_register_operand
+	predicate.
+	(fmadf4_split): Likewise.
+	(fnmadf4): Likewise.
+	(fnmadf4_split): Likewise.
+	(fmadf4_fpu): Likewise.
+	(fnmadf4_fpu): Likewise.
+	(*adddf3_fpu): Likewise.
+	(*subdf3_fpu): Likewise.
+	(*muldf3_fpu): Likewise.
+	(divdf3): Likewise.
+	(sqrtdf2): Likewise.
+	(*cmpdf_fpu): Likewise.
+	(*cmpdf_trap_fpu): Likewise.
+	(extendsfdf2): Likewise.
+	(floatsidf2): Likewise.
+	(floatunssidf2):Likewise.
+	(fixuns_truncsfdi2): Likewise.
+	(fix_truncsfdi2): Likewise.
+	(fixuns_truncsfsi2): Likewise.
+	(fix_truncsfsi2): Likewise.
+	(floatdidf2): Likewise.
+	(floatunsdidf2): Likewise.
+	(fixuns_truncdfdi2): Likewise.
+	(fix_truncdfdi2): Likewise.
+	(truncdfsf2): Likewise.
+	(floatdisf2): Likewise.
+	(floatunsdisf2): Likewise.
+	(fixuns_truncdfsi2): Likewise.
+	(fix_truncdfsi2): Likewise.
+	* config/arc/predicates.md (even_register_operand): New
+	predicate.
+	* doc/invoke.texi (ARC): Add mabi description.
+	* testsuite/gcc.target/arc/abitest1.S: New file.
+	* testsuite/gcc.target/arc/pargs-1.c: Likewise.
+
 2015-03-24  Claudiu Zissulescu <claziss@synopsys.com>
 	    Andrew Burgess  <andrew.burgess@embecosm.com>
 

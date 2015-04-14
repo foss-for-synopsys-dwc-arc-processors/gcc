@@ -208,6 +208,9 @@ ASM_DEFOPT "%{matomic:-mlock} \
 %{mcpu=ARCv2HS:-mHS} \
 "
 
+#define OPTION_DEFAULT_SPECS \
+  {"abi", "%{!mabi=*:-mabi=%(VALUE)}" }
+
 #if DEFAULT_LIBC == LIBC_UCLIBC
 /* Note that the default is to link against dynamic libraries, if they are
    available.  Override with -static.  */
@@ -733,10 +736,10 @@ enum reg_class
   "MPY_WRITABLE_CORE_REGS", \
   "WRITABLE_CORE_REGS",     \
   "CHEAP_CORE_REGS",	    \
+  "ALL_CORE_REGS",	    \
   "R0R3_CODE_DENSITY_REGS", \
   "R0R1_CODE_DENSITY_REGS", \
   "AC16_H_REGS",	    \
-  "ALL_CORE_REGS",	    \
   "ALL_REGS"          	    \
 }
 

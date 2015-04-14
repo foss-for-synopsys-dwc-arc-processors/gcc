@@ -11465,6 +11465,12 @@ be specified individually. Only valid for ARC EM and ARC HS cores.
 Controls the .di instruction extension of atomic instructions. When
 enabled, the atomic operations operates directly on external memory.
 
+@item -mabi=@var{name}
+@opindex mabi
+Generate code for the specified ABI@.  Permissible values are:
+@samp{std}, and @samp{mwabi}.  This command make sense only for ARC HS
+cores.
+
 @end table
 
 The following options are passed through to the assembler, and also

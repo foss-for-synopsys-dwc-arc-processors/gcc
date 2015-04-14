@@ -3293,13 +3293,23 @@ case "${target}" in
 		;;
 
 	arc*-*-*) # was:	arc*-*-linux-uclibc)
-		supported_defaults="cpu"
+		supported_defaults="cpu abi"
 		case $with_cpu in
 		  arc600|arc601|arc700|EM|HS|arcem|archs)
 			;;
 		  *) echo "Unknown cpu type"
 			exit 1
 			;;
+		esac
+
+		case ${with_abi} in
+		"" | std | mwabi)
+		   # OK
+		   ;;
+		*)
+		   echo "Unknown ABI used in --with-abi=$with_abi"
+		   exit 1
+		   ;;
 		esac
 		;;
 

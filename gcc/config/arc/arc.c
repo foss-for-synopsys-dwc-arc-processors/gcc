@@ -5620,12 +5620,14 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
 
   while (FUNCTION_ARG_REGNO_P (reg_idx))
     {
-      nregs = arc_hard_regno_nregs (reg_idx, mode, type);
-      /* We cannot partialy pass some modes for HS (i.e. DImode). As
-	 the DI regs needs to be in even-odd register pair, when
-	 comming to partial passing of an argument, the code bellow
-	 will not find a suitable register pait. This works only for
-	 even-odd register pairs (2-regs)! */
+      nregs = arc_hard_regno_nregs ((arc_abi == ARC_ABI_MWABI) ? 0 : reg_idx,
+				    mode, type);
+      /* We cannot partialy pass some modes for HS (i.e. DImode,
+	 non-compatible mode). As the DI regs needs to be in even-odd
+	 register pair, when comming to partial passing of an
+	 argument, the code bellow will not find a suitable register
+	 pair. This works only for even-odd register pairs
+	 (2-regs).  */
       if (nregs)
 	{
 	  found = true;
@@ -5663,11 +5665,15 @@ arc_function_args_impl (CUMULATIVE_ARGS *cum,
       return gen_rtx_REG (mode, reg_location);
     }
 
-  if (advance && named)
-    cum->last_reg = MAX_ARC_PARM_REGS; /* MAX out any other free register
-					  if a named arguments goes on stack.
-					  This avoids any usage of the remaining
-					  regs for further argument pasing. */
+  if (advance && named && (arc_abi != ARC_ABI_PACK))
+    {
+       /* MAX out any other free register if a named arguments goes on
+	  stack.  This avoids any usage of the remaining regs for
+	  further argument pasing.  */
+      cum->last_reg = MAX_ARC_PARM_REGS;
+      for (int i = 0 ; i < MAX_ARC_PARM_REGS; i++)
+	cum->avail[i] = false;
+    }
 
   return NULL_RTX;
 }
@@ -6599,7 +6605,7 @@ arc_return_in_memory (const_tree type, const_tree fntype ATTRIBUTE_UNUSED)
   else
     {
       HOST_WIDE_INT size = int_size_in_bytes (type);
-      return (size == -1 || size > 8);
+      return (size == -1 || size > (TARGET_V2 ? 16 : 8));
     }
 }
 
@@ -10095,6 +10101,16 @@ arc_split_move (rtx *operands)
       return val;
   }
 
+  if (TARGET_HS && TARGET_LL64
+      && ((memory_operand (operands[0], mode)
+	   && even_register_operand (operands[1], mode))
+	  || (memory_operand (operands[1], mode)
+	      && even_register_operand (operands[0], mode))))
+    {
+      rtx val = gen_rtx_SET (VOIDmode, operands[0], operands[1]);
+      return val;
+    }
+
   for (i = 0; i < 2; i++)
     {
       if (MEM_P (operands[i]) && auto_inc_p (XEXP (operands[i], 0)))
@@ -11453,6 +11469,7 @@ void
 arc_dump_stack_info(FILE *stream,
 		    const char *name)
 {
+  int i;
   struct arc_frame_info *frame_info = &cfun->machine->frame_info;
 
   fprintf (stream, "\n#####################\n");
@@ -11460,7 +11477,7 @@ arc_dump_stack_info(FILE *stream,
   assemble_name (stream, name);
   fprintf (stream, "\n#\n");
   fprintf (stream, "# Local Frame (%d bytes):\n", frame_info->total_size);
-  for (int i = 0; i <= 31; i++)
+  for (i = 0; i <= 31; i++)
     {
       if (frame_info->gmask & (1L << i))
 	{
@@ -11490,31 +11507,47 @@ arc_dump_stack_info(FILE *stream,
 	    }
 	  if (REG_P (rtl))
 	    {
-	      unsigned regno = REGNO(rtl);
-	      enum machine_mode mode = GET_MODE(rtl);
-	      arc_print_format_registers(stream, regno, mode);
+	      unsigned regno = REGNO (rtl);
+	      enum machine_mode mode = GET_MODE (rtl);
+	      arc_print_format_registers (stream, regno, mode);
 	    }
-	  else if (MEM_P(rtl))
+	  else if (MEM_P (rtl))
 	    {
-	      rtx addr = XEXP(rtl, 0);
+	      rtx addr = XEXP (rtl, 0);
 	      long argPtrOfs = frame_info->total_size -
-		arc_initial_elimination_offset(ARG_POINTER_REGNUM,
-					       (arc_frame_pointer_required() ?
+		arc_initial_elimination_offset (ARG_POINTER_REGNUM,
+					       (arc_frame_pointer_required () ?
 						FRAME_POINTER_REGNUM : STACK_POINTER_REGNUM));
-	      if (GET_CODE(addr) == PLUS)
+	      if (GET_CODE (addr) == PLUS)
 		{
-		  rtx ofs = XEXP(addr, 1);
-		  gcc_assert(CONST_INT_P(ofs));
-		  argPtrOfs += INTVAL(ofs);
+		  rtx ofs = XEXP (addr, 1);
+		  gcc_assert (CONST_INT_P (ofs));
+		  argPtrOfs += INTVAL (ofs);
 		}
-	      fprintf(stream, "%s[%4ld]`                 (%d)\n",
-		      (arc_frame_pointer_required() ? "fp" : "sp"),
-		      argPtrOfs,
-		      GET_MODE_SIZE(GET_MODE(rtl)));
+	      fprintf (stream, "%s[%4ld]`                 (%d)\n",
+		       (arc_frame_pointer_required () ? "fp" : "sp"),
+		       argPtrOfs,
+		       GET_MODE_SIZE (GET_MODE (rtl)));
+	    }
+	  else if (GET_CODE (rtl) == PARALLEL)
+	    {
+	      fprintf(stream,"xvec`                 (%d)\n",
+		      GET_MODE_SIZE (GET_MODE(rtl)));
+	      for (i = 0; i < XVECLEN (rtl, 0); i++)
+		{
+		  rtx xv = XEXP (XVECEXP (rtl, 0, i), 0);
+		  if (REG_P (xv))
+		    {
+		      unsigned regno = REGNO (xv);
+		      enum machine_mode mode = GET_MODE (xv);
+		      fprintf(stream,"#                         `");
+		      arc_print_format_registers (stream, regno, mode);
+		    }
+		}
 	    }
 	  else
 	    {
-		  fprintf(stream,"N.A. `\n");
+	      fprintf(stream,"N.A. `\n");
 	    }
 	}
       parm = TREE_CHAIN (parm);

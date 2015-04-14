@@ -100,10 +100,10 @@
    (set_attr "type" "fpus")])
 
 (define_expand "fmadf4"
-  [(match_operand:DF 0 "register_operand" "")
-   (match_operand:DF 1 "register_operand" "")
-   (match_operand:DF 2 "register_operand" "")
-   (match_operand:DF 3 "register_operand" "")]
+  [(match_operand:DF 0 "even_register_operand" "")
+   (match_operand:DF 1 "even_register_operand" "")
+   (match_operand:DF 2 "even_register_operand" "")
+   (match_operand:DF 3 "even_register_operand" "")]
   "TARGET_FP_DFUZED"
   "{
    emit_insn (gen_fmadf4_split (operands[0], operands[1], operands[2], operands[3]));
@@ -111,10 +111,10 @@
    }")
 
 (define_insn_and_split "fmadf4_split"
-  [(set (match_operand:DF 0 "register_operand"        "")
-	(fma:DF (match_operand:DF 1 "register_operand" "")
-		(match_operand:DF 2 "register_operand" "")
-		(match_operand:DF 3 "register_operand" "")))
+  [(set (match_operand:DF 0 "even_register_operand"        "")
+	(fma:DF (match_operand:DF 1 "even_register_operand" "")
+		(match_operand:DF 2 "even_register_operand" "")
+		(match_operand:DF 3 "even_register_operand" "")))
    (clobber (reg:DF ARCV2_ACC))]
   "TARGET_FP_DFUZED"
   "#"
@@ -129,10 +129,10 @@
 )
 
 (define_expand "fnmadf4"
-  [(match_operand:DF 0 "register_operand" "")
-   (match_operand:DF 1 "register_operand" "")
-   (match_operand:DF 2 "register_operand" "")
-   (match_operand:DF 3 "register_operand" "")]
+  [(match_operand:DF 0 "even_register_operand" "")
+   (match_operand:DF 1 "even_register_operand" "")
+   (match_operand:DF 2 "even_register_operand" "")
+   (match_operand:DF 3 "even_register_operand" "")]
   "TARGET_FP_DFUZED"
   "{
    emit_insn (gen_fnmadf4_split (operands[0], operands[1], operands[2], operands[3]));
@@ -140,10 +140,10 @@
    }")
 
 (define_insn_and_split "fnmadf4_split"
-  [(set (match_operand:DF 0 "register_operand"                 "")
-	(fma:DF (neg:DF (match_operand:DF 1 "register_operand" ""))
-		(match_operand:DF 2 "register_operand"         "")
-		(match_operand:DF 3 "register_operand"         "")))
+  [(set (match_operand:DF 0 "even_register_operand"                 "")
+	(fma:DF (neg:DF (match_operand:DF 1 "even_register_operand" ""))
+		(match_operand:DF 2 "even_register_operand"         "")
+		(match_operand:DF 3 "even_register_operand"         "")))
    (clobber (reg:DF ARCV2_ACC))]
   "TARGET_FP_DFUZED"
   "#"
@@ -157,9 +157,9 @@
   }")
 
 (define_insn "fmadf4_fpu"
-  [(set (match_operand:DF 0 "register_operand"        "=r,r")
-	(fma:DF (match_operand:DF 1 "register_operand" "0,r")
-		(match_operand:DF 2 "register_operand" "r,r")
+  [(set (match_operand:DF 0 "even_register_operand"        "=r,r")
+	(fma:DF (match_operand:DF 1 "even_register_operand" "0,r")
+		(match_operand:DF 2 "even_register_operand" "r,r")
 		(reg:DF ARCV2_ACC)))]
   "TARGET_FP_DFUZED"
   "fdmadd%? %0,%1,%2"
@@ -170,9 +170,9 @@
    (set_attr "type" "fpus")])
 
 (define_insn "fnmadf4_fpu"
-  [(set (match_operand:DF 0 "register_operand"                "=r,r")
-	(fma:DF (neg:DF (match_operand:DF 1 "register_operand" "0,r"))
-		(match_operand:DF 2 "register_operand"         "r,r")
+  [(set (match_operand:DF 0 "even_register_operand"                "=r,r")
+	(fma:DF (neg:DF (match_operand:DF 1 "even_register_operand" "0,r"))
+		(match_operand:DF 2 "even_register_operand"         "r,r")
 		(reg:DF ARCV2_ACC)))]
   "TARGET_FP_DFUZED"
   "fdmsub%? %0,%1,%2"
@@ -244,9 +244,9 @@
 
 ;; Addition
 (define_insn "*adddf3_fpu"
-  [(set (match_operand:DF 0 "register_operand"          "=r,r")
-	(plus:DF (match_operand:DF 1 "register_operand"  "0,r")
-		 (match_operand:DF 2 "register_operand"  "r,r")))]
+  [(set (match_operand:DF 0 "even_register_operand"          "=r,r")
+	(plus:DF (match_operand:DF 1 "even_register_operand"  "0,r")
+		 (match_operand:DF 2 "even_register_operand"  "r,r")))]
   "TARGET_FP_DOUBLE"
   "fdadd%? %0,%1,%2"
   [(set_attr "length" "4,4")
@@ -259,9 +259,9 @@
 
 ;; Subtraction
 (define_insn "*subdf3_fpu"
-  [(set (match_operand:DF 0 "register_operand"           "=r,r")
-	(minus:DF (match_operand:DF 1 "register_operand"  "0,r")
-		  (match_operand:DF 2 "register_operand"  "r,r")))]
+  [(set (match_operand:DF 0 "even_register_operand"           "=r,r")
+	(minus:DF (match_operand:DF 1 "even_register_operand"  "0,r")
+		  (match_operand:DF 2 "even_register_operand"  "r,r")))]
   "TARGET_FP_DOUBLE"
   "fdsub%? %0,%1,%2"
   [(set_attr "length" "4,4")
@@ -273,9 +273,9 @@
 
 ;; Multiplication
 (define_insn "*muldf3_fpu"
-  [(set (match_operand:DF 0 "register_operand"          "=r,r")
-	(mult:DF (match_operand:DF 1 "register_operand"  "0,r")
-		 (match_operand:DF 2 "register_operand"  "r,r")))]
+  [(set (match_operand:DF 0 "even_register_operand"          "=r,r")
+	(mult:DF (match_operand:DF 1 "even_register_operand"  "0,r")
+		 (match_operand:DF 2 "even_register_operand"  "r,r")))]
   "TARGET_FP_DOUBLE"
   "fdmul%? %0,%1,%2"
   [(set_attr "length" "4,4")
@@ -287,9 +287,9 @@
 
 ;; Division
 (define_insn "divdf3"
-  [(set (match_operand:DF 0 "register_operand"         "=r,r")
-	(div:DF (match_operand:DF 1 "register_operand"  "0,r")
-		(match_operand:DF 2 "register_operand"  "r,r")))]
+  [(set (match_operand:DF 0 "even_register_operand"         "=r,r")
+	(div:DF (match_operand:DF 1 "even_register_operand"  "0,r")
+		(match_operand:DF 2 "even_register_operand"  "r,r")))]
   "TARGET_FP_DSQRT"
   "fddiv%? %0,%1,%2"
   [(set_attr "length" "4,4")
@@ -301,8 +301,8 @@
 
 ;; Square root
 (define_insn "sqrtdf2"
-  [(set (match_operand:DF 0 "register_operand"          "=r")
-	(sqrt:DF (match_operand:DF 1 "register_operand"  "r")))]
+  [(set (match_operand:DF 0 "even_register_operand"          "=r")
+	(sqrt:DF (match_operand:DF 1 "even_register_operand"  "r")))]
   "TARGET_FP_DSQRT"
   "fdsqrt %0,%1"
   [(set_attr "length" "4")
@@ -311,8 +311,8 @@
 ;; Comparison
 (define_insn "*cmpdf_fpu"
   [(set (reg:CC_FPU CC_REG)
-	(compare:CC_FPU (match_operand:DF 0 "register_operand"  " r")
-			(match_operand:DF 1 "register_operand"  "rL")))]
+	(compare:CC_FPU (match_operand:DF 0 "even_register_operand"  "r")
+			(match_operand:DF 1 "even_register_operand"  "r")))]
   "TARGET_FP_DOUBLE"
   "fdcmp%? %0, %1"
   [(set_attr "length" "4")
@@ -323,8 +323,8 @@
 
 (define_insn "*cmpdf_trap_fpu"
   [(set (reg:CC_FPUE CC_REG)
-	(compare:CC_FPUE (match_operand:DF 0 "register_operand"  "r")
-			 (match_operand:DF 1 "register_operand"  "r")))]
+	(compare:CC_FPUE (match_operand:DF 0 "even_register_operand"  "r")
+			 (match_operand:DF 1 "even_register_operand"  "r")))]
   "TARGET_FP_DOUBLE"
   "fdcmpf%? %0, %1"
   [(set_attr "length" "4")
@@ -341,19 +341,19 @@
 
 ;; SF->DF
 (define_insn "extendsfdf2"
-  [(set (match_operand:DF 0 "register_operand"                   "=r,r,  r")
-	(float_extend:DF (match_operand:SF 1 "nonmemory_operand"  "0,r,Cal")))]
+  [(set (match_operand:DF 0 "even_register_operand"             "=r,r")
+	(float_extend:DF (match_operand:SF 1 "register_operand"  "0,r")))]
   "TARGET_FP_DCONV"
   "fcvt32_64%? %0,%1,0x04\\t;fs2d %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; SI->DF
 (define_insn "floatsidf2"
-  [(set (match_operand:DF 0 "register_operand"           "=r,r,  r")
+  [(set (match_operand:DF 0 "even_register_operand"      "=r,r,  r")
 	(float:DF (match_operand:SI 1 "nonmemory_operand" "0,r,Cal")))]
   "TARGET_FP_DCONV"
   "fcvt32_64%? %0,%1,0x02\\t;fint2d %0,%1"
@@ -365,7 +365,7 @@
 
 ;; uSI->DF
 (define_insn "floatunssidf2"
-  [(set (match_operand:DF 0 "register_operand"                    "=r,r,  r")
+  [(set (match_operand:DF 0 "even_register_operand"               "=r,r,  r")
 	(unsigned_float:DF (match_operand:SI 1 "nonmemory_operand" "0,r,Cal")))]
   "TARGET_FP_DCONV"
   "fcvt32_64%? %0,%1,0x00\\t;fuint2d %0,%1"
@@ -377,26 +377,26 @@
 
 ;; SF->uDI (using rounding towards zero)
 (define_insn "fixuns_truncsfdi2"
-  [(set (match_operand:DI 0 "register_operand"                         "=r,r,  r")
-	(unsigned_fix:DI (fix:SF (match_operand:SF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:DI 0 "even_register_operand"                    "=r,r")
+	(unsigned_fix:DI (fix:SF (match_operand:SF 1 "register_operand" "0,r"))))]
   "TARGET_FP_DCONV"
   "fcvt32_64%? %0,%1,0x09\\t;fs2ul_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; SF->DI (using rounding towards zero)
 (define_insn "fix_truncsfdi2"
-  [(set (match_operand:DI 0 "register_operand"                "=r,r,  r")
-	(fix:DI (fix:SF (match_operand:SF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:DI 0 "even_register_operand"           "=r,r")
+	(fix:DI (fix:SF (match_operand:SF 1 "register_operand" "0,r"))))]
   "TARGET_FP_DCONV"
   "fcvt32_64%? %0,%1,0x0B\\t;fs2l_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; SI->SF
@@ -425,132 +425,132 @@
 
 ;; SF->uSI (using rounding towards zero)
 (define_insn "fixuns_truncsfsi2"
-  [(set (match_operand:SI 0 "register_operand"                         "=r,r,  r")
-	(unsigned_fix:SI (fix:SF (match_operand:SF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:SI 0 "register_operand"                         "=r,r")
+	(unsigned_fix:SI (fix:SF (match_operand:SF 1 "register_operand" "0,r"))))]
   "TARGET_FP_SCONV"
   "fcvt32%? %0,%1,0x09\\t;fs2uint_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; SF->SI (using rounding towards zero)
 (define_insn "fix_truncsfsi2"
-  [(set (match_operand:SI 0 "register_operand"                "=r,r,  r")
-	(fix:SI (fix:SF (match_operand:SF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:SI 0 "register_operand"                "=r,r")
+	(fix:SI (fix:SF (match_operand:SF 1 "register_operand" "0,r"))))]
   "TARGET_FP_SCONV"
   "fcvt32%? %0,%1,0x0B\\t;fs2int_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; DI->DF
 (define_insn "floatdidf2"
-  [(set (match_operand:DF 0 "register_operand"           "=r,r,  r")
-	(float:DF (match_operand:DI 1 "nonmemory_operand" "0,r,Cal")))]
+  [(set (match_operand:DF 0 "even_register_operand"          "=r,r")
+	(float:DF (match_operand:DI 1 "even_register_operand" "0,r")))]
   "TARGET_FP_DCONV"
   "fcvt64%? %0,%1,0x02\\t;fl2d %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; uDI->DF
 (define_insn "floatunsdidf2"
-  [(set (match_operand:DF 0 "register_operand"                    "=r,r,  r")
-	(unsigned_float:DF (match_operand:DI 1 "nonmemory_operand" "0,r,Cal")))]
+  [(set (match_operand:DF 0 "even_register_operand"                   "=r,r")
+	(unsigned_float:DF (match_operand:DI 1 "even_register_operand" "0,r")))]
   "TARGET_FP_DCONV"
   "fcvt64%? %0,%1,0x00\\t;ful2d %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; DF->uDI (using rounding towards zero)
 (define_insn "fixuns_truncdfdi2"
-  [(set (match_operand:DI 0 "register_operand"                         "=r,r,  r")
-	(unsigned_fix:DI (fix:DF (match_operand:DF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:DI 0 "even_register_operand"                         "=r,r")
+	(unsigned_fix:DI (fix:DF (match_operand:DF 1 "even_register_operand" "0,r"))))]
   "TARGET_FP_DCONV"
   "fcvt64%? %0,%1,0x09\\t;fd2ul_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; DF->DI (using rounding towards zero)
 (define_insn "fix_truncdfdi2"
-  [(set (match_operand:DI 0 "register_operand"                "=r,r,  r")
-	(fix:DI (fix:DF (match_operand:DF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:DI 0 "even_register_operand"                "=r,r")
+	(fix:DI (fix:DF (match_operand:DF 1 "even_register_operand" "0,r"))))]
   "TARGET_FP_DCONV"
   "fcvt64%? %0,%1,0x0B\\t;fd2l_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; DF->SF
 (define_insn "truncdfsf2"
-  [(set (match_operand:SF 0 "register_operand"                   "=r,r,  r")
-	(float_truncate:SF (match_operand:DF 1 "register_operand" "0,r,Cal")))]
+  [(set (match_operand:SF 0 "register_operand"                        "=r,r")
+	(float_truncate:SF (match_operand:DF 1 "even_register_operand" "0,r")))]
   "TARGET_FP_DCONV"
   "fcvt64_32%? %0,%1,0x04\\t;fd2s %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; DI->SF
 (define_insn "floatdisf2"
-  [(set (match_operand:SF 0 "register_operand"           "=r,r,  r")
-	(float:SF (match_operand:DI 1 "nonmemory_operand" "0,r,Cal")))]
+  [(set (match_operand:SF 0 "register_operand"               "=r,r")
+	(float:SF (match_operand:DI 1 "even_register_operand" "0,r")))]
   "TARGET_FP_DCONV"
   "fcvt64_32%? %0,%1,0x02\\t;fl2s %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; uDI->SF
 (define_insn "floatunsdisf2"
-  [(set (match_operand:SF 0 "register_operand"                    "=r,r,  r")
-	(unsigned_float:SF (match_operand:DI 1 "nonmemory_operand" "0,r,Cal")))]
+  [(set (match_operand:SF 0 "register_operand"                        "=r,r")
+	(unsigned_float:SF (match_operand:DI 1 "even_register_operand" "0,r")))]
   "TARGET_FP_DCONV"
   "fcvt64_32%? %0,%1,0x00\\t;ful2s %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; DF->uSI (using rounding towards zero)
 (define_insn "fixuns_truncdfsi2"
-  [(set (match_operand:SI 0 "register_operand"                         "=r,r,  r")
-	(unsigned_fix:SI (fix:DF (match_operand:DF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:SI 0 "register_operand"                              "=r,r")
+	(unsigned_fix:SI (fix:DF (match_operand:DF 1 "even_register_operand" "0,r"))))]
   "TARGET_FP_DCONV"
   "fcvt64_32%? %0,%1,0x09\\t;fd2uint_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )
 
 ;; DF->SI (using rounding towards zero)
 (define_insn "fix_truncdfsi2"
-  [(set (match_operand:SI 0 "register_operand"                "=r,r,  r")
-	(fix:SI (fix:DF (match_operand:DF 1 "register_operand" "0,r,Cal"))))]
+  [(set (match_operand:SI 0 "register_operand"                     "=r,r")
+	(fix:SI (fix:DF (match_operand:DF 1 "even_register_operand" "0,r"))))]
   "TARGET_FP_DCONV"
   "fcvt64_32%? %0,%1,0x0B\\t;fd2int_rz %0,%1"
-  [(set_attr "length" "4,4,8")
+  [(set_attr "length" "4,4")
    (set_attr "iscompact" "false")
    (set_attr "type" "fpus")
-   (set_attr "predicable" "yes,no,no")]
+   (set_attr "predicable" "yes,no")]
 )

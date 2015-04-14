@@ -771,3 +771,14 @@
 (define_predicate "mem_noofs_operand"
   (and (match_code "mem")
        (match_code "reg" "0")))
+
+(define_predicate "even_register_operand"
+  (match_code "reg,subreg")
+  {
+   if (!register_operand (op, mode))
+      return 0;
+   if (GET_CODE (op) == SUBREG)
+      op = SUBREG_REG (op);
+   return ((REGNO (op) >= FIRST_PSEUDO_REGISTER)
+	   || ((REGNO (op) & 1) == 0));
+  })
