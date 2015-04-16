@@ -1,3 +1,8 @@
+2015-04-16  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_strict_argument_naming): Force strict
+          argument naming for all cpu configurations.
+
 2015-04-14  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config.gcc <arc>: Add --with-abi=

@@ -2017,10 +2017,10 @@ arc_setup_incoming_varargs (cumulative_args_t args_so_far,
     }
 }
 
-/* Strict argument naming is required only for HS. */
+/* Strict argument naming is required.  */
 static bool arc_strict_argument_naming(cumulative_args_t cum ATTRIBUTE_UNUSED)
 {
-    return TARGET_HS;
+    return true;
 }
 
 /* Cost functions.  */
