@@ -1,3 +1,8 @@
+2015-05-07  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (nop): Remove attribute "cond"
+	(nopv): Likewise.
+
 2015-04-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (arc_expand_prologue): Restore blink register

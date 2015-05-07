@@ -4091,7 +4091,6 @@
   "nop%?"
   [(set_attr "type" "misc")
    (set_attr "iscompact" "true")
-   (set_attr "cond" "canuse")
    (set_attr "length" "2")])
 
 (define_insn "nopv"
@@ -4100,7 +4099,6 @@
   "nop%?"
   [(set_attr "type" "misc")
    (set_attr "iscompact" "true")
-   (set_attr "cond" "canuse")
    (set_attr "length" "2")])
 
 ;; Special pattern to flush the icache.
