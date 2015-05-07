@@ -492,7 +492,7 @@ Objective-C and Objective-C++ Dialects}.
 -mmpy -mmpy-option=@var{multo} -mmpy16 -mmul32x16 -mmul64 @gol
 -mnorm -mspfp -mspfp-compact -mspfp-fast -msimd -msoft-float -mswap @gol
 -mdsp-packa -mdvbf -mlock -mmac-d16 -mmac-24 -mrtsc -mswape @gol
--mirq-ctrl-saved -mbypass-cache @gol
+-mirq-ctrl-saved -mbypass-cache -mabi=@var{name} @gol
 -mtelephony -mxy -misize -mannotate-align -marclinux -marclinux_prof @gol
 -mepilogue-cfi -mno-epilogue-cfi -mlong-calls -mmedium-calls @gol
 -mno-sdata -mucb-mcount -mvolatile-cache -mno-volatile-cache @gol
