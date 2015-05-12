@@ -1,3 +1,7 @@
+2015-05-12  Anton Kolesov  <Anton.Kolesov@synopsys.com>
+
+	* config/arc/arc.opt (mabi): Update help text.
+
 2015-05-07  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (nop): Remove attribute "cond"
