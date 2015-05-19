@@ -1,3 +1,8 @@
+2015-05-19  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Sched1 only for speed
+          options.
+
 2015-05-12  Anton Kolesov  <Anton.Kolesov@synopsys.com>
 
 	* config/arc/arc.opt (mabi): Update help text.
