@@ -11244,7 +11244,8 @@ option is default on when the tool chain is configured with
 
 @item -mdiv-rem
 @opindex mdiv-rem
-Enable DIV/REM instructions for ARCv2 cores@.
+Enable DIV/REM instructions for ARCv2 cores.  This option is default
+on for ARC HS core@.
 
 @item -mfpu=@var{fpu}
 @opindex mfpu
