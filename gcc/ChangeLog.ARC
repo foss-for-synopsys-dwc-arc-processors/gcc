@@ -5,7 +5,7 @@
 	* config/arc/arc.c (arc_init): Likewise.
 	* doc/invoke.texi: Update document.
 	* config/arc/arc.opt: Add fpuda_div, fpuda_fma, and fpuda_all
-        options.
+        options. Remove mno-volatile-cache.
 
 2015-05-19  Claudiu Zissulescu <claziss@synopsys.com>
 
