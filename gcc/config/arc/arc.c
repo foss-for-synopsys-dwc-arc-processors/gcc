@@ -895,6 +895,10 @@ arc_init (void)
 	error ("FPU options are available for ARC HS/EM only");
     }
 
+  /* Support matomic only for ARC700 and ARC HS.  */
+  if (TARGET_ATOMIC && !(TARGET_ARC700 || TARGET_HS))
+    error ("-matomic only supported for ARC700 or ARC HS");
+
   /* Support mul64 generation only for ARC600.  */
   if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_V2))
       error ("-mmul64 not supported for ARC700 or ARCv2");

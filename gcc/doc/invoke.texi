@@ -11454,21 +11454,21 @@ Generate swap instructions, default on for ARC HS.
 @item -matomic
 @opindex matomic
 This enables Locked Load/Store Conditional extension, and to use them
-for implementing the GCC's atomic builtins. Not available for ARC 6xx
-cores.
+for implementing the GCC's atomic builtins.  Only available for ARC
+700 and ARC HS cores.
 
 @item -mll64
 @opindex mll64
-This enables 64-bit load/store extension. Only available for ARC HS
+This enables 64-bit load/store extension.  Only available for ARC HS
 cores.
 
 @item -mirq-ctrl-saved="REGS"
 @opindex mirq-ctrl-saved
 Specifies the registers that the processor saves on interrupt entry
-and exit. Permited values: r0-r25, fp, ilink, blink, and
-lp_count. Registers needs to be specified as ranges such as "r0-r3". A
-register range always starts with r0. Registers blink and lp_count can
-be specified individually. Only valid for ARC EM and ARC HS cores.
+and exit.  Permited values: r0-r25, fp, ilink, blink, and lp_count.
+Registers needs to be specified as ranges such as "r0-r3".  A register
+range always starts with r0.  Registers blink and lp_count can be
+specified individually.  Only valid for ARC EM and ARC HS cores.
 
 @item -mbypass-cache
 @opindex mbypass-cache

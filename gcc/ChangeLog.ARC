@@ -1,3 +1,10 @@
+2015-05-20  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: ATOMIC opts only for ARC 700
+        and ARC HS.
+	* config/arc/arc.c (arc_init): Likewise.
+	* doc/invoke.texi: Update document.
+
 2015-05-19  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Sched1 only for speed
