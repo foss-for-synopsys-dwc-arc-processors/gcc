@@ -11483,7 +11483,7 @@ for implementing the GCC's atomic builtins.  Only available for ARC
 @item -mll64
 @opindex mll64
 This enables 64-bit load/store extension.  Only available for ARC HS
-cores.
+cores (default on).
 
 @item -mirq-ctrl-saved="REGS"
 @opindex mirq-ctrl-saved
