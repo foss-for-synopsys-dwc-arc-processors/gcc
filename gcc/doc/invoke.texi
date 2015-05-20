@@ -11403,25 +11403,26 @@ sequential. The following instructions are additionaly enabled: MPY,
 MPYU, MPYM, MPYMU, and MPY_S.
 
 @item 7
-@itemx short vector
-The multiply option is set to accept short vector extensions (i.e., 32
-bit vectors). The following instructions are additionaly enabled: MAC,
-MACU, DMPYH, DMPYHU, DMACH, DMACHU, VADD2H, VSUB2H, VADDSUB2H, and
-VSUBADD2H. Not available for ARC EM.
+@itemx plus_dmpy
+The multiply option is set to plus_dmpy.  It also accepts short vector
+extensions (i.e., 32 bit vectors).  The following instructions are
+additionaly enabled: MAC, MACU, DMPYH, DMPYHU, DMACH, DMACHU, VADD2H,
+VSUB2H, VADDSUB2H, and VSUBADD2H.  Not available for ARC EM.
 
 @item 8
-@itemx double MAC
-The multiply option is set to accept short vector extensions, and
-double MAC operations. The following instructions are additionaly
-enabled: MPYD, MPYDU, MACD, MACDU, VMPY2H, and VMPY2HU. Not available
-for ARC EM.
+@itemx plusmacd
+The multiply option is set to plusmacd.  It also accept short vector
+extensions, and double MAC operations.  The following instructions are
+additionaly enabled: MPYD, MPYDU, MACD, MACDU, VMPY2H, and
+VMPY2HU. Not available for ARC EM.
 
 @item 9
-@itemx 64 bit
-The multiply option is set to accept 64 bit operations. The following
-instructions are additionaly enabled: QMPYH, QMPYHU, DMPYWH, DMPYWHU,
-QMACH, QMACHU, DMACWH, DMACWHU, VADD4H, VSUB4H, VADDSUB4H, VSUBADD4H,
-VADD2, VSUB2, VADDSUB, and VSUBADD. Not available for ARC EM.
+@itemx plus_qmacw
+The multiply option is set to plus_qmacw.  It also accept 64 bit
+operations.  The following instructions are additionaly enabled:
+QMPYH, QMPYHU, DMPYWH, DMPYWHU, QMACH, QMACHU, DMACWH, DMACWHU,
+VADD4H, VSUB4H, VADDSUB4H, VSUBADD4H, VADD2, VSUB2, VADDSUB, and
+VSUBADD.  Not available for ARC EM.
 
 @end table
 

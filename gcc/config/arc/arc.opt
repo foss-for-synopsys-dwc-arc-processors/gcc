@@ -103,7 +103,7 @@ Same as -mcpu=archs
 
 mmpy-option=
 Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
--mmpy-option={0,1,2,3,4,5,6,7,8,9} Compile ARCv2 code with a multiplier design option. WLH1 is default on
+-mmpy-option={0,1,2,3,4,5,6,7,8,9} Compile ARCv2 code with a multiplier design option. Option 2 is default on.  
 
 mmpy16
 Target Report Mask(MPY16_SET)
