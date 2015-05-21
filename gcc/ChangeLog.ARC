@@ -1,3 +1,7 @@
+2015-05-20  Anton Kolesov  <Anton.Kolesov@synopsys.com>
+
+	* config.gcc: Allow configuration without --with-cpu=.
+
 2015-05-20  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: ATOMIC opts only for ARC 700
