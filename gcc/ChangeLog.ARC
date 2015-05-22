@@ -2,6 +2,11 @@
 
 	* testsuite/gcc.dg/builtins-config.h (HAVE_C99_RUNTIME):
         Undefine for ARC processors.
+	* doc/invoke.texi: Update document.
+	* config/arc/arc.c (arc_init): Only selected mpy
+        configurations allowed for ARC HS.
+	* config/arc/arc.h (TARGET_CPU_DEFAULT): Use ARC700 as default
+        CPU when no configuration option is made.
 
 2015-05-20  Anton Kolesov  <Anton.Kolesov@synopsys.com>
 

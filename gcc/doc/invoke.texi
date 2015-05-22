@@ -11359,8 +11359,10 @@ multiply instructions for ARC 700, and ARCv2 variants.
 
 @item -mmpy-option=@var{multo}
 @opindex mmpy-option
-Compile ARCv2 code with a multiplier design option. @samp{wlh1} is the
-default value.  The recognized values for @var{multo} are:
+Compile ARCv2 code with a multiplier design option.  @samp{wlh1}
+configuration (value 2) is the default value.  For ARC HS values 1, 3,
+4, 5, and 6 are not available.  The recognized values for @var{multo}
+are:
 
 @table @samp
 @item 0

@@ -937,6 +937,11 @@ arc_init (void)
   if (TARGET_LL64 && !TARGET_HS)
     error ("-mll64 available on HS cores only");
 
+  /* Only selected multiplier configurations are available for HS. */
+  if (TARGET_HS && ((arc_mpy_option > 2 && arc_mpy_option < 7)
+		    || (arc_mpy_option == 1)))
+    error ("This multiplier configuration is not available for HS cores");
+
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
   if (flag_pic && (!(TARGET_ARC700 || TARGET_V2)))
     {

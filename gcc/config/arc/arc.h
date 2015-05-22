@@ -44,7 +44,7 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_CPU_generic 6
 
 #ifndef TARGET_CPU_DEFAULT
-#define TARGET_CPU_DEFAULT	TARGET_CPU_generic
+#define TARGET_CPU_DEFAULT	TARGET_CPU_arc700
 #endif
 
 #define SYMBOL_FLAG_SHORT_CALL	(SYMBOL_FLAG_MACH_DEP << 0)
