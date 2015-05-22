@@ -14,6 +14,8 @@
 /* PA HP-UX doesn't have the entire C99 runtime.  */
 #elif defined(__INTERIX)
 /* Interix6 doesn't have the entire C99 runtime.  */
+#elif defined(__arc__)
+/* ARC doesn't have the entire C99 runtime.  */
 #elif defined(__AVR__)
 /* AVR doesn't have the entire C99 runtime.  */
 #elif defined(__FreeBSD__) && (__FreeBSD__ < 9)

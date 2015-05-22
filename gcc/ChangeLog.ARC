@@ -1,3 +1,8 @@
+2015-05-22  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* testsuite/gcc.dg/builtins-config.h (HAVE_C99_RUNTIME):
+        Undefine for ARC processors.
+
 2015-05-20  Anton Kolesov  <Anton.Kolesov@synopsys.com>
 
 	* config.gcc: Allow configuration without --with-cpu=.
