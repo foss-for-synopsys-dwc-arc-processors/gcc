@@ -196,7 +196,7 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
     case OPT_mmpy:
       mmpy_seen = value;
       /* Demode any multiplier option given via -mmpy_option.  */
-      opts->x_arc_mpy_option = value ? 1 : 0;
+      opts->x_arc_mpy_option = value ? 2 : 0;
 
       /* Handle MPY16 option.  */
       switch (mcpu_seen)
