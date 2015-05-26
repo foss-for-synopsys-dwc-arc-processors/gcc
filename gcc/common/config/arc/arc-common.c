@@ -194,17 +194,32 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 
       /* In the case of ARCv2, -mmpy option sets also the -mmpy16 option.  */
     case OPT_mmpy:
-      mmpy_seen = 1;
-      if ((mcpu_seen == PROCESSOR_ARCv2EM)
-	  || (mcpu_seen == PROCESSOR_ARCv2HS))
-	opts->x_target_flags |= MASK_MPY16_SET;
-      /* For V2 chain, by default turn on MPY16.  */
-#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-      opts->x_target_flags |= MASK_MPY16_SET;
-#endif
+      mmpy_seen = value;
       /* Demode any multiplier option given via -mmpy_option.  */
-      if ((opts->x_arc_mpy_option > 0) && !value)
-	opts->x_arc_mpy_option = 1;
+      opts->x_arc_mpy_option = value ? 1 : 0;
+
+      /* Handle MPY16 option.  */
+      switch (mcpu_seen)
+	{
+	case PROCESSOR_ARC700:
+	case PROCESSOR_ARC600:
+	case PROCESSOR_ARC601:
+	  break;
+
+	case PROCESSOR_ARCv2EM:
+	case PROCESSOR_ARCv2HS:
+	  if (value)
+	    opts->x_target_flags |= MASK_MPY16_SET;
+	  break;
+
+	default:
+	  /* For V2 chain, by default turn on MPY16.  */
+#if ((TARGET_CPU_DEFAULT == TARGET_CPU_EM) || (TARGET_CPU_DEFAULT == TARGET_CPU_HS))
+	  if (value)
+	    opts->x_target_flags |= MASK_MPY16_SET;
+#endif
+	  break;
+	}
       break;
 
     case OPT_mmpy16:

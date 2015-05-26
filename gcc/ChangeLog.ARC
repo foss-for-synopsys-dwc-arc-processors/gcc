@@ -1,3 +1,8 @@
+2015-05-26  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c (arc_handle_option): Fix mpy
+        option.
+
 2015-05-22  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* testsuite/gcc.dg/builtins-config.h (HAVE_C99_RUNTIME):
