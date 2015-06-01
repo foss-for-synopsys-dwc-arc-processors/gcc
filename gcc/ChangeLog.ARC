@@ -1,5 +1,9 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.md (eh_return): Remove.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (MUST_SAVE_RETURN_ADDR): Save return
 	address when a frame uses eh_return.
 
