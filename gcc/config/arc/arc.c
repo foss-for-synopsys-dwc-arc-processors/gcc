@@ -2323,10 +2323,13 @@ arc_compute_function_type (struct function *fun)
    instead of r26.
 */
 #define MUST_SAVE_REGISTER(regno, interrupt_p) \
-(((regno) != RETURN_ADDR_REGNUM && (regno) != FRAME_POINTER_REGNUM \
-  && (df_regs_ever_live_p (regno) && (!call_used_regs[regno] || interrupt_p))) \
- || (flag_pic && crtl->uses_pic_offset_table \
-     && regno == PIC_OFFSET_TABLE_REGNUM) )
+  (((regno) != RETURN_ADDR_REGNUM && (regno) != FRAME_POINTER_REGNUM	\
+    && (df_regs_ever_live_p (regno)					\
+	&& (!call_used_regs[regno] || interrupt_p)))			\
+   || (flag_pic && crtl->uses_pic_offset_table				\
+       && regno == PIC_OFFSET_TABLE_REGNUM)				\
+   || (crtl->calls_eh_return						\
+       && (regno > 3 && regno < 28)))
 
 #define MUST_SAVE_RETURN_ADDR \
   (cfun->machine->frame_info.save_return_addr	\

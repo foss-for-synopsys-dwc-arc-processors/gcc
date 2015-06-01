@@ -1,5 +1,10 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (MUST_SAVE_REGISTER): Add calls_eh_return
+	handling.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.h (EH_RETURN_HANDLER_RTX): Define.
 	* config/arc/arc.c (arc_return_slot_offset): Delete.
 	(arc_eh_return_address_location): New function.
