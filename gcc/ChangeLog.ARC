@@ -1,5 +1,11 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_expand_epilogue): Add in
+	EH_RETURN_STACKADJ_RTX.
+	* config/arc/arc.h (EH_RETURN_STACKADJ_RTX): Define.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_compute_frame_size): Ensure that eh_return
 	data registers are spilled.
 

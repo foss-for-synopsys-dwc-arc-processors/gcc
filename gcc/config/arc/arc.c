@@ -3030,6 +3030,11 @@ arc_expand_epilogue (int sibcall_p)
 
       if (size > restored)
 	frame_stack_add (size - restored);
+
+      if (crtl->calls_eh_return)
+	emit_insn (gen_add2_insn (stack_pointer_rtx,
+				  EH_RETURN_STACKADJ_RTX));
+
       /* Emit the return instruction.  */
       if (sibcall_p == FALSE)
 	emit_jump_insn (gen_simple_return ());

@@ -1537,6 +1537,8 @@ extern int arc_return_address_regs[4];
 #define EH_RETURN_DATA_REGNO(N)	\
   ((N) < 2 ? (N) : INVALID_REGNUM)
 
+#define EH_RETURN_STACKADJ_RTX 		gen_rtx_REG (Pmode, 2)
+
 /* Turn off splitting of long stabs.  */
 #define DBX_CONTIN_LENGTH 0
 
