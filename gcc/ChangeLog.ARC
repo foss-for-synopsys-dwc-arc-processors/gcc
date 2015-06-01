@@ -1,5 +1,10 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.h (EH_RETURN_DATA_REGNO): Only support 2 data
+	registers.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.md (eh_return): Remove.
 
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>

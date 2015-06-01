@@ -1535,7 +1535,7 @@ extern int arc_return_address_regs[4];
 #endif
 
 #define EH_RETURN_DATA_REGNO(N)	\
-  ((N) < 4 ? (N) : INVALID_REGNUM)
+  ((N) < 2 ? (N) : INVALID_REGNUM)
 
 /* Turn off splitting of long stabs.  */
 #define DBX_CONTIN_LENGTH 0
