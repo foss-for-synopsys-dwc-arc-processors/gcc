@@ -2560,32 +2560,6 @@ arc_save_restore (rtx base_reg,
 
       for (regno = 0; regno <= 31; regno++)
 	{
-#if 0
-	  if ((gmask & (1L << regno)) != 0)
-	    {
-	      rtx reg = gen_rtx_REG (SImode, regno);
-	      rtx addr, mem;
-
-	      if (*first_offset)
-		{
-		  gcc_assert (!offset);
-		  addr = plus_constant (Pmode, base_reg, *first_offset);
-		  addr = gen_rtx_PRE_MODIFY (Pmode, base_reg, addr);
-		  *first_offset = 0;
-		}
-	      else
-		{
-		  gcc_assert (SMALL_INT (offset));
-		  addr = plus_constant (Pmode, base_reg, offset);
-		}
-	      mem = gen_frame_mem (SImode, addr);
-	      if (epilogue_p)
-		frame_move_inc (reg, mem, base_reg, addr);
-	      else
-		frame_move_inc (mem, reg, base_reg, addr);
-	      offset += UNITS_PER_WORD;
-	    } /* if */
-#else
 	  enum machine_mode mode = SImode;
 	  bool found = false;
 
@@ -2633,7 +2607,6 @@ arc_save_restore (rtx base_reg,
 		  regno ++;
 		}
 	    } /* if */
-#endif
 	} /* for */
     }/* if */
   if (sibthunk_insn)
