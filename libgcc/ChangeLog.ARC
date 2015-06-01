@@ -1,3 +1,9 @@
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	Revert last commit.
+	* unwind-dw2.c: Add back check for EH_RETURN_STACKADJ_RTX being
+	defined.
+
 2015-04-30  Andrew Burgess/C. Zissulescu
 
         * unwind-dw2.c: Comment out EH_RETURN_STACKADJ_RTX.

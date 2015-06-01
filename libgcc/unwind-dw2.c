@@ -1384,7 +1384,7 @@ uw_update_context_1 (struct _Unwind_Context *context, _Unwind_FrameState *fs)
   void *cfa;
   long i;
 
-  //#ifdef EH_RETURN_STACKADJ_RTX
+#ifdef EH_RETURN_STACKADJ_RTX
   /* Special handling here: Many machines do not use a frame pointer,
      and track the CFA only through offsets from the stack pointer from
      one frame to the next.  In this case, the stack pointer is never
@@ -1405,7 +1405,7 @@ uw_update_context_1 (struct _Unwind_Context *context, _Unwind_FrameState *fs)
   if (!_Unwind_GetGRPtr (&orig_context, __builtin_dwarf_sp_column ()))
     _Unwind_SetSpColumn (&orig_context, context->cfa, &tmp_sp);
   _Unwind_SetGRPtr (context, __builtin_dwarf_sp_column (), NULL);
-  //#endif
+#endif
 
   /* Compute this frame's CFA.  */
   switch (fs->regs.cfa_how)
