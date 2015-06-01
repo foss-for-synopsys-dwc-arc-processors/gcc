@@ -2329,7 +2329,8 @@ arc_compute_function_type (struct function *fun)
      && regno == PIC_OFFSET_TABLE_REGNUM) )
 
 #define MUST_SAVE_RETURN_ADDR \
-  (cfun->machine->frame_info.save_return_addr)
+  (cfun->machine->frame_info.save_return_addr	\
+   || crtl->calls_eh_return)
 
 /* Return non-zero if there are registers to be saved or loaded using
    millicode thunks.  We can only use consecutive sequences starting

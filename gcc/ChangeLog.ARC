@@ -1,5 +1,10 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (MUST_SAVE_RETURN_ADDR): Save return
+	address when a frame uses eh_return.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_save_restore): Remove unused code.
 
 2015-05-31  Andrew Burgess  <andrew.burgess@embecosm.com>
