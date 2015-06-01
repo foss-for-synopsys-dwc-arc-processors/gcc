@@ -2367,7 +2367,7 @@ arc_compute_millicode_save_restore_regs (unsigned int gmask,
    SIZE is the size needed for local variables.  */
 
 unsigned int
-arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
+arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 {
   int regno;
   unsigned int total_size, var_size, args_size, pretend_size, extra_size;
@@ -2375,9 +2375,15 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   unsigned int gmask;
   enum arc_function_type fn_type;
   int interrupt_p;
-  struct arc_frame_info *frame_info = &cfun->machine->frame_info;
+  struct arc_frame_info *frame_info;
+  int size;
 
-  size = ARC_STACK_ALIGN (size);
+  /* The answer might already be known.  */
+  if (cfun->machine->frame_info.initialized)
+    return cfun->machine->frame_info.total_size;
+
+  frame_info = &cfun->machine->frame_info;
+  size = ARC_STACK_ALIGN (get_frame_size ());
 
   /* 1) Size of locals and temporaries */
   var_size	= size;
@@ -2722,7 +2728,7 @@ int arc_return_address_regs[4]
 void
 arc_expand_prologue (void)
 {
-  int size = get_frame_size ();
+  int size;
   unsigned int gmask = cfun->machine->frame_info.gmask;
   /*  unsigned int frame_pointer_offset;*/
   unsigned int frame_size_to_allocate;
@@ -2731,12 +2737,8 @@ arc_expand_prologue (void)
      PRE_MODIFY, thus enabling more short insn generation.)  */
   int first_offset = 0;
 
-  size = ARC_STACK_ALIGN (size);
-
-  /* Compute/get total frame size.  */
-  size = (!cfun->machine->frame_info.initialized
-	   ? arc_compute_frame_size (size)
-	   : cfun->machine->frame_info.total_size);
+  /* Compute total frame size.  */
+  size = arc_compute_frame_size ();
 
   if (flag_stack_usage_info)
     current_function_static_stack_size = size;
@@ -2866,13 +2868,8 @@ arc_expand_prologue (void)
 void
 arc_expand_epilogue (int sibcall_p)
 {
-  int size = get_frame_size ();
   enum arc_function_type fn_type = arc_compute_function_type (cfun);
-
-  size = ARC_STACK_ALIGN (size);
-  size = (!cfun->machine->frame_info.initialized
-	   ? arc_compute_frame_size (size)
-	   : cfun->machine->frame_info.total_size);
+  int size = arc_compute_frame_size ();
 
   if (1)
     {
@@ -4620,8 +4617,8 @@ arc_can_eliminate (const int from ATTRIBUTE_UNUSED, const int to)
 int
 arc_initial_elimination_offset (int from, int to)
 {
-  if (! cfun->machine->frame_info.initialized)
-     arc_compute_frame_size (get_frame_size ());
+  if (!cfun->machine->frame_info.initialized)
+    arc_compute_frame_size ();
 
   if (from == ARG_POINTER_REGNUM && to == FRAME_POINTER_REGNUM)
     {

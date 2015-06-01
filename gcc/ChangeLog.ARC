@@ -1,3 +1,12 @@
+2015-05-31  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.h (arc_compute_frame_size): Remove parameter.
+	* config/arc/arc.c (arc_compute_frame_size): Remove frame size
+	parameter, compute frame size within function.
+	(arc_expand_prologue): Update call to arc_compute_frame_size.
+	(arc_expand_epilogue): Likewise.
+	(arc_initial_elimination_offset): Likewise.
+
 2015-04-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (arc_expand_prologue): Restore blink register
