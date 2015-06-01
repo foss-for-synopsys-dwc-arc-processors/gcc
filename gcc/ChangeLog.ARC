@@ -1,5 +1,10 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_compute_frame_size): Ensure that eh_return
+	data registers are spilled.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_compute_frame_size): Change an assignment
 	into an assertion.
 

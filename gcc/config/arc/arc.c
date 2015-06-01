@@ -2414,6 +2414,13 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 	}
     }
 
+  if (crtl->calls_eh_return)
+    for (regno = 0; EH_RETURN_DATA_REGNO (regno) != INVALID_REGNUM; regno++)
+      {
+	reg_size += UNITS_PER_WORD;
+	gmask |= 1 << regno;
+      }
+
   /* 4) Space for back trace data structure.
 
 	  <return addr reg size> (if required) + <fp size> (if required)
