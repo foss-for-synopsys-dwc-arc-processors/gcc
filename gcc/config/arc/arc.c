@@ -3049,16 +3049,41 @@ arc_expand_epilogue (int sibcall_p)
     }
 }
 
-/* Return the offset relative to the stack pointer where the return address
-   is stored, or -1 if it is not stored.  */
+/* Return rtx for the location of the return address on the stack, suitable
+   for use in __builtin_eh_return.  The new return address will be written
+   to this location in order to redirect the return to the exception
+   handler.  */
 
-int
-arc_return_slot_offset ()
+rtx
+arc_eh_return_address_location ()
 {
-  struct arc_frame_info *afi = &cfun->machine->frame_info;
+  rtx mem;
+  int offset;
+  struct arc_frame_info *afi;
 
-  return (afi->save_return_addr
-	  ? afi->total_size - afi->pretend_size - afi->extra_size : -1);
+  arc_compute_frame_size ();
+  afi = &cfun->machine->frame_info;
+
+  gcc_assert (crtl->calls_eh_return);
+  gcc_assert (afi->save_return_addr);
+  gcc_assert (afi->extra_size >= 4);
+
+  /* The '-4' removes the size of the return address, which is included in
+     the 'extra_size' field.  */
+  offset = afi->reg_size + afi->extra_size - 4;
+  mem = gen_frame_mem (Pmode,
+		       plus_constant (Pmode, frame_pointer_rtx, offset));
+
+  /* The following should not be needed, and is, really a hack.  The issue
+     being worked around here is that the DSE (Dead Store Elimination) pass
+     will remove this write to the stack as it sees a single store and no
+     corresponding read.  The read however occurs in the epilogue code,
+     which is not added into the function rtl until a later pass.  So, at
+     the time of DSE, the decision to remove this store seems perfectly
+     sensible.  Marking the memory address as volatile obviously has the
+     effect of preventing DSE from removing the store.  */
+  MEM_VOLATILE_P (mem) = 1;
+  return mem;
 }
 
 /* PIC */

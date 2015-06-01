@@ -1,5 +1,13 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.h (EH_RETURN_HANDLER_RTX): Define.
+	* config/arc/arc.c (arc_return_slot_offset): Delete.
+	(arc_eh_return_address_location): New function.
+	* config/arc/arc-protos.h (arc_return_slot_offset): Remove.
+	(arc_eh_return_address_location): Add declaration.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_expand_epilogue): Add in
 	EH_RETURN_STACKADJ_RTX.
 	* config/arc/arc.h (EH_RETURN_STACKADJ_RTX): Define.
