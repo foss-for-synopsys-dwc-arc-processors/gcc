@@ -2464,7 +2464,11 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
   /* Compute total frame size.  */
   total_size = var_size + args_size + extra_size + pretend_size + reg_size;
 
-  total_size = ARC_STACK_ALIGN (total_size);
+  /* It used to be the case that the alignment was forced at this point.
+     However, that is dangerous, calculations based on total_size would be
+     wrong.  Given that this has never cropped up as an issue I've changed
+     this to an assert for now.  */
+  gcc_assert (total_size == ARC_STACK_ALIGN (total_size));
 
   /* Compute offset of register save area from stack pointer:
      Frame: pretend_size <blink> reg_size <fp> var_size args_size <--sp

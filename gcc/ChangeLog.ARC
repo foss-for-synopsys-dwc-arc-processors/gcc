@@ -1,5 +1,10 @@
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_compute_frame_size): Change an assignment
+	into an assertion.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.h (EH_RETURN_DATA_REGNO): Only support 2 data
 	registers.
 
