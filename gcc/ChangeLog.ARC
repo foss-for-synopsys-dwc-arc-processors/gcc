@@ -1,3 +1,14 @@
+2015-06-03  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (MUST_SAVE_REGISTER): Don't save beyond 'gp'
+	register for functions that call eh_return.
+	(arc_frame_pointer_required): Functions that call eh_return need a
+	frame pointer.
+	(arc_frame_pointer_needed): New function.
+	(arc_compute_frame_size): Use arc_frame_pointer_needed.
+	(arc_expand_prologue): Likewise.
+	(arc_expand_epilogue): Likewise.
+
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (MUST_SAVE_REGISTER): Add calls_eh_return

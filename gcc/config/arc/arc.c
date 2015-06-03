@@ -2329,11 +2329,22 @@ arc_compute_function_type (struct function *fun)
    || (flag_pic && crtl->uses_pic_offset_table				\
        && regno == PIC_OFFSET_TABLE_REGNUM)				\
    || (crtl->calls_eh_return						\
-       && (regno > 3 && regno < 28)))
+       && (regno > 3 && regno < 27)))
 
 #define MUST_SAVE_RETURN_ADDR \
   (cfun->machine->frame_info.save_return_addr	\
    || crtl->calls_eh_return)
+
+/* Helper function to wrap FRAME_POINTER_NEEDED.  We do this as
+   FRAME_POINTER_NEEDED will not be true until the IRA (Integrated Register
+   Allocator) pass, while we want to get the frame size correct earlier
+   than the IRA pass.  */
+
+static bool
+arc_frame_pointer_needed (void)
+{
+  return (frame_pointer_needed || crtl->calls_eh_return);
+}
 
 /* Return non-zero if there are registers to be saved or loaded using
    millicode thunks.  We can only use consecutive sequences starting
@@ -2440,7 +2451,7 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
   extra_size = 0;
   if (MUST_SAVE_RETURN_ADDR)
     extra_size = 4;
-  if (frame_pointer_needed)
+  if (arc_frame_pointer_needed ())
     extra_size += 4;
 
   /* Honor irq_ctrl_saved option. */
@@ -2451,7 +2462,7 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
 	extra_size += 4;
 
-      if (!frame_pointer_needed
+      if (!arc_frame_pointer_needed ()
 	  && (irq_ctrl_saved.irq_save_last_reg > 26))
 	extra_size +=4;
 
@@ -2484,7 +2495,7 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
      Frame: pretend_size <blink> reg_size <fp> var_size args_size <--sp
   */
   reg_offset = total_size - (pretend_size + reg_size + extra_size)
-	       + (frame_pointer_needed ? 4 : 0);
+	       + (arc_frame_pointer_needed () ? 4 : 0);
 
   /* Save computed information.  */
   frame_info->total_size   = total_size;
@@ -2816,7 +2827,7 @@ arc_expand_prologue (void)
     }
 
   /* Save frame pointer if needed.  */
-  if (frame_pointer_needed)
+  if (arc_frame_pointer_needed ())
     {
       /* Honor irq_ctrl_saved option. */
       if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
@@ -2884,13 +2895,13 @@ arc_expand_epilogue (int sibcall_p)
 	 sp, but don't restore sp if we don't have to.  */
 
       if (!can_trust_sp_p)
-	gcc_assert (frame_pointer_needed);
+	gcc_assert (arc_frame_pointer_needed ());
 
       /* Restore stack pointer to the beginning of saved register area for
 	 ARCompact ISA.  */
       if (frame_size)
 	{
-	  if (frame_pointer_needed)
+	  if (arc_frame_pointer_needed ())
 	    frame_move (stack_pointer_rtx, frame_pointer_rtx);
 	  else
 	    first_offset = frame_size;
@@ -2901,7 +2912,7 @@ arc_expand_epilogue (int sibcall_p)
 
 
       /* Restore any saved registers.  */
-      if (frame_pointer_needed)
+      if (arc_frame_pointer_needed ())
 	{
 	  /* Honor irq_ctrl_saved option. */
 	  if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
@@ -4664,7 +4675,7 @@ arc_initial_elimination_offset (int from, int to)
 static bool
 arc_frame_pointer_required (void)
 {
- return cfun->calls_alloca;
+ return cfun->calls_alloca || crtl->calls_eh_return;
 }
 
 
