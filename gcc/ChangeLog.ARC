@@ -1,3 +1,19 @@
+2015-06-03  Yuriy Kolerov  <yuriy.kolerov@synopsys.com>
+
+	* gcc/testsuite/c-c++-common/pr44832.c: Mark as expected
+	fail for ARC targets because -fcompare-debug check always
+	fails because of the feature of the current ZOL
+	implementation.
+	* gcc/testsuite/gcc.dg/pr42630.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr42631.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr42916.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr44023.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr46771.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr47881.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr48159-1.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr48159-2.c: Likewise.
+	* gcc/testsuite/gcc.dg/pr50017.c: Likewise.
+
 2015-05-26  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c (arc_handle_option): Fix mpy

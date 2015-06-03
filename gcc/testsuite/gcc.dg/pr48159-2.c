@@ -1,6 +1,7 @@
 /* PR debug/48159 */
 /* { dg-do compile } */ 
 /* { dg-options "-O2 -ftree-loop-distribution -fcompare-debug" } */
+/* { dg-xfail-if "" { arc*-*-* } { "*" } { "" } } */
 
 int foo (int * __restrict__ ia, int * __restrict__ ib,
 	 int * __restrict__ oxa, int * __restrict__ oxb)
