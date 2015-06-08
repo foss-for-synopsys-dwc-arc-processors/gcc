@@ -1,3 +1,8 @@
+2015-06-03  Yuriy Kolerov  <yuriy.kolerov@synopsys.com>
+
+	* gcc/testsuite/gcc.dg/tree-ssa/ssa-store-ccp-2.c: Add
+	-mno-sdata option to the test's compilation options.
+
 2015-05-26  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c (arc_handle_option): Fix mpy

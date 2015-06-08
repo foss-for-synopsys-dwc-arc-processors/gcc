@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-options "-O2 -fdump-tree-optimized" } */
+/* { dg-options "-O2 -fdump-tree-optimized -mno-sdata" { target arc*-*-elf32 } } */
 
 const int conststaticvariable;
 
