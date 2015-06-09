@@ -1,3 +1,8 @@
+2015-06-09  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (TARGET_BUILTIN_SETJMP_FRAME_VALUE): Define.
+	(arc_builtin_setjmp_frame_value): New function.
+
 2015-06-03  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (MUST_SAVE_REGISTER): Don't save beyond 'gp'
