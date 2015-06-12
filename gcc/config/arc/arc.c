@@ -2467,7 +2467,9 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
   frame_info->save_return_addr
     = (!crtl->is_leaf || df_regs_ever_live_p (RETURN_ADDR_REGNUM));
   /* Saving blink reg in case of leaf function for millicode thunk calls.  */
-  if (optimize_size && !TARGET_NO_MILLICODE_THUNK_SET)
+  if (optimize_size
+      && !TARGET_NO_MILLICODE_THUNK_SET
+      && !crtl->calls_eh_return)
     {
       if (arc_compute_millicode_save_restore_regs (gmask, frame_info))
 	frame_info->save_return_addr = true;

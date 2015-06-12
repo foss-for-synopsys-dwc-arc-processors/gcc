@@ -1,5 +1,10 @@
 2015-06-09  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_compute_frame_size): Disable millicode
+	optimisation for eh_return frames.
+
+2015-06-09  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	Revert change from 2014-01-30.
 	* dwarf2cfi.c: Remove diagnostic-core.h include.
 	(maybe_record_trace_start): Restore ICE on mismatch.
