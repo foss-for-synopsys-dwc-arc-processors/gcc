@@ -49,7 +49,7 @@ extern enum arc_function_type arc_compute_function_type (struct function *);
 
 
 extern void arc_init (void);
-extern unsigned int arc_compute_frame_size (int);
+extern unsigned int arc_compute_frame_size ();
 extern bool arc_ccfsm_branch_deleted_p (void);
 extern void arc_ccfsm_record_branch_deleted (void);
 
@@ -114,7 +114,7 @@ extern bool arc_epilogue_uses (int regno);
 extern bool arc_eh_uses (int regno);
 /* insn-attrtab.c doesn't include reload.h, which declares regno_clobbered_p. */
 extern int regno_clobbered_p (unsigned int, rtx, enum machine_mode, int);
-extern int arc_return_slot_offset (void);
+extern rtx arc_eh_return_address_location (void);
 extern bool compact_memory_operand_p (rtx, enum machine_mode, bool, bool);
 extern bool arc_legitimize_reload_address (rtx *, enum machine_mode, int, int);
 extern void arc_secondary_reload_conv (rtx, rtx, rtx, bool);

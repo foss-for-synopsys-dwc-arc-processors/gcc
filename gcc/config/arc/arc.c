@@ -2357,13 +2357,28 @@ arc_compute_function_type (struct function *fun)
    instead of r26.
 */
 #define MUST_SAVE_REGISTER(regno, interrupt_p) \
-(((regno) != RETURN_ADDR_REGNUM && (regno) != FRAME_POINTER_REGNUM \
-  && (df_regs_ever_live_p (regno) && (!call_used_regs[regno] || interrupt_p))) \
- || (flag_pic && crtl->uses_pic_offset_table \
-     && regno == PIC_OFFSET_TABLE_REGNUM) )
+  (((regno) != RETURN_ADDR_REGNUM && (regno) != FRAME_POINTER_REGNUM	\
+    && (df_regs_ever_live_p (regno)					\
+	&& (!call_used_regs[regno] || interrupt_p)))			\
+   || (flag_pic && crtl->uses_pic_offset_table				\
+       && regno == PIC_OFFSET_TABLE_REGNUM)				\
+   || (crtl->calls_eh_return						\
+       && (regno > 3 && regno < 27)))
 
 #define MUST_SAVE_RETURN_ADDR \
-  (cfun->machine->frame_info.save_return_addr)
+  (cfun->machine->frame_info.save_return_addr	\
+   || crtl->calls_eh_return)
+
+/* Helper function to wrap FRAME_POINTER_NEEDED.  We do this as
+   FRAME_POINTER_NEEDED will not be true until the IRA (Integrated Register
+   Allocator) pass, while we want to get the frame size correct earlier
+   than the IRA pass.  */
+
+static bool
+arc_frame_pointer_needed (void)
+{
+  return (frame_pointer_needed || crtl->calls_eh_return);
+}
 
 /* Return non-zero if there are registers to be saved or loaded using
    millicode thunks.  We can only use consecutive sequences starting
@@ -2401,7 +2416,7 @@ arc_compute_millicode_save_restore_regs (unsigned int gmask,
    SIZE is the size needed for local variables.  */
 
 unsigned int
-arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
+arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 {
   int regno;
   unsigned int total_size, var_size, args_size, pretend_size, extra_size;
@@ -2409,9 +2424,15 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   unsigned int gmask;
   enum arc_function_type fn_type;
   int interrupt_p;
-  struct arc_frame_info *frame_info = &cfun->machine->frame_info;
+  struct arc_frame_info *frame_info;
+  int size;
 
-  size = ARC_STACK_ALIGN (size);
+  /* The answer might already be known.  */
+  if (cfun->machine->frame_info.initialized)
+    return cfun->machine->frame_info.total_size;
+
+  frame_info = &cfun->machine->frame_info;
+  size = ARC_STACK_ALIGN (get_frame_size ());
 
   /* 1) Size of locals and temporaries */
   var_size	= size;
@@ -2441,6 +2462,13 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
 	}
     }
 
+  if (crtl->calls_eh_return)
+    for (regno = 0; EH_RETURN_DATA_REGNO (regno) != INVALID_REGNUM; regno++)
+      {
+	reg_size += UNITS_PER_WORD;
+	gmask |= 1 << regno;
+      }
+
   /* 4) Space for back trace data structure.
 
 	  <return addr reg size> (if required) + <fp size> (if required)
@@ -2448,7 +2476,9 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   frame_info->save_return_addr
     = (!crtl->is_leaf || df_regs_ever_live_p (RETURN_ADDR_REGNUM));
   /* Saving blink reg in case of leaf function for millicode thunk calls.  */
-  if (optimize_size && !TARGET_NO_MILLICODE_THUNK_SET)
+  if (optimize_size
+      && !TARGET_NO_MILLICODE_THUNK_SET
+      && !crtl->calls_eh_return)
     {
       if (arc_compute_millicode_save_restore_regs (gmask, frame_info))
 	frame_info->save_return_addr = true;
@@ -2457,7 +2487,7 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   extra_size = 0;
   if (MUST_SAVE_RETURN_ADDR)
     extra_size = 4;
-  if (frame_pointer_needed)
+  if (arc_frame_pointer_needed ())
     extra_size += 4;
 
   /* Honor irq_ctrl_saved option. */
@@ -2468,7 +2498,7 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
 	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
 	extra_size += 4;
 
-      if (!frame_pointer_needed
+      if (!arc_frame_pointer_needed ()
 	  && (irq_ctrl_saved.irq_save_last_reg > 26))
 	extra_size +=4;
 
@@ -2491,13 +2521,17 @@ arc_compute_frame_size (int size)	/* size = # of var. bytes allocated.  */
   /* Compute total frame size.  */
   total_size = var_size + args_size + extra_size + pretend_size + reg_size;
 
-  total_size = ARC_STACK_ALIGN (total_size);
+  /* It used to be the case that the alignment was forced at this point.
+     However, that is dangerous, calculations based on total_size would be
+     wrong.  Given that this has never cropped up as an issue I've changed
+     this to an assert for now.  */
+  gcc_assert (total_size == ARC_STACK_ALIGN (total_size));
 
   /* Compute offset of register save area from stack pointer:
      Frame: pretend_size <blink> reg_size <fp> var_size args_size <--sp
   */
   reg_offset = total_size - (pretend_size + reg_size + extra_size)
-	       + (frame_pointer_needed ? 4 : 0);
+	       + (arc_frame_pointer_needed () ? 4 : 0);
 
   /* Save computed information.  */
   frame_info->total_size   = total_size;
@@ -2588,32 +2622,6 @@ arc_save_restore (rtx base_reg,
 
       for (regno = 0; regno <= 31; regno++)
 	{
-#if 0
-	  if ((gmask & (1L << regno)) != 0)
-	    {
-	      rtx reg = gen_rtx_REG (SImode, regno);
-	      rtx addr, mem;
-
-	      if (*first_offset)
-		{
-		  gcc_assert (!offset);
-		  addr = plus_constant (Pmode, base_reg, *first_offset);
-		  addr = gen_rtx_PRE_MODIFY (Pmode, base_reg, addr);
-		  *first_offset = 0;
-		}
-	      else
-		{
-		  gcc_assert (SMALL_INT (offset));
-		  addr = plus_constant (Pmode, base_reg, offset);
-		}
-	      mem = gen_frame_mem (SImode, addr);
-	      if (epilogue_p)
-		frame_move_inc (reg, mem, base_reg, addr);
-	      else
-		frame_move_inc (mem, reg, base_reg, addr);
-	      offset += UNITS_PER_WORD;
-	    } /* if */
-#else
 	  enum machine_mode mode = SImode;
 	  bool found = false;
 
@@ -2661,7 +2669,6 @@ arc_save_restore (rtx base_reg,
 		  regno ++;
 		}
 	    } /* if */
-#endif
 	} /* for */
     }/* if */
   if (sibthunk_insn)
@@ -2756,7 +2763,7 @@ int arc_return_address_regs[4]
 void
 arc_expand_prologue (void)
 {
-  int size = get_frame_size ();
+  int size;
   unsigned int gmask = cfun->machine->frame_info.gmask;
   /*  unsigned int frame_pointer_offset;*/
   unsigned int frame_size_to_allocate;
@@ -2765,12 +2772,8 @@ arc_expand_prologue (void)
      PRE_MODIFY, thus enabling more short insn generation.)  */
   int first_offset = 0;
 
-  size = ARC_STACK_ALIGN (size);
-
-  /* Compute/get total frame size.  */
-  size = (!cfun->machine->frame_info.initialized
-	   ? arc_compute_frame_size (size)
-	   : cfun->machine->frame_info.total_size);
+  /* Compute total frame size.  */
+  size = arc_compute_frame_size ();
 
   if (flag_stack_usage_info)
     current_function_static_stack_size = size;
@@ -2860,7 +2863,7 @@ arc_expand_prologue (void)
     }
 
   /* Save frame pointer if needed.  */
-  if (frame_pointer_needed)
+  if (arc_frame_pointer_needed ())
     {
       /* Honor irq_ctrl_saved option. */
       if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
@@ -2900,13 +2903,8 @@ arc_expand_prologue (void)
 void
 arc_expand_epilogue (int sibcall_p)
 {
-  int size = get_frame_size ();
   enum arc_function_type fn_type = arc_compute_function_type (cfun);
-
-  size = ARC_STACK_ALIGN (size);
-  size = (!cfun->machine->frame_info.initialized
-	   ? arc_compute_frame_size (size)
-	   : cfun->machine->frame_info.total_size);
+  int size = arc_compute_frame_size ();
 
   if (1)
     {
@@ -2933,13 +2931,13 @@ arc_expand_epilogue (int sibcall_p)
 	 sp, but don't restore sp if we don't have to.  */
 
       if (!can_trust_sp_p)
-	gcc_assert (frame_pointer_needed);
+	gcc_assert (arc_frame_pointer_needed ());
 
       /* Restore stack pointer to the beginning of saved register area for
 	 ARCompact ISA.  */
       if (frame_size)
 	{
-	  if (frame_pointer_needed)
+	  if (arc_frame_pointer_needed ())
 	    frame_move (stack_pointer_rtx, frame_pointer_rtx);
 	  else
 	    first_offset = frame_size;
@@ -2950,7 +2948,7 @@ arc_expand_epilogue (int sibcall_p)
 
 
       /* Restore any saved registers.  */
-      if (frame_pointer_needed)
+      if (arc_frame_pointer_needed ())
 	{
 	  /* Honor irq_ctrl_saved option. */
 	  if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
@@ -3082,6 +3080,11 @@ arc_expand_epilogue (int sibcall_p)
 
       if (size > restored)
 	frame_stack_add (size - restored);
+
+      if (crtl->calls_eh_return)
+	emit_insn (gen_add2_insn (stack_pointer_rtx,
+				  EH_RETURN_STACKADJ_RTX));
+
       /* Emit the return instruction.  */
       if (sibcall_p == FALSE)
 	emit_jump_insn (gen_simple_return ());
@@ -3096,16 +3099,41 @@ arc_expand_epilogue (int sibcall_p)
     }
 }
 
-/* Return the offset relative to the stack pointer where the return address
-   is stored, or -1 if it is not stored.  */
+/* Return rtx for the location of the return address on the stack, suitable
+   for use in __builtin_eh_return.  The new return address will be written
+   to this location in order to redirect the return to the exception
+   handler.  */
 
-int
-arc_return_slot_offset ()
+rtx
+arc_eh_return_address_location ()
 {
-  struct arc_frame_info *afi = &cfun->machine->frame_info;
+  rtx mem;
+  int offset;
+  struct arc_frame_info *afi;
 
-  return (afi->save_return_addr
-	  ? afi->total_size - afi->pretend_size - afi->extra_size : -1);
+  arc_compute_frame_size ();
+  afi = &cfun->machine->frame_info;
+
+  gcc_assert (crtl->calls_eh_return);
+  gcc_assert (afi->save_return_addr);
+  gcc_assert (afi->extra_size >= 4);
+
+  /* The '-4' removes the size of the return address, which is included in
+     the 'extra_size' field.  */
+  offset = afi->reg_size + afi->extra_size - 4;
+  mem = gen_frame_mem (Pmode,
+		       plus_constant (Pmode, frame_pointer_rtx, offset));
+
+  /* The following should not be needed, and is, really a hack.  The issue
+     being worked around here is that the DSE (Dead Store Elimination) pass
+     will remove this write to the stack as it sees a single store and no
+     corresponding read.  The read however occurs in the epilogue code,
+     which is not added into the function rtl until a later pass.  So, at
+     the time of DSE, the decision to remove this store seems perfectly
+     sensible.  Marking the memory address as volatile obviously has the
+     effect of preventing DSE from removing the store.  */
+  MEM_VOLATILE_P (mem) = 1;
+  return mem;
 }
 
 /* PIC */
@@ -4654,8 +4682,8 @@ arc_can_eliminate (const int from ATTRIBUTE_UNUSED, const int to)
 int
 arc_initial_elimination_offset (int from, int to)
 {
-  if (! cfun->machine->frame_info.initialized)
-     arc_compute_frame_size (get_frame_size ());
+  if (!cfun->machine->frame_info.initialized)
+    arc_compute_frame_size ();
 
   if (from == ARG_POINTER_REGNUM && to == FRAME_POINTER_REGNUM)
     {
@@ -4683,7 +4711,7 @@ arc_initial_elimination_offset (int from, int to)
 static bool
 arc_frame_pointer_required (void)
 {
- return cfun->calls_alloca;
+ return cfun->calls_alloca || crtl->calls_eh_return;
 }
 
 

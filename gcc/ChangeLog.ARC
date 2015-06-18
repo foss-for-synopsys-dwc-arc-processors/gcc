@@ -1,5 +1,16 @@
 2015-06-09  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_compute_frame_size): Disable millicode
+	optimisation for eh_return frames.
+
+2015-06-09  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	Revert change from 2014-01-30.
+	* dwarf2cfi.c: Remove diagnostic-core.h include.
+	(maybe_record_trace_start): Restore ICE on mismatch.
+
+2015-06-09  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (TARGET_BUILTIN_SETJMP_FRAME_VALUE): Define.
 	(arc_builtin_setjmp_frame_value): New function.
 
@@ -7,6 +18,73 @@
 
 	* gcc/testsuite/gcc.dg/tree-ssa/ssa-store-ccp-2.c: Add
 	-mno-sdata option to the test's compilation options.
+
+2015-06-03  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (MUST_SAVE_REGISTER): Don't save beyond 'gp'
+	register for functions that call eh_return.
+	(arc_frame_pointer_required): Functions that call eh_return need a
+	frame pointer.
+	(arc_frame_pointer_needed): New function.
+	(arc_compute_frame_size): Use arc_frame_pointer_needed.
+	(arc_expand_prologue): Likewise.
+	(arc_expand_epilogue): Likewise.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (MUST_SAVE_REGISTER): Add calls_eh_return
+	handling.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.h (EH_RETURN_HANDLER_RTX): Define.
+	* config/arc/arc.c (arc_return_slot_offset): Delete.
+	(arc_eh_return_address_location): New function.
+	* config/arc/arc-protos.h (arc_return_slot_offset): Remove.
+	(arc_eh_return_address_location): Add declaration.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_expand_epilogue): Add in
+	EH_RETURN_STACKADJ_RTX.
+	* config/arc/arc.h (EH_RETURN_STACKADJ_RTX): Define.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_compute_frame_size): Ensure that eh_return
+	data registers are spilled.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_compute_frame_size): Change an assignment
+	into an assertion.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.h (EH_RETURN_DATA_REGNO): Only support 2 data
+	registers.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (eh_return): Remove.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (MUST_SAVE_RETURN_ADDR): Save return
+	address when a frame uses eh_return.
+
+2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_save_restore): Remove unused code.
+
+2015-05-31  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.h (arc_compute_frame_size): Remove parameter.
+	* config/arc/arc.c (arc_compute_frame_size): Remove frame size
+	parameter, compute frame size within function.
+	(arc_expand_prologue): Update call to arc_compute_frame_size.
+	(arc_expand_epilogue): Likewise.
+	(arc_initial_elimination_offset): Likewise.
 
 2015-05-26  Claudiu Zissulescu <claziss@synopsys.com>
 
