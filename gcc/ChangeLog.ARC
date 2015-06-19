@@ -1,3 +1,13 @@
+2015-06-03  Yuriy Kolerov  <yuriy.kolerov@synopsys.com>
+
+	* gcc/testsuite/g++.dg/compat/struct-layout-1_generate.c: 
+	Add -mno-sdata option to the generator of tests for bare
+	metal targets. It's necessary because the generator
+	generates too much global variables for "t001" test and
+	linker fails because some of them don't fit to SDATA.
+	* gcc/testsuite/gcc.dg/compat/struct-layout-1_generate.c:
+	Likewise.
+
 2015-06-09  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (arc_compute_frame_size): Disable millicode

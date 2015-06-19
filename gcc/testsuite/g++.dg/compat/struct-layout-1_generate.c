@@ -49,7 +49,8 @@ const char *dg_options[] = {
 "/* { dg-options \"%s-I%s -fno-common\" { target hppa*-*-hpux* powerpc*-*-darwin* *-*-mingw32* *-*-cygwin* } } */\n",
 "/* { dg-options \"%s-I%s -mno-mmx -fno-common -Wno-abi\" { target i?86-*-darwin* x86_64-*-darwin* i?86-*-mingw32* x86_64-*-mingw32* i?86-*-cygwin* } } */\n",
 "/* { dg-options \"%s-I%s -mno-base-addresses\" { target mmix-*-* } } */\n",
-"/* { dg-options \"%s-I%s -mlongcalls -mtext-section-literals\" { target xtensa*-*-* } } */\n"
+"/* { dg-options \"%s-I%s -mlongcalls -mtext-section-literals\" { target xtensa*-*-* } } */\n",
+"/* { dg-options \"%s-I%s -mno-sdata -Wno-abi\" { target arc*-*-elf32 } } */\n"
 #define NDG_OPTIONS (sizeof (dg_options) / sizeof (dg_options[0]))
 };
 
