@@ -2312,16 +2312,15 @@
     }
   else if (TARGET_MULMAC_32BY16_SET)
     {
-      rtx result_hi = gen_reg_rtx (SImode);
-      rtx result_low = gen_reg_rtx (SImode);
-
-      result_hi = gen_highpart(SImode , operands[0]);
-      result_low = gen_lowpart(SImode , operands[0]);
+      rtx result_hi = gen_highpart (SImode, operands[0]);
+      rtx result_low = gen_lowpart (SImode, operands[0]);
+      rtx tmpreg = gen_reg_rtx (SImode);
 
       emit_insn (gen_umul64_600 (operands[1], operands[2]));
-      emit_insn (gen_umac64_600 (result_hi, operands[1], operands[2]));
+      emit_insn (gen_umac64_600 (tmpreg, operands[1], operands[2]));
       emit_move_insn (result_low, gen_acc2 ());
-      DONE;
+      emit_move_insn (result_hi, tmpreg);
+     DONE;
     }
   else
     {

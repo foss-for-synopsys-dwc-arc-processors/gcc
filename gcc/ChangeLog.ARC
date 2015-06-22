@@ -1,3 +1,8 @@
+2015-06-22  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.md (umulsidi3): Use a temp register when
+        using mul32x16.
+
 2015-06-03  Yuriy Kolerov  <yuriy.kolerov@synopsys.com>
 
 	* gcc/testsuite/g++.dg/compat/struct-layout-1_generate.c: 
