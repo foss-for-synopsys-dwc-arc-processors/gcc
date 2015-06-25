@@ -676,6 +676,30 @@ static int arc_asm_insn_p (rtx x);
 #undef TARGET_BUILTIN_SETJMP_FRAME_VALUE
 #define TARGET_BUILTIN_SETJMP_FRAME_VALUE arc_builtin_setjmp_frame_value
 
+#undef TARGET_DWARF_REGISTER_SPAN
+#define TARGET_DWARF_REGISTER_SPAN arc_dwarf_register_span
+
+/* Return a parallel of registers to represent where to find the
+   register pieces if required, otherwise NULL_RTX.  */
+
+static rtx
+arc_dwarf_register_span (rtx rtl)
+{
+   enum machine_mode mode = GET_MODE (rtl);
+   unsigned regno;
+   rtx p;
+
+   if (GET_MODE_SIZE (mode) != 8)
+     return NULL_RTX;
+
+   p = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (2));
+   regno = REGNO (rtl);
+   XVECEXP (p, 0, 0) = gen_rtx_REG (SImode, regno);
+   XVECEXP (p, 0, 1) = gen_rtx_REG (SImode, regno + 1);
+
+   return p;
+}
+
 /* Return the frame pointer value to be backed up in the setjmp buffer.  */
 
 static rtx

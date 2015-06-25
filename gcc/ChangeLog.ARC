@@ -1,3 +1,8 @@
+2015-06-25  Claudiu Zissulescu <claziss@synopsys.com>
+
+	* config/arc/arc.c (TARGET_DWARF_REGISTER_SPAN): Define.
+	(arc_dwarf_register_span): New function.
+
 2015-06-22  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/arc.md (umulsidi3): Use a temp register when
