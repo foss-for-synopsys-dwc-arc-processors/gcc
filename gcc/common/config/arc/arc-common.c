@@ -99,7 +99,6 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  /* Thess options make no sense for ARC70x.  */
 	  opts->x_target_flags &= ~MASK_MPY16_SET;
 	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
-	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  opts->x_target_flags &= ~MASK_DIVREM;
 	  opts->x_target_flags &= ~MASK_LL64;
 	  break;
@@ -114,7 +113,6 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  /* These options make no sense for ARC60x.  */
 	  opts->x_target_flags &= ~MASK_MPY_SET;
 	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
-	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  opts->x_target_flags &= ~MASK_ATOMIC;
 	  opts->x_target_flags &= ~MASK_DIVREM;
 	  opts->x_target_flags &= ~MASK_LL64;
@@ -130,8 +128,6 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	    opts->x_target_flags |= MASK_MPY16_SET;
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_SHIFT_ASSIST))
-	    opts->x_target_flags |= MASK_SHIFT_ASSIST;           /* Default: on.  */
 	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
 	    opts->x_target_flags |= MASK_CODE_DENSITY;           /* Default: on.  */
 	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
@@ -156,8 +152,6 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	    opts->x_target_flags |= MASK_MPY16_SET;
 	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
 	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_SHIFT_ASSIST))
-	    opts->x_target_flags &= ~MASK_SHIFT_ASSIST;          /* Default: off.  */
 	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
 	    opts->x_target_flags &= ~MASK_CODE_DENSITY;          /* Default: off.  */
 	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
@@ -181,7 +175,6 @@ arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
 	  /* This options make no sense for ARC60x.  */
 	  opts->x_target_flags &= ~MASK_MPY_SET;
 	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
-	  opts->x_target_flags &= ~MASK_SHIFT_ASSIST;
 	  opts->x_target_flags &= ~MASK_ATOMIC;
 	  opts->x_target_flags &= ~MASK_DIVREM;
 	  opts->x_target_flags &= ~MASK_LL64;
@@ -269,7 +262,7 @@ arc_option_default_params (void)
 /* For HS max out. */
 # define TARGET_DEFAULT_TARGET_FLAGS					\
   ( MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA	\
-    | MASK_MPY_SET | MASK_MPY16_SET | MASK_SHIFT_ASSIST | MASK_CODE_DENSITY \
+    | MASK_MPY_SET | MASK_MPY16_SET | MASK_CODE_DENSITY			\
     | MASK_NORM_SET | MASK_SWAP_SET | MASK_ATOMIC | MASK_DIVREM | MASK_LL64 )
 #elif TARGET_CPU_DEFAULT == TARGET_CPU_EM
 /* Default for EM: no barrel shifter.  */

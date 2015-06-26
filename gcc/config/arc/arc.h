@@ -300,11 +300,7 @@ ASM_DEFOPT "%{matomic:-mlock} \
   "%{mcpu=arc600: -mcpu=ARC600 %<mcpu=arc600}"				\
   "%{mcpu=arc601: -mcpu=ARC601 %<mcpu=arc601}"				\
   "%{mcpu=arcem: -mcpu=ARCv2EM %<mcpu=arcem}"				\
-  "%{mcpu=archs: -mcpu=ARCv2HS %<mcpu=archs}"				\
-  "%{mspfp_*: -mspfp-%* %<mspfp_*}"					\
-  "%{mdpfp_*: -mdpfp-%* %<mdpfp_*}"					\
-  "%{mdsp_pack*: -mdsp-pack%* %<mdsp_pack*}"				\
-  "%{mmac_*: -mmac-%* %<mmac_*}"
+  "%{mcpu=archs: -mcpu=ARCv2HS %<mcpu=archs}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 

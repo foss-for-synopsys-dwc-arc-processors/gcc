@@ -1,9 +1,21 @@
-2015-06-25  Claudiu Zissulescu <claziss@synopsys.com>
+2015-06-26  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.opt (mshift-assist): Remove.
+	(mspfp_): Likewise.
+	(mdpfp_): Likewise.
+	(mdsp_pack): Likewise.
+	(mmac_):Likewise.
+	* common/config/arc/arc-common.c (SHIFT_ASSIST): Remove.
+	* config/arc/arc.h (DRIVER_SELF_SPECS): Remove deprecated
+	options.
+	* doc/invoke.texi: Likewise.
+
+2015-06-25  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (TARGET_DWARF_REGISTER_SPAN): Define.
 	(arc_dwarf_register_span): New function.
 
-2015-06-22  Claudiu Zissulescu <claziss@synopsys.com>
+2015-06-22  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.md (umulsidi3): Use a temp register when
         using mul32x16.

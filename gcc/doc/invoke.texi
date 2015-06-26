@@ -11797,37 +11797,9 @@ deprecated.  Users wanting little-endian code should use the
 @w{@code{arc-elf32}} and @w{@code{arc-linux-uclibc}} targets when
 building the tool chain, for which little-endian is the default.
 
-@item -mdpfp_compact
-@opindex mdpfp_compact
-Replaced by @samp{-mdpfp-compact}
-
-@item -mdpfp_fast
-@opindex mdpfp_fast
-Replaced by @samp{-mdpfp-fast}
-
-@item -mdsp_packa
-@opindex mdsp_packa
-Replaced by @samp{-mdsp-packa}
-
 @item -mEA
 @opindex mEA
 Replaced by @samp{-mea}
-
-@item -mmac_24
-@opindex mmac_24
-Replaced by @samp{-mmac-24}
-
-@item -mmac_d16
-@opindex mmac_d16
-Replaced by @samp{-mmac-d16}
-
-@item -mspfp_compact
-@opindex mspfp_compact
-Replaced by @samp{-mspfp-compact}
-
-@item -mspfp_fast
-@opindex mspfp_fast
-Replaced by @samp{-mspfp-fast}
 
 @item -mtune=@var{cpu}
 @opindex mtune
