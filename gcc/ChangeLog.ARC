@@ -1,3 +1,7 @@
+2015-07-06  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.md (doloop_begin_i): Append "@" for symbols.
+
 2015-06-26  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.opt (mshift-assist): Remove.
