@@ -2,6 +2,13 @@
 
 	* config/arc/arc.md (doloop_begin_i): Append "@" for symbols.
 
+2015-07-06  Vineet Gupta  <vgupta@synopsys.com>
+
+	* config/arc/arc.h (SHIFT_COUNT_TRUNCATED): Define as 1.
+	Verfied that gcc/testsuite/gcc.c-torture/execute/20020226-1.c
+	works the same before and after (as that was alilely issue when
+	this was tried in the past)
+
 2015-06-26  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.opt (mshift-assist): Remove.

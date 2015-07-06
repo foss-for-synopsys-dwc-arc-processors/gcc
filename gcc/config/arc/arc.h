@@ -1611,8 +1611,10 @@ extern int arc_return_address_regs[4];
    (e.g. 20020226-1.c). This change truncates the upper 27 bits of a word
    while rotating a word. Came to notice through a combine phase
    optimization viz. a << (32-b) is equivalent to a << (-b).
+   vgupta: Changed this back to 1 in 4.8.4 and see that above test passes
+   nevertheless both at -O2 and otherwise
 */
-#define SHIFT_COUNT_TRUNCATED 0
+#define SHIFT_COUNT_TRUNCATED 1
 
 /* Value is 1 if truncating an integer of INPREC bits to OUTPREC bits
    is done just by pretending it is already truncated.  */
