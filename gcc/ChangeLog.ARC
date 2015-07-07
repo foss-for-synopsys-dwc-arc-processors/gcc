@@ -1,3 +1,8 @@
+2015-07-07  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_legitimize_tls_address): Differentiate
+        between a bss initialized TLS symbol and not.
+
 2015-07-06  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.md (doloop_begin_i): Append "@" for symbols.
