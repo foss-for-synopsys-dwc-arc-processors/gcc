@@ -1,3 +1,7 @@
+2015-07-13  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.md (*movsi_insn): Append "@" for symbols.
+
 2015-07-07  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_legitimize_tls_address): Differentiate
