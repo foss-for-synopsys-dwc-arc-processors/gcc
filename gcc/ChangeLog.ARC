@@ -1,3 +1,7 @@
+2015-07-27  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.md (indirect_jump): Fix PRM inconsistency.
+
 2015-07-13  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.md (*movsi_insn): Append "@" for symbols.

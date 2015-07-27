@@ -3733,7 +3733,12 @@
 (define_insn "indirect_jump"
   [(set (pc) (match_operand:SI 0 "nonmemory_operand" "L,I,Cal,Rcqq,r"))]
   ""
-  "j%!%* [%0]%&"
+  "@
+   j%!%* %0%&
+   j%!%* %0%&
+   j%!%* %0%&
+   j%!%* [%0]%&
+   j%!%* [%0]%&"
   [(set_attr "type" "jump")
    (set_attr "iscompact" "false,false,false,maybe,false")
    (set_attr "cond" "canuse,canuse_limm,canuse,canuse,canuse")])
