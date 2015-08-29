@@ -5042,20 +5042,8 @@
     loop_start = NULL_RTX;
   /* Size implications of the alignment will be taken care of by the
      alignment inserted at the loop start.  */
-  if (LOOP_ALIGN (0) && INTVAL (operands[1]))
-    {
-      asm_fprintf (asm_out_file, "\t.p2align %d\\n", LOOP_ALIGN (0));
-      arc_clear_unalign ();
-    }
   if (!INTVAL (operands[1]))
     return "; LITTLE LOST LOOP";
-  if (loop_start && flag_pic)
-    {
-      /* ??? Can do better for when a scratch register
-	 is known.  But that would require extra testing.  */
-      arc_clear_unalign ();
-      return ".p2align 2\;push_s r0\;add r0,pcl,@%4@pcl\;sr r0,[2]; LP_START\;add r0,pcl,@.L__GCC__LP%1@pcl\;sr r0,[3]; LP_END\;pop_s r0";
-    }
   /* Check if the loop end is in range to be set by the lp instruction.  */
   size = INTVAL (operands[3]) < 2 ? 0 : 2048;
   for (scan = insn; scan && size < 2048; scan = NEXT_INSN (scan))

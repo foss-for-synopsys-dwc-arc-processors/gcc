@@ -1,5 +1,10 @@
 2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.md (doloop_begin_i): Remove duplicate code for
+	outputting alignment.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_label_align): Switch from 'LABEL' to
 	'label'.
 
