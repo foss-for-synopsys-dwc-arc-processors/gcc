@@ -10402,7 +10402,7 @@ arc_scheduling_not_expected (void)
 int
 arc_label_align (rtx label)
 {
-  int loop_align = LOOP_ALIGN (LABEL);
+  int loop_align = LOOP_ALIGN (label);
 
   if (loop_align > align_labels_log)
     {

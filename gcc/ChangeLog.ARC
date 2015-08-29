@@ -1,3 +1,8 @@
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_label_align): Switch from 'LABEL' to
+	'label'.
+
 2015-07-27  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.md (indirect_jump): Fix PRM inconsistency.
