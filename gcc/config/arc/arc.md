@@ -5101,7 +5101,7 @@
     }
   if (LOOP_ALIGN (0))
     {
-      asm_fprintf (asm_out_file, "\t.p2align %d\\n", LOOP_ALIGN (0));
+      ASM_OUTPUT_ALIGN (asm_out_file, LOOP_ALIGN (0));
       arc_clear_unalign ();
     }
   gcc_assert (n_insns || GET_CODE (next_nonnote_insn (insn)) == CODE_LABEL);
@@ -5112,7 +5112,8 @@
 	  /* ??? Can do better for when a scratch register
 	     is known.  But that would require extra testing.  */
 	  arc_clear_unalign ();
-	  return ".p2align 2\;push_s r0\;add r0,pcl,24\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1-.+2\;sr r0,[3]; LP_END\;pop_s r0";
+	  ASM_OUTPUT_ALIGN (asm_out_file, 2);
+	  return "push_s r0\;add r0,pcl,24\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1-.+2\;sr r0,[3]; LP_END\;pop_s r0";
 	}
       output_asm_insn ((size < 2048
 			? "lp .L__GCC__LP%1" : "sr .L__GCC__LP%1,[3]; LP_END"),
