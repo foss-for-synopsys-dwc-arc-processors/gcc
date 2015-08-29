@@ -5123,7 +5123,11 @@
 		       operands);
       if (TARGET_ARC600 && n_insns < 1)
 	output_asm_insn ("nop", operands);
-      return (TARGET_ARC600 && n_insns < 3) ? "nop_s\;nop_s\;0:" : "0:";
+      if (TARGET_ARC600 && n_insns < 3)
+	 output_asm_insn ("nop_s\;nop_s", operands);
+      if (!loop_start)
+        output_asm_insn ("0:", operands);
+      return "";
     }
   else if (TARGET_ARC600 && n_insns < 3)
     {

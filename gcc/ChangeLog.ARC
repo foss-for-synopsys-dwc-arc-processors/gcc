@@ -1,5 +1,10 @@
 2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.md (doloop_begin_i): Only generate '0:' label if
+	required.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.md (doloop_begin_i): Switch to using
 	ASM_OUTPUT_ALIGN.
 
