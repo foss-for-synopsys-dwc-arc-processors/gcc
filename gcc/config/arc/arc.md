@@ -5142,9 +5142,6 @@
 }
   [(set_attr "type" "loop_setup")
    (set_attr_alternative "length"
-;     FIXME: length is usually 4, but we need branch shortening
-;     to get this right.
-;     [(if_then_else (match_test "TARGET_ARC600") (const_int 16) (const_int 4))
      [(if_then_else (match_test "flag_pic") (const_int 26) (const_int 16))
       (if_then_else (match_test "flag_pic") (const_int 30) (const_int 16))
       (const_int 0)])]
