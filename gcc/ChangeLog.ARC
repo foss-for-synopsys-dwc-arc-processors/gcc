@@ -1,5 +1,10 @@
 2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.md (doloop_begin_i): Account for the effects
+	of alignment in instruction length.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.md (doloop_begin_i): Remove commented out code,
 	and associated comment.
 

@@ -5142,8 +5142,8 @@
 }
   [(set_attr "type" "loop_setup")
    (set_attr_alternative "length"
-     [(if_then_else (match_test "flag_pic") (const_int 26) (const_int 16))
-      (if_then_else (match_test "flag_pic") (const_int 30) (const_int 16))
+     [(if_then_else (match_test "flag_pic") (const_int 26) (const_int 18))
+      (if_then_else (match_test "flag_pic") (const_int 30) (const_int 18))
       (const_int 0)])]
   ;; ??? we should really branch shorten this insn, but then we'd
   ;; need a proper label first.  N.B. the end label can not only go out
