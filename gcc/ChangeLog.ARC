@@ -1,5 +1,13 @@
 2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.md (pass_arc_hazard_avoidance): New variable.
+	(arc_init): Register new pass.
+	(arc_final_prescan_insn): Remove nop insertion.
+	(arc_hazard_avoidance): New function.
+	* timevar.def (TV_HAZARD_AVOID): New time variable.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.md (doloop_begin_i): Account for the effects
 	of alignment in instruction length.
 
