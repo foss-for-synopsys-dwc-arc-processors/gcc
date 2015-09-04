@@ -1,3 +1,41 @@
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (pass_arc_hazard_avoidance): New variable.
+	(arc_init): Register new pass.
+	(arc_final_prescan_insn): Remove nop insertion.
+	(arc_hazard_avoidance): New function.
+	* timevar.def (TV_HAZARD_AVOID): New time variable.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Account for the effects
+	of alignment in instruction length.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Remove commented out code,
+	and associated comment.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Only generate '0:' label if
+	required.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Switch to using
+	ASM_OUTPUT_ALIGN.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Remove duplicate code for
+	outputting alignment.
+
+2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_label_align): Switch from 'LABEL' to
+	'label'.
+
 2015-07-27  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.md (indirect_jump): Fix PRM inconsistency.

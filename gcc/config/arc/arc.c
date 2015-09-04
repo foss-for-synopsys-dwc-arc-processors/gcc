@@ -858,6 +858,29 @@ struct rtl_opt_pass pass_arc_ifcvt =
  }
 };
 
+
+static unsigned arc_hazard_avoidance (void);
+static struct rtl_opt_pass pass_arc_hazard_avoidance =
+{
+ {
+  RTL_PASS,
+  "arc_hazard",				/* name */
+  OPTGROUP_NONE,			/* optinfo_flags */
+  NULL,					/* gate */
+  arc_hazard_avoidance,			/* execute */
+  NULL,					/* sub */
+  NULL,					/* next */
+  0,					/* static_pass_number */
+  TV_HAZARD_AVOID,			/* tv_id */
+  0,					/* properties_required */
+  0,					/* properties_provided */
+  0,					/* properties_destroyed */
+  0,					/* todo_flags_start */
+  TODO_df_finish			/* todo_flags_finish */
+ }
+};
+
+
 /* Called by OVERRIDE_OPTIONS to initialize various things.  */
 
 void
@@ -1030,11 +1053,18 @@ arc_init (void)
 	1, PASS_POS_INSERT_BEFORE
       };
 
+  static struct register_pass_info arc_hazard_info
+    = { &pass_arc_hazard_avoidance.pass, "shorten",
+        1, PASS_POS_INSERT_BEFORE
+      };
+
   if (optimize > 1 && !TARGET_NO_COND_EXEC)
     {
       register_pass (&arc_ifcvt4_info);
       register_pass (&arc_ifcvt5_info);
     }
+
+  register_pass (&arc_hazard_info);
 }
 
 /* Check ARC options, generate derived target attributes.  */
@@ -4658,23 +4688,6 @@ arc_final_prescan_insn (rtx insn, rtx *opvec ATTRIBUTE_UNUSED,
 	fprintf (asm_out_file, " *");
       fprintf (asm_out_file, "\n");
     }
-
-  /* Output a nop if necessary to prevent a hazard.
-     Don't do this for delay slots: inserting a nop would
-     alter semantics, and the only time we would find a hazard is for a
-     call function result - and in that case, the hazard is spurious to
-     start with.  */
-  if (PREV_INSN (insn)
-      && PREV_INSN (NEXT_INSN (insn)) == insn
-      && arc_hazard (prev_real_insn (insn), insn))
-    {
-      current_output_insn =
-	emit_insn_before (gen_nop (), NEXT_INSN (PREV_INSN (insn)));
-      final_scan_insn (current_output_insn, asm_out_file, optimize, 1, NULL);
-      current_output_insn = insn;
-    }
-  /* Restore extraction data which might have been clobbered by arc_hazard.  */
-  extract_constrain_insn_cached (insn);
 
   if (!cfun->machine->prescan_initialized)
     {
@@ -9575,6 +9588,37 @@ arc_ifcvt (void)
   return 0;
 }
 
+/* ARC hazard avoidance.  It is important that this is done before branch
+   shortening, as this can insert nop instructions.
+
+   Some hazard avoidance is also performed at the start of arc_reorg (with
+   a call to workaround_arc_anomaly) it would be nice if that hazard
+   avoidance could also be moved here.  */
+
+static unsigned
+arc_hazard_avoidance (void)
+{
+  rtx insn;
+
+  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
+    {
+      /* Output a nop if necessary to prevent a hazard.
+         Don't do this for delay slots: inserting a nop would alter
+         semantics, and the only time we would find a hazard is for a call
+         function result - and in that case, the hazard is spurious to
+         start with.  */
+      if (PREV_INSN (insn)
+          && NEXT_INSN (insn)
+          && PREV_INSN (NEXT_INSN (insn)) == insn
+          && arc_hazard (prev_real_insn (insn), insn))
+        {
+          emit_insn_before (gen_nop (), NEXT_INSN (PREV_INSN (insn)));
+        }
+    }
+
+  return 0;
+}
+
 /* For ARC600: If a write to a core reg >=32 appears in a delay slot
   (other than of a forward brcc), it creates a hazard when there is a read
   of the same register at the branch target.  We can't know what is at the
@@ -10402,7 +10446,7 @@ arc_scheduling_not_expected (void)
 int
 arc_label_align (rtx label)
 {
-  int loop_align = LOOP_ALIGN (LABEL);
+  int loop_align = LOOP_ALIGN (label);
 
   if (loop_align > align_labels_log)
     {
