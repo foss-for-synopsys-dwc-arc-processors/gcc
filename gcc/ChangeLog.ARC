@@ -1,3 +1,8 @@
+2015-09-08  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Make correct use of
+	parameters in generated assembler.
+
 2015-08-29  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.md (pass_arc_hazard_avoidance): New variable.
