@@ -5113,7 +5113,7 @@
 	     is known.  But that would require extra testing.  */
 	  arc_clear_unalign ();
 	  ASM_OUTPUT_ALIGN (asm_out_file, 2);
-	  return "push_s r0\;add r0,pcl,24\;sr r0,[2]; LP_START\;add r0,pcl,.L__GCC__LP%1-.+2\;sr r0,[3]; LP_END\;pop_s r0";
+	  return "push_s r0\;add r0,pcl,@%4@pcl\;sr r0,[2]; LP_START\;add r0,pcl,@.L__GCC__LP%1@pcl\;sr r0,[3]; LP_END\;pop_s r0";
 	}
       output_asm_insn ((size < 2048
 			? "lp .L__GCC__LP%1" : "sr .L__GCC__LP%1,[3]; LP_END"),
