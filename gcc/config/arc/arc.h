@@ -1648,6 +1648,8 @@ enum arc_function_type {
 #define ARC_INTERRUPT_P(TYPE) \
 ((TYPE) == ARC_FUNCTION_ILINK1 || (TYPE) == ARC_FUNCTION_ILINK2)
 
+#define ARC_NORMAL_P(TYPE) ((TYPE) == ARC_FUNCTION_NORMAL)
+
 /* Compute the type of a function from its DECL.  Needed for EPILOGUE_USES.  */
 struct function;
 extern enum arc_function_type arc_compute_function_type (struct function *);

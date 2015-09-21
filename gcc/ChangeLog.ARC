@@ -1,5 +1,10 @@
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.h (ARC_NORMAL_P): Define.
+	* config/arc/arc.c (arc_expand_epilogue): Use new define.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_compute_function_type): Update header
 	comment.
 	(arc_expand_prologue): Compute function type at the start, use

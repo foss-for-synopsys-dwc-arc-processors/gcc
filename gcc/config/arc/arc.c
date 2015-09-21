@@ -3027,7 +3027,7 @@ arc_expand_epilogue (int sibcall_p)
       if (millicode_p)
 	{
 	      int sibthunk_p = (!sibcall_p
-				&& fn_type == ARC_FUNCTION_NORMAL
+				&& ARC_NORMAL_P (fn_type)
 				&& !cfun->machine->frame_info.pretend_size);
 
 	      gcc_assert (!(cfun->machine->frame_info.gmask
