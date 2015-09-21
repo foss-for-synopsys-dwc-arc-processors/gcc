@@ -1,5 +1,14 @@
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_compute_function_type): Update header
+	comment.
+	(arc_expand_prologue): Compute function type at the start, use
+	this throughout.
+	(arc_epilogue_uses): Likewise.
+	(arc_expand_epilogue): Use computed function type variable.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_compute_function_type): Use
 	lookup_attribute to find the interrupt attribute.
 

@@ -2367,10 +2367,7 @@ typedef struct GTY (()) machine_function
   char prescan_initialized;
 } machine_function;
 
-/* Type of function DECL.
-
-   The result is cached.  To reset the cache at the end of a function,
-   call with DECL = NULL_TREE.  */
+/* Type of function DECL.  The result is cached per function.  */
 
 enum arc_function_type
 arc_compute_function_type (struct function *fun)
@@ -2831,9 +2828,12 @@ arc_expand_prologue (void)
      Change the stack layout so that we rather store a high register with the
      PRE_MODIFY, thus enabling more short insn generation.)  */
   int first_offset = 0;
+  enum arc_function_type fn_type;
 
   /* Compute total frame size.  */
   size = arc_compute_frame_size ();
+
+  fn_type = arc_compute_function_type (cfun);
 
   if (flag_stack_usage_info)
     current_function_static_stack_size = size;
@@ -2856,7 +2856,7 @@ arc_expand_prologue (void)
 
   /* IRQ using automatic save mechanism will save the register before
      anything we do. */
-  if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+  if (ARC_INTERRUPT_P (fn_type)
       && irq_ctrl_saved.irq_save_last_reg)
     {
       /* Emit dwarf IRQ sequence. */
@@ -2867,7 +2867,7 @@ arc_expand_prologue (void)
   if (MUST_SAVE_RETURN_ADDR)
     {
       /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (ARC_INTERRUPT_P (fn_type)
 	  && (irq_ctrl_saved.irq_save_blink
 	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
 	{
@@ -2890,7 +2890,7 @@ arc_expand_prologue (void)
     {
       first_offset = -cfun->machine->frame_info.reg_size;
       /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (ARC_INTERRUPT_P (fn_type)
 	  && irq_ctrl_saved.irq_save_last_reg > 0)
 	{
 	  /* adjust the stack offsets, some of the registers are saved
@@ -2926,7 +2926,7 @@ arc_expand_prologue (void)
   if (arc_frame_pointer_needed ())
     {
       /* Honor irq_ctrl_saved option. */
-      if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (!(ARC_INTERRUPT_P (fn_type)
 	    && (irq_ctrl_saved.irq_save_last_reg > 26)))
 	{
 	  rtx addr = gen_rtx_PLUS (Pmode, stack_pointer_rtx,
@@ -3011,7 +3011,7 @@ arc_expand_epilogue (int sibcall_p)
       if (arc_frame_pointer_needed ())
 	{
 	  /* Honor irq_ctrl_saved option. */
-	  if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
+	  if (!(ARC_INTERRUPT_P (fn_type)
 		&& (irq_ctrl_saved.irq_save_last_reg > 26)))
 	    {
 
@@ -3058,7 +3058,7 @@ arc_expand_epilogue (int sibcall_p)
       if (MUST_SAVE_RETURN_ADDR)
 	{
 	  /* Honor irq_ctrl_saved option. */
-	  if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+	  if (ARC_INTERRUPT_P (fn_type)
 	      && (irq_ctrl_saved.irq_save_blink
 		  || (irq_ctrl_saved.irq_save_last_reg == 31)))
 	    {
@@ -3121,7 +3121,7 @@ arc_expand_epilogue (int sibcall_p)
       */
 
       /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (ARC_INTERRUPT_P (fn_type)
 	  && irq_ctrl_saved.irq_save_last_reg > 0)
 	{
 	  /* adjust the stack, some of the registers are restored by
@@ -10558,21 +10558,24 @@ arc_can_follow_jump (const_rtx follower, const_rtx followee)
 bool
 arc_epilogue_uses (int regno)
 {
+  enum arc_function_type fn_type;
+
   if (regno == arc_tp_regno)
     return true;
+  fn_type = arc_compute_function_type (cfun);
   if (reload_completed)
     {
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type))
+      if (ARC_INTERRUPT_P (fn_type))
 	{
 	  if (!fixed_regs[regno])
 	    return true;
-	  return regno == arc_return_address_regs[cfun->machine->fn_type];
+	  return regno == arc_return_address_regs[fn_type];
 	}
       else
 	return regno == RETURN_ADDR_REGNUM;
     }
   else
-    return regno == arc_return_address_regs[arc_compute_function_type (cfun)];
+    return regno == arc_return_address_regs[fn_type];
 }
 
 bool
