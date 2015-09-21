@@ -1480,10 +1480,6 @@ do { \
 #define ASM_OUTPUT_ALIGNED_DECL_LOCAL(STREAM, DECL, NAME, SIZE, ALIGNMENT) \
   arc_asm_output_aligned_decl_local (STREAM, DECL, NAME, SIZE, ALIGNMENT, 0)
 
-/* To translate the return value of arc_function_type into a register number
-   to jump through for function return.  */
-extern int arc_return_address_regs[4];
-
 /* Debugging information.  */
 
 /* Generate DBX and DWARF debugging information.  */
@@ -1649,6 +1645,11 @@ enum arc_function_type {
 ((TYPE) == ARC_FUNCTION_ILINK1 || (TYPE) == ARC_FUNCTION_ILINK2)
 
 #define ARC_NORMAL_P(TYPE) ((TYPE) == ARC_FUNCTION_NORMAL)
+
+/* Return the register number of the register holding the return address
+   for a function of type TYPE.  */
+
+extern int arc_return_address_register (enum arc_function_type type);
 
 /* Compute the type of a function from its DECL.  Needed for EPILOGUE_USES.  */
 struct function;

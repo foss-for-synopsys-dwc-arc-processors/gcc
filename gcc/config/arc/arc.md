@@ -533,8 +533,8 @@
   (cond [(eq_attr "in_delay_slot" "false")
 	 (const_string "no")
 	 (match_test "regno_clobbered_p
-			(arc_return_address_regs
-			  [arc_compute_function_type (cfun)],
+			(arc_return_address_register
+			  (arc_compute_function_type (cfun)),
 			 insn, SImode, 1)")
 	 (const_string "no")]
 	(const_string "yes")))
@@ -4772,7 +4772,7 @@
 {
   rtx reg
     = gen_rtx_REG (Pmode,
-		   arc_return_address_regs[arc_compute_function_type (cfun)]);
+		   arc_return_address_register (arc_compute_function_type (cfun)));
 
   if (arc_compute_function_type (cfun) == ARC_FUNCTION_ILINK1
       && TARGET_V2)
@@ -4821,7 +4821,7 @@
 {
   rtx xop
     = gen_rtx_REG (Pmode,
-		   arc_return_address_regs[arc_compute_function_type (cfun)]);
+		   arc_return_address_register (arc_compute_function_type (cfun)));
   rtx cond = operands[0];
 
   if (TARGET_PAD_RETURN)

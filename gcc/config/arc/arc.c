@@ -2811,9 +2811,17 @@ arc_dwarf_emit_irq_save_regs (void)
   RTX_FRAME_RELATED_P (insn) = 1;
 }
 
+/* See header file for description.  */
 
-int arc_return_address_regs[4]
-  = {0, RETURN_ADDR_REGNUM, ILINK1_REGNUM, ILINK2_REGNUM};
+int
+arc_return_address_register (enum arc_function_type fn_type)
+{
+  static int return_address_regs [] =
+    {0, RETURN_ADDR_REGNUM, ILINK1_REGNUM, ILINK2_REGNUM};
+
+  gcc_assert (fn_type < ARRAY_SIZE (return_address_regs));
+  return return_address_regs [fn_type];
+}
 
 /* Set up the stack and frame pointer (if desired) for the function.  */
 
@@ -10550,10 +10558,9 @@ arc_can_follow_jump (const_rtx follower, const_rtx followee)
 /* Implement EPILOGUE__USES.
    Return true if REGNO should be added to the deemed uses of the epilogue.
 
-   We use the return address
-   arc_return_address_regs[arc_compute_function_type (cfun)] .
-   But also, we have to make sure all the register restore instructions
-   are known to be live in interrupt functions.  */
+   We use the return address register, but also, we have to make sure all
+   the register restore instructions are known to be live in interrupt
+   functions.  */
 
 bool
 arc_epilogue_uses (int regno)
@@ -10569,13 +10576,13 @@ arc_epilogue_uses (int regno)
 	{
 	  if (!fixed_regs[regno])
 	    return true;
-	  return regno == arc_return_address_regs[fn_type];
+	  return regno == arc_return_address_register (fn_type);
 	}
       else
 	return regno == RETURN_ADDR_REGNUM;
     }
   else
-    return regno == arc_return_address_regs[fn_type];
+    return regno == arc_return_address_register (fn_type);
 }
 
 bool

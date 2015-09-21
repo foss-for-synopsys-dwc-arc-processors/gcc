@@ -1,5 +1,17 @@
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_return_address_register): New function.
+	(arc_return_address_regs): Delete global.
+	(arc_epilogue_uses): Update header comment.
+	* config/arc/arc.h (arc_return_address_regs): Delete declaration.
+	(arc_return_address_register): Add declaration.
+	* config/arc/arc.md (define_attr "in_ret_delay_slot"): Switch to
+	using arc_return_address_register.
+	(define_insn "simple_return"): Likewise.
+	(define_insn "p_return_i"): Likewise.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.h (ARC_NORMAL_P): Define.
 	* config/arc/arc.c (arc_expand_epilogue): Use new define.
 
