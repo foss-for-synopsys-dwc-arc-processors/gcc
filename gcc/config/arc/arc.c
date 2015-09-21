@@ -397,6 +397,9 @@ enum arc_builtins {
 static int get_arc_condition_code (rtx);
 
 static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
+static tree arc_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
+
+static bool arc_warn_func_return (tree);
 
 const struct attribute_spec arc_attribute_table[] =
 {
@@ -414,6 +417,7 @@ const struct attribute_spec arc_attribute_table[] =
      addressing range of blcc.  */
   { "short_call",   0, 0, false, true,  true,  NULL, false },
   { "tls9", 0, 1, true, false, false, NULL, false },
+  { "naked", 0, 0, true, false, false, arc_handle_fndecl_attribute, false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
 static int arc_comp_type_attributes (const_tree, const_tree);
@@ -660,6 +664,12 @@ static int arc_asm_insn_p (rtx x);
 /* Stores with scaled offsets have different displacement ranges.  */
 #define TARGET_DIFFERENT_ADDR_DISPLACEMENT_P hook_bool_void_true
 #define TARGET_SPILL_CLASS arc_spill_class
+
+#undef TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS
+#define TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS arc_allocate_stack_slots_for_args
+
+#undef TARGET_WARN_FUNC_RETURN
+#define TARGET_WARN_FUNC_RETURN arc_warn_func_return
 
 #include "target-def.h"
 
@@ -1880,6 +1890,40 @@ arc_handle_interrupt_attribute (tree *node, tree name, tree args, int,
   return NULL_TREE;
 }
 
+static tree
+arc_handle_fndecl_attribute (tree *node, tree name, tree args ATTRIBUTE_UNUSED,
+                             int flags ATTRIBUTE_UNUSED, bool *no_add_attrs)
+{
+  if (TREE_CODE (*node) != FUNCTION_DECL)
+    {
+      warning (OPT_Wattributes, "%qE attribute only applies to functions",
+	       name);
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
+bool
+arc_allocate_stack_slots_for_args (void)
+{
+  /* Naked functions should not allocate stack slots for arguments.  */
+  arc_function_type fn_type = arc_compute_function_type (cfun);
+  return !ARC_NAKED_P(fn_type);
+}
+
+/* Return false to silence warnings about noreturn functions that does
+   return, this  can be the case for a naked function.*/
+
+bool
+arc_warn_func_return (tree decl)
+{
+  struct function *func = DECL_STRUCT_FUNCTION (decl);
+  arc_function_type fn_type = arc_compute_function_type (func);
+  return !ARC_NAKED_P (fn_type);
+}
+
+
 /* Return zero if TYPE1 and TYPE are incompatible, one if they are compatible,
    and two if they are nearly compatible (which causes a warning to be
    generated).  */
@@ -2378,8 +2422,11 @@ arc_compute_function_type (struct function *fun)
   if (fn_type != ARC_FUNCTION_UNKNOWN)
     return fn_type;
 
-  /* Assume we have a normal function (not an interrupt handler).  */
-  fn_type |= ARC_FUNCTION_NORMAL;
+  /* Figure out if we have a normal or naked function.  */
+  if (lookup_attribute ("naked", DECL_ATTRIBUTES (decl)) != NULL_TREE)
+    fn_type |= ARC_FUNCTION_NAKED;
+  else
+    fn_type |= ARC_FUNCTION_NORMAL;
 
   attr = lookup_attribute ("interrupt", DECL_ATTRIBUTES (decl));
   if (attr != NULL_TREE)
@@ -2818,9 +2865,7 @@ arc_return_address_register (arc_function_type fn_type)
 {
   int regno = 0;
 
-  if (ARC_NORMAL_P (fn_type))
-    regno = RETURN_ADDR_REGNUM;
-  else if (ARC_INTERRUPT_P (fn_type))
+  if (ARC_INTERRUPT_P (fn_type))
     {
       if ((fn_type & ARC_FUNCTION_ILINK1) != 0)
         regno = ILINK1_REGNUM;
@@ -2829,6 +2874,8 @@ arc_return_address_register (arc_function_type fn_type)
       else
         gcc_unreachable ();
     }
+  else if (ARC_NORMAL_P (fn_type) || ARC_NAKED_P (fn_type))
+    regno = RETURN_ADDR_REGNUM;
 
   gcc_assert (regno != 0);
   return regno;
@@ -2847,12 +2894,14 @@ arc_expand_prologue (void)
      Change the stack layout so that we rather store a high register with the
      PRE_MODIFY, thus enabling more short insn generation.)  */
   int first_offset = 0;
-  arc_function_type fn_type;
+  arc_function_type fn_type = arc_compute_function_type (cfun);
+
+  /* Naked functions don't have prologue.  */
+  if (ARC_NAKED_P (fn_type))
+    return;
 
   /* Compute total frame size.  */
   size = arc_compute_frame_size ();
-
-  fn_type = arc_compute_function_type (cfun);
 
   if (flag_stack_usage_info)
     current_function_static_stack_size = size;
@@ -2983,7 +3032,13 @@ void
 arc_expand_epilogue (int sibcall_p)
 {
   arc_function_type fn_type = arc_compute_function_type (cfun);
-  int size = arc_compute_frame_size ();
+  int size;
+
+  /* Naked functions don't have epilogue.  */
+  if (ARC_NAKED_P (fn_type))
+    return;
+
+  size = arc_compute_frame_size ();
 
   if (1)
     {

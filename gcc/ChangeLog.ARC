@@ -1,5 +1,25 @@
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_handle_fndecl_attribute): New function.
+	(arc_attribute_table): Add "naked" entry.
+	(TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS): Define for ARC.
+	(TARGET_WARN_FUNC_RETURN): Define for ARC.
+	(arc_allocate_stack_slots_for_args): New function.
+	(arc_compute_function_type): Update for naked functions.
+	(arc_return_address_register): Likewise.
+	(arc_expand_prologue): Return early for naked functions.
+	(arc_expand_epilogue): Likewise.
+	(arc_warn_func_return): New function.
+	* config/arc/arc.h (ARC_FUNCTION_NAKED): New define.
+	(ARC_FUNCTION_ILINK1): Update.
+	(ARC_FUNCTION_ILINK2): Update.
+	(ARC_NAKED_P): New define.
+	* testsuite/gcc.target/arc/naked-1.c: New file.
+	* doc/extended.texi (Function Attributes): Mention that ARC
+	support naked functions.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc-protos.h (arc_compute_function_type): Update
 	return type.
 	* config/arc/arc.c (machine_function): Update type for fn_type
