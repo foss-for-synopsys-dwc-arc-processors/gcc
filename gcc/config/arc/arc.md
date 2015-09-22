@@ -4774,7 +4774,7 @@
     = gen_rtx_REG (Pmode,
 		   arc_return_address_register (arc_compute_function_type (cfun)));
 
-  if (arc_compute_function_type (cfun) == ARC_FUNCTION_ILINK1
+  if ((arc_compute_function_type (cfun) & ARC_FUNCTION_ILINK1) != 0
       && TARGET_V2)
   {
     return \"rtie\";
@@ -4788,27 +4788,23 @@
   }
 }
 [(set (attr "type")
-      (cond [(and (eq (symbol_ref "arc_compute_function_type (cfun)")
-		      (symbol_ref "ARC_FUNCTION_ILINK1"))
+      (cond [(and (match_test  "((arc_compute_function_type (cfun) & ARC_FUNCTION_ILINK1) != 0)")
 		  (match_test "TARGET_V2"))
 	     (const_string "retintr")]
 	    (const_string "return")))
    ; predicable won't help here since the canonical rtl looks different
    ; for branches.
    (set (attr "cond")
-	(cond [(and (eq (symbol_ref "arc_compute_function_type (cfun)")
-			(symbol_ref "ARC_FUNCTION_ILINK1"))
+	(cond [(and (match_test "((arc_compute_function_type (cfun) & ARC_FUNCTION_ILINK1) != 0)")
 		    (match_test "TARGET_V2"))
 	       (const_string "nocond")]
 	      (const_string "canuse")))
    (set (attr "iscompact")
-	(cond [(eq (symbol_ref "arc_compute_function_type (cfun)")
-		   (symbol_ref "ARC_FUNCTION_NORMAL"))
+	(cond [(match_test "!ARC_INTERRUPT_P (arc_compute_function_type (cfun))")
 	       (const_string "maybe")]
 	      (const_string "false")))
    (set (attr "length")
-	(cond [(ne (symbol_ref "arc_compute_function_type (cfun)")
-		   (symbol_ref "ARC_FUNCTION_NORMAL"))
+	(cond [(match_test "ARC_INTERRUPT_P (arc_compute_function_type (cfun))")
 	       (const_int 4)]
 	      (const_int 2)))])
 
@@ -4835,13 +4831,11 @@
   [(set_attr "type" "return")
    (set_attr "cond" "use")
    (set (attr "iscompact")
-	(cond [(eq (symbol_ref "arc_compute_function_type (cfun)")
-		   (symbol_ref "ARC_FUNCTION_NORMAL"))
+	(cond [(match_test "!ARC_INTERRUPT_P (arc_compute_function_type (cfun))")
 	       (const_string "maybe")]
 	      (const_string "false")))
    (set (attr "length")
-	(cond [(ne (symbol_ref "arc_compute_function_type (cfun)")
-		   (symbol_ref "ARC_FUNCTION_NORMAL"))
+	(cond [(match_test "ARC_INTERRUPT_P (arc_compute_function_type (cfun))")
 	       (const_int 4)
 	       (not (match_operand 0 "equality_comparison_operator" ""))
 	       (const_int 4)

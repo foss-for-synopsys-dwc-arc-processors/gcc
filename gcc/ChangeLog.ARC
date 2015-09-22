@@ -1,5 +1,32 @@
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc-protos.h (arc_compute_function_type): Update
+	return type.
+	* config/arc/arc.c (machine_function): Update type for fn_type
+	field.
+	(arc_compute_function_type): Update return type and variable type.
+	(arc_compute_frame_size): Update variable type.
+	(arc_return_address_register): Update parameter type.
+	(arc_expand_prologue): Update variable type, use ARC_INTERRUPT_P
+	not ARC_NORMAL_P.
+	(arc_expand_epilogue): Update variable type.
+	(arc_epilogue_uses): Update variable type.
+	* config/arc/arc.h (enum arc_function_type): Delete.
+	(arc_function_type): New typedef.
+	(ARC_FUNCTION_UNKNOWN): New define.
+	(ARC_FUNCTION_NORMAL): Likewise.
+	(ARC_FUNCTION_ILINK1): Likewise.
+	(ARC_FUNCTION_ILINK2): Likewise.
+	(ARC_INTERRUPT_P): Update.
+	(ARC_NORMAL_P): Update.
+	(arc_return_address_register): Update parameter type.
+	(arc_compute_function_type): Update return type.
+	* config/arc/arc.md (simple_return): Update now function type is a
+	set of bit flags.
+	(p_return_i): Likewise.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_return_address_register): New function.
 	(arc_return_address_regs): Delete global.
 	(arc_epilogue_uses): Update header comment.

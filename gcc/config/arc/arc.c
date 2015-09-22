@@ -2354,7 +2354,7 @@ struct GTY (()) arc_frame_info
 
 typedef struct GTY (()) machine_function
 {
-  enum arc_function_type fn_type;
+  arc_function_type fn_type;
   struct arc_frame_info frame_info;
   /* To keep track of unalignment caused by short insns.  */
   int unalign;
@@ -2369,17 +2369,17 @@ typedef struct GTY (()) machine_function
 
 /* Type of function DECL.  The result is cached per function.  */
 
-enum arc_function_type
+arc_function_type
 arc_compute_function_type (struct function *fun)
 {
   tree attr, decl = fun->decl;
-  enum arc_function_type fn_type = fun->machine->fn_type;
+  arc_function_type fn_type = fun->machine->fn_type;
 
   if (fn_type != ARC_FUNCTION_UNKNOWN)
     return fn_type;
 
   /* Assume we have a normal function (not an interrupt handler).  */
-  fn_type = ARC_FUNCTION_NORMAL;
+  fn_type |= ARC_FUNCTION_NORMAL;
 
   attr = lookup_attribute ("interrupt", DECL_ATTRIBUTES (decl));
   if (attr != NULL_TREE)
@@ -2392,9 +2392,9 @@ arc_compute_function_type (struct function *fun)
 
       if (!strcmp (TREE_STRING_POINTER (value), "ilink1")
 	  || !strcmp (TREE_STRING_POINTER (value), "ilink"))
-	fn_type = ARC_FUNCTION_ILINK1;
+	fn_type |= ARC_FUNCTION_ILINK1;
       else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
-	fn_type = ARC_FUNCTION_ILINK2;
+	fn_type |= ARC_FUNCTION_ILINK2;
       else
 	gcc_unreachable ();
     }
@@ -2479,7 +2479,7 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
   unsigned int total_size, var_size, args_size, pretend_size, extra_size;
   unsigned int reg_size, reg_offset;
   unsigned int gmask;
-  enum arc_function_type fn_type;
+  arc_function_type fn_type;
   int interrupt_p;
   struct arc_frame_info *frame_info;
   int size;
@@ -2814,13 +2814,24 @@ arc_dwarf_emit_irq_save_regs (void)
 /* See header file for description.  */
 
 int
-arc_return_address_register (enum arc_function_type fn_type)
+arc_return_address_register (arc_function_type fn_type)
 {
-  static int return_address_regs [] =
-    {0, RETURN_ADDR_REGNUM, ILINK1_REGNUM, ILINK2_REGNUM};
+  int regno = 0;
 
-  gcc_assert (fn_type < ARRAY_SIZE (return_address_regs));
-  return return_address_regs [fn_type];
+  if (ARC_NORMAL_P (fn_type))
+    regno = RETURN_ADDR_REGNUM;
+  else if (ARC_INTERRUPT_P (fn_type))
+    {
+      if ((fn_type & ARC_FUNCTION_ILINK1) != 0)
+        regno = ILINK1_REGNUM;
+      else if ((fn_type & ARC_FUNCTION_ILINK2) != 0)
+        regno = ILINK2_REGNUM;
+      else
+        gcc_unreachable ();
+    }
+
+  gcc_assert (regno != 0);
+  return regno;
 }
 
 /* Set up the stack and frame pointer (if desired) for the function.  */
@@ -2836,7 +2847,7 @@ arc_expand_prologue (void)
      Change the stack layout so that we rather store a high register with the
      PRE_MODIFY, thus enabling more short insn generation.)  */
   int first_offset = 0;
-  enum arc_function_type fn_type;
+  arc_function_type fn_type;
 
   /* Compute total frame size.  */
   size = arc_compute_frame_size ();
@@ -2971,7 +2982,7 @@ arc_expand_prologue (void)
 void
 arc_expand_epilogue (int sibcall_p)
 {
-  enum arc_function_type fn_type = arc_compute_function_type (cfun);
+  arc_function_type fn_type = arc_compute_function_type (cfun);
   int size = arc_compute_frame_size ();
 
   if (1)
@@ -3035,7 +3046,7 @@ arc_expand_epilogue (int sibcall_p)
       if (millicode_p)
 	{
 	      int sibthunk_p = (!sibcall_p
-				&& ARC_NORMAL_P (fn_type)
+				&& !ARC_INTERRUPT_P (fn_type)
 				&& !cfun->machine->frame_info.pretend_size);
 
 	      gcc_assert (!(cfun->machine->frame_info.gmask
@@ -10565,7 +10576,7 @@ arc_can_follow_jump (const_rtx follower, const_rtx followee)
 bool
 arc_epilogue_uses (int regno)
 {
-  enum arc_function_type fn_type;
+  arc_function_type fn_type;
 
   if (regno == arc_tp_regno)
     return true;
