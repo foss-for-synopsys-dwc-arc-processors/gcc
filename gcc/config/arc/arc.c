@@ -2748,7 +2748,7 @@ arc_save_restore (rtx base_reg,
 /* Build dwarf information when the context is saved via AUX_IRQ_CTRL
    mechanism. */
 static void
-dwarf_emit_irq_save_regs(void)
+arc_dwarf_emit_irq_save_regs (void)
 {
   rtx tmp, par, insn, reg;
   int i, offset, j;
@@ -2860,7 +2860,7 @@ arc_expand_prologue (void)
       && irq_ctrl_saved.irq_save_last_reg)
     {
       /* Emit dwarf IRQ sequence. */
-      dwarf_emit_irq_save_regs();
+      arc_dwarf_emit_irq_save_regs ();
     }
 
   /* The home-grown ABI says link register is saved first.  */
