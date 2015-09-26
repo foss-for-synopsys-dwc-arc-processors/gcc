@@ -1649,15 +1649,22 @@ typedef unsigned int arc_function_type;
    prologue or epilogue, and that no stack frame is available.  */
 #define ARC_FUNCTION_NAKED   1 << 1
 
-/* The two ilink function types are used to indicate interrupt functions.
-   If neither of these are set then the function is not an interrupt
-   function.  */
+/* The following identify the different types of interrupt functions that
+   are support.  An interrupt function is one with the 'interrupt'
+   attribute, a parameter passed to the interrupt attribute identifies the
+   type of interrupt function being created.  Making a function an
+   interrupt function changes things like stack frame layout, debug
+   information generated, and which register holds the return address.  */
 #define ARC_FUNCTION_ILINK1  1 << 2
 #define ARC_FUNCTION_ILINK2  1 << 3
+#define ARC_FUNCTION_FIRQ    1 << 4
 
 /* Check if a function is an interrupt function.  */
 #define ARC_INTERRUPT_P(TYPE) \
-  (((TYPE) & (ARC_FUNCTION_ILINK1 | ARC_FUNCTION_ILINK2)) != 0)
+  (((TYPE) & (ARC_FUNCTION_ILINK1 | ARC_FUNCTION_ILINK2 | ARC_FUNCTION_FIRQ)) != 0)
+
+#define ARC_FAST_INTERRUPT_P(TYPE) \
+  (((TYPE) & ARC_FUNCTION_FIRQ) != 0)
 
 /* Check if a function is normal, that is, has standard prologue and
    epilogue.  */

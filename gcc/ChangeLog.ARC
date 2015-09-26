@@ -1,3 +1,27 @@
+2015-10-26  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (rgf_banked_register_count): New global.
+	(parse_mrgf_banked_regs_option): New function.
+	(arc_override_options): Handle mrgf_banked_regs option.
+	(arc_handle_interrupt_attribute): Accept firq
+	as an interrupt attribute.
+	(arc_compute_function_type): Take account of firq function
+	attribute.
+	(arc_must_save_register): Take fast interrupts into account.
+	(arc_return_address_register): Likewise.
+	(arc_expand_prologue): Don't emit extra DWARF for firq functions.
+	* config/arc/arc.h (ARC_FUNCTION_FIRQ): New define.
+	(ARC_INTERRUPT_P): Update for firq interrupt type.
+	(ARC_FAST_INTERRUPT_P): New define.
+	* config/arc/arc.md (simple_return): Use ARC_INTERRUPT_P
+	throughout.
+	* config/arc/arc.opt: Add 'mrgf-banked-regs' option.
+	* doc/invoke.texi (ARC Options): Add '-mrgf-banked-regs'
+	description.
+	* doc/extend.texi (Function Attributes): Add 'firq' description.
+	* testsuite/gcc.target/arc/firq-1.c: New file.
+	* testsuite/gcc.target/arc/firq-2.c: New file.
+
 2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (MUST_SAVE_REGISTER): Delete.

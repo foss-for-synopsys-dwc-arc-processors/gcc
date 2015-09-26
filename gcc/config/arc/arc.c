@@ -193,6 +193,9 @@ typedef struct irq_ctrl_saved_t
 } irq_ctrl_saved_t;
 static irq_ctrl_saved_t irq_ctrl_saved;
 
+/* Number of registers in second bank for FIRQ support.  */
+static int rgf_banked_register_count;
+
 #define arc_ccfsm_current cfun->machine->ccfsm_current
 
 #define ARC_CCFSM_BRANCH_DELETED_P(STATE) \
@@ -453,6 +456,8 @@ static void output_short_suffix (FILE *file);
 static bool arc_frame_pointer_required (void);
 
 static void irq_range (const char *);
+
+static void parse_mrgf_banked_regs_option (const char *);
 
 /* Implements target hook vector_mode_supported_p.  */
 
@@ -1117,6 +1122,13 @@ arc_override_options (void)
 	      irq_range (opt->arg);
 	    else
 	      warning (0, "option -mirq-vtrl-saved valid only for ARC v2 processors");
+	    break;
+
+	  case OPT_mrgf_banked_regs_:
+	    if (TARGET_V2)
+	      parse_mrgf_banked_regs_option (opt->arg);
+	    else
+	      warning (0, "option -mrgf-banked-regs valid only for ARC v2 processors");
 	    break;
 
 	  default:
@@ -1882,10 +1894,11 @@ arc_handle_interrupt_attribute (tree *node, tree name, tree args, int,
       *no_add_attrs = true;
     }
   else if (TARGET_V2
-	   && strcmp (TREE_STRING_POINTER (value), "ilink"))
+	   && strcmp (TREE_STRING_POINTER (value), "ilink")
+	   && strcmp (TREE_STRING_POINTER (value), "firq"))
     {
       warning (OPT_Wattributes,
-	       "argument of %qE attribute is not \"ilink\"",
+	       "argument of %qE attribute is not \"ilink\" or \"firq\"",
 	       name);
       *no_add_attrs = true;
     }
@@ -2444,6 +2457,8 @@ arc_compute_function_type (struct function *fun)
 	fn_type |= ARC_FUNCTION_ILINK1;
       else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
 	fn_type |= ARC_FUNCTION_ILINK2;
+      else if (!strcmp (TREE_STRING_POINTER (value), "firq"))
+	fn_type |= ARC_FUNCTION_FIRQ;
       else
 	gcc_unreachable ();
     }
@@ -2473,6 +2488,8 @@ static bool arc_must_save_register (struct function *func, int regno)
 	   && (regno) != FRAME_POINTER_REGNUM
 	   && df_regs_ever_live_p (regno)
 	   && (!call_used_regs[regno]
+	       || (ARC_FAST_INTERRUPT_P (fn_type)
+		   && (regno >= rgf_banked_register_count))
 	       || (ARC_INTERRUPT_P (fn_type)
 		   && (regno > irq_ctrl_saved.irq_save_last_reg))))
 	  || (flag_pic && crtl->uses_pic_offset_table
@@ -2886,7 +2903,7 @@ arc_return_address_register (arc_function_type fn_type)
 
   if (ARC_INTERRUPT_P (fn_type))
     {
-      if ((fn_type & ARC_FUNCTION_ILINK1) != 0)
+      if ((fn_type & ARC_FUNCTION_ILINK1 | ARC_FUNCTION_FIRQ) != 0)
         regno = ILINK1_REGNUM;
       else if ((fn_type & ARC_FUNCTION_ILINK2) != 0)
         regno = ILINK2_REGNUM;
@@ -2944,6 +2961,7 @@ arc_expand_prologue (void)
   /* IRQ using automatic save mechanism will save the register before
      anything we do. */
   if (ARC_INTERRUPT_P (fn_type)
+      && !ARC_FAST_INTERRUPT_P (fn_type)
       && irq_ctrl_saved.irq_save_last_reg)
     {
       /* Emit dwarf IRQ sequence. */
@@ -12262,6 +12280,27 @@ irq_range (const char *cstr)
   irq_ctrl_saved.irq_save_last_reg = last;
   irq_ctrl_saved.irq_save_blink    = (blink == 31);
   irq_ctrl_saved.irq_save_lpcount  = (lpcount == 60);
+}
+
+/* Parse -mrgf-banked-regs=NUM option string.  Valid values for NUM are 4,
+   8, 16, or 32.  */
+
+static void
+parse_mrgf_banked_regs_option (const char *arg)
+{
+  long int val;
+  char *end_ptr;
+
+  errno = 0;
+  val = strtol (arg, &end_ptr, 10);
+  if (errno != 0 || *arg == '\0' || *end_ptr != '\0'
+      || (val != 0 && val != 4 && val != 8 && val != 16 && val != 32))
+    {
+      error ("invalid number in -mrgf-banked-regs=%s "
+	     "valid values are 0, 4, 8, 16, or 32", arg);
+      return;
+    }
+  rgf_banked_register_count = (int) val;
 }
 
   /* We can't inline this in INSN_REFERENCES_ARE_DELAYED because resource.h

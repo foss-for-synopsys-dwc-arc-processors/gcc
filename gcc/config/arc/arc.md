@@ -4774,7 +4774,7 @@
     = gen_rtx_REG (Pmode,
 		   arc_return_address_register (arc_compute_function_type (cfun)));
 
-  if ((arc_compute_function_type (cfun) & ARC_FUNCTION_ILINK1) != 0
+  if (ARC_INTERRUPT_P (arc_compute_function_type (cfun))
       && TARGET_V2)
   {
     return \"rtie\";
@@ -4788,14 +4788,14 @@
   }
 }
 [(set (attr "type")
-      (cond [(and (match_test  "((arc_compute_function_type (cfun) & ARC_FUNCTION_ILINK1) != 0)")
+      (cond [(and (match_test  "ARC_INTERRUPT_P (arc_compute_function_type (cfun))")
 		  (match_test "TARGET_V2"))
 	     (const_string "retintr")]
 	    (const_string "return")))
    ; predicable won't help here since the canonical rtl looks different
    ; for branches.
    (set (attr "cond")
-	(cond [(and (match_test "((arc_compute_function_type (cfun) & ARC_FUNCTION_ILINK1) != 0)")
+	(cond [(and (match_test "ARC_INTERRUPT_P (arc_compute_function_type (cfun))")
 		    (match_test "TARGET_V2"))
 	       (const_string "nocond")]
 	      (const_string "canuse")))

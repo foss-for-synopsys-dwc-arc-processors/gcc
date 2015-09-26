@@ -2832,8 +2832,12 @@ void f () __attribute__ ((interrupt ("ilink1")));
 @end smallexample
 
 For the ARC 600 and ARC 700 families, the only permissible values for
-this parameter are: @w{@code{ilink1}} and @w{@code{ilink2}}.  For the
-ARCv2 cpu processors, the only permissible value is @w{@code{ilink}}.
+this parameter are: @w{@code{ilink1}} and @w{@code{ilink2}}.
+
+For the ARCv2 cpu processors, the only permissible values for this
+parameter are: @w{@code{ilink}} and @w{@code{firq}}.  The @code{ilink}
+should be used for standard interrupt functions, while @code{firq}
+should be used for fast interrupt functions.
 
 Note, on the AVR, the hardware globally disables interrupts when an
 interrupt is executed.  The first instruction of an interrupt handler
