@@ -1872,15 +1872,17 @@ arc_handle_interrupt_attribute (tree *node, tree name, tree args, int,
 	       name);
       *no_add_attrs = true;
     }
-  else if (strcmp (TREE_STRING_POINTER (value), "ilink1")
-	   && strcmp (TREE_STRING_POINTER (value), "ilink2") && !TARGET_V2)
+  else if (!TARGET_V2
+	   && strcmp (TREE_STRING_POINTER (value), "ilink1")
+	   && strcmp (TREE_STRING_POINTER (value), "ilink2"))
     {
       warning (OPT_Wattributes,
 	       "argument of %qE attribute is not \"ilink1\" or \"ilink2\"",
 	       name);
       *no_add_attrs = true;
     }
-  else if (TARGET_V2 && strcmp (TREE_STRING_POINTER (value), "ilink"))
+  else if (TARGET_V2
+	   && strcmp (TREE_STRING_POINTER (value), "ilink"))
     {
       warning (OPT_Wattributes,
 	       "argument of %qE attribute is not \"ilink\"",

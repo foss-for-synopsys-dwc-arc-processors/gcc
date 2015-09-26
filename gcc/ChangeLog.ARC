@@ -1,3 +1,8 @@
+2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_handle_interrupt_attribute): Reorder if
+	conditions.
+
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (arc_handle_fndecl_attribute): New function.
