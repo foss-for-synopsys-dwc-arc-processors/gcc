@@ -1,5 +1,9 @@
 2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_compute_frame_size): Shorten line length.
+
+2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_handle_interrupt_attribute): Reorder if
 	conditions.
 

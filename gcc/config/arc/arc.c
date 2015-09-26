@@ -2559,7 +2559,8 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 
   for (regno = 0; regno <= 31; regno++)
     {
-      bool irq_auto_save_p = (interrupt_p && (irq_ctrl_saved.irq_save_last_reg >= regno));
+      bool irq_auto_save_p =
+	(interrupt_p && (irq_ctrl_saved.irq_save_last_reg >= regno));
       if (MUST_SAVE_REGISTER (regno, interrupt_p)
 	  || irq_auto_save_p)
 	{
