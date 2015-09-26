@@ -1842,14 +1842,20 @@ arc_conditional_register_usage (void)
    struct attribute_spec.handler.  */
 
 static tree
-arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
+arc_handle_interrupt_attribute (tree *node, tree name, tree args, int,
 				bool *no_add_attrs)
 {
   gcc_assert (args);
 
   tree value = TREE_VALUE (args);
 
-  if (TREE_CODE (value) != STRING_CST)
+  if (TREE_CODE (*node) != FUNCTION_DECL)
+    {
+      warning (OPT_Wattributes, "%qE attribute only applies to functions",
+	       name);
+      *no_add_attrs = true;
+    }
+  else if (TREE_CODE (value) != STRING_CST)
     {
       warning (OPT_Wattributes,
 	       "argument of %qE attribute is not a string constant",

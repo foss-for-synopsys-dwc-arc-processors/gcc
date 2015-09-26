@@ -1,5 +1,10 @@
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_handle_interrupt_attribute): The interrupt
+	attribute only applies to functions.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (dwarf_emit_irq_save_regs): Rename to...
 	(arc_dwarf_emit_irq_save_regs): ...this.
 	(arc_expand_prologue): Update use of dwarf_emit_irq_save_regs to
