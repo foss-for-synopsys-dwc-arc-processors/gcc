@@ -1,5 +1,13 @@
 2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (MUST_SAVE_RETURN_ADDR): Delete.
+	(arc_must_save_return_addr): New function.
+	(arc_compute_frame_size): Use arc_must_save_return_addr.
+	(arc_expand_prologue): Likewise.
+	(arc_expand_epilogue): Likewise.
+
+2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_compute_frame_size): Shorten line length.
 
 2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>

@@ -2471,9 +2471,23 @@ arc_compute_function_type (struct function *fun)
    || (crtl->calls_eh_return						\
        && (regno > 3 && regno < 27)))
 
-#define MUST_SAVE_RETURN_ADDR \
-  (cfun->machine->frame_info.save_return_addr	\
-   || crtl->calls_eh_return)
+/* Return true if the return address must be saved in the current function,
+   otherwise return false.  */
+
+static bool
+arc_must_save_return_addr ()
+{
+  /* The first are the conditions under which the return address register
+     needs to be saved to the stack.  */
+  return ((cfun->machine->frame_info.save_return_addr
+           || crtl->calls_eh_return)
+          /* However if this is an interrupt function, and the return
+             address is being automatically saved, then we don't need to
+             save anything ourselves.  */
+          && (!ARC_INTERRUPT_P (arc_compute_function_type (cfun))
+              || irq_ctrl_saved.irq_save_blink
+              || irq_ctrl_saved.irq_save_last_reg >= 31));
+}
 
 /* Helper function to wrap FRAME_POINTER_NEEDED.  We do this as
    FRAME_POINTER_NEEDED will not be true until the IRA (Integrated Register
@@ -2592,7 +2606,7 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
     }
 
   extra_size = 0;
-  if (MUST_SAVE_RETURN_ADDR)
+  if (arc_must_save_return_addr ())
     extra_size = 4;
   if (arc_frame_pointer_needed ())
     extra_size += 4;
@@ -2600,11 +2614,6 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
   /* Honor irq_ctrl_saved option. */
   if (interrupt_p && irq_ctrl_saved.irq_save_last_reg > 0)
     {
-      if (!MUST_SAVE_RETURN_ADDR
-	  && (irq_ctrl_saved.irq_save_blink
-	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
-	extra_size += 4;
-
       if (!arc_frame_pointer_needed ()
 	  && (irq_ctrl_saved.irq_save_last_reg > 26))
 	extra_size +=4;
@@ -2935,25 +2944,14 @@ arc_expand_prologue (void)
     }
 
   /* The home-grown ABI says link register is saved first.  */
-  if (MUST_SAVE_RETURN_ADDR)
+  if (arc_must_save_return_addr ())
     {
-      /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (fn_type)
-	  && (irq_ctrl_saved.irq_save_blink
-	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
-	{
-	  frame_size_to_allocate -= UNITS_PER_WORD;
-	}
-      else
-	{
-	  rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
-	  rtx mem = gen_frame_mem (Pmode, gen_rtx_PRE_DEC (Pmode, stack_pointer_rtx));
+      rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
+      rtx mem = gen_frame_mem (Pmode, gen_rtx_PRE_DEC (Pmode, stack_pointer_rtx));
 
-	  frame_move_inc (mem, ra, stack_pointer_rtx, 0);
-	  frame_size_to_allocate -= UNITS_PER_WORD;
-	}
-
-    } /* MUST_SAVE_RETURN_ADDR */
+      frame_move_inc (mem, ra, stack_pointer_rtx, 0);
+      frame_size_to_allocate -= UNITS_PER_WORD;
+    }
 
   /* Save any needed call-saved regs (and call-used if this is an
      interrupt handler) for ARCompact ISA.  */
@@ -2989,7 +2987,7 @@ arc_expand_prologue (void)
                                GEN_INT (cfun->machine->frame_info.reg_size));
       rtx mem = gen_frame_mem (Pmode, addr);
 
-      gcc_assert (MUST_SAVE_RETURN_ADDR);
+      gcc_assert (arc_must_save_return_addr ());
       emit_insn (gen_rtx_SET (VOIDmode, ra, mem));
     }
 
@@ -3125,62 +3123,52 @@ arc_expand_epilogue (int sibcall_p)
 		: satisfies_constraint_C2a (GEN_INT (first_offset))))
 	   /* Also do this if we have both gprs and return
 	      address to restore, and they both would need a LIMM.  */
-	   || (MUST_SAVE_RETURN_ADDR
+          || (arc_must_save_return_addr ()
 	       && !SMALL_INT ((cfun->machine->frame_info.reg_size + first_offset) >> 2)
 	       && cfun->machine->frame_info.gmask))
 	{
 	  frame_stack_add (first_offset);
 	  first_offset = 0;
 	}
-      if (MUST_SAVE_RETURN_ADDR)
+      if (arc_must_save_return_addr ())
 	{
-	  /* Honor irq_ctrl_saved option. */
-	  if (ARC_INTERRUPT_P (fn_type)
-	      && (irq_ctrl_saved.irq_save_blink
-		  || (irq_ctrl_saved.irq_save_last_reg == 31)))
-	    {
-	      size_to_deallocate -= UNITS_PER_WORD;
-	    }
-	  else
-	    {
-	      rtx ra = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
-	      int ra_offs = cfun->machine->frame_info.reg_size + first_offset;
-	      rtx addr = plus_constant (Pmode, stack_pointer_rtx, ra_offs);
+          rtx ra = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
+          int ra_offs = cfun->machine->frame_info.reg_size + first_offset;
+          rtx addr = plus_constant (Pmode, stack_pointer_rtx, ra_offs);
 
-	      /* If the load of blink would need a LIMM, but we can add
-		 the offset quickly to sp, do the latter.  */
-	      if (!SMALL_INT (ra_offs >> 2)
-		  && !cfun->machine->frame_info.gmask
-		  && ((TARGET_ARC700 && !optimize_size)
-		      ? ra_offs <= 0x800
-		      : satisfies_constraint_C2a (GEN_INT (ra_offs))))
-		{
-		  size_to_deallocate -= ra_offs - first_offset;
-		  first_offset = 0;
-		  frame_stack_add (ra_offs);
-		  ra_offs = 0;
-		  addr = stack_pointer_rtx;
-		}
-	      /* See if we can combine the load of the return address with the
-		 final stack adjustment.
-		 We need a separate load if there are still registers to
-		 restore.  We also want a separate load if the combined insn
-		 would need a limm, but a separate load doesn't.  */
-	      if (ra_offs
-		  && !cfun->machine->frame_info.gmask
-		  && (SMALL_INT (ra_offs) || !SMALL_INT (ra_offs >> 2)))
-		{
-		  addr = gen_rtx_PRE_MODIFY (Pmode, stack_pointer_rtx, addr);
-		  first_offset = 0;
-		  size_to_deallocate -= cfun->machine->frame_info.reg_size;
-		}
-	      else if (!ra_offs && size_to_deallocate == UNITS_PER_WORD)
-		{
-		  addr = gen_rtx_POST_INC (Pmode, addr);
-		  size_to_deallocate = 0;
-		}
-	      frame_move_inc (ra, gen_frame_mem (Pmode, addr), stack_pointer_rtx, addr);
-	    }
+          /* If the load of blink would need a LIMM, but we can add
+             the offset quickly to sp, do the latter.  */
+          if (!SMALL_INT (ra_offs >> 2)
+              && !cfun->machine->frame_info.gmask
+              && ((TARGET_ARC700 && !optimize_size)
+                  ? ra_offs <= 0x800
+                  : satisfies_constraint_C2a (GEN_INT (ra_offs))))
+            {
+              size_to_deallocate -= ra_offs - first_offset;
+              first_offset = 0;
+              frame_stack_add (ra_offs);
+              ra_offs = 0;
+              addr = stack_pointer_rtx;
+            }
+          /* See if we can combine the load of the return address with the
+             final stack adjustment.
+             We need a separate load if there are still registers to
+             restore.  We also want a separate load if the combined insn
+             would need a limm, but a separate load doesn't.  */
+          if (ra_offs
+              && !cfun->machine->frame_info.gmask
+              && (SMALL_INT (ra_offs) || !SMALL_INT (ra_offs >> 2)))
+            {
+              addr = gen_rtx_PRE_MODIFY (Pmode, stack_pointer_rtx, addr);
+              first_offset = 0;
+              size_to_deallocate -= cfun->machine->frame_info.reg_size;
+            }
+          else if (!ra_offs && size_to_deallocate == UNITS_PER_WORD)
+            {
+              addr = gen_rtx_POST_INC (Pmode, addr);
+              size_to_deallocate = 0;
+            }
+          frame_move_inc (ra, gen_frame_mem (Pmode, addr), stack_pointer_rtx, addr);
 	}
 
       if (!millicode_p)
