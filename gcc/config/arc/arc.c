@@ -2454,22 +2454,32 @@ arc_compute_function_type (struct function *fun)
 #define FRAME_POINTER_MASK (1 << (FRAME_POINTER_REGNUM))
 #define RETURN_ADDR_MASK (1 << (RETURN_ADDR_REGNUM))
 
-/* Tell prologue and epilogue if register REGNO should be saved / restored.
-   The return address and frame pointer are treated separately.
-   Don't consider them here.
+/* Tell prologue and epilogue if register REGNO should be saved / restored
+   in function FUNC.
+
+   The return address and frame pointer are treated separately, don't
+   consider them here.
+
    Addition for pic: The gp register needs to be saved if the current
    function changes it to access gotoff variables.
+
    FIXME: This will not be needed if we used some arbitrary register
-   instead of r26.
-*/
-#define MUST_SAVE_REGISTER(regno, interrupt_p) \
-  (((regno) != RETURN_ADDR_REGNUM && (regno) != FRAME_POINTER_REGNUM	\
-    && (df_regs_ever_live_p (regno)					\
-	&& (!call_used_regs[regno] || interrupt_p)))			\
-   || (flag_pic && crtl->uses_pic_offset_table				\
-       && regno == PIC_OFFSET_TABLE_REGNUM)				\
-   || (crtl->calls_eh_return						\
-       && (regno > 3 && regno < 27)))
+   instead of r26.  */
+static bool arc_must_save_register (struct function *func, int regno)
+{
+  arc_function_type fn_type = arc_compute_function_type (func);
+
+  return (((regno) != RETURN_ADDR_REGNUM
+	   && (regno) != FRAME_POINTER_REGNUM
+	   && df_regs_ever_live_p (regno)
+	   && (!call_used_regs[regno]
+	       || (ARC_INTERRUPT_P (fn_type)
+		   && (regno > irq_ctrl_saved.irq_save_last_reg))))
+	  || (flag_pic && crtl->uses_pic_offset_table
+	      && regno == PIC_OFFSET_TABLE_REGNUM)
+	  || (crtl->calls_eh_return
+	      && (regno > 3 && regno < 27)));
+}
 
 /* Return true if the return address must be saved in the current function,
    otherwise return false.  */
@@ -2573,13 +2583,10 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 
   for (regno = 0; regno <= 31; regno++)
     {
-      bool irq_auto_save_p =
-	(interrupt_p && (irq_ctrl_saved.irq_save_last_reg >= regno));
-      if (MUST_SAVE_REGISTER (regno, interrupt_p)
-	  || irq_auto_save_p)
+      if (arc_must_save_register (cfun, regno))
 	{
 	  reg_size += UNITS_PER_WORD;
-	  gmask |= (!irq_auto_save_p) << regno;
+	  gmask |= 1 << regno;
 	}
     }
 

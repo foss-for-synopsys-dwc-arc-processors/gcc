@@ -1,5 +1,11 @@
 2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (MUST_SAVE_REGISTER): Delete.
+	(arc_must_save_register): New function.
+	(arc_compute_frame_size): Use arc_must_save_register.
+
+2015-10-22  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (MUST_SAVE_RETURN_ADDR): Delete.
 	(arc_must_save_return_addr): New function.
 	(arc_compute_frame_size): Use arc_must_save_return_addr.
