@@ -2375,8 +2375,7 @@ typedef struct GTY (()) machine_function
 enum arc_function_type
 arc_compute_function_type (struct function *fun)
 {
-  tree decl = fun->decl;
-  tree a;
+  tree attr, decl = fun->decl;
   enum arc_function_type fn_type = fun->machine->fn_type;
 
   if (fn_type != ARC_FUNCTION_UNKNOWN)
@@ -2385,27 +2384,22 @@ arc_compute_function_type (struct function *fun)
   /* Assume we have a normal function (not an interrupt handler).  */
   fn_type = ARC_FUNCTION_NORMAL;
 
-  /* Now see if this is an interrupt handler.  */
-  for (a = DECL_ATTRIBUTES (decl);
-       a;
-       a = TREE_CHAIN (a))
+  attr = lookup_attribute ("interrupt", DECL_ATTRIBUTES (decl));
+  if (attr != NULL_TREE)
     {
-      tree name = TREE_PURPOSE (a), args = TREE_VALUE (a);
+      tree value, args = TREE_VALUE (attr);
 
-      if (name == get_identifier ("interrupt")
-	  && list_length (args) == 1
-	  && TREE_CODE (TREE_VALUE (args)) == STRING_CST)
-	{
-	  tree value = TREE_VALUE (args);
+      gcc_assert (list_length (args) == 1);
+      value = TREE_VALUE (args);
+      gcc_assert (TREE_CODE (value) == STRING_CST);
 
-	  if (!strcmp (TREE_STRING_POINTER (value), "ilink1") || !strcmp (TREE_STRING_POINTER (value), "ilink"))
-	    fn_type = ARC_FUNCTION_ILINK1;
-	  else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
-	    fn_type = ARC_FUNCTION_ILINK2;
-	  else
-	    gcc_unreachable ();
-	  break;
-	}
+      if (!strcmp (TREE_STRING_POINTER (value), "ilink1")
+	  || !strcmp (TREE_STRING_POINTER (value), "ilink"))
+	fn_type = ARC_FUNCTION_ILINK1;
+      else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
+	fn_type = ARC_FUNCTION_ILINK2;
+      else
+	gcc_unreachable ();
     }
 
   return fun->machine->fn_type = fn_type;

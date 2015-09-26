@@ -1,5 +1,10 @@
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_compute_function_type): Use
+	lookup_attribute to find the interrupt attribute.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_handle_interrupt_attribute): The interrupt
 	attribute only applies to functions.
 
