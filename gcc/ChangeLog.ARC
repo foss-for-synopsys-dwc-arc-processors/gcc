@@ -1,3 +1,8 @@
+2015-09-29  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.md (doloop_begin_i): Handle case where
+	loop_start is NULL_RTX.
+
 2015-09-08  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.md (doloop_begin_i): Make correct use of
