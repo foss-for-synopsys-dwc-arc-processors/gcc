@@ -5113,7 +5113,22 @@
 	     is known.  But that would require extra testing.  */
 	  arc_clear_unalign ();
 	  ASM_OUTPUT_ALIGN (asm_out_file, 2);
-	  return "push_s r0\;add r0,pcl,@%4@pcl\;sr r0,[2]; LP_START\;add r0,pcl,@.L__GCC__LP%1@pcl\;sr r0,[3]; LP_END\;pop_s r0";
+	  output_asm_insn ("push_s r0", operands);
+	  if (loop_start == NULL_RTX)
+            /* When loop_start is NULL_RTX then the first instruction of
+               the loop is immediately after this doloop_begin_i
+               instruction, in order to load the start of loop address we
+               therefore use the immediate 24 here, this is the number of
+               bytes from the start of the 'push_s r0' above, to the start
+               of the instruction following 'pop_s r0' below.  */
+	    output_asm_insn ("add r0,pcl,24", operands);
+	  else
+            /* When loop_start is not NULL_RTX then the start of the loop
+               might be anywhere, we therefore need to load the loop_start
+               address using the label name, not a hard-coded immediate.  */
+	    output_asm_insn ("add r0,pcl,@%4@pcl", operands);
+	  output_asm_insn ("sr r0,[2]; LP_START", operands);
+	  return "add r0,pcl,@.L__GCC__LP%1@pcl\;sr r0,[3]; LP_END\;pop_s r0";
 	}
       output_asm_insn ((size < 2048
 			? "lp .L__GCC__LP%1" : "sr .L__GCC__LP%1,[3]; LP_END"),
