@@ -1,3 +1,6 @@
+2015-10-06  Anton Kolesov  <Anton.Kolesov@synopsys.com>
+	* testsuite/gcc.target/arc/pr9000727530.c: Include time.h
+
 2015-09-29  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.md (doloop_begin_i): Handle case where
