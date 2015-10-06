@@ -6,6 +6,7 @@
    when checking the instruction constrains. */
 
 #include "stdio.h"
+#include "time.h"
 
 char *outfile;
 
