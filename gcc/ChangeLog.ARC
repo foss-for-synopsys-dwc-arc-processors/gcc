@@ -1,3 +1,9 @@
+2015-10-08  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c: Undefine TARGET macros.
+	* config/arc/arc.c (arc_init): Throw errors when mcode-density or
+	mdiv-rem options are used for ARCv1 CPUs.
+
 2015-09-29  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.md (doloop_begin_i): Handle case where

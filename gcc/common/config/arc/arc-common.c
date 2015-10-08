@@ -249,15 +249,21 @@ arc_option_default_params (void)
   set_default_param_value (PARAM_L1_CACHE_LINE_SIZE, 64);
 }
 
-#undef TARGET_OPTION_DEFAULT_PARAMS
+#undef  TARGET_OPTION_DEFAULT_PARAMS
 #define TARGET_OPTION_DEFAULT_PARAMS arc_option_default_params
 
+#undef  TARGET_OPTION_INIT_STRUCT
 #define TARGET_OPTION_INIT_STRUCT arc_option_init_struct
+
+#undef  TARGET_OPTION_OPTIMIZATION_TABLE
 #define TARGET_OPTION_OPTIMIZATION_TABLE arc_option_optimization_table
+
+#undef  TARGET_HANDLE_OPTION
 #define TARGET_HANDLE_OPTION arc_handle_option
 
 #define DEFAULT_NO_SDATA (TARGET_SDATA_DEFAULT ? 0 : MASK_NO_SDATA_SET)
 
+#undef  TARGET_DEFAULT_TARGET_FLAGS
 #if TARGET_CPU_DEFAULT == TARGET_CPU_HS
 /* For HS max out. */
 # define TARGET_DEFAULT_TARGET_FLAGS					\

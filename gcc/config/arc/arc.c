@@ -1028,6 +1028,12 @@ arc_init (void)
       profile_flag = 0;
     }
 
+  if (TARGET_DIVREM && (!TARGET_V2))
+    error ("DIV/REM option is only available for ARCv2 processor family");
+
+  if (TARGET_CODE_DENSITY && (!TARGET_V2))
+    error ("CODE DENSITY option is only available for ARCv2 processor family");
+
   arc_init_reg_tables ();
 
   /* Initialize array for PRINT_OPERAND_PUNCT_VALID_P.  */
