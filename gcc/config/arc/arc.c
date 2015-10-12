@@ -8763,40 +8763,39 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
 {
   /* We used to do this only for MODE_INT Modes, but addresses to floating
      point variables may well be in the small data section.  */
-  if (1)
+  if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[0], Pmode))
+    operands[0] = arc_rewrite_small_data (operands[0]);
+
+  if (mode == SImode && SYMBOLIC_CONST (operands[1]))
     {
-      if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[0], Pmode))
-	operands[0] = arc_rewrite_small_data (operands[0]);
-      if (mode == SImode && SYMBOLIC_CONST (operands[1]))
-	{
-	  prepare_pic_move (operands, SImode);
+      prepare_pic_move (operands, SImode);
 
-	  /* Disable any REG_EQUALs associated with the symref
-	     otherwise the optimization pass undoes the work done
-	     here and references the variable directly.  */
-	}
-      if (GET_CODE (operands[0]) != MEM
-	  && !TARGET_NO_SDATA_SET
-	  && small_data_pattern (operands[1], Pmode))
-       {
-	  /* This is to take care of address calculations involving sdata
-	     variables.  */
-	  operands[1] = arc_rewrite_small_data (operands[1]);
+      /* Disable any REG_EQUALs associated with the symref
+	 otherwise the optimization pass undoes the work done
+	 here and references the variable directly.  */
+    }
 
-	  emit_insn (gen_rtx_SET (mode, operands[0],operands[1]));
-	  /* ??? This note is useless, since it only restates the set itself.
-	     We should rather use the original SYMBOL_REF.  However, there is
-	     the problem that we are lying to the compiler about these
-	     SYMBOL_REFs to start with.  symbol@sda should be encoded specially
-	     so that we can tell it apart from an actual symbol.  */
-	  set_unique_reg_note (get_last_insn (), REG_EQUAL, operands[1]);
+  if (GET_CODE (operands[0]) != MEM
+      && !TARGET_NO_SDATA_SET
+      && small_data_pattern (operands[1], Pmode))
+    {
+      /* This is to take care of address calculations involving sdata
+	 variables.  */
+      operands[1] = arc_rewrite_small_data (operands[1]);
 
-	  /* Take care of the REG_EQUAL note that will be attached to mark the
-	     output reg equal to the initial symbol_ref after this code is
-	     executed.  */
-	  emit_move_insn (operands[0], operands[0]);
-	  return true;
-	}
+      emit_insn (gen_rtx_SET (mode, operands[0],operands[1]));
+      /* ??? This note is useless, since it only restates the set itself.
+	 We should rather use the original SYMBOL_REF.  However, there is
+	 the problem that we are lying to the compiler about these
+	 SYMBOL_REFs to start with.  symbol@sda should be encoded specially
+	 so that we can tell it apart from an actual symbol.  */
+      set_unique_reg_note (get_last_insn (), REG_EQUAL, operands[1]);
+
+      /* Take care of the REG_EQUAL note that will be attached to mark the
+	 output reg equal to the initial symbol_ref after this code is
+	 executed.  */
+      emit_move_insn (operands[0], operands[0]);
+      return true;
     }
 
   if (MEM_P (operands[0])
@@ -8837,6 +8836,21 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
 	  MEM_COPY_ATTRIBUTES (pat, operands[1]);
 	  operands[1] = pat;
 	}
+    }
+
+  if (TARGET_DPFP
+      && (mode == DFmode)
+      && REG_P (operands[0]) && REG_P (operands[1])
+      && !(reload_in_progress || reload_completed))
+    {
+      /* There may be cases when we need to move the register Dx to
+	 Dy.  Hence, we reserve here a register to be used with daddhx
+	 instruction.  */
+      rtx tmp = gen_reg_rtx (SImode);
+      rtx x1 = gen_rtx_SET (VOIDmode, operands[0], operands[1]);
+      rtx x2 = gen_rtx_CLOBBER (VOIDmode, tmp);
+      emit_insn (gen_rtx_PARALLEL (VOIDmode, gen_rtvec (2, x1, x2)));
+      return true;
     }
 
   return false;

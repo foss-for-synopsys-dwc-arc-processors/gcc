@@ -1114,6 +1114,26 @@
    ;; ??? The ld/st values could be 16 if it's [reg,bignum].
    (set_attr "length" "4,16,8,16,16,16")])
 
+(define_insn_and_split "*movdf_fpx"
+  [(set (match_operand:DF 0 "move_dest_operand"      "=D,r,c,D")
+	(match_operand:DF 1 "move_double_src_operand" "r,D,c,D"))
+   (clobber (match_operand: SI 2 "register_operand" "=&r,r,r,r"))]
+  "TARGET_DPFP"
+  "#"
+  "reload_completed"
+  [(clobber (const_int 0))]
+  "{
+    if (refers_to_regno_p (40, 44, operands[0], 0)
+         && refers_to_regno_p (40, 44, operands[1], 0))
+      {
+       emit_move_insn (operands[2], GEN_INT (0));
+       emit_insn (gen_daddh (operands[0], operands[1], operands[2]));
+       DONE;
+      }
+     emit_move_insn (operands[0], operands[1]);
+     DONE;
+    }")
+
 (define_insn_and_split "*movdf_insn_nolrsr"
   [(set (match_operand:DF 0 "register_operand"       "=r")
 	(match_operand:DF 1 "arc_double_register_operand" "D"))

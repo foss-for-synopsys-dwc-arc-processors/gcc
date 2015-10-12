@@ -1,3 +1,11 @@
+2015-10-12  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (prepare_move_operands): Use a scratch register
+	when we emit a double FPX move.
+	* config/arc/arc.md (movdf_fpx): New pattern.
+	* config/arc/fpx.md (daddh): Likewise.
+	(peephole2): Comment out patterns.
+
 2015-10-08  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c: Undefine TARGET macros.

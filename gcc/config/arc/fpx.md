@@ -248,6 +248,16 @@
   [(set_attr "type" "dpfp_addsub")
   (set_attr "length" "4,8")])
 
+(define_insn "daddh"
+  [(set (match_operand:DF 0 "arc_double_register_operand" "=D")
+	(match_operand:DF 1 "arc_double_register_operand" "D"))
+   (use (match_operand:SI 2 "register_operand" "r"))
+   (use (match_dup 2))]
+  "TARGET_DPFP"
+  "daddh%F0%F1 0,%2,%2   ; mov d%F0,d%F1"
+  [(set_attr "type" "dpfp_addsub")
+  (set_attr "length" "4")])
+
 ;; dmulh{0}{1} 0, {reg_pair}2.hi, {reg_pair}2.lo
 ;; OR
 ;; dmulh{0}{1} 0, reg3, limm2.lo
@@ -393,37 +403,37 @@
 ;; NOTE: For rsub insns D2 and {regpair3_or_limmreg34} get interchanged as
 ;;       {regpair2_or_limmreg24} and D3
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define_peephole2
-  [(parallel [(set (match_operand:DF 0 "register_operand"          "")
-	(match_operator:DF 1 "arc_dpfp_operator" [(match_operand:DF 2 "nonmemory_operand" "")
-			   (match_operand:DF 3 "nonmemory_operand" "")]))
-	     (use (match_operand:SI 4 "" ""))
-	     (use (match_operand:SI 5 "" ""))
-	     (use (match_operand:SI 6 "" ""))])
-  (set (match_operand:DF 7 "register_operand" "")
-       (match_dup 0))
-  (set (match_dup 0)
-       (match_operand:DF 8 "register_operand" ""))
-  ]
-  "TARGET_DPFP && !TARGET_DPFP_DISABLE_LRSR"
-  [
-  (parallel [(set (match_dup 0)
-		  (match_op_dup:DF 1 [(match_dup 2)
-				   (match_dup 3)]))
-	    (use (match_dup 4))
-	    (use (match_dup 5))
-            (set (match_dup 7)
-		 (match_op_dup:DF  1 [(match_dup 2)
-				   (match_dup 3)]))])
-  (parallel [
-;;	    (set (subreg:SI (match_dup 7) 0)
-	    (set (match_dup 9)
-		 (unspec_volatile:SI [(match_dup 0)] VUNSPEC_ARC_LR ))
-	    (set (match_dup 0) (match_dup 8))]
-	    )
-  ]
-  "operands[9] = simplify_gen_subreg(SImode,operands[7],DFmode,0);"
-  )
+;x;(define_peephole2
+;x;  [(parallel [(set (match_operand:DF 0 "register_operand"          "")
+;x;	(match_operator:DF 1 "arc_dpfp_operator" [(match_operand:DF 2 "nonmemory_operand" "")
+;x;			   (match_operand:DF 3 "nonmemory_operand" "")]))
+;x;	     (use (match_operand:SI 4 "" ""))
+;x;	     (use (match_operand:SI 5 "" ""))
+;x;	     (use (match_operand:SI 6 "" ""))])
+;x;  (set (match_operand:DF 7 "register_operand" "")
+;x;       (match_dup 0))
+;x;  (set (match_dup 0)
+;x;       (match_operand:DF 8 "register_operand" ""))
+;x;  ]
+;x;  "TARGET_DPFP && !TARGET_DPFP_DISABLE_LRSR"
+;x;  [
+;x;  (parallel [(set (match_dup 0)
+;x;		  (match_op_dup:DF 1 [(match_dup 2)
+;x;				   (match_dup 3)]))
+;x;	    (use (match_dup 4))
+;x;	    (use (match_dup 5))
+;x;            (set (match_dup 7)
+;x;		 (match_op_dup:DF  1 [(match_dup 2)
+;x;				   (match_dup 3)]))])
+;x;  (parallel [
+;x;;;	    (set (subreg:SI (match_dup 7) 0)
+;x;	    (set (match_dup 9)
+;x;		 (unspec_volatile:SI [(match_dup 0)] VUNSPEC_ARC_LR ))
+;x;	    (set (match_dup 0) (match_dup 8))]
+;x;	    )
+;x;  ]
+;x;  "operands[9] = simplify_gen_subreg(SImode,operands[7],DFmode,0);"
+;x;  )
 
 ;; ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ;; Peephole to generate d<opname>{ij}h a,b,c instructions
@@ -496,32 +506,32 @@
 ;; NOTE: For rsub insns D2 and {regpair3_or_limmreg34} get interchanged as
 ;;       {regpair2_or_limmreg24} and D3
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define_peephole2
-  [(parallel [(set (match_operand:DF 0 "register_operand"          "")
-		   (match_operator:DF 1 "arc_dpfp_operator" [(match_operand:DF 2 "nonmemory_operand" "")
-				      (match_operand:DF 3 "nonmemory_operand" "")]))
-	     (use (match_operand:SI 4 "" ""))
-	     (use (match_operand:SI 5 "" ""))
-	     (use (match_operand:SI 6 "" ""))])
-  (set (match_operand:DF 7 "register_operand" "")
-       (match_dup 0))
-  ]
-  "TARGET_DPFP  && !TARGET_DPFP_DISABLE_LRSR"
-  [
-  (parallel [(set (match_dup 0)
-		  (match_op_dup:DF 1 [(match_dup 2)
-				   (match_dup 3)]))
-	    (use (match_dup 4))
-	    (use (match_dup 5))
-            (set (match_dup 7)
-		 (match_op_dup:DF  1 [(match_dup 2)
-				   (match_dup 3)]))])
-;  (set (subreg:SI (match_dup 7) 0)
-  (set (match_dup 8)
-       (unspec_volatile:SI [(match_dup 0)] VUNSPEC_ARC_LR ))
-  ]
-  "operands[8] = simplify_gen_subreg(SImode,operands[7],DFmode,0);"
-  )
+;x;(define_peephole2
+;x;  [(parallel [(set (match_operand:DF 0 "register_operand"          "")
+;x;		   (match_operator:DF 1 "arc_dpfp_operator" [(match_operand:DF 2 "nonmemory_operand" "")
+;x;				      (match_operand:DF 3 "nonmemory_operand" "")]))
+;x;	     (use (match_operand:SI 4 "" ""))
+;x;	     (use (match_operand:SI 5 "" ""))
+;x;	     (use (match_operand:SI 6 "" ""))])
+;x;  (set (match_operand:DF 7 "register_operand" "")
+;x;       (match_dup 0))
+;x;  ]
+;x;  "TARGET_DPFP  && !TARGET_DPFP_DISABLE_LRSR"
+;x;  [
+;x;  (parallel [(set (match_dup 0)
+;x;		  (match_op_dup:DF 1 [(match_dup 2)
+;x;				   (match_dup 3)]))
+;x;	    (use (match_dup 4))
+;x;	    (use (match_dup 5))
+;x;            (set (match_dup 7)
+;x;		 (match_op_dup:DF  1 [(match_dup 2)
+;x;				   (match_dup 3)]))])
+;x;;  (set (subreg:SI (match_dup 7) 0)
+;x;  (set (match_dup 8)
+;x;       (unspec_volatile:SI [(match_dup 0)] VUNSPEC_ARC_LR ))
+;x;  ]
+;x;  "operands[8] = simplify_gen_subreg(SImode,operands[7],DFmode,0);"
+;x;  )
 
 ;; ;;            _______________________________________________________
 ;; ;;           / D0             = D1 + {regpair2_or_limmreg23}
