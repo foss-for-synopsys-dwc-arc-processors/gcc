@@ -2,7 +2,8 @@
 
 	* config/arc/arc.c (prepare_move_operands): Use a scratch register
 	when we emit a double FPX move.
-	* config/arc/arc.md (movdf_fpx): New pattern.
+	* config/arc/arc.md (movsf_insn): Allow moves of ACCL register.
+	(movdf_fpx): New pattern.
 	* config/arc/fpx.md (daddh): Likewise.
 	(peephole2): Comment out patterns.
 

@@ -1058,8 +1058,7 @@
   [(set (match_operand:SF 0 "move_dest_operand" "=   h,w,w,r,m")
 	(match_operand:SF 1 "move_src_operand"   "hCm1,c,E,m,c"))]
   "(register_operand (operands[0], SFmode)
-   || register_operand (operands[1], SFmode))
-   && !(register_operand (operands[1], SFmode) && REGNO(operands[1]) == 58)"
+   || register_operand (operands[1], SFmode))"
   "@
    mov%? %0,%1
    mov%? %0,%1
