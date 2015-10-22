@@ -1,3 +1,93 @@
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_handle_fndecl_attribute): New function.
+	(arc_attribute_table): Add "naked" entry.
+	(TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS): Define for ARC.
+	(TARGET_WARN_FUNC_RETURN): Define for ARC.
+	(arc_allocate_stack_slots_for_args): New function.
+	(arc_compute_function_type): Update for naked functions.
+	(arc_return_address_register): Likewise.
+	(arc_expand_prologue): Return early for naked functions.
+	(arc_expand_epilogue): Likewise.
+	(arc_warn_func_return): New function.
+	* config/arc/arc.h (ARC_FUNCTION_NAKED): New define.
+	(ARC_FUNCTION_ILINK1): Update.
+	(ARC_FUNCTION_ILINK2): Update.
+	(ARC_NAKED_P): New define.
+	* testsuite/gcc.target/arc/naked-1.c: New file.
+	* doc/extended.texi (Function Attributes): Mention that ARC
+	support naked functions.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc-protos.h (arc_compute_function_type): Update
+	return type.
+	* config/arc/arc.c (machine_function): Update type for fn_type
+	field.
+	(arc_compute_function_type): Update return type and variable type.
+	(arc_compute_frame_size): Update variable type.
+	(arc_return_address_register): Update parameter type.
+	(arc_expand_prologue): Update variable type, use ARC_INTERRUPT_P
+	not ARC_NORMAL_P.
+	(arc_expand_epilogue): Update variable type.
+	(arc_epilogue_uses): Update variable type.
+	* config/arc/arc.h (enum arc_function_type): Delete.
+	(arc_function_type): New typedef.
+	(ARC_FUNCTION_UNKNOWN): New define.
+	(ARC_FUNCTION_NORMAL): Likewise.
+	(ARC_FUNCTION_ILINK1): Likewise.
+	(ARC_FUNCTION_ILINK2): Likewise.
+	(ARC_INTERRUPT_P): Update.
+	(ARC_NORMAL_P): Update.
+	(arc_return_address_register): Update parameter type.
+	(arc_compute_function_type): Update return type.
+	* config/arc/arc.md (simple_return): Update now function type is a
+	set of bit flags.
+	(p_return_i): Likewise.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_return_address_register): New function.
+	(arc_return_address_regs): Delete global.
+	(arc_epilogue_uses): Update header comment.
+	* config/arc/arc.h (arc_return_address_regs): Delete declaration.
+	(arc_return_address_register): Add declaration.
+	* config/arc/arc.md (define_attr "in_ret_delay_slot"): Switch to
+	using arc_return_address_register.
+	(define_insn "simple_return"): Likewise.
+	(define_insn "p_return_i"): Likewise.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.h (ARC_NORMAL_P): Define.
+	* config/arc/arc.c (arc_expand_epilogue): Use new define.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_compute_function_type): Update header
+	comment.
+	(arc_expand_prologue): Compute function type at the start, use
+	this throughout.
+	(arc_epilogue_uses): Likewise.
+	(arc_expand_epilogue): Use computed function type variable.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_compute_function_type): Use
+	lookup_attribute to find the interrupt attribute.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (arc_handle_interrupt_attribute): The interrupt
+	attribute only applies to functions.
+
+2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
+
+	* config/arc/arc.c (dwarf_emit_irq_save_regs): Rename to...
+	(arc_dwarf_emit_irq_save_regs): ...this.
+	(arc_expand_prologue): Update use of dwarf_emit_irq_save_regs to
+	arc_dwarf_emit_irq_save_regs.
+
 2015-10-12  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (prepare_move_operands): Use a scratch register

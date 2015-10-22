@@ -1480,10 +1480,6 @@ do { \
 #define ASM_OUTPUT_ALIGNED_DECL_LOCAL(STREAM, DECL, NAME, SIZE, ALIGNMENT) \
   arc_asm_output_aligned_decl_local (STREAM, DECL, NAME, SIZE, ALIGNMENT, 0)
 
-/* To translate the return value of arc_function_type into a register number
-   to jump through for function return.  */
-extern int arc_return_address_regs[4];
-
 /* Debugging information.  */
 
 /* Generate DBX and DWARF debugging information.  */
@@ -1639,18 +1635,44 @@ extern int arc_return_address_regs[4];
 extern struct rtx_def *arc_compare_op0, *arc_compare_op1;
 
 /* ARC function types.   */
-enum arc_function_type {
-  ARC_FUNCTION_UNKNOWN, ARC_FUNCTION_NORMAL,
-  /* These are interrupt handlers.  The name corresponds to the register
-     name that contains the return address.  */
-  ARC_FUNCTION_ILINK1, ARC_FUNCTION_ILINK2
-};
+typedef unsigned int arc_function_type;
+
+/* No function should have the unknown type. This value is used to indicate
+   the that function type has not yet been computed.  */
+#define ARC_FUNCTION_UNKNOWN 0
+
+/* The normal function type indicates that the function has the standard
+   prologue and epilogue.  */
+#define ARC_FUNCTION_NORMAL  1 << 0
+
+/* The naked function type indicates that the function does not have
+   prologue or epilogue, and that no stack frame is available.  */
+#define ARC_FUNCTION_NAKED   1 << 1
+
+/* The two ilink function types are used to indicate interrupt functions.
+   If neither of these are set then the function is not an interrupt
+   function.  */
+#define ARC_FUNCTION_ILINK1  1 << 2
+#define ARC_FUNCTION_ILINK2  1 << 3
+
+/* Check if a function is an interrupt function.  */
 #define ARC_INTERRUPT_P(TYPE) \
-((TYPE) == ARC_FUNCTION_ILINK1 || (TYPE) == ARC_FUNCTION_ILINK2)
+  (((TYPE) & (ARC_FUNCTION_ILINK1 | ARC_FUNCTION_ILINK2)) != 0)
+
+/* Check if a function is normal, that is, has standard prologue and
+   epilogue.  */
+#define ARC_NORMAL_P(TYPE) (((TYPE) & ARC_FUNCTION_NORMAL) != 0)
+
+#define ARC_NAKED_P(TYPE) (((TYPE) & ARC_FUNCTION_NAKED) != 0)
+
+/* Return the register number of the register holding the return address
+   for a function of type TYPE.  */
+
+extern int arc_return_address_register (arc_function_type type);
 
 /* Compute the type of a function from its DECL.  Needed for EPILOGUE_USES.  */
 struct function;
-extern enum arc_function_type arc_compute_function_type (struct function *);
+extern arc_function_type arc_compute_function_type (struct function *);
 
 /* Called by crtstuff.c to make calls to function FUNCTION that are defined in
    SECTION_OP, and then to switch back to text section.  */

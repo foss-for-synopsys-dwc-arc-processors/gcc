@@ -397,6 +397,9 @@ enum arc_builtins {
 static int get_arc_condition_code (rtx);
 
 static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
+static tree arc_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
+
+static bool arc_warn_func_return (tree);
 
 const struct attribute_spec arc_attribute_table[] =
 {
@@ -414,6 +417,7 @@ const struct attribute_spec arc_attribute_table[] =
      addressing range of blcc.  */
   { "short_call",   0, 0, false, true,  true,  NULL, false },
   { "tls9", 0, 1, true, false, false, NULL, false },
+  { "naked", 0, 0, true, false, false, arc_handle_fndecl_attribute, false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
 static int arc_comp_type_attributes (const_tree, const_tree);
@@ -660,6 +664,12 @@ static int arc_asm_insn_p (rtx x);
 /* Stores with scaled offsets have different displacement ranges.  */
 #define TARGET_DIFFERENT_ADDR_DISPLACEMENT_P hook_bool_void_true
 #define TARGET_SPILL_CLASS arc_spill_class
+
+#undef TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS
+#define TARGET_ALLOCATE_STACK_SLOTS_FOR_ARGS arc_allocate_stack_slots_for_args
+
+#undef TARGET_WARN_FUNC_RETURN
+#define TARGET_WARN_FUNC_RETURN arc_warn_func_return
 
 #include "target-def.h"
 
@@ -1842,14 +1852,20 @@ arc_conditional_register_usage (void)
    struct attribute_spec.handler.  */
 
 static tree
-arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
+arc_handle_interrupt_attribute (tree *node, tree name, tree args, int,
 				bool *no_add_attrs)
 {
   gcc_assert (args);
 
   tree value = TREE_VALUE (args);
 
-  if (TREE_CODE (value) != STRING_CST)
+  if (TREE_CODE (*node) != FUNCTION_DECL)
+    {
+      warning (OPT_Wattributes, "%qE attribute only applies to functions",
+	       name);
+      *no_add_attrs = true;
+    }
+  else if (TREE_CODE (value) != STRING_CST)
     {
       warning (OPT_Wattributes,
 	       "argument of %qE attribute is not a string constant",
@@ -1873,6 +1889,40 @@ arc_handle_interrupt_attribute (tree *, tree name, tree args, int,
     }
   return NULL_TREE;
 }
+
+static tree
+arc_handle_fndecl_attribute (tree *node, tree name, tree args ATTRIBUTE_UNUSED,
+                             int flags ATTRIBUTE_UNUSED, bool *no_add_attrs)
+{
+  if (TREE_CODE (*node) != FUNCTION_DECL)
+    {
+      warning (OPT_Wattributes, "%qE attribute only applies to functions",
+	       name);
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
+bool
+arc_allocate_stack_slots_for_args (void)
+{
+  /* Naked functions should not allocate stack slots for arguments.  */
+  arc_function_type fn_type = arc_compute_function_type (cfun);
+  return !ARC_NAKED_P(fn_type);
+}
+
+/* Return false to silence warnings about noreturn functions that does
+   return, this  can be the case for a naked function.*/
+
+bool
+arc_warn_func_return (tree decl)
+{
+  struct function *func = DECL_STRUCT_FUNCTION (decl);
+  arc_function_type fn_type = arc_compute_function_type (func);
+  return !ARC_NAKED_P (fn_type);
+}
+
 
 /* Return zero if TYPE1 and TYPE are incompatible, one if they are compatible,
    and two if they are nearly compatible (which causes a warning to be
@@ -2348,7 +2398,7 @@ struct GTY (()) arc_frame_info
 
 typedef struct GTY (()) machine_function
 {
-  enum arc_function_type fn_type;
+  arc_function_type fn_type;
   struct arc_frame_info frame_info;
   /* To keep track of unalignment caused by short insns.  */
   int unalign;
@@ -2361,45 +2411,39 @@ typedef struct GTY (()) machine_function
   char prescan_initialized;
 } machine_function;
 
-/* Type of function DECL.
+/* Type of function DECL.  The result is cached per function.  */
 
-   The result is cached.  To reset the cache at the end of a function,
-   call with DECL = NULL_TREE.  */
-
-enum arc_function_type
+arc_function_type
 arc_compute_function_type (struct function *fun)
 {
-  tree decl = fun->decl;
-  tree a;
-  enum arc_function_type fn_type = fun->machine->fn_type;
+  tree attr, decl = fun->decl;
+  arc_function_type fn_type = fun->machine->fn_type;
 
   if (fn_type != ARC_FUNCTION_UNKNOWN)
     return fn_type;
 
-  /* Assume we have a normal function (not an interrupt handler).  */
-  fn_type = ARC_FUNCTION_NORMAL;
+  /* Figure out if we have a normal or naked function.  */
+  if (lookup_attribute ("naked", DECL_ATTRIBUTES (decl)) != NULL_TREE)
+    fn_type |= ARC_FUNCTION_NAKED;
+  else
+    fn_type |= ARC_FUNCTION_NORMAL;
 
-  /* Now see if this is an interrupt handler.  */
-  for (a = DECL_ATTRIBUTES (decl);
-       a;
-       a = TREE_CHAIN (a))
+  attr = lookup_attribute ("interrupt", DECL_ATTRIBUTES (decl));
+  if (attr != NULL_TREE)
     {
-      tree name = TREE_PURPOSE (a), args = TREE_VALUE (a);
+      tree value, args = TREE_VALUE (attr);
 
-      if (name == get_identifier ("interrupt")
-	  && list_length (args) == 1
-	  && TREE_CODE (TREE_VALUE (args)) == STRING_CST)
-	{
-	  tree value = TREE_VALUE (args);
+      gcc_assert (list_length (args) == 1);
+      value = TREE_VALUE (args);
+      gcc_assert (TREE_CODE (value) == STRING_CST);
 
-	  if (!strcmp (TREE_STRING_POINTER (value), "ilink1") || !strcmp (TREE_STRING_POINTER (value), "ilink"))
-	    fn_type = ARC_FUNCTION_ILINK1;
-	  else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
-	    fn_type = ARC_FUNCTION_ILINK2;
-	  else
-	    gcc_unreachable ();
-	  break;
-	}
+      if (!strcmp (TREE_STRING_POINTER (value), "ilink1")
+	  || !strcmp (TREE_STRING_POINTER (value), "ilink"))
+	fn_type |= ARC_FUNCTION_ILINK1;
+      else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
+	fn_type |= ARC_FUNCTION_ILINK2;
+      else
+	gcc_unreachable ();
     }
 
   return fun->machine->fn_type = fn_type;
@@ -2482,7 +2526,7 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
   unsigned int total_size, var_size, args_size, pretend_size, extra_size;
   unsigned int reg_size, reg_offset;
   unsigned int gmask;
-  enum arc_function_type fn_type;
+  arc_function_type fn_type;
   int interrupt_p;
   struct arc_frame_info *frame_info;
   int size;
@@ -2748,7 +2792,7 @@ arc_save_restore (rtx base_reg,
 /* Build dwarf information when the context is saved via AUX_IRQ_CTRL
    mechanism. */
 static void
-dwarf_emit_irq_save_regs(void)
+arc_dwarf_emit_irq_save_regs (void)
 {
   rtx tmp, par, insn, reg;
   int i, offset, j;
@@ -2814,9 +2858,28 @@ dwarf_emit_irq_save_regs(void)
   RTX_FRAME_RELATED_P (insn) = 1;
 }
 
+/* See header file for description.  */
 
-int arc_return_address_regs[4]
-  = {0, RETURN_ADDR_REGNUM, ILINK1_REGNUM, ILINK2_REGNUM};
+int
+arc_return_address_register (arc_function_type fn_type)
+{
+  int regno = 0;
+
+  if (ARC_INTERRUPT_P (fn_type))
+    {
+      if ((fn_type & ARC_FUNCTION_ILINK1) != 0)
+        regno = ILINK1_REGNUM;
+      else if ((fn_type & ARC_FUNCTION_ILINK2) != 0)
+        regno = ILINK2_REGNUM;
+      else
+        gcc_unreachable ();
+    }
+  else if (ARC_NORMAL_P (fn_type) || ARC_NAKED_P (fn_type))
+    regno = RETURN_ADDR_REGNUM;
+
+  gcc_assert (regno != 0);
+  return regno;
+}
 
 /* Set up the stack and frame pointer (if desired) for the function.  */
 
@@ -2831,6 +2894,11 @@ arc_expand_prologue (void)
      Change the stack layout so that we rather store a high register with the
      PRE_MODIFY, thus enabling more short insn generation.)  */
   int first_offset = 0;
+  arc_function_type fn_type = arc_compute_function_type (cfun);
+
+  /* Naked functions don't have prologue.  */
+  if (ARC_NAKED_P (fn_type))
+    return;
 
   /* Compute total frame size.  */
   size = arc_compute_frame_size ();
@@ -2856,18 +2924,18 @@ arc_expand_prologue (void)
 
   /* IRQ using automatic save mechanism will save the register before
      anything we do. */
-  if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+  if (ARC_INTERRUPT_P (fn_type)
       && irq_ctrl_saved.irq_save_last_reg)
     {
       /* Emit dwarf IRQ sequence. */
-      dwarf_emit_irq_save_regs();
+      arc_dwarf_emit_irq_save_regs ();
     }
 
   /* The home-grown ABI says link register is saved first.  */
   if (MUST_SAVE_RETURN_ADDR)
     {
       /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (ARC_INTERRUPT_P (fn_type)
 	  && (irq_ctrl_saved.irq_save_blink
 	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
 	{
@@ -2890,7 +2958,7 @@ arc_expand_prologue (void)
     {
       first_offset = -cfun->machine->frame_info.reg_size;
       /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (ARC_INTERRUPT_P (fn_type)
 	  && irq_ctrl_saved.irq_save_last_reg > 0)
 	{
 	  /* adjust the stack offsets, some of the registers are saved
@@ -2926,7 +2994,7 @@ arc_expand_prologue (void)
   if (arc_frame_pointer_needed ())
     {
       /* Honor irq_ctrl_saved option. */
-      if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (!(ARC_INTERRUPT_P (fn_type)
 	    && (irq_ctrl_saved.irq_save_last_reg > 26)))
 	{
 	  rtx addr = gen_rtx_PLUS (Pmode, stack_pointer_rtx,
@@ -2963,8 +3031,14 @@ arc_expand_prologue (void)
 void
 arc_expand_epilogue (int sibcall_p)
 {
-  enum arc_function_type fn_type = arc_compute_function_type (cfun);
-  int size = arc_compute_frame_size ();
+  arc_function_type fn_type = arc_compute_function_type (cfun);
+  int size;
+
+  /* Naked functions don't have epilogue.  */
+  if (ARC_NAKED_P (fn_type))
+    return;
+
+  size = arc_compute_frame_size ();
 
   if (1)
     {
@@ -3011,7 +3085,7 @@ arc_expand_epilogue (int sibcall_p)
       if (arc_frame_pointer_needed ())
 	{
 	  /* Honor irq_ctrl_saved option. */
-	  if (!(ARC_INTERRUPT_P (cfun->machine->fn_type)
+	  if (!(ARC_INTERRUPT_P (fn_type)
 		&& (irq_ctrl_saved.irq_save_last_reg > 26)))
 	    {
 
@@ -3027,7 +3101,7 @@ arc_expand_epilogue (int sibcall_p)
       if (millicode_p)
 	{
 	      int sibthunk_p = (!sibcall_p
-				&& fn_type == ARC_FUNCTION_NORMAL
+				&& !ARC_INTERRUPT_P (fn_type)
 				&& !cfun->machine->frame_info.pretend_size);
 
 	      gcc_assert (!(cfun->machine->frame_info.gmask
@@ -3058,7 +3132,7 @@ arc_expand_epilogue (int sibcall_p)
       if (MUST_SAVE_RETURN_ADDR)
 	{
 	  /* Honor irq_ctrl_saved option. */
-	  if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+	  if (ARC_INTERRUPT_P (fn_type)
 	      && (irq_ctrl_saved.irq_save_blink
 		  || (irq_ctrl_saved.irq_save_last_reg == 31)))
 	    {
@@ -3121,7 +3195,7 @@ arc_expand_epilogue (int sibcall_p)
       */
 
       /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type)
+      if (ARC_INTERRUPT_P (fn_type)
 	  && irq_ctrl_saved.irq_save_last_reg > 0)
 	{
 	  /* adjust the stack, some of the registers are restored by
@@ -10550,29 +10624,31 @@ arc_can_follow_jump (const_rtx follower, const_rtx followee)
 /* Implement EPILOGUE__USES.
    Return true if REGNO should be added to the deemed uses of the epilogue.
 
-   We use the return address
-   arc_return_address_regs[arc_compute_function_type (cfun)] .
-   But also, we have to make sure all the register restore instructions
-   are known to be live in interrupt functions.  */
+   We use the return address register, but also, we have to make sure all
+   the register restore instructions are known to be live in interrupt
+   functions.  */
 
 bool
 arc_epilogue_uses (int regno)
 {
+  arc_function_type fn_type;
+
   if (regno == arc_tp_regno)
     return true;
+  fn_type = arc_compute_function_type (cfun);
   if (reload_completed)
     {
-      if (ARC_INTERRUPT_P (cfun->machine->fn_type))
+      if (ARC_INTERRUPT_P (fn_type))
 	{
 	  if (!fixed_regs[regno])
 	    return true;
-	  return regno == arc_return_address_regs[cfun->machine->fn_type];
+	  return regno == arc_return_address_register (fn_type);
 	}
       else
 	return regno == RETURN_ADDR_REGNUM;
     }
   else
-    return regno == arc_return_address_regs[arc_compute_function_type (cfun)];
+    return regno == arc_return_address_register (fn_type);
 }
 
 bool

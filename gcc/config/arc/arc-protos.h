@@ -44,7 +44,7 @@ extern void emit_shift (enum rtx_code, rtx, rtx, rtx);
 #endif /* RTX_CODE */
 
 #ifdef TREE_CODE
-extern enum arc_function_type arc_compute_function_type (struct function *);
+extern arc_function_type arc_compute_function_type (struct function *);
 #endif /* TREE_CODE */
 
 
