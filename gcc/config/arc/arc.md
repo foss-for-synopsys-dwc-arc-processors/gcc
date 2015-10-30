@@ -2044,7 +2044,7 @@
 
 
 (define_expand "mulsidi3"
-  [(set (match_operand:DI 0 "nonimmediate_operand" "")
+  [(set (match_operand:DI 0 "register_operand" "")
 	(mult:DI (sign_extend:DI(match_operand:SI 1 "register_operand" ""))
 		 (sign_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
   "(TARGET_ARC700 && TARGET_MPY_SET)

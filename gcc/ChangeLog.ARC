@@ -1,3 +1,9 @@
+2015-10-30  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.md (mulsidi3): Allow results only in registers.
+	* config/arc/predicates.md (even_register_operand): Allow only
+	registers.
+	
 2015-10-21  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	* config/arc/arc.c (arc_handle_fndecl_attribute): New function.
