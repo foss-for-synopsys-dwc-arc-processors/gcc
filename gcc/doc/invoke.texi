@@ -11797,10 +11797,6 @@ deprecated.  Users wanting little-endian code should use the
 @w{@code{arc-elf32}} and @w{@code{arc-linux-uclibc}} targets when
 building the tool chain, for which little-endian is the default.
 
-@item -mEA
-@opindex mEA
-Replaced by @samp{-mea}
-
 @item -mtune=@var{cpu}
 @opindex mtune
 Values @samp{arc600}, @samp{arc601}, @samp{arc700} and
