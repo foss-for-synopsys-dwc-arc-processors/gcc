@@ -47,6 +47,7 @@ arc_option_init_struct (struct gcc_options *opts)
 #define OPT_LEVELS_3_PLUS_SPEED_ONLY OPT_LEVELS_3_PLUS
 static const struct default_options arc_option_optimization_table[] =
   {
+    { OPT_LEVELS_SIZE, OPT_fsection_anchors, NULL, 1 },
     { OPT_LEVELS_1_PLUS, OPT_fomit_frame_pointer, NULL, 1 },
     { OPT_LEVELS_1_PLUS_SPEED_ONLY, OPT_fschedule_insns, NULL, 1 },
     { OPT_LEVELS_1_PLUS, OPT_fschedule_insns2, NULL, 1 },

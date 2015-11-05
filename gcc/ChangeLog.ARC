@@ -1,3 +1,8 @@
+2015-11-05  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c (arc_option_optimization_table):
+	Enable sectio-anchors for Os.
+
 2015-11-03  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* doc/invoke.texi: Adjust mEA comments.
