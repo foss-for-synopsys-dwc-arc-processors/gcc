@@ -1998,7 +1998,7 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
   rtx y = XEXP (comparison, 1);
   rtx tmp, cc_reg;
   enum machine_mode mode, cmode;
-
+  bool swap = false;
 
   cmode = GET_MODE (x);
   if (cmode == VOIDmode)
@@ -2073,6 +2073,7 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
       rtx op0 = gen_rtx_REG (cmode, 0);
       rtx op1 = gen_rtx_REG (cmode, GET_MODE_SIZE (cmode) / UNITS_PER_WORD);
 
+      swap = false;
       switch (code)
 	{
 	case NE: case EQ: case GT: case UNLE: case GE: case UNLT:
@@ -2080,22 +2081,33 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
 	  break;
 	case LT: case UNGE: case LE: case UNGT:
 	  code = swap_condition (code);
-	  tmp = x;
-	  x = y;
-	  y = tmp;
+	  swap = true;
 	  break;
 	default:
 	  gcc_unreachable ();
 	}
       if (currently_expanding_to_rtl)
 	{
-	  emit_move_insn (op0, x);
-	  emit_move_insn (op1, y);
+	  if (swap)
+	    {
+	      emit_move_insn (op0, y);
+	      emit_move_insn (op1, x);
+	    }
+	  else
+	    {
+	      emit_move_insn (op0, x);
+	      emit_move_insn (op1, y);
+	    }
 	}
       else
 	{
 	  gcc_assert (rtx_equal_p (op0, x));
 	  gcc_assert (rtx_equal_p (op1, y));
+	  if (swap)
+	    {
+	      op0 = y;
+	      op1 = x;
+	    }
 	}
       emit_insn (gen_cmp_float (cc_reg, gen_rtx_COMPARE (mode, op0, op1)));
     }

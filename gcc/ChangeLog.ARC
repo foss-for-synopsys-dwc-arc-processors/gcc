@@ -2,6 +2,8 @@
 
 	* config/arc/arc.c (arc_legitimize_tls_address): Check for null
 	pointers.
+	(gen_compare_reg): Correctly, handle swaping of the arguments also
+	when not expanding to rtl.
 
 2015-11-05  Claudiu Zissulescu  <claziss@synopsys.com>
 
