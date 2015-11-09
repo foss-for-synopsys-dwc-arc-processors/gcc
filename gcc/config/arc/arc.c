@@ -193,6 +193,9 @@ typedef struct irq_ctrl_saved_t
 } irq_ctrl_saved_t;
 static irq_ctrl_saved_t irq_ctrl_saved;
 
+/* Number of registers in second bank for FIRQ support.  */
+static int rgf_banked_register_count;
+
 #define arc_ccfsm_current cfun->machine->ccfsm_current
 
 #define ARC_CCFSM_BRANCH_DELETED_P(STATE) \
@@ -453,6 +456,8 @@ static void output_short_suffix (FILE *file);
 static bool arc_frame_pointer_required (void);
 
 static void irq_range (const char *);
+
+static void parse_mrgf_banked_regs_option (const char *);
 
 /* Implements target hook vector_mode_supported_p.  */
 
@@ -1117,6 +1122,13 @@ arc_override_options (void)
 	      irq_range (opt->arg);
 	    else
 	      warning (0, "option -mirq-vtrl-saved valid only for ARC v2 processors");
+	    break;
+
+	  case OPT_mrgf_banked_regs_:
+	    if (TARGET_V2)
+	      parse_mrgf_banked_regs_option (opt->arg);
+	    else
+	      warning (0, "option -mrgf-banked-regs valid only for ARC v2 processors");
 	    break;
 
 	  default:
@@ -1872,18 +1884,21 @@ arc_handle_interrupt_attribute (tree *node, tree name, tree args, int,
 	       name);
       *no_add_attrs = true;
     }
-  else if (strcmp (TREE_STRING_POINTER (value), "ilink1")
-	   && strcmp (TREE_STRING_POINTER (value), "ilink2") && !TARGET_V2)
+  else if (!TARGET_V2
+	   && strcmp (TREE_STRING_POINTER (value), "ilink1")
+	   && strcmp (TREE_STRING_POINTER (value), "ilink2"))
     {
       warning (OPT_Wattributes,
 	       "argument of %qE attribute is not \"ilink1\" or \"ilink2\"",
 	       name);
       *no_add_attrs = true;
     }
-  else if (TARGET_V2 && strcmp (TREE_STRING_POINTER (value), "ilink"))
+  else if (TARGET_V2
+	   && strcmp (TREE_STRING_POINTER (value), "ilink")
+	   && strcmp (TREE_STRING_POINTER (value), "firq"))
     {
       warning (OPT_Wattributes,
-	       "argument of %qE attribute is not \"ilink\"",
+	       "argument of %qE attribute is not \"ilink\" or \"firq\"",
 	       name);
       *no_add_attrs = true;
     }
@@ -2442,6 +2457,8 @@ arc_compute_function_type (struct function *fun)
 	fn_type |= ARC_FUNCTION_ILINK1;
       else if (!strcmp (TREE_STRING_POINTER (value), "ilink2"))
 	fn_type |= ARC_FUNCTION_ILINK2;
+      else if (!strcmp (TREE_STRING_POINTER (value), "firq"))
+	fn_type |= ARC_FUNCTION_FIRQ;
       else
 	gcc_unreachable ();
     }
@@ -2452,26 +2469,52 @@ arc_compute_function_type (struct function *fun)
 #define FRAME_POINTER_MASK (1 << (FRAME_POINTER_REGNUM))
 #define RETURN_ADDR_MASK (1 << (RETURN_ADDR_REGNUM))
 
-/* Tell prologue and epilogue if register REGNO should be saved / restored.
-   The return address and frame pointer are treated separately.
-   Don't consider them here.
+/* Tell prologue and epilogue if register REGNO should be saved / restored
+   in function FUNC.
+
+   The return address and frame pointer are treated separately, don't
+   consider them here.
+
    Addition for pic: The gp register needs to be saved if the current
    function changes it to access gotoff variables.
-   FIXME: This will not be needed if we used some arbitrary register
-   instead of r26.
-*/
-#define MUST_SAVE_REGISTER(regno, interrupt_p) \
-  (((regno) != RETURN_ADDR_REGNUM && (regno) != FRAME_POINTER_REGNUM	\
-    && (df_regs_ever_live_p (regno)					\
-	&& (!call_used_regs[regno] || interrupt_p)))			\
-   || (flag_pic && crtl->uses_pic_offset_table				\
-       && regno == PIC_OFFSET_TABLE_REGNUM)				\
-   || (crtl->calls_eh_return						\
-       && (regno > 3 && regno < 27)))
 
-#define MUST_SAVE_RETURN_ADDR \
-  (cfun->machine->frame_info.save_return_addr	\
-   || crtl->calls_eh_return)
+   FIXME: This will not be needed if we used some arbitrary register
+   instead of r26.  */
+static bool arc_must_save_register (struct function *func, int regno)
+{
+  arc_function_type fn_type = arc_compute_function_type (func);
+
+  return (((regno) != RETURN_ADDR_REGNUM
+	   && (regno) != FRAME_POINTER_REGNUM
+	   && df_regs_ever_live_p (regno)
+	   && (!call_used_regs[regno]
+	       || (ARC_FAST_INTERRUPT_P (fn_type)
+		   && (regno >= rgf_banked_register_count))
+	       || (ARC_INTERRUPT_P (fn_type)
+		   && (regno > irq_ctrl_saved.irq_save_last_reg))))
+	  || (flag_pic && crtl->uses_pic_offset_table
+	      && regno == PIC_OFFSET_TABLE_REGNUM)
+	  || (crtl->calls_eh_return
+	      && (regno > 3 && regno < 27)));
+}
+
+/* Return true if the return address must be saved in the current function,
+   otherwise return false.  */
+
+static bool
+arc_must_save_return_addr ()
+{
+  /* The first are the conditions under which the return address register
+     needs to be saved to the stack.  */
+  return ((cfun->machine->frame_info.save_return_addr
+           || crtl->calls_eh_return)
+          /* However if this is an interrupt function, and the return
+             address is being automatically saved, then we don't need to
+             save anything ourselves.  */
+          && (!ARC_INTERRUPT_P (arc_compute_function_type (cfun))
+              || irq_ctrl_saved.irq_save_blink
+              || irq_ctrl_saved.irq_save_last_reg >= 31));
+}
 
 /* Helper function to wrap FRAME_POINTER_NEEDED.  We do this as
    FRAME_POINTER_NEEDED will not be true until the IRA (Integrated Register
@@ -2557,12 +2600,10 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 
   for (regno = 0; regno <= 31; regno++)
     {
-      bool irq_auto_save_p = (interrupt_p && (irq_ctrl_saved.irq_save_last_reg >= regno));
-      if (MUST_SAVE_REGISTER (regno, interrupt_p)
-	  || irq_auto_save_p)
+      if (arc_must_save_register (cfun, regno))
 	{
 	  reg_size += UNITS_PER_WORD;
-	  gmask |= (!irq_auto_save_p) << regno;
+	  gmask |= 1 << regno;
 	}
     }
 
@@ -2589,7 +2630,7 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
     }
 
   extra_size = 0;
-  if (MUST_SAVE_RETURN_ADDR)
+  if (arc_must_save_return_addr ())
     extra_size = 4;
   if (arc_frame_pointer_needed ())
     extra_size += 4;
@@ -2597,11 +2638,6 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
   /* Honor irq_ctrl_saved option. */
   if (interrupt_p && irq_ctrl_saved.irq_save_last_reg > 0)
     {
-      if (!MUST_SAVE_RETURN_ADDR
-	  && (irq_ctrl_saved.irq_save_blink
-	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
-	extra_size += 4;
-
       if (!arc_frame_pointer_needed ()
 	  && (irq_ctrl_saved.irq_save_last_reg > 26))
 	extra_size +=4;
@@ -2867,7 +2903,7 @@ arc_return_address_register (arc_function_type fn_type)
 
   if (ARC_INTERRUPT_P (fn_type))
     {
-      if ((fn_type & ARC_FUNCTION_ILINK1) != 0)
+      if ((fn_type & ARC_FUNCTION_ILINK1 | ARC_FUNCTION_FIRQ) != 0)
         regno = ILINK1_REGNUM;
       else if ((fn_type & ARC_FUNCTION_ILINK2) != 0)
         regno = ILINK2_REGNUM;
@@ -2925,6 +2961,7 @@ arc_expand_prologue (void)
   /* IRQ using automatic save mechanism will save the register before
      anything we do. */
   if (ARC_INTERRUPT_P (fn_type)
+      && !ARC_FAST_INTERRUPT_P (fn_type)
       && irq_ctrl_saved.irq_save_last_reg)
     {
       /* Emit dwarf IRQ sequence. */
@@ -2932,25 +2969,14 @@ arc_expand_prologue (void)
     }
 
   /* The home-grown ABI says link register is saved first.  */
-  if (MUST_SAVE_RETURN_ADDR)
+  if (arc_must_save_return_addr ())
     {
-      /* Honor irq_ctrl_saved option. */
-      if (ARC_INTERRUPT_P (fn_type)
-	  && (irq_ctrl_saved.irq_save_blink
-	      || (irq_ctrl_saved.irq_save_last_reg == 31)))
-	{
-	  frame_size_to_allocate -= UNITS_PER_WORD;
-	}
-      else
-	{
-	  rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
-	  rtx mem = gen_frame_mem (Pmode, gen_rtx_PRE_DEC (Pmode, stack_pointer_rtx));
+      rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
+      rtx mem = gen_frame_mem (Pmode, gen_rtx_PRE_DEC (Pmode, stack_pointer_rtx));
 
-	  frame_move_inc (mem, ra, stack_pointer_rtx, 0);
-	  frame_size_to_allocate -= UNITS_PER_WORD;
-	}
-
-    } /* MUST_SAVE_RETURN_ADDR */
+      frame_move_inc (mem, ra, stack_pointer_rtx, 0);
+      frame_size_to_allocate -= UNITS_PER_WORD;
+    }
 
   /* Save any needed call-saved regs (and call-used if this is an
      interrupt handler) for ARCompact ISA.  */
@@ -2986,7 +3012,7 @@ arc_expand_prologue (void)
                                GEN_INT (cfun->machine->frame_info.reg_size));
       rtx mem = gen_frame_mem (Pmode, addr);
 
-      gcc_assert (MUST_SAVE_RETURN_ADDR);
+      gcc_assert (arc_must_save_return_addr ());
       emit_insn (gen_rtx_SET (VOIDmode, ra, mem));
     }
 
@@ -3122,62 +3148,52 @@ arc_expand_epilogue (int sibcall_p)
 		: satisfies_constraint_C2a (GEN_INT (first_offset))))
 	   /* Also do this if we have both gprs and return
 	      address to restore, and they both would need a LIMM.  */
-	   || (MUST_SAVE_RETURN_ADDR
+          || (arc_must_save_return_addr ()
 	       && !SMALL_INT ((cfun->machine->frame_info.reg_size + first_offset) >> 2)
 	       && cfun->machine->frame_info.gmask))
 	{
 	  frame_stack_add (first_offset);
 	  first_offset = 0;
 	}
-      if (MUST_SAVE_RETURN_ADDR)
+      if (arc_must_save_return_addr ())
 	{
-	  /* Honor irq_ctrl_saved option. */
-	  if (ARC_INTERRUPT_P (fn_type)
-	      && (irq_ctrl_saved.irq_save_blink
-		  || (irq_ctrl_saved.irq_save_last_reg == 31)))
-	    {
-	      size_to_deallocate -= UNITS_PER_WORD;
-	    }
-	  else
-	    {
-	      rtx ra = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
-	      int ra_offs = cfun->machine->frame_info.reg_size + first_offset;
-	      rtx addr = plus_constant (Pmode, stack_pointer_rtx, ra_offs);
+          rtx ra = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
+          int ra_offs = cfun->machine->frame_info.reg_size + first_offset;
+          rtx addr = plus_constant (Pmode, stack_pointer_rtx, ra_offs);
 
-	      /* If the load of blink would need a LIMM, but we can add
-		 the offset quickly to sp, do the latter.  */
-	      if (!SMALL_INT (ra_offs >> 2)
-		  && !cfun->machine->frame_info.gmask
-		  && ((TARGET_ARC700 && !optimize_size)
-		      ? ra_offs <= 0x800
-		      : satisfies_constraint_C2a (GEN_INT (ra_offs))))
-		{
-		  size_to_deallocate -= ra_offs - first_offset;
-		  first_offset = 0;
-		  frame_stack_add (ra_offs);
-		  ra_offs = 0;
-		  addr = stack_pointer_rtx;
-		}
-	      /* See if we can combine the load of the return address with the
-		 final stack adjustment.
-		 We need a separate load if there are still registers to
-		 restore.  We also want a separate load if the combined insn
-		 would need a limm, but a separate load doesn't.  */
-	      if (ra_offs
-		  && !cfun->machine->frame_info.gmask
-		  && (SMALL_INT (ra_offs) || !SMALL_INT (ra_offs >> 2)))
-		{
-		  addr = gen_rtx_PRE_MODIFY (Pmode, stack_pointer_rtx, addr);
-		  first_offset = 0;
-		  size_to_deallocate -= cfun->machine->frame_info.reg_size;
-		}
-	      else if (!ra_offs && size_to_deallocate == UNITS_PER_WORD)
-		{
-		  addr = gen_rtx_POST_INC (Pmode, addr);
-		  size_to_deallocate = 0;
-		}
-	      frame_move_inc (ra, gen_frame_mem (Pmode, addr), stack_pointer_rtx, addr);
-	    }
+          /* If the load of blink would need a LIMM, but we can add
+             the offset quickly to sp, do the latter.  */
+          if (!SMALL_INT (ra_offs >> 2)
+              && !cfun->machine->frame_info.gmask
+              && ((TARGET_ARC700 && !optimize_size)
+                  ? ra_offs <= 0x800
+                  : satisfies_constraint_C2a (GEN_INT (ra_offs))))
+            {
+              size_to_deallocate -= ra_offs - first_offset;
+              first_offset = 0;
+              frame_stack_add (ra_offs);
+              ra_offs = 0;
+              addr = stack_pointer_rtx;
+            }
+          /* See if we can combine the load of the return address with the
+             final stack adjustment.
+             We need a separate load if there are still registers to
+             restore.  We also want a separate load if the combined insn
+             would need a limm, but a separate load doesn't.  */
+          if (ra_offs
+              && !cfun->machine->frame_info.gmask
+              && (SMALL_INT (ra_offs) || !SMALL_INT (ra_offs >> 2)))
+            {
+              addr = gen_rtx_PRE_MODIFY (Pmode, stack_pointer_rtx, addr);
+              first_offset = 0;
+              size_to_deallocate -= cfun->machine->frame_info.reg_size;
+            }
+          else if (!ra_offs && size_to_deallocate == UNITS_PER_WORD)
+            {
+              addr = gen_rtx_POST_INC (Pmode, addr);
+              size_to_deallocate = 0;
+            }
+          frame_move_inc (ra, gen_frame_mem (Pmode, addr), stack_pointer_rtx, addr);
 	}
 
       if (!millicode_p)
@@ -12264,6 +12280,27 @@ irq_range (const char *cstr)
   irq_ctrl_saved.irq_save_last_reg = last;
   irq_ctrl_saved.irq_save_blink    = (blink == 31);
   irq_ctrl_saved.irq_save_lpcount  = (lpcount == 60);
+}
+
+/* Parse -mrgf-banked-regs=NUM option string.  Valid values for NUM are 4,
+   8, 16, or 32.  */
+
+static void
+parse_mrgf_banked_regs_option (const char *arg)
+{
+  long int val;
+  char *end_ptr;
+
+  errno = 0;
+  val = strtol (arg, &end_ptr, 10);
+  if (errno != 0 || *arg == '\0' || *end_ptr != '\0'
+      || (val != 0 && val != 4 && val != 8 && val != 16 && val != 32))
+    {
+      error ("invalid number in -mrgf-banked-regs=%s "
+	     "valid values are 0, 4, 8, 16, or 32", arg);
+      return;
+    }
+  rgf_banked_register_count = (int) val;
 }
 
   /* We can't inline this in INSN_REFERENCES_ARE_DELAYED because resource.h

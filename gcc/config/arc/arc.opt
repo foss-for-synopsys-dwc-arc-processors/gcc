@@ -487,6 +487,10 @@ mirq-ctrl-saved=
 Target RejectNegative Joined Var(arc_deferred_options) Defer
 Specifies the registers that the processor saves on an interrupt entry and exit.
 
+mrgf-banked-regs=
+Target RejectNegative Joined Var(arc_deferred_options) Defer
+Specifies the number of registers replicated in second register bank on entry to fast interrupt.
+
 mabi=
 Target RejectNegative Joined Var(arc_abi) Enum(arc_abi_type) Init(ARC_ABI_STD)
 Specify the desired ABI used for ARC HS processors. Variants can be std or mwabi.
