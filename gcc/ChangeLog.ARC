@@ -1,3 +1,8 @@
+2015-11-09  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_legitimize_tls_address): Check for null
+	pointers.
+
 2015-11-05  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c (arc_option_optimization_table):

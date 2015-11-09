@@ -5373,11 +5373,14 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
       rtx base;
       tree base_decl, decl;
       decl = SYMBOL_REF_DECL (addr);
-      base_decl = lookup_attribute ("tls9", DECL_ATTRIBUTES (decl));
+      if (decl)
+	base_decl = lookup_attribute ("tls9", DECL_ATTRIBUTES (decl));
+      else
+	base_decl = NULL;
       const char *base_name; base_name = DTPOFF_ZERO_SYM;
       rtvec v;
 
-      if (bss_initializer_p (decl))
+      if (decl && bss_initializer_p (decl))
 	base_name = ".tbss";
 
       if (base_decl && TREE_VALUE (base_decl)
