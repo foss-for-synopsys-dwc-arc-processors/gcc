@@ -1,3 +1,13 @@
+2015-11-12  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc-c.c: New file.
+	* config/arc/arc-c.def: Likewise.
+	* config.gcc: Use arc-c.o objects.
+	* config/arc/arc-protos.h (arc_cpu_cpp_builtins): Prototype.
+	* config/arc/arc.h (TARGET_CPU_CPP_BUILTINS): Use
+	arc_cpu_cpp_builtins.
+	* config/arc/t-arc (arc-c.o): New target.
+
 2015-11-09  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_legitimize_tls_address): Check for null

@@ -130,3 +130,4 @@ extern bool arc_bdr_iscond (rtx);
 #endif
 
 extern bool insn_is_tls_gd_dispatch (rtx);
+extern void arc_cpu_cpp_builtins (cpp_reader *);
