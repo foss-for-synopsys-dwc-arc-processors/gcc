@@ -1,5 +1,9 @@
 2015-11-12  Claudiu Zissulescu  <claziss@synopsys.com>
 
+	* doc/invoke.texi: Fix typo.
+
+2015-11-12  Claudiu Zissulescu  <claziss@synopsys.com>
+
 	* config/arc/arc-c.c: New file.
 	* config/arc/arc-c.def: Likewise.
 	* config.gcc: Use arc-c.o objects.

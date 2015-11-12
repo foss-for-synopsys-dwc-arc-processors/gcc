@@ -11504,7 +11504,7 @@ on entry to fast interrupt.  Fast interrupts are interrupts with the
 highest priority level P0.  These interrupts save only PC and STATUS32
 registers to avoid memory transactions during interrupt entry and exit
 sequences.  Use this option when you are using fast interrupts in an
-ARC EM family processor.
+ARC V2 family processor.
 
 Permitted values are 4, 8, 16, 32 and specify the number of registers
 that are covered by the second register bank, starting from r0.
