@@ -45,7 +45,7 @@ def_or_undef_macro(cpp_reader* pfile, const char *name, bool def_p)
 static void
 arc_def_warning_macro (cpp_reader * pfile, const char * name)
 {
-  warning (OPT_Wdeprecated, "%s macro is deprecated\n", name);
+  /* warning (OPT_Wdeprecated, "%s macro is deprecated\n", name); */
   builtin_define (name);
 }
 
