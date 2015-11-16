@@ -1,3 +1,8 @@
+2015-11-16  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* gcc/config/arc/arc-c.def: Add __Xnorm and __Xbarrel_shifter
+	macros.
+
 2015-11-12  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* doc/invoke.texi: Fix typo.
