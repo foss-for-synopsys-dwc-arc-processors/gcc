@@ -1,3 +1,13 @@
+2015-11-18  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* gcc/config/arc/arc.c (arc_expand_epilogue): Emit return
+	instruction also for "naked" functions.
+	* testsuite/gcc.target/arc/naked-2.c: New file.
+	* testsuite/gcc.target/arc/naked-1.c: Update test.
+	* testsuite/gcc.target/arc/arc.exp
+	(check_effective_target_arc6xx): New function.
+	(check_effective_target_arc700): Likewise.
+
 2015-11-16  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* gcc/config/arc/arc-c.def: Add __Xnorm and __Xbarrel_shifter

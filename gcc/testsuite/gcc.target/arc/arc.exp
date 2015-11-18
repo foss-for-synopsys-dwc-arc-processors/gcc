@@ -39,6 +39,24 @@ proc check_effective_target_arcem { } {
     }]
 }
 
+# Return 1 if we compile for ARC700
+proc check_effective_target_arc700 { } {
+    return [check_no_compiler_messages arc700 assembly {
+	#if !defined(__ARC700__)
+	#error EMFOO
+	#endif
+    }]
+}
+
+# Return 1 if we compile for ARC6xx
+proc check_effective_target_arc6xx { } {
+    return [check_no_compiler_messages arc6xx assembly {
+	#if !defined(__ARC600__) && !defined(__ARC601__)
+	#error EMFOO
+	#endif
+    }]
+}
+
 
 # If a testcase doesn't have special options, use these.
 global DEFAULT_CFLAGS

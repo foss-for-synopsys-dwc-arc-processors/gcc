@@ -2946,7 +2946,7 @@ arc_expand_prologue (void)
 
   /* Naked functions don't have prologue.  */
   if (ARC_NAKED_P (fn_type))
-    return;
+      return;
 
   /* Compute total frame size.  */
   size = arc_compute_frame_size ();
@@ -3074,7 +3074,11 @@ arc_expand_epilogue (int sibcall_p)
 
   /* Naked functions don't have epilogue.  */
   if (ARC_NAKED_P (fn_type))
-    return;
+    {
+      if (sibcall_p == FALSE)
+	emit_jump_insn (gen_simple_return ());
+      return;
+    }
 
   size = arc_compute_frame_size ();
 
