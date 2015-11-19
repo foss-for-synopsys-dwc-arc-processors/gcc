@@ -1,3 +1,14 @@
+2015-11-19  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/interrupt-4.c: New file.
+	* testsuite/gcc.target/arc/interrupt-5.c: Likewise.
+	* testsuite/gcc.target/arc/interrupt-6.c: Likewise.
+	* config/arc/arc.c (arc_must_save_return_addr): Return addres is
+	always saved.
+	(arc_compute_frame_size): Honor irq_ctrl_saved option.
+	(arc_expand_prologue): Likewise.
+	(arc_expand_epilogue): Likewise.
+
 2015-11-18  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* gcc/config/arc/arc.c (arc_expand_epilogue): Emit return
