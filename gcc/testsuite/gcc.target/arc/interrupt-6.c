@@ -1,6 +1,6 @@
 /* Check if the registers R0-R3 are automatically saved. GP is saved by the compiler. */
 /* { dg-do compile } */
-/* { dg-skip-if "Not available for ARCv1" { *-*-* } { arc700 || arc6xx } } */
+/* { dg-skip-if "Not available for ARCv1" { arc700 || arc6xx } } */
 /* { dg-options "-O2 -mirq-ctrl-saved=r0-r3" } */
 /* { dg-final { scan-assembler "st.*gp,\\\[sp" } } */
 /* { dg-final { scan-assembler-not "st.*r0,\\\[sp" } } */

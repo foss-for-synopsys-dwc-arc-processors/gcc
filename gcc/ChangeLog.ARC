@@ -1,3 +1,11 @@
+2015-11-23  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_override_options): Typo fix.
+	(irq_range): Handle parsing ilink name.
+	* testsuite/gcc.target/arc/interrupt-4.c: Fix dg-skip condition.
+	* testsuite/gcc.target/arc/interrupt-5.c: Likewise.
+	* testsuite/gcc.target/arc/interrupt-6.c: Likewise.
+
 2015-11-19  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* testsuite/gcc.target/arc/interrupt-4.c: New file.

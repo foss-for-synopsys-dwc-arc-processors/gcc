@@ -1121,7 +1121,7 @@ arc_override_options (void)
 	    if (TARGET_V2)
 	      irq_range (opt->arg);
 	    else
-	      warning (0, "option -mirq-vtrl-saved valid only for ARC v2 processors");
+	      warning (0, "option -mirq-ctrl-saved valid only for ARC v2 processors");
 	    break;
 
 	  case OPT_mrgf_banked_regs_:
@@ -12251,7 +12251,7 @@ irq_range (const char *cstr)
   dash = strchr (str, '-');
   if (!dash)
     {
-      warning (0, "value of -mirq-vtrl-saved must have form R0-REGx");
+      warning (0, "value of -mirq-ctrl-saved must have form R0-REGx");
       return;
     }
   *dash = '\0';
@@ -12267,7 +12267,15 @@ irq_range (const char *cstr)
       return;
     }
 
-  last = decode_reg_name (dash + 1);
+  /* At this moment we do not have the register names initialized
+     accordingly.  */
+  if (((TARGET_CPU_DEFAULT != TARGET_CPU_EM)
+       && (TARGET_CPU_DEFAULT != TARGET_CPU_HS))
+      && !strcmp (dash + 1, "ilink"))
+    last = 29;
+  else
+    last = decode_reg_name (dash + 1);
+
   if (last < 0)
     {
       warning (0, "unknown register name: %s", dash + 1);
