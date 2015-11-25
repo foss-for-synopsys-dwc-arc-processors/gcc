@@ -1,3 +1,12 @@
+2015-11-25  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (frame_move): Set frame related flag.
+	(arc_save_restore): Emit epilogue related DWARF2 information.
+	(arc_expand_epilogue): Likewise.
+	* config/arc/arc.opt (mno-epilogue-cfi): Remove.
+	(mepilogue-cfi): Likewise.
+	* doc/invoke.texi: Remove -m[no]-epilogue-cfi documentation.
+
 2015-11-23  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_override_options): Typo fix.
