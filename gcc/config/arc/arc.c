@@ -3157,7 +3157,7 @@ arc_expand_epilogue (int sibcall_p)
   else if (!can_trust_sp_p)
     frame_stack_add (-frame_size);
 
-
+  insn = emit_insn (gen_blockage ());
   /* Restore any saved registers.  */
   if (arc_frame_pointer_needed ())
     {
@@ -3165,7 +3165,6 @@ arc_expand_epilogue (int sibcall_p)
       if (!(ARC_INTERRUPT_P (fn_type)
 	    && (irq_ctrl_saved.irq_save_last_reg > 26)))
 	{
-	  insn = emit_insn (gen_blockage ());
 	  add_reg_note (insn, REG_CFA_DEF_CFA,
 			plus_constant (SImode, stack_pointer_rtx, 4));
 	  RTX_FRAME_RELATED_P (insn) = 1;
