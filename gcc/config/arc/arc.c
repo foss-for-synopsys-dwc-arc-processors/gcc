@@ -3162,6 +3162,10 @@ arc_expand_epilogue (int sibcall_p)
   if (!can_trust_sp_p)
     gcc_assert (arc_frame_pointer_needed ());
 
+  /* Avoid epilogue instructions to be scheduled across the basic
+     block.  */
+  emit_insn (gen_blockage ());
+
   /* Restore stack pointer to the beginning of saved register area for
      ARCompact ISA.  */
   if (frame_size)
@@ -3175,7 +3179,6 @@ arc_expand_epilogue (int sibcall_p)
   else if (!can_trust_sp_p)
     frame_stack_add (-frame_size);
 
-  insn = emit_insn (gen_blockage ());
   /* Restore any saved registers.  */
   if (arc_frame_pointer_needed ())
     {
@@ -3183,15 +3186,13 @@ arc_expand_epilogue (int sibcall_p)
       if (!(ARC_INTERRUPT_P (fn_type)
 	    && (irq_ctrl_saved.irq_save_last_reg > 26)))
 	{
-	  add_reg_note (insn, REG_CFA_DEF_CFA,
-			plus_constant (SImode, stack_pointer_rtx, 4));
-	  RTX_FRAME_RELATED_P (insn) = 1;
-
 	  rtx addr = gen_rtx_POST_INC (Pmode, stack_pointer_rtx);
 
 	  insn = frame_move_inc (frame_pointer_rtx, gen_frame_mem (Pmode, addr),
 				 stack_pointer_rtx, 0);
 	  add_reg_note (insn, REG_CFA_RESTORE, frame_pointer_rtx);
+	  add_reg_note (insn, REG_CFA_DEF_CFA,
+			plus_constant (SImode, stack_pointer_rtx, 4));
 	}
       size_to_deallocate -= UNITS_PER_WORD;
     }
