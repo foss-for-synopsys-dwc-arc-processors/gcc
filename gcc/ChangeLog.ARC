@@ -1,3 +1,9 @@
+2015-11-30  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (legitimate_offset_address_p ): Allow addresses
+	to use long immediates.
+	(arc_legitimate_address_p): Refactor.
+
 2015-11-25  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (frame_move): Set frame related flag.
