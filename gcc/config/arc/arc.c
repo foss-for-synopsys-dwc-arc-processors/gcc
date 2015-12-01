@@ -170,6 +170,7 @@ legitimate_offset_address_p (enum machine_mode mode, rtx x, bool index,
 
   /* Check for [Rx + symbol].  */
   if ((GET_CODE (XEXP (x, 1)) == SYMBOL_REF)
+      && (GET_MODE_SIZE (mode) <= 4)
       /* Avoid small data which ends in something like GP +
 	 symb@sda.  */
       && (!SYMBOL_REF_SMALL_P (XEXP (x, 1))
