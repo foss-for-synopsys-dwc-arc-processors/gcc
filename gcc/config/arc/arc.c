@@ -169,7 +169,9 @@ legitimate_offset_address_p (enum machine_mode mode, rtx x, bool index,
     return true;
 
   /* Check for [Rx + symbol].  */
-  if ((GET_CODE (XEXP (x, 1)) == SYMBOL_REF)
+  if (!flag_pic
+      && (GET_CODE (XEXP (x, 1)) == SYMBOL_REF)
+      /* Avoid this type of address for double or larger modes.  */
       && (GET_MODE_SIZE (mode) <= 4)
       /* Avoid small data which ends in something like GP +
 	 symb@sda.  */
