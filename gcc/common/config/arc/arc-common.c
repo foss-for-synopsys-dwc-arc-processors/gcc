@@ -61,182 +61,6 @@ static const struct default_options arc_option_optimization_table[] =
     { OPT_LEVELS_NONE, 0, NULL, 0 }
   };
 
-/*  Process options.  */
-static bool
-arc_handle_option (struct gcc_options *opts, struct gcc_options *opts_set,
-		   const struct cl_decoded_option *decoded,
-		   location_t loc)
-{
-  size_t code = decoded->opt_index;
-  int value = decoded->value;
-  const char *arg = decoded->arg;
-  static int mcpu_seen = PROCESSOR_NONE;
-  static int mmpy_seen  = 0;
-
-  switch (code)
-    {
-    case OPT_mcpu_:
-      /* N.B., at this point arc_cpu has already been set to its new value by
-	 our caller, so comparing arc_cpu with PROCESSOR_NONE is pointless.  */
-
-      if (mcpu_seen != PROCESSOR_NONE && mcpu_seen != value)
-	warning_at (loc, 0, "multiple -mcpu= options specified.");
-      mcpu_seen = value;
-
-      switch (value)
-	{
-	case PROCESSOR_ARC700:
-	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
-	    opts->x_target_flags |= MASK_MPY_SET;                /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
-	    opts->x_target_flags |= MASK_NORM_SET;               /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
-	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_ATOMIC))
-	    opts->x_target_flags &= ~MASK_ATOMIC;                /* Default: off.  */
-	  /* Thess options make no sense for ARC70x.  */
-	  opts->x_target_flags &= ~MASK_MPY16_SET;
-	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
-	  opts->x_target_flags &= ~MASK_DIVREM;
-	  opts->x_target_flags &= ~MASK_LL64;
-	  break;
-
-	case PROCESSOR_ARC600:
-	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
-	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
-	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on.  */
-	  /* These options make no sense for ARC60x.  */
-	  opts->x_target_flags &= ~MASK_MPY_SET;
-	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
-	  opts->x_target_flags &= ~MASK_ATOMIC;
-	  opts->x_target_flags &= ~MASK_DIVREM;
-	  opts->x_target_flags &= ~MASK_LL64;
-	  break;
-
-	case PROCESSOR_ARCv2HS:
-	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
-	    {
-	      opts->x_target_flags |= MASK_MPY_SET;              /* Default: on.  */
-	      opts->x_target_flags |= MASK_MPY16_SET;            /* Default: on.  */
-	    }
-	  if (mmpy_seen)
-	    opts->x_target_flags |= MASK_MPY16_SET;
-	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
-	    opts->x_target_flags |= MASK_CODE_DENSITY;           /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
-	    opts->x_target_flags |= MASK_NORM_SET;               /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
-	    opts->x_target_flags |= MASK_SWAP_SET;               /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_ATOMIC))
-	    opts->x_target_flags |= MASK_ATOMIC;                 /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_DIVREM))
-	    opts->x_target_flags |= MASK_DIVREM;                 /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_LL64))
-	    opts->x_target_flags |= MASK_LL64;                   /* Default: on. */
-	  break;
-
-	case PROCESSOR_ARCv2EM:
-	  if ( !(opts_set->x_target_flags & MASK_MPY_SET))
-	    {
-	      opts->x_target_flags |= MASK_MPY_SET;              /* Default: on.  */
-	      opts->x_target_flags |= MASK_MPY16_SET;            /* Default: on.  */
-	    }
-	  if (mmpy_seen)
-	    opts->x_target_flags |= MASK_MPY16_SET;
-	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags |= MASK_BARREL_SHIFTER;         /* Default: on.  */
-	  if ( !(opts_set->x_target_flags & MASK_CODE_DENSITY))
-	    opts->x_target_flags &= ~MASK_CODE_DENSITY;          /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
-	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
-	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_DIVREM))
-	    opts->x_target_flags &= ~MASK_DIVREM;                /* Default: off.  */
-	  /* These options make no sense for ARC EM.  */
-	  opts->x_target_flags &= ~MASK_LL64;
-	  opts->x_target_flags &= ~MASK_ATOMIC;
-	  break;
-
-	case PROCESSOR_ARC601:
-	  if ( !(opts_set->x_target_flags & MASK_NORM_SET))
-	    opts->x_target_flags &= ~MASK_NORM_SET;              /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_SWAP_SET))
-	    opts->x_target_flags &= ~MASK_SWAP_SET;              /* Default: off.  */
-	  if ( !(opts_set->x_target_flags & MASK_BARREL_SHIFTER))
-	    opts->x_target_flags &= ~MASK_BARREL_SHIFTER;        /* Default: off.  */
-	  /* This options make no sense for ARC60x.  */
-	  opts->x_target_flags &= ~MASK_MPY_SET;
-	  opts->x_target_flags &= ~MASK_CODE_DENSITY;
-	  opts->x_target_flags &= ~MASK_ATOMIC;
-	  opts->x_target_flags &= ~MASK_DIVREM;
-	  opts->x_target_flags &= ~MASK_LL64;
-	  break;
-
-	default:
-	  gcc_unreachable ();
-	}
-      break;
-
-      /* In the case of ARCv2, -mmpy option sets also the -mmpy16 option.  */
-    case OPT_mmpy:
-      mmpy_seen = value;
-      /* Demode any multiplier option given via -mmpy_option.  */
-      opts->x_arc_mpy_option = value ? 2 : 0;
-
-      /* Handle MPY16 option.  */
-      switch (mcpu_seen)
-	{
-	case PROCESSOR_ARC700:
-	case PROCESSOR_ARC600:
-	case PROCESSOR_ARC601:
-	  break;
-
-	case PROCESSOR_ARCv2EM:
-	case PROCESSOR_ARCv2HS:
-	  if (value)
-	    opts->x_target_flags |= MASK_MPY16_SET;
-	  break;
-
-	default:
-	  /* For V2 chain, by default turn on MPY16.  */
-#if ((TARGET_CPU_DEFAULT == TARGET_CPU_EM) || (TARGET_CPU_DEFAULT == TARGET_CPU_HS))
-	  if (value)
-	    opts->x_target_flags |= MASK_MPY16_SET;
-#endif
-	  break;
-	}
-      break;
-
-    case OPT_mmpy16:
-      if ((opts->x_arc_mpy_option > 0) && !value)
-	opts->x_arc_mpy_option = 0;
-      if ((opts->x_arc_mpy_option == 0) && value)
-	opts->x_arc_mpy_option = 1;
-      break;
-
-    case OPT_mmpy_option_:
-      if (value < 0 || value > 9)
-	error_at (loc, "bad value %qs for -mmpy-option switch", arg);
-
-      if (value > 0)
-	opts->x_target_flags |= MASK_MPY16_SET;
-      if (value > 1)
-	opts->x_target_flags |= MASK_MPY_SET;
-
-      break;
-    }
-
-  return true;
-}
-
 /* Implement TARGET_OPTION_DEFAULT_PARAMS.  */
 static void
 arc_option_default_params (void)
@@ -249,6 +73,68 @@ arc_option_default_params (void)
   set_default_param_value (PARAM_L1_CACHE_LINE_SIZE, 64);
 }
 
+/*  Process options.  */
+static bool
+arc_handle_option (struct gcc_options *opts,
+		   struct gcc_options *opts_set ATTRIBUTE_UNUSED,
+		   const struct cl_decoded_option *decoded,
+		   location_t loc)
+{
+  size_t code = decoded->opt_index;
+  int value = decoded->value;
+  const char *arg = decoded->arg;
+  static int mcpu_seen = PROCESSOR_NONE;
+  const arc_cpu_t *arc_selected_cpu;
+
+  switch (code)
+    {
+    case OPT_mcpu_:
+      /* N.B., at this point arc_cpu has already been set to its new value by
+	 our caller, so comparing arc_cpu with PROCESSOR_NONE is pointless.  */
+
+      if (mcpu_seen != PROCESSOR_NONE && mcpu_seen != value)
+	warning_at (loc, 0, "multiple -mcpu= options specified.");
+      mcpu_seen = value;
+
+      arc_selected_cpu = &arc_cpu_types[(int) mcpu_seen];
+      /* Set cpu flags accordingly.  */
+#define ARC_OPT(NAME, CODE, MASK, DOC)		\
+  do {						\
+    if ((arc_selected_cpu->flags & CODE)	\
+	&& (!(opts_set->x_target_flags & MASK)))	\
+      target_flags |= MASK;			\
+  } while (0);
+#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
+  do {						\
+    if (arc_selected_cpu->flags & CODE)		\
+      opts->x_##VAR = VAL;			\
+  } while (0);
+
+#include "config/arc/arc-options.def"
+
+#undef ARC_OPTX
+#undef ARC_OPT
+
+      break;
+
+    case OPT_mmpy16:
+    case OPT_mmpy:
+      if (!value)
+	opts->x_arc_mpy_option = 0;
+      break;
+
+    case OPT_mmpy_option_:
+      if (value < 0 || value > 9)
+	error_at (loc, "bad value %qs for -mmpy-option switch", arg);
+      break;
+
+    default:
+      break;
+    }
+
+  return true;
+}
+
 #undef  TARGET_OPTION_DEFAULT_PARAMS
 #define TARGET_OPTION_DEFAULT_PARAMS arc_option_default_params
 
@@ -258,28 +144,13 @@ arc_option_default_params (void)
 #undef  TARGET_OPTION_OPTIMIZATION_TABLE
 #define TARGET_OPTION_OPTIMIZATION_TABLE arc_option_optimization_table
 
-#undef  TARGET_HANDLE_OPTION
-#define TARGET_HANDLE_OPTION arc_handle_option
-
 #define DEFAULT_NO_SDATA (TARGET_SDATA_DEFAULT ? 0 : MASK_NO_SDATA_SET)
 
 #undef  TARGET_DEFAULT_TARGET_FLAGS
-#if TARGET_CPU_DEFAULT == TARGET_CPU_HS
-/* For HS max out. */
-# define TARGET_DEFAULT_TARGET_FLAGS					\
-  ( MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA	\
-    | MASK_MPY_SET | MASK_MPY16_SET | MASK_CODE_DENSITY			\
-    | MASK_NORM_SET | MASK_SWAP_SET | MASK_ATOMIC | MASK_DIVREM | MASK_LL64 )
-#elif TARGET_CPU_DEFAULT == TARGET_CPU_EM
-/* Default for EM: no barrel shifter.  */
-# define TARGET_DEFAULT_TARGET_FLAGS					\
-  ( MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA | \
-    MASK_MPY_SET | MASK_MPY16_SET )
-#else
-/* We default to ARC700, which has the barrel shifter enabled.  */
-# define TARGET_DEFAULT_TARGET_FLAGS					\
-  ( MASK_BARREL_SHIFTER | MASK_VOLATILE_CACHE_SET | DEFAULT_NO_SDATA | MASK_MPY_SET )
-#endif
+#define TARGET_DEFAULT_TARGET_FLAGS (DEFAULT_NO_SDATA)
+
+#undef  TARGET_HANDLE_OPTION
+#define TARGET_HANDLE_OPTION arc_handle_option
 
 #include "common/common-target-def.h"
 

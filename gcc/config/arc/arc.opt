@@ -102,8 +102,8 @@ Same as -mcpu=archs
 ; END backward-compatibility aliases, translated by DRIVER_SELF_SPECS
 
 mmpy-option=
-Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(2)
--mmpy-option={0,1,2,3,4,5,6,7,8,9} Compile ARCv2 code with a multiplier design option. Option 2 is default on.  
+Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(0)
+-mmpy-option={0,1,2,3,4,5,6,7,8,9} Compile ARCv2 code with a multiplier design option.
 
 mmpy16
 Target Report Mask(MPY16_SET)
@@ -155,7 +155,7 @@ Generate mul64 and mulu64 instructions
 
 mmpy
 Target Report Mask(MPY_SET)
-Generate MPY instructions. Default for ARC700, and ARCv2. For ARC600 is not valid.
+Generate MPYxW instructions. Default for ARC700. For ARC600 is not valid.
 
 mEA
 Target Report Mask(EA_SET)
@@ -173,40 +173,40 @@ Enum
 Name(arc_fpu) Type(int)
 
 EnumValue
-Enum(arc_fpu) String(fpus) Value(FPU_SP | FPU_SC)
+Enum(arc_fpu) String(fpus) Value(FPU_FPUS)
 
 EnumValue
-Enum(arc_fpu) String(fpud) Value(FPU_SP | FPU_SC | FPU_DP | FPU_DC)
+Enum(arc_fpu) String(fpud) Value(FPU_FPUD)
 
 EnumValue
-Enum(arc_fpu) String(fpuda) Value(FPU_SP | FPU_SC | FPX_DP)
+Enum(arc_fpu) String(fpuda) Value(FPU_FPUDA)
 
 EnumValue
-Enum(arc_fpu) String(fpuda_div) Value(FPU_SP | FPU_SC | FPU_SD | FPX_DP)
+Enum(arc_fpu) String(fpuda_div) Value(FPU_FPUDA_DIV)
 
 EnumValue
-Enum(arc_fpu) String(fpuda_fma) Value(FPU_SP | FPU_SC | FPU_SF | FPX_DP)
+Enum(arc_fpu) String(fpuda_fma) Value(FPU_FPUDA_FMA)
 
 EnumValue
-Enum(arc_fpu) String(fpuda_all) Value(FPU_SP | FPU_SC | FPU_SF | FPU_SD | FPX_DP)
+Enum(arc_fpu) String(fpuda_all) Value(FPU_FPUDA_ALL)
 
 EnumValue
-Enum(arc_fpu) String(fpus_div) Value(FPU_SP | FPU_SC | FPU_SD)
+Enum(arc_fpu) String(fpus_div) Value(FPU_FPUS_DIV)
 
 EnumValue
-Enum(arc_fpu) String(fpud_div) Value(FPU_SP | FPU_SC | FPU_SD | FPU_DP | FPU_DC | FPU_DD)
+Enum(arc_fpu) String(fpud_div) Value(FPU_FPUD_DIV)
 
 EnumValue
-Enum(arc_fpu) String(fpus_fma) Value(FPU_SP | FPU_SC | FPU_SF)
+Enum(arc_fpu) String(fpus_fma) Value(FPU_FPUS_FMA)
 
 EnumValue
-Enum(arc_fpu) String(fpud_fma) Value(FPU_SP | FPU_SC | FPU_SF | FPU_DP | FPU_DC | FPU_DF)
+Enum(arc_fpu) String(fpud_fma) Value(FPU_FPUD_FMA)
 
 EnumValue
-Enum(arc_fpu) String(fpus_all) Value(FPU_SP | FPU_SC | FPU_SF | FPU_SD)
+Enum(arc_fpu) String(fpus_all) Value(FPU_FPUS_ALL)
 
 EnumValue
-Enum(arc_fpu) String(fpud_all) Value(FPU_SP | FPU_SC | FPU_SF | FPU_SD | FPU_DP | FPU_DC | FPU_DF | FPU_DD)
+Enum(arc_fpu) String(fpud_all) Value(FPU_FPUD_ALL)
 
 mlong-calls
 Target Report Mask(LONG_CALLS_SET)
@@ -261,41 +261,8 @@ Target Report Mask(SIMD_SET)
 Enable generation of ARC SIMD instructions via target-specific builtins.
 
 mcpu=
-Target RejectNegative Joined Var(arc_cpu) Enum(processor_type) Init(PROCESSOR_NONE)
--mcpu=CPU	Compile code for ARC variant CPU
-
-Enum
-Name(processor_type) Type(enum processor_type)
-
-EnumValue
-Enum(processor_type) String(ARC600) Value(PROCESSOR_ARC600)
-
-EnumValue
-Enum(processor_type) String(arc600) Value(PROCESSOR_ARC600)
-
-EnumValue
-Enum(processor_type) String(ARC601) Value(PROCESSOR_ARC601)
-
-EnumValue
-Enum(processor_type) String(arc601) Value(PROCESSOR_ARC601)
-
-EnumValue
-Enum(processor_type) String(ARC700) Value(PROCESSOR_ARC700)
-
-EnumValue
-Enum(processor_type) String(arc700) Value(PROCESSOR_ARC700)
-
-EnumValue
-Enum(processor_type) String(ARCv2EM) Value(PROCESSOR_ARCv2EM)
-
-EnumValue
-Enum(processor_type) String(arcem) Value(PROCESSOR_ARCv2EM)
-
-EnumValue
-Enum(processor_type) String(ARCv2HS) Value(PROCESSOR_ARCv2HS)
-
-EnumValue
-Enum(processor_type) String(archs) Value(PROCESSOR_ARCv2HS)
+Target RejectNegative Joined Enum(processor_type) Var(arc_cpu) Init(PROCESSOR_NONE)
+Specify the name of the target CPU
 
 msize-level=
 Target RejectNegative Joined UInteger Var(arc_size_opt_level) Init(-1)
@@ -333,9 +300,6 @@ Enum(arcTune) String(arc725d) Value(TUNE_ARC700_4_2_XMAC)
 
 EnumValue
 Enum(arcTune) String(arc750d) Value(TUNE_ARC700_4_2_XMAC)
-
-EnumValue
-Enum(arcTune) String(arcembest) Value(TUNE_ARCEM_BEST)
 
 mindexed-loads
 Target Var(TARGET_INDEXED_LOADS)

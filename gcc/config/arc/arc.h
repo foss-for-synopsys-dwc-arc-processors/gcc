@@ -47,6 +47,12 @@ along with GCC; see the file COPYING3.  If not see
 #define TARGET_CPU_DEFAULT	TARGET_CPU_arc700
 #endif
 
+#define PROCESSOR_ARC600 PROCESSOR_arc600
+#define PROCESSOR_ARC601 PROCESSOR_arc601
+#define PROCESSOR_ARC700 PROCESSOR_arc700
+#define PROCESSOR_ARCv2EM PROCESSOR_arcem
+#define PROCESSOR_ARCv2HS PROCESSOR_archs
+
 #define SYMBOL_FLAG_SHORT_CALL	(SYMBOL_FLAG_MACH_DEP << 0)
 #define SYMBOL_FLAG_MEDIUM_CALL	(SYMBOL_FLAG_MACH_DEP << 1)
 #define SYMBOL_FLAG_LONG_CALL	(SYMBOL_FLAG_MACH_DEP << 2)
@@ -110,31 +116,18 @@ along with GCC; see the file COPYING3.  If not see
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
 "
 
-#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-# define ASM_DEFAULT "-mEM"
-# define ASM_DEFOPT "%{mcpu=ARC700:%{mlock}} %{mcpu=ARC700:%{mswape}} %{mcpu=ARC700:%{mrtsc}}"
-#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-# define ASM_DEFAULT "-mHS"
-# define ASM_DEFOPT "%{mcpu=ARC700:%{mlock}} %{mcpu=ARC700:%{mswape}} %{mcpu=ARC700:%{mrtsc}}"
-#else
-# define ASM_DEFAULT "-mARC700 -mEA"
-# define ASM_DEFOPT "%{mswape} %{mlock} %{mrtsc}"
-#endif
+extern const char *arc_cpu_to_as (int argc, const char **argv);
 
-#define ASM_SPEC  "\
-%{mbig-endian|EB:-EB} %{EL} \
-%{mcpu=ARC600:-mARC600} \
-%{mcpu=ARC601:-mARC601} \
-%{mcpu=ARC700:-mARC700} \
-%{mcpu=ARC700:-mEA} \
-%{!mcpu=*:%{!mA6:%{!mARC600:%{!mARC700:" ASM_DEFAULT "}}}} \
+#define EXTRA_SPEC_FUNCTIONS			\
+  { "cpu_to_as", arc_cpu_to_as },
+
+#define ASM_SPEC "%{mbig-endian|EB:-EB} %{EL} \
+%:cpu_to_as(%{mcpu=*:%*}) \
 %{mbarrel-shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
-%{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*} \
-%{msimd} %{mfpu=fpuda:-mfpuda} \
-%{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy}" \
-ASM_DEFOPT "%{matomic:-mlock} \
-%{mcpu=ARCv2EM:-mEM} \
-%{mcpu=ARCv2HS:-mHS} \
+%{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*}				\
+%{msimd} %{mfpu=fpuda:-mfpuda}						\
+%{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
+%{matomic:-mlock} %{mswape} %{mlock} %{mrtsc} \
 "
 
 #define OPTION_DEFAULT_SPECS \
@@ -181,7 +174,7 @@ ASM_DEFOPT "%{matomic:-mlock} \
 #define EXTRA_SPECS \
   { "arc_tls_extra_start_spec", ARC_TLS_EXTRA_START_SPEC }, \
 
-#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:%{!mcpu=ARCv2EM:crtg.o%s}} %(arc_tls_extra_start_spec) crtbegin.o%s"
+#define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} %(arc_tls_extra_start_spec) crtbegin.o%s"
 #else
 #define STARTFILE_SPEC   "%{!shared:%{!mkernel:crt1.o%s}} crti.o%s \
   %{!shared:%{pg|p|profile:crtg.o%s} crtbegin.o%s} %{shared:crtbeginS.o%s}"
@@ -189,7 +182,7 @@ ASM_DEFOPT "%{matomic:-mlock} \
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
-#define ENDFILE_SPEC "%{pg|p:%{!mcpu=ARCv2EM:crtgend.o%s}} crtend.o%s crtn%O%s"
+#define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
 #else
 #define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s} crtend.o%s} \
   %{shared:crtendS.o%s} crtn.o%s"
@@ -206,7 +199,7 @@ ASM_DEFOPT "%{matomic:-mlock} \
 #else
 #undef LIB_SPEC
 /* -lc_p not present for arc-elf32-* : ashwin */
-#define LIB_SPEC "%{!shared:%{g*:-lg} %{pg|p:%{!mcpu=ARCv2EM:-lgmon}} -lc}"
+#define LIB_SPEC "%{!shared:%{g*:-lg} %{pg|p:-lgmon} -lc}"
 #endif
 
 #ifndef DRIVER_ENDIAN_SELF_SPECS
@@ -220,16 +213,11 @@ ASM_DEFOPT "%{matomic:-mlock} \
 #endif
 
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS			\
-  "%{mARC600|mA6|marc600: -mcpu=ARC600 %<mARC600 %<mA6 %<marc600}"	\
-  "%{mARC601|marc601: -mcpu=ARC601 %<mARC601 %<marc601}"		\
-  "%{mARC700|mA7|marc700: -mcpu=ARC700 %<mARC700 %<mA7 %<marc700}"	\
-  "%{mav2em|mARCv2EM|mEM|marcem: -mcpu=ARCv2EM %<mav2em %<ARCv2EM %<mEM %<marcem}" \
-  "%{mav2hs|mARCv2HS|mHS|marchs: -mcpu=ARCv2HS %<mav2hs %<ARCv2HS %<mHS %<marchs}" \
-  "%{mcpu=arc700: -mcpu=ARC700 %<mcpu=arc700}"				\
-  "%{mcpu=arc600: -mcpu=ARC600 %<mcpu=arc600}"				\
-  "%{mcpu=arc601: -mcpu=ARC601 %<mcpu=arc601}"				\
-  "%{mcpu=arcem: -mcpu=ARCv2EM %<mcpu=arcem}"				\
-  "%{mcpu=archs: -mcpu=ARCv2HS %<mcpu=archs}"
+  "%{mARC600|mA6|marc600: -mcpu=arc600 %<mARC600 %<mA6 %<marc600}"	\
+  "%{mARC601|marc601: -mcpu=arc601 %<mARC601 %<marc601}"		\
+  "%{mARC700|mA7|marc700: -mcpu=arc700 %<mARC700 %<mA7 %<marc700}"	\
+  "%{mav2em|mARCv2EM|mEM|marcem: -mcpu=arcem %<mav2em %<mARCv2EM %<mEM %<marcem}" \
+  "%{mav2hs|mARCv2HS|mHS|marchs: -mcpu=archs %<mav2hs %<mARCv2HS %<mHS %<marchs}"
 
 /* Run-time compilation parameters selecting different hardware subsets.  */
 
@@ -274,23 +262,26 @@ ASM_DEFOPT "%{matomic:-mlock} \
    use conditional execution?  */
 #define TARGET_AT_DBR_CONDEXEC  (!TARGET_ARC700 && !TARGET_V2)
 
-#define TARGET_ARC600 (arc_cpu == PROCESSOR_ARC600)
-#define TARGET_ARC601 (arc_cpu == PROCESSOR_ARC601)
-#define TARGET_ARC700 (arc_cpu == PROCESSOR_ARC700)
-#define TARGET_EM (arc_cpu == PROCESSOR_ARCv2EM)
-#define TARGET_HS (arc_cpu == PROCESSOR_ARCv2HS)
-#define TARGET_V2 ((arc_cpu == PROCESSOR_ARCv2HS) || (arc_cpu == PROCESSOR_ARCv2EM))
+extern bool arc_arcem;
+extern bool arc_archs;
+extern bool arc_arc700;
+extern bool arc_arc600;
+extern bool arc_arc601;
 
-/* Recast the cpu class to be the cpu attribute.  */
-#define arc_cpu_attr ((enum attr_cpu)arc_cpu)
+#define TARGET_ARC600 (arc_arc600)
+#define TARGET_ARC601 (arc_arc601)
+#define TARGET_ARC700 (arc_arc700)
+#define TARGET_EM (arc_arcem)
+#define TARGET_HS (arc_archs)
+#define TARGET_V2 (TARGET_EM || TARGET_HS)
 
 #ifndef MULTILIB_DEFAULTS
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-#define MULTILIB_DEFAULTS { "mcpu=ARCv2EM" }
+#define MULTILIB_DEFAULTS { "mcpu=arcem" }
 #elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-#define MULTILIB_DEFAULTS { "mcpu=ARCv2HS" }
+#define MULTILIB_DEFAULTS { "mcpu=archs" }
 #else
-#define MULTILIB_DEFAULTS { "mcpu=ARC700" }
+#define MULTILIB_DEFAULTS { "mcpu=arc700" }
 #endif
 #endif
 

@@ -1,0 +1,64 @@
+/* ARC options.
+   Copyright (C) 2016 Free Software Foundation, Inc.
+
+   This file is part of GCC.
+
+   GCC is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 3, or (at your
+   option) any later version.
+
+   GCC is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with GCC; see the file COPYING3.  If not see
+   <http://www.gnu.org/licenses/>.  */
+
+ARC_OPT(FL_CD,       (1ULL << 0), MASK_CODE_DENSITY,      "code density")
+ARC_OPT(FL_DIVREM,   (1ULL << 1), MASK_DIVREM,            "div/rem")
+ARC_OPT(FL_NORM,     (1ULL << 2), MASK_NORM_SET,          "norm")
+ARC_OPT(FL_MPY16,    (1ULL << 3), MASK_MPY16_SET,         "mpy16")
+ARC_OPT(FL_ATOMIC,   (1ULL << 4), MASK_ATOMIC,            "atomic")
+ARC_OPT(FL_LL64,     (1ULL << 5), MASK_LL64,              "double load/store")
+ARC_OPT(FL_BS,       (1ULL << 6), MASK_BARREL_SHIFTER,    "barrel shifter")
+ARC_OPT(FL_SWAP,     (1ULL << 7), MASK_SWAP_SET,          "swap")
+ARC_OPT(FL_MUL64,    (1ULL << 8), MASK_MUL64_SET,         "mul64")
+ARC_OPT(FL_MUL32x16, (1ULL << 9), MASK_MULMAC_32BY16_SET, "mul32x16")
+ARC_OPT(FL_MPY,      (1ULL << 10), MASK_MPY_SET,          "mpy")
+ARC_OPT(FL_EA,       (1ULL << 11), MASK_EA_SET,           "extended arithmetics")
+ARC_OPT(FL_SPFP,     (1ULL << 12), MASK_SPFP_COMPACT_SET, "single precission FPX")
+ARC_OPT(FL_DPFP,     (1ULL << 13), MASK_DPFP_COMPACT_SET, "double precission FPX")
+ARC_OPT(FL_ARGONAUT, (1ULL << 14), MASK_ARGONAUT_SET,     "argonaut")
+ARC_OPT(FL_SIMD,     (1ULL << 15), MASK_SIMD_SET,         "simd")
+
+ARC_OPTX(FL_MPYOPT_1, (1ULL << 17), arc_mpy_option, 1)
+ARC_OPTX(FL_MPYOPT_2, (1ULL << 18), arc_mpy_option, 2)
+ARC_OPTX(FL_MPYOPT_3, (1ULL << 19), arc_mpy_option, 3)
+ARC_OPTX(FL_MPYOPT_4, (1ULL << 20), arc_mpy_option, 4)
+ARC_OPTX(FL_MPYOPT_5, (1ULL << 21), arc_mpy_option, 5)
+ARC_OPTX(FL_MPYOPT_6, (1ULL << 22), arc_mpy_option, 6)
+ARC_OPTX(FL_MPYOPT_7, (1ULL << 23), arc_mpy_option, 7)
+ARC_OPTX(FL_MPYOPT_8, (1ULL << 24), arc_mpy_option, 8)
+ARC_OPTX(FL_MPYOPT_9, (1ULL << 25), arc_mpy_option, 9)
+
+ARC_OPT (FL_MPYOPT, 0x3fe0000, 0, "mpy option")
+
+ARC_OPTX(FL_FPU_FPUS,      (1UL << 26), arc_fpu_build, FPU_FPUS)
+ARC_OPTX(FL_FPU_FPUS_DIV,  (1UL << 27), arc_fpu_build, FPU_FPUS_DIV)
+ARC_OPTX(FL_FPU_FPUS_FMA,  (1UL << 28), arc_fpu_build, FPU_FPUS_FMA)
+ARC_OPTX(FL_FPU_FPUS_ALL,  (1UL << 29), arc_fpu_build, FPU_FPUS_ALL)
+ARC_OPTX(FL_FPU_FPUDA,     (1UL << 30), arc_fpu_build, FPU_FPUDA)
+ARC_OPTX(FL_FPU_FPUDA_DIV, (1UL << 31), arc_fpu_build, FPU_FPUDA_DIV)
+ARC_OPTX(FL_FPU_FPUDA_FMA, (1UL << 32), arc_fpu_build, FPU_FPUDA_FMA)
+ARC_OPTX(FL_FPU_FPUDA_ALL, (1UL << 33), arc_fpu_build, FPU_FPUDA_ALL)
+ARC_OPTX(FL_FPU_FPUD,      (1UL << 34), arc_fpu_build, FPU_FPUD)
+ARC_OPTX(FL_FPU_FPUD_DIV,  (1UL << 35), arc_fpu_build, FPU_FPUD_DIV)
+ARC_OPTX(FL_FPU_FPUD_FMA,  (1UL << 36), arc_fpu_build, FPU_FPUD_FMA)
+ARC_OPTX(FL_FPU_FPUD_ALL,  (1UL << 37), arc_fpu_build, FPU_FPUD_ALL)
+
+ARC_OPT (FL_FPUS,  (0xFULL << 26), 0, "single precission floating point")
+ARC_OPT (FL_FPUDA, (0xFFULL << 26), 0, "double precission fp assist")
+ARC_OPT (FL_FPUD,  (0xFFFULL << 26), 0, "double precission floating point")

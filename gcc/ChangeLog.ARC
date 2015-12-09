@@ -1,3 +1,37 @@
+2016-02-03  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc-arches.def: New file.
+	* config/arc/arc-cpus.def: Likewise.
+	* config/arc/arc-options.def: Likewise.
+	* config/arc/arc-tables.opt: Likewise.
+	* config/arc/genmultilib.awk: Likewise.
+	* config/arc/genoptions.awk: Likewise.
+	* config/arc/t-multilib: Likewise.
+	* common/config/arc/arc-common.c (TARGET_HANDLE_OPTION): Remove.
+	(TARGET_DEFAULT_TARGET_FLAGS): Redefine.
+	* config.gcc: Add arc-tables.opt to arc's extra options. Add ARC
+	support for driver hooks.
+	* config/arc/arc-opts.h (processor_type): Use arc-cpu.def
+	(FPU_FPUS, FPU_FPUD, FPU_FPUDA, FPU_FPUDA_DIV, FPU_FPUDA_FMA)
+	(FPU_FPUDA_ALL, FPU_FPUS_DIV, FPU_FPUS_FMA, FPU_FPUS_ALL)
+	(FPU_FPUD_DIV, FPU_FPUD_FMA, FPU_FPUD_ALL): New defines.
+	* config/arc/arc-protos.h (arc_init): Remove it.
+	* config/arc/arc.c (arc_cpu_name): New variable.
+	(arc_selected_cpu, arc_selected_arch, arc_arcem, arc_archs)
+	(arc_arc700, arc_arc600, arc_arc601): New variable.
+	(arc_init): Refurbish.
+	(arc_override_options): Likewise.
+	* config/arc/arc.h (TARGET_*): Redefine.
+	(ASM_SPEC): Refurbish.
+	(ASM_DEFAULT, ASM_DEFOPT): Remove.
+	* config/arc/arc.md (attr_cpu, arcem_best): Remove.
+	* config/arc/arc.opt (mcpu, mfpu): Refurbish.
+	(mmpy-option): Default none.
+	* config/arc/t-arc: New make targets.
+	* config/arc/arc-arch.h: New file.
+	* config/arc/driver-arc.c: New file.
+	* config/arc/t-arc-newlib: Delete file.
+
 2016-01-20  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c (arc_option_optimization_table):

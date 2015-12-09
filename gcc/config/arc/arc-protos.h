@@ -48,7 +48,6 @@ extern arc_function_type arc_compute_function_type (struct function *);
 #endif /* TREE_CODE */
 
 
-extern void arc_init (void);
 extern unsigned int arc_compute_frame_size ();
 extern bool arc_ccfsm_branch_deleted_p (void);
 extern void arc_ccfsm_record_branch_deleted (void);

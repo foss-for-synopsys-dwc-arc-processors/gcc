@@ -1,0 +1,31 @@
+/* ARC ARCH architectures.
+   Copyright (C) 2016 Free Software Foundation, Inc.
+
+   This file is part of GCC.
+
+   GCC is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 3, or (at your
+   option) any later version.
+
+   GCC is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with GCC; see the file COPYING3.  If not see
+   <http://www.gnu.org/licenses/>.  */
+
+ARC_ARCH("arcem", em, FL_MPYOPT | FL_MPY16 | FL_DIVREM | FL_CD | FL_NORM \
+	 | FL_BS | FL_SWAP | FL_MPY | FL_FPUS | FL_SPFP | FL_DPFP	\
+	 | FL_SIMD | FL_FPUDA, 0)
+ARC_ARCH("archs", hs, FL_MPYOPT | FL_MPY16 | FL_DIVREM | FL_NORM | FL_CD \
+	 | FL_ATOMIC | FL_LL64 | FL_BS | FL_SWAP			\
+	 | FL_MPY | FL_FPUS | FL_FPUD,					\
+	 FL_CD | FL_ATOMIC | FL_BS | FL_NORM | FL_SWAP)
+ARC_ARCH("arc6xx", 6xx, FL_BS | FL_NORM | FL_SWAP | FL_MUL64 | FL_MUL32x16 \
+	 | FL_SPFP | FL_ARGONAUT | FL_DPFP, 0)
+ARC_ARCH("arc700", 700, FL_ATOMIC | FL_BS | FL_NORM | FL_SWAP | FL_EA \
+	 | FL_SIMD | FL_SPFP | FL_ARGONAUT | FL_DPFP | FL_MPY,	      \
+	 FL_MPY | FL_BS | FL_NORM | FL_SWAP)

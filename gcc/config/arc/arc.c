@@ -66,7 +66,8 @@ along with GCC; see the file COPYING3.  If not see
 
 
 /* Which cpu we're compiling for (ARC600, ARC601, ARC700).  */
-static const char *arc_cpu_string = "";
+static char arc_cpu_name[10] = "";
+static const char *arc_cpu_string = arc_cpu_name;
 
 /* The macros REG_OK_FOR..._P assume that the arg is a REG rtx
    and check its validity for a certain class.
@@ -470,6 +471,16 @@ static bool arc_frame_pointer_required (void);
 static void irq_range (const char *);
 
 static void parse_mrgf_banked_regs_option (const char *);
+
+static const arc_cpu_t *arc_selected_cpu;
+static const arc_arch_t *arc_selected_arch;
+
+/* Global var which sets the current compilation architecture.  */
+bool arc_arcem = false;
+bool arc_archs = false;
+bool arc_arc700 = false;
+bool arc_arc600 = false;
+bool arc_arc601 = false;
 
 /* Implements target hook vector_mode_supported_p.  */
 
@@ -907,43 +918,11 @@ static struct rtl_opt_pass pass_arc_hazard_avoidance =
  }
 };
 
-
 /* Called by OVERRIDE_OPTIONS to initialize various things.  */
 
-void
+static void
 arc_init (void)
 {
-  enum attr_tune tune_dflt = TUNE_NONE;
-
-  switch (arc_cpu)
-    {
-    case PROCESSOR_ARC600:
-      arc_cpu_string = "ARC600";
-      tune_dflt = TUNE_ARC600;
-      break;
-
-    case PROCESSOR_ARC601:
-      arc_cpu_string = "ARC601";
-      tune_dflt = TUNE_ARC600;
-      break;
-
-    case PROCESSOR_ARC700:
-      arc_cpu_string = "ARC700";
-      tune_dflt = TUNE_ARC700_4_2_STD;
-      break;
-
-    case PROCESSOR_ARCv2EM:
-      arc_cpu_string = "EM";
-      break;
-
-    case PROCESSOR_ARCv2HS:
-      arc_cpu_string = "HS";
-      break;
-
-    default:
-      gcc_unreachable ();
-    }
-
   if (TARGET_V2)
     {
       /* I have the multiplier, then use it*/
@@ -951,8 +930,6 @@ arc_init (void)
 	  arc_multcost = COSTS_N_INSNS (1);
     }
 
-  if (arc_tune == TUNE_NONE)
-    arc_tune = tune_dflt;
   /* Note: arc_multcost is only used in rtx_cost if speed is true.  */
   if (arc_multcost < 0)
     switch (arc_tune)
@@ -1036,11 +1013,6 @@ arc_init (void)
   if (TARGET_LL64 && !TARGET_HS)
     error ("-mll64 available on HS cores only");
 
-  /* Only selected multiplier configurations are available for HS. */
-  if (TARGET_HS && ((arc_mpy_option > 2 && arc_mpy_option < 7)
-		    || (arc_mpy_option == 1)))
-    error ("This multiplier configuration is not available for HS cores");
-
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
   if (flag_pic && (!(TARGET_ARC700 || TARGET_V2)))
     {
@@ -1111,13 +1083,34 @@ arc_override_options (void)
     = (vec<cl_deferred_option> *) arc_deferred_options;
 
   if (arc_cpu == PROCESSOR_NONE)
+    {
+      /* No cpu option is selected.  Use the default one.  */
 #if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-    arc_cpu = PROCESSOR_ARCv2EM;
+      arc_cpu = PROCESSOR_arcem;
 #elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-    arc_cpu = PROCESSOR_ARCv2HS;
+      arc_cpu = PROCESSOR_archs;
 #else
-    arc_cpu = PROCESSOR_ARC700;
+      arc_cpu = PROCESSOR_arc700;
 #endif
+      arc_selected_cpu = &arc_cpu_types[(int) arc_cpu];
+
+#define ARC_OPT(NAME, CODE, MASK, DOC)		\
+  do {						\
+    if (arc_selected_cpu->flags & CODE)		\
+      target_flags |= MASK;			\
+  } while (0);
+#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
+  do {						\
+    if (arc_selected_cpu->flags & CODE)		\
+      VAR = VAL;				\
+  } while (0);
+
+#include "arc-options.def"
+
+#undef ARC_OPTX
+#undef ARC_OPT
+
+  }
 
   irq_ctrl_saved.irq_save_last_reg = -1;
   irq_ctrl_saved.irq_save_blink    = false;
@@ -1148,6 +1141,98 @@ arc_override_options (void)
 	  }
       }
 
+  /* Set the default cpu options.  */
+  arc_selected_cpu = &arc_cpu_types[(int) arc_cpu];
+  arc_selected_arch = &arc_arch_types[(int) arc_selected_cpu->arch];
+
+  /* Set the architectures.  */
+  switch (arc_selected_arch->arch)
+    {
+    case BASE_ARCH_em:
+      arc_arcem = true;
+      arc_cpu_string = "EM";
+      break;
+    case BASE_ARCH_hs:
+      arc_archs = true;
+      arc_cpu_string = "HS";
+      break;
+    case BASE_ARCH_700:
+      arc_arc700 = true;
+      arc_cpu_string = "ARC700";
+      break;
+    case BASE_ARCH_6xx:
+      arc_cpu_string = "ARC600";
+      if (arc_selected_cpu->flags & FL_BS)
+	arc_arc600 = true;
+      else
+	arc_arc601 = true;
+      break;
+    default:
+      gcc_unreachable ();
+    }
+
+  /* Set cpu flags accordingly to architecture.  The cpu specific
+     flags are set in arc-common.c.  Those values are forced in to the
+     right value, regardless if they were set or not.  */
+#define ARC_OPT(NAME, CODE, MASK, DOC)		\
+  do {						\
+    if (arc_selected_arch->dflags & CODE)	\
+      target_flags |= MASK;			\
+  } while (0);
+#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
+  do {						\
+    if (arc_selected_arch->dflags & CODE)	\
+      VAR = VAL;				\
+  } while (0);
+
+#include "arc-options.def"
+
+#undef ARC_OPTX
+#undef ARC_OPT
+
+  /* Check options against architecture options.  Throw an error if
+     option is not allowed.  */
+#define ARC_OPTX(NAME, CODE, VAR, VAL)				\
+  do {								\
+    if ((VAR == VAL)						\
+	&& (!(arc_selected_arch->flags & CODE)))		\
+      {								\
+	error ("Illegal option for %s architecture",		\
+	       arc_selected_arch->name);			\
+      }								\
+  } while (0);
+#define ARC_OPT(NAME, CODE, MASK, DOC)				\
+  do {								\
+    if ((target_flags & MASK)					\
+	&& (!(arc_selected_arch->flags & CODE)))		\
+      error ("%s is not available for %s architecture",		\
+	     DOC, arc_selected_arch->name);			\
+  } while (0);
+
+#include "arc-options.def"
+
+#undef ARC_OPTX
+#undef ARC_OPT
+
+  /* If we have an multiplier configuration given via mmpy-option, set
+     also the ARC700' MPY option, and the other way around.  */
+  if (arc_mpy_option)
+    {
+      target_flags |= MASK_MPY_SET;
+      target_flags |= MASK_MPY16_SET;
+    }
+  else if (TARGET_V2
+	   && (TARGET_MPY_SET || TARGET_MPY16_SET))
+    {
+      arc_mpy_option = 1;
+      target_flags |= MASK_MPY_SET;
+      target_flags |= MASK_MPY16_SET;
+    }
+
+  /* Set Tune option.  */
+  if (arc_tune == TUNE_NONE)
+    arc_tune = (enum attr_tune) arc_selected_cpu->tune;
+
   if (arc_size_opt_level == 3)
     optimize_size = 1;
 
@@ -1177,21 +1262,6 @@ arc_override_options (void)
       && HAVE_prefetch
       && optimize >= 3)
     flag_prefetch_loop_arrays = 1;
-
-  /* Set default hw options. */
-  switch (arc_tune)
-    {
-    case TUNE_ARCEM_BEST:
-      target_flags |= MASK_BARREL_SHIFTER;
-      target_flags |= MASK_NORM_SET;
-      target_flags |= MASK_SWAP_SET;
-      target_flags |= MASK_DIVREM;
-      target_flags |= MASK_CODE_DENSITY;
-      break;
-
-    default:
-      break;
-    }
 
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
@@ -12462,7 +12532,7 @@ parse_mrgf_banked_regs_option (const char *arg)
   rgf_banked_register_count = (int) val;
 }
 
-  /* We can't inline this in INSN_REFERENCES_ARE_DELAYED because resource.h
+/* We can't inline this in INSN_REFERENCES_ARE_DELAYED because resource.h
    doesn't include the required header files.  */
 bool
 insn_is_tls_gd_dispatch (rtx insn)
