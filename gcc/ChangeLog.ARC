@@ -1,3 +1,9 @@
+2015-12-17  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_legitimize_pic_address): Handle complex
+	PIC moves.
+	* config/arc/arc.md (unspec): Add pic/tls codes.
+
 2015-11-30  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (legitimate_offset_address_p ): Allow addresses

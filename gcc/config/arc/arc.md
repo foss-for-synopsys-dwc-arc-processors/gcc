@@ -107,6 +107,13 @@
 ;;  ----------------------------------------------------------------------------
 
 (define_c_enum "unspec" [
+  DUMMY0
+  DUMMY1
+  DYMMY2
+  ARC_UNSPEC_PLT
+  ARC_UNSPEC_GOT
+  ARC_UNSPEC_GOTOFF
+  ARC_UNSPEC_GOTOFFPC
   UNSPEC_ARC_NORM
   UNSPEC_ARC_NORMW
   UNSPEC_ARC_SWAP

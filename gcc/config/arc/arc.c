@@ -276,15 +276,6 @@ static int rgf_banked_register_count;
    this to be no less than the 1/p  */
 #define MAX_INSNS_SKIPPED 3
 
-/* The values of unspec's first field.  */
-enum {
-  ARC_UNSPEC_PLT = 3,
-  ARC_UNSPEC_GOT,
-  ARC_UNSPEC_GOTOFF,
-  ARC_UNSPEC_GOTOFFPC
-} ;
-
-
 enum arc_builtins {
   /* Sentinel to mark start of simd builtins.  */
   ARC_SIMD_BUILTIN_BEGIN      = 1000,
@@ -5577,6 +5568,35 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 	    {
 	      /* Check that the unspec is one of the ones we generate?  */
 	      return orig;
+	    }
+	  else if (GET_CODE (addr) != PLUS)
+	    {
+	      /* fwprop is putting in the REG_EQUIV notes which are
+		 involving the constant pic unspecs.  Then, loop may
+		 use those notes for optimizations rezulting in
+		 complex patterns that are not supported by the
+		 current implementation. The following piece of code
+		 tries to convert the complex instruction in simpler
+		 ones.  */
+	      rtx tmp = XEXP (addr, 0);
+	      enum rtx_code code = GET_CODE (addr);
+
+	      /* It only works for UNARY operations.  */
+	      gcc_assert (UNARY_P (addr));
+	      gcc_assert (GET_CODE (tmp) == UNSPEC);
+	      gcc_assert (oldx);
+
+	      emit_move_insn
+		(oldx,
+		 gen_rtx_CONST (SImode,
+				arc_legitimize_pic_address (tmp,
+							    NULL_RTX)));
+
+	      emit_insn (gen_rtx_SET (VOIDmode, oldx,
+				      gen_rtx_fmt_ee (code, SImode,
+						      oldx, const0_rtx)));
+
+	      return oldx;
 	    }
 	  else
 	    {
