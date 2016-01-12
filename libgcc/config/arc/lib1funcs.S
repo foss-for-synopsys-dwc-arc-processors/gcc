@@ -1268,7 +1268,7 @@ SYM(__ld_r13_to_r14_ret):
 #endif
 
 #ifdef  L_muldf3
-#if defined (__ARC700__) || defined (__HS__)
+#if defined (__ARC700__) || defined (__ARC_MPY__)
 #include "ieee-754/muldf3.S"
 #elif defined (__ARC_NORM__) && defined (__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/muldf3.S"
@@ -1284,7 +1284,7 @@ SYM(__ld_r13_to_r14_ret):
 #endif
 
 #ifdef  L_mulsf3
-#if defined (__ARC700__) || defined (__HS__)
+#if defined (__ARC700__) || defined (__ARC_MPY__)
 #include "ieee-754/mulsf3.S"
 #elif defined (__ARC_NORM__) && defined (__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/mulsf3.S"
@@ -1296,7 +1296,7 @@ SYM(__ld_r13_to_r14_ret):
 #endif
 
 #ifdef  L_divdf3
-#if defined (__ARC700__) || defined (__HS__)
+#if defined (__ARC700__) || defined (__ARC_MPY__)
 #include "ieee-754/divdf3.S"
 #elif defined (__ARC_NORM__) && defined (__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/divdf3.S"
@@ -1306,7 +1306,7 @@ SYM(__ld_r13_to_r14_ret):
 #endif
 
 #ifdef  L_divsf3
-#if defined (__ARC700__) || defined (__HS__)
+#if defined (__ARC700__) || defined (__ARC_MPY__)
 #include "ieee-754/divsf3-stdmul.S"
 #elif defined (__ARC_NORM__) && defined(__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/divsf3.S"
