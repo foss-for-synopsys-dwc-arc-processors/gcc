@@ -1120,10 +1120,10 @@
    ;; ??? The ld/st values could be 16 if it's [reg,bignum].
    (set_attr "length" "4,16,8,16,16,16")])
 
-(define_insn_and_split "*movdf_fpx"
+(define_insn_and_split "movdf_fpx"
   [(set (match_operand:DF 0 "move_dest_operand"      "=D,r,c,D")
 	(match_operand:DF 1 "move_double_src_operand" "r,D,c,D"))
-   (clobber (match_operand: SI 2 "register_operand" "=&r,r,r,r"))]
+   (clobber (match_scratch:SI 2 "=&r,r,r,r"))]
   "TARGET_DPFP"
   "#"
   "reload_completed"
@@ -5948,11 +5948,8 @@
   }
  else if (TARGET_HARD_FLOAT)
   {
-   if (!register_operand (operands[2], DFmode))
-      operands[2] = force_reg (DFmode, operands[2]);
-
-   if (!register_operand (operands[1], DFmode))
-      operands[1] = force_reg (DFmode, operands[1]);
+    operands[1] = force_reg (DFmode, operands[1]);
+    operands[2] = force_reg (DFmode, operands[2]);
   }
  else
   gcc_unreachable ();
@@ -5984,11 +5981,8 @@
    }
   else if (TARGET_HARD_FLOAT)
    {
-    if (!register_operand (operands[2], DFmode))
-       operands[2] = force_reg (DFmode, operands[2]);
-
-    if (!register_operand (operands[1], DFmode))
-       operands[1] = force_reg (DFmode, operands[1]);
+     operands[1] = force_reg (DFmode, operands[1]);
+     operands[2] = force_reg (DFmode, operands[2]);
    }
   else
    gcc_unreachable ();
@@ -6016,11 +6010,8 @@
    }
   else if (TARGET_HARD_FLOAT)
    {
-    if (!register_operand (operands[2], DFmode))
-       operands[2] = force_reg (DFmode, operands[2]);
-
-    if (!register_operand (operands[1], DFmode))
-       operands[1] = force_reg (DFmode, operands[1]);
+     operands[1] = force_reg (DFmode, operands[1]);
+     operands[2] = force_reg (DFmode, operands[2]);
    }
   else
    gcc_unreachable ();

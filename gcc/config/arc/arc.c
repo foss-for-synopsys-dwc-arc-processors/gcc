@@ -3878,14 +3878,12 @@ arc_print_operand (FILE *file, rtx x, int code)
 
 	  split_double (x, &first, &second);
 
-	  if((WORDS_BIG_ENDIAN) == 0)
-	      fprintf (file, "0x%08lx",
-		       code == 'L' ? INTVAL (first) : INTVAL (second));
+	  if ((WORDS_BIG_ENDIAN) == 0)
+	    fprintf (file, "0x%08x",
+		     code == 'L' ? (unsigned) INTVAL (first) : (unsigned) INTVAL (second));
 	  else
-	      fprintf (file, "0x%08lx",
-		       code == 'L' ? INTVAL (second) : INTVAL (first));
-
-
+	    fprintf (file, "0x%08x",
+		     code == 'L' ? (unsigned) INTVAL (second) : (unsigned) INTVAL (first));
 	  }
       else
 	output_operand_lossage ("invalid operand to %%H/%%L code");
@@ -9092,10 +9090,7 @@ prepare_move_operands (rtx *operands, enum machine_mode mode)
       /* There may be cases when we need to move the register Dx to
 	 Dy.  Hence, we reserve here a register to be used with daddhx
 	 instruction.  */
-      rtx tmp = gen_reg_rtx (SImode);
-      rtx x1 = gen_rtx_SET (VOIDmode, operands[0], operands[1]);
-      rtx x2 = gen_rtx_CLOBBER (VOIDmode, tmp);
-      emit_insn (gen_rtx_PARALLEL (VOIDmode, gen_rtvec (2, x1, x2)));
+      emit_insn (gen_movdf_fpx (operands[0], operands[1]));
       return true;
     }
 
