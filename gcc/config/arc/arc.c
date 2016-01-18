@@ -5243,19 +5243,7 @@ arc_legitimate_pc_offset_p (rtx addr)
   if (GET_CODE (addr) != CONST)
     return false;
   addr = XEXP (addr, 0);
-  if (GET_CODE (addr) == PLUS)
-    {
-      if (GET_CODE (XEXP (addr, 1)) != CONST_INT)
-	return false;
-      addr = XEXP (addr, 0);
-    }
-  return (GET_CODE (addr) == UNSPEC
-	  && XVECLEN (addr, 0) == 1
-	  && (XINT (addr, 1) == ARC_UNSPEC_GOT
-	      || XINT (addr, 1) == ARC_UNSPEC_GOTOFFPC
-	      || XINT (addr, 1) == UNSPEC_TLS_GD
-	      || XINT (addr, 1) == UNSPEC_TLS_IE)
-	  && GET_CODE (XVECEXP (addr, 0, 0)) == SYMBOL_REF);
+  return flag_pic && !arc_raw_symbolic_reference_mentioned_p (addr, false);
 }
 
 /* Return true if ADDR is a valid pic address.
@@ -5522,7 +5510,7 @@ arc_legitimize_tls_address (rtx addr, enum tls_model model)
    The return value is the legitimated address.
    If OLDX is non-zero, it is the target to assign the address to first.  */
 
-rtx
+static rtx
 arc_legitimize_pic_address (rtx orig, rtx oldx)
 {
   rtx addr = orig;
@@ -5568,6 +5556,23 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 	    {
 	      /* Check that the unspec is one of the ones we generate?  */
 	      return orig;
+	    }
+	  else if (GET_CODE (addr) == MINUS)
+	    {
+	      /* The same story with fwprop.  */
+	      rtx op0 = XEXP (addr, 0);
+	      rtx op1 = XEXP (addr, 1);
+	      gcc_assert (oldx);
+	      gcc_assert (GET_CODE (op1) == UNSPEC);
+
+	      emit_move_insn (oldx,
+			      gen_rtx_CONST (SImode,
+					     arc_legitimize_pic_address (op1,
+									 NULL_RTX)));
+	      emit_insn (gen_rtx_SET (VOIDmode, oldx,
+				      gen_rtx_MINUS (SImode, op0, oldx)));
+	      return oldx;
+
 	    }
 	  else if (GET_CODE (addr) != PLUS)
 	    {

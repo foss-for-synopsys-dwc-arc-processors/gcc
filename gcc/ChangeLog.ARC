@@ -1,3 +1,11 @@
+2016-01-18  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_legitimize_pic_address): Handle MINUS
+	operations when doing PIC moves. Make this function static.
+	(arc_legitimate_pc_offset_p): Use
+	arc_raw_symbolic_reference_mentioned_p.
+	* config/arc/arc-protos.h (arc_legitimize_pic_address): Remove.
+
 2015-12-17  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_legitimize_pic_address): Handle complex

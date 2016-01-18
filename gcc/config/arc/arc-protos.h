@@ -53,7 +53,6 @@ extern unsigned int arc_compute_frame_size ();
 extern bool arc_ccfsm_branch_deleted_p (void);
 extern void arc_ccfsm_record_branch_deleted (void);
 
-extern rtx arc_legitimize_pic_address (rtx, rtx);
 void arc_asm_output_aligned_decl_local (FILE *, tree, const char *,
 					unsigned HOST_WIDE_INT,
 					unsigned HOST_WIDE_INT,
