@@ -3837,14 +3837,20 @@
   switch (GET_MODE (diff_vec))
     {
     case SImode:
-      return \"ld.as %0,[%1,%2]%&\";
+      if ((which_alternative == 0) && TARGET_CODE_DENSITY)
+       return \"ld_s.as %0,[%1,%2]%&\";
+      else
+       return \"ld.as %0,[%1,%2]%&\";
     case HImode:
       if (ADDR_DIFF_VEC_FLAGS (diff_vec).offset_unsigned)
 	return \"ldw.as %0,[%1,%2]\";
       return \"ldw.x.as %0,[%1,%2]\";
     case QImode:
       if (ADDR_DIFF_VEC_FLAGS (diff_vec).offset_unsigned)
-	return \"ldb%? %0,[%1,%2]%&\";
+        if (which_alternative == 0)
+	 return \"ldb_s %0,[%1,%2]%&\";
+        else
+	 return \"ldb %0,[%1,%2]%&\";
       return \"ldb.x %0,[%1,%2]\";
     default:
       gcc_unreachable ();

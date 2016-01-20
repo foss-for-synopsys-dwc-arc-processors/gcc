@@ -1151,6 +1151,11 @@ arc_override_options (void)
   if (arc_size_opt_level == 3)
     optimize_size = 1;
 
+  if (TARGET_V2)
+    TARGET_COMPACT_CASESI = 0;
+  else if (optimize_size == 1)
+    TARGET_COMPACT_CASESI = 1;
+
   if (flag_pic)
     target_flags |= MASK_NO_SDATA_SET;
 
@@ -1161,10 +1166,6 @@ arc_override_options (void)
   if (TARGET_MIXED_CODE)
     TARGET_Q_CLASS = 1;
   if (!TARGET_Q_CLASS)
-    TARGET_COMPACT_CASESI = 0;
-
-  /* For the time being don't support COMPACT_CASESI for ARCv2. */
-  if (TARGET_V2)
     TARGET_COMPACT_CASESI = 0;
 
   if (TARGET_COMPACT_CASESI)

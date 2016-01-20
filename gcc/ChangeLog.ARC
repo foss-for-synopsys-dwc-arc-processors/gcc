@@ -1,3 +1,11 @@
+2016-01-20  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c (arc_option_optimization_table):
+	Remove mcompact-casesi option.
+	* config/arc/arc.c (arc_override_options): Use compact-casesi only
+	for arcv1.
+	* config/arc/arc.md (casesi_load): Use short instructions.
+
 2016-01-18  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_legitimize_pic_address): Handle MINUS
