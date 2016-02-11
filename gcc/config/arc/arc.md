@@ -2300,9 +2300,9 @@
 }")
 
 (define_expand "umulsidi3"
-  [(set (match_operand:DI 0 "nonimmediate_operand" "")
-	(mult:DI (zero_extend:DI(match_operand:SI 1 "register_operand" ""))
-		 (zero_extend:DI(match_operand:SI 2 "nonmemory_operand" ""))))]
+  [(set (match_operand:DI 0 "register_operand" "")
+	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" ""))
+		 (zero_extend:DI (match_operand:SI 2 "nonmemory_operand" ""))))]
   ""
 {
   if (TARGET_HS && (arc_mpy_option > 7))
