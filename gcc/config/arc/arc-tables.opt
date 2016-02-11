@@ -37,7 +37,7 @@ EnumValue
 Enum(processor_type) String(em4_dmips) Value(PROCESSOR_em4_dmips)
 
 EnumValue
-Enum(processor_type) String(em4_fpu) Value(PROCESSOR_em4_fpu)
+Enum(processor_type) String(em4_fpus) Value(PROCESSOR_em4_fpus)
 
 EnumValue
 Enum(processor_type) String(em4_fpuda) Value(PROCESSOR_em4_fpuda)
