@@ -85,6 +85,7 @@ arc_handle_option (struct gcc_options *opts,
   const char *arg = decoded->arg;
   static int mcpu_seen = PROCESSOR_NONE;
   const arc_cpu_t *arc_selected_cpu;
+  static bool nompy_seen = false;
 
   switch (code)
     {
@@ -98,29 +99,36 @@ arc_handle_option (struct gcc_options *opts,
 
       arc_selected_cpu = &arc_cpu_types[(int) mcpu_seen];
       /* Set cpu flags accordingly.  */
-#define ARC_OPT(NAME, CODE, MASK, DOC)		\
-  do {						\
-    if ((arc_selected_cpu->flags & CODE)	\
-	&& (!(opts_set->x_target_flags & MASK)))	\
-      target_flags |= MASK;			\
-  } while (0);
+#define ARC_OPT(NAME, CODE, MASK, DOC)			\
+      do {						\
+	if ((arc_selected_cpu->flags & CODE)		\
+	    && (!(opts_set->x_target_flags & MASK)))	\
+	  opts->x_target_flags |= MASK;			\
+      } while (0);
 #define ARC_OPTX(NAME, CODE, VAR, VAL)		\
-  do {						\
-    if (arc_selected_cpu->flags & CODE)		\
-      opts->x_##VAR = VAL;			\
-  } while (0);
+      do {					\
+	if ((arc_selected_cpu->flags & CODE)	\
+	    && (opts->x_##VAR == 0)) 		\
+	    opts->x_##VAR = VAL;		\
+      } while (0);
 
 #include "config/arc/arc-options.def"
 
 #undef ARC_OPTX
 #undef ARC_OPT
 
+      if (nompy_seen)
+	opts->x_arc_mpy_option = 0;
+
       break;
 
     case OPT_mmpy16:
     case OPT_mmpy:
       if (!value)
-	opts->x_arc_mpy_option = 0;
+	{
+	  opts->x_arc_mpy_option = 0;
+	  nompy_seen = true;
+	}
       break;
 
     case OPT_mmpy_option_:

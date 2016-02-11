@@ -1112,35 +1112,6 @@ arc_override_options (void)
 
   }
 
-  irq_ctrl_saved.irq_save_last_reg = -1;
-  irq_ctrl_saved.irq_save_blink    = false;
-  irq_ctrl_saved.irq_save_lpcount  = false;
-
-  /* Handle the deferred options. */
-  if (v)
-    FOR_EACH_VEC_ELT (*v, i, opt)
-      {
-	switch (opt->opt_index)
-	  {
-	  case OPT_mirq_ctrl_saved_:
-	    if (TARGET_V2)
-	      irq_range (opt->arg);
-	    else
-	      warning (0, "option -mirq-ctrl-saved valid only for ARC v2 processors");
-	    break;
-
-	  case OPT_mrgf_banked_regs_:
-	    if (TARGET_V2)
-	      parse_mrgf_banked_regs_option (opt->arg);
-	    else
-	      warning (0, "option -mrgf-banked-regs valid only for ARC v2 processors");
-	    break;
-
-	  default:
-	    gcc_unreachable();
-	  }
-      }
-
   /* Set the default cpu options.  */
   arc_selected_cpu = &arc_cpu_types[(int) arc_cpu];
   arc_selected_arch = &arc_arch_types[(int) arc_selected_cpu->arch];
@@ -1170,6 +1141,35 @@ arc_override_options (void)
     default:
       gcc_unreachable ();
     }
+
+  irq_ctrl_saved.irq_save_last_reg = -1;
+  irq_ctrl_saved.irq_save_blink    = false;
+  irq_ctrl_saved.irq_save_lpcount  = false;
+
+  /* Handle the deferred options.  */
+  if (v)
+    FOR_EACH_VEC_ELT (*v, i, opt)
+      {
+	switch (opt->opt_index)
+	  {
+	  case OPT_mirq_ctrl_saved_:
+	    if (TARGET_V2)
+	      irq_range (opt->arg);
+	    else
+	      warning (0, "option -mirq-ctrl-saved valid only for ARC v2 processors");
+	    break;
+
+	  case OPT_mrgf_banked_regs_:
+	    if (TARGET_V2)
+	      parse_mrgf_banked_regs_option (opt->arg);
+	    else
+	      warning (0, "option -mrgf-banked-regs valid only for ARC v2 processors");
+	    break;
+
+	  default:
+	    gcc_unreachable();
+	  }
+      }
 
   /* Set cpu flags accordingly to architecture.  The cpu specific
      flags are set in arc-common.c.  Those values are forced in to the

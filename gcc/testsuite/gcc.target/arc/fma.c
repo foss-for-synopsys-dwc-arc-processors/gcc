@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target arc_fpu_ok } */
-/* { dg-options "-O2 -mcpu=ARCv2HS -mfpu=fpud_all" } */
+/* { dg-options "-O2 -mcpu=archs -mfpu=fpud_all" } */
 
 #include "fma.h"
 
