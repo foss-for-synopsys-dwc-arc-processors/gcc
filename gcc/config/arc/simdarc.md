@@ -283,7 +283,7 @@
 })
 
 (define_insn "arc_vec_<V_US>mult_lo_v4hi"
- [(set (match_operand:V2SI 0 "nonmemory_operand"                    "=r,r")
+ [(set (match_operand:V2SI 0 "register_operand"                     "=r,r")
        (mult:V2SI (SE:V2SI (vec_select:V2HI
 			    (match_operand:V4HI 1 "register_operand" "0,r")
 			    (parallel [(const_int 0) (const_int 1)])))

@@ -791,7 +791,7 @@
 
 (define_insn_and_split "*movsi_set_cc_insn"
   [(set (match_operand:CC_ZN 2 "cc_set_register" "")
-	(match_operator 3 "zn_compare_operator"
+	(match_operator:CC_ZN 3 "zn_compare_operator"
 	  [(match_operand:SI 1 "nonmemory_operand" "cI,cL,Cal") (const_int 0)]))
    (set (match_operand:SI 0 "register_operand" "=w,w,w")
 	(match_dup 1))]
@@ -808,7 +808,7 @@
 
 (define_insn "unary_comparison"
   [(set (match_operand:CC_ZN 0 "cc_set_register" "")
-	(match_operator 3 "zn_compare_operator"
+	(match_operator:CC_ZN 3 "zn_compare_operator"
 	  [(match_operator:SI 2 "unary_operator"
 	     [(match_operand:SI 1 "register_operand" "c")])
 	   (const_int 0)]))]
@@ -872,7 +872,7 @@
 
 (define_insn "*commutative_binary_comparison"
   [(set (match_operand:CC_ZN 0 "cc_set_register" "")
-	(match_operator 5 "zn_compare_operator"
+	(match_operator:CC_ZN 5 "zn_compare_operator"
 	  [(match_operator:SI 4 "commutative_operator"
 	     [(match_operand:SI 1 "register_operand" "%c,c,c")
 	      (match_operand:SI 2 "nonmemory_operand" "cL,I,?Cal")])
@@ -974,7 +974,7 @@
 
 (define_insn "*noncommutative_binary_comparison"
   [(set (match_operand:CC_ZN 0 "cc_set_register" "")
-	(match_operator 5 "zn_compare_operator"
+	(match_operator:CC_ZN 5 "zn_compare_operator"
 	  [(match_operator:SI 4 "noncommutative_operator"
 	     [(match_operand:SI 1 "register_operand" "c,c,c")
 	      (match_operand:SI 2 "nonmemory_operand" "cL,I,?Cal")])
@@ -3788,8 +3788,6 @@
   ""
   "
 {
-  rtx x;
-
   operands[5] = gen_reg_rtx (SImode);
   operands[6] = gen_reg_rtx (SImode);
   operands[7] = operands[3];
@@ -3845,10 +3843,12 @@
       return \"ldw.x.as %0,[%1,%2]\";
     case QImode:
       if (ADDR_DIFF_VEC_FLAGS (diff_vec).offset_unsigned)
+       {
         if (which_alternative == 0)
 	 return \"ldb_s %0,[%1,%2]%&\";
         else
 	 return \"ldb %0,[%1,%2]%&\";
+       }
       return \"ldb.x %0,[%1,%2]\";
     default:
       gcc_unreachable ();
