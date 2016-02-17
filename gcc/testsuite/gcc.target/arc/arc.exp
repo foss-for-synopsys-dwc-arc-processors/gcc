@@ -57,6 +57,15 @@ proc check_effective_target_arc6xx { } {
     }]
 }
 
+# Return 1 if we have mpy
+proc check_effective_target_arcmpy { } {
+    return [check_no_compiler_messages arcmpy assembly {
+	#if !defined(__ARC_MPY__)
+	#error EMFOO
+	#endif
+    }]
+}
+
 
 # If a testcase doesn't have special options, use these.
 global DEFAULT_CFLAGS

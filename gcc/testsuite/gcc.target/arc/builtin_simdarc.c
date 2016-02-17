@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target archs }*/
-/* { dg-options "-O2 -Werror-implicit-function-declaration -mmpy-option=9" } */
+/* { dg-options "-O2 -Werror-implicit-function-declaration -mmpy-option=9 -mll64" } */
 
 #define STEST(name, rettype, op1type, op2type)	\
   rettype test_ ## name				\
@@ -13,6 +13,7 @@ typedef short v2hi __attribute__ ((vector_size (4)));
 typedef short v4hi __attribute__ ((vector_size (8)));
 typedef int   v2si __attribute__ ((vector_size (8)));
 
+#ifdef __ARC_MPY_QMACW__
 STEST (qmach,  long long, v4hi, v4hi)
 STEST (qmachu, long long, v4hi, v4hi)
 STEST (qmpyh,  long long, v4hi, v4hi)
@@ -37,3 +38,4 @@ STEST (vaddsub,   v2si, v2si, v2si)
 STEST (vsubadd,   v2si, v2si, v2si)
 STEST (vaddsub4h, v4hi, v4hi, v4hi)
 STEST (vsubadd4h, v4hi, v4hi, v4hi)
+#endif

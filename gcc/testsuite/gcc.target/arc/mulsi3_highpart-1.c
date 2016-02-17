@@ -25,5 +25,5 @@ main (void)
   return 0;
 }
 
-/* { dg-final { scan-assembler "mpyhu\[ \t\]" { target { ! { archs || arcem } } } } } */
-/* { dg-final { scan-assembler "mpymu\[ \t\]" { target { archs || arcem } } } } */
+/* { dg-final { scan-assembler "mpyhu\[ \t\]" { target { arc700 } } } } */
+/* { dg-final { scan-assembler "mpy.u\[ \t\]" { target { { ! { arc700 } } && arcmpy } } } } */

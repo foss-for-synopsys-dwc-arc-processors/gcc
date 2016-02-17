@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target archs }*/
-/* { dg-options "-O0 -mirq-ctrl-saved=r0-r9" } */
+/* { dg-options "-O0 -mll64 -mirq-ctrl-saved=r0-r9" } */
 
 /* Check that on archs the 'firq' interrupt function type is available,
    these are the fast interrupts.  For fast interrupts, despite the use of

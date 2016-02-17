@@ -1,4 +1,5 @@
 /* { dg-do assemble } */
+/* { dg-skip-if "ARC600 doesn't support PIC" { arc6xx } } */
 /* { dg-options "-O0 -fPIC" } */
 
 /* Verify STAR 9000622885,
