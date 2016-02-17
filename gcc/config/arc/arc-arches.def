@@ -17,10 +17,10 @@
    along with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
 
-ARC_ARCH("arcem", em, FL_MPYOPT | FL_MPY16 | FL_DIVREM | FL_CD | FL_NORM \
+ARC_ARCH("arcem", em, FL_MPYOPT_1_6 | FL_MPY16 | FL_DIVREM | FL_CD | FL_NORM \
 	 | FL_BS | FL_SWAP | FL_MPY | FL_FPUS | FL_SPFP | FL_DPFP	\
 	 | FL_SIMD | FL_FPUDA | FL_QUARK, 0)
-ARC_ARCH("archs", hs, FL_MPYOPT | FL_MPY16 | FL_DIVREM | FL_NORM | FL_CD \
+ARC_ARCH("archs", hs, FL_MPYOPT_7_9 | FL_MPY16 | FL_DIVREM | FL_NORM | FL_CD \
 	 | FL_ATOMIC | FL_LL64 | FL_BS | FL_SWAP			\
 	 | FL_MPY | FL_FPUS | FL_FPUD,					\
 	 FL_CD | FL_ATOMIC | FL_BS | FL_NORM | FL_SWAP)

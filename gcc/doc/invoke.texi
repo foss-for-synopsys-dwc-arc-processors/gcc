@@ -11440,9 +11440,11 @@ No multiplier available.
 @itemx w
 The multiply option is set to w: 16x16 multiplier, fully
 pipelined. The following instructions are enabled: MPYW, and MPYUW.
+This is a deprecated option.
 
 @item 2
 @itemx wlh1
+@itemx mpy
 The multiply option is set to wlh1: 32x32 multiplier, fully
 pipelined(1 stage). The following instructions are additionaly
 enabled: MPY, MPYU, MPYM, MPYMU, and MPY_S.
@@ -11451,39 +11453,39 @@ enabled: MPY, MPYU, MPYM, MPYMU, and MPY_S.
 @itemx wlh2
 The multiply option is set to wlh2: 32x32 multiplier, fully pipelined
 (2 stages).  The following instructions are additionaly enabled: MPY,
-MPYU, MPYM, MPYMU, and MPY_S.
+MPYU, MPYM, MPYMU, and MPY_S.  Only available for ARC EM.
 
 @item 4
 @itemx wlh3
 The multiply option is set to wlh3: Two 16x16 multiplier, blocking,
 sequential.  The following instructions are additionaly enabled: MPY,
-MPYU, MPYM, MPYMU, and MPY_S.
+MPYU, MPYM, MPYMU, and MPY_S.  Only available for ARC EM.
 
 @item 5
 @itemx wlh4
 The multiply option is set to wlh4: One 16x16 multiplier, blocking,
 sequential.  The following instructions are additionaly enabled: MPY,
-MPYU, MPYM, MPYMU, and MPY_S.
+MPYU, MPYM, MPYMU, and MPY_S.  Only available for ARC EM.
 
 @item 6
 @itemx wlh5
 The multiply option is set to wlh5: One 32x4 multiplier, blocking,
 sequential. The following instructions are additionaly enabled: MPY,
-MPYU, MPYM, MPYMU, and MPY_S.
+MPYU, MPYM, MPYMU, and MPY_S.  Only available for ARC EM.
 
 @item 7
 @itemx plus_dmpy
 The multiply option is set to plus_dmpy.  It also accepts short vector
 extensions (i.e., 32 bit vectors).  The following instructions are
 additionaly enabled: MAC, MACU, DMPYH, DMPYHU, DMACH, DMACHU, VADD2H,
-VSUB2H, VADDSUB2H, and VSUBADD2H.  Not available for ARC EM.
+VSUB2H, VADDSUB2H, and VSUBADD2H.  Only available for ARC HS..
 
 @item 8
-@itemx plusmacd
+@itemx plus_macd
 The multiply option is set to plusmacd.  It also accept short vector
 extensions, and double MAC operations.  The following instructions are
 additionaly enabled: MPYD, MPYDU, MACD, MACDU, VMPY2H, and
-VMPY2HU. Not available for ARC EM.
+VMPY2HU.  Only available for ARC HS.
 
 @item 9
 @itemx plus_qmacw
@@ -11492,7 +11494,7 @@ operations.  The following instructions are additionaly enabled:
 QMPYH, QMPYHU, DMPYWH, DMPYWHU, QMACH, QMACHU, DMACWH, DMACWHU,
 VADD4H, VSUB4H, VADDSUB4H, VSUBADD4H, VADD2, VSUB2, VADDSUB, and
 VSUBADD.  This options requires also the 64-bit load/store
-instructions.  Not available for ARC EM.
+instructions.  Only available for ARC HS.
 
 @end table
 

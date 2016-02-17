@@ -84,13 +84,14 @@ arc_handle_option (struct gcc_options *opts,
   int value = decoded->value;
   const char *arg = decoded->arg;
   static int mcpu_seen = PROCESSOR_NONE;
-  const arc_cpu_t *arc_selected_cpu;
+  const arc_cpu_t *arc_selected_cpu = &arc_cpu_types[0];
   static const arc_cpu_t *arc_default_cpu = &arc_cpu_types[0];
   static bool nompy_seen = false;
   static bool initialize = true;
   static int  init_flags = 0;
   static bool seen_arc_mpy_option = false;
   static bool seen_arc_fpu_build = false;
+  char *p;
 
   /* First, initialize the options as for the default choosen cpu.  */
   if (initialize)
@@ -148,13 +149,12 @@ arc_handle_option (struct gcc_options *opts,
       } while (0);
 #define ARC_OPTX(NAME, CODE, VAR, VAL)			\
       do {						\
-	if (arc_selected_cpu->flags & CODE)		\
+	if ((arc_selected_cpu->flags & CODE)		\
+	    && (!seen_##VAR))				\
 	  {						\
 	    opts->x_##VAR = VAL;			\
+	    seen_##VAR = false;			\
 	  }						\
-	else if ((arc_default_cpu->flags & CODE)	\
-		 && (!seen_##VAR))			\
-	  opts->x_##VAR = 0;				\
       } while (0);
 
 #include "config/arc/arc-options.def"
@@ -181,8 +181,45 @@ arc_handle_option (struct gcc_options *opts,
 
     case OPT_mmpy_option_:
       seen_arc_mpy_option = true;
-      if (value < 0 || value > 9)
-	error_at (loc, "bad value %qs for -mmpy-option switch", arg);
+      p = ASTRDUP (arg);
+
+      if (!strcmp (p, "0")
+	  || !strcmp (p, "none"))
+	opts->x_arc_mpy_option = 0;
+      else if (!strcmp (p, "1")
+	  || !strcmp (p, "w"))
+	{
+	  opts->x_arc_mpy_option = 1;
+	  warning_at (loc, 0, "Unsupported value for mmpy-option");
+	}
+      else if (!strcmp (p, "2")
+	       || !strcmp (p, "mpy")
+	       || !strcmp (p, "wlh1"))
+	opts->x_arc_mpy_option = 2;
+      else if (!strcmp (p, "3")
+	       || !strcmp (p, "wlh2"))
+	opts->x_arc_mpy_option = 3;
+      else if (!strcmp (p, "4")
+	       || !strcmp (p, "wlh3"))
+	opts->x_arc_mpy_option = 4;
+      else if (!strcmp (p, "5")
+	       || !strcmp (p, "wlh4"))
+	opts->x_arc_mpy_option = 5;
+      else if (!strcmp (p, "6")
+	       || !strcmp (p, "wlh5"))
+	opts->x_arc_mpy_option = 6;
+      else if (!strcmp (p, "7")
+	       || !strcmp (p, "plus_dmpy"))
+	opts->x_arc_mpy_option = 7;
+      else if (!strcmp (p, "8")
+	       || !strcmp (p, "plus_macd"))
+	opts->x_arc_mpy_option = 8;
+      else if (!strcmp (p, "9")
+	       || !strcmp (p, "plus_qmacw"))
+	opts->x_arc_mpy_option = 9;
+      else
+	error_at (loc, "unknown value %qs for -mmpy-option", arg);
+
       break;
 
     case OPT_mfpu_:

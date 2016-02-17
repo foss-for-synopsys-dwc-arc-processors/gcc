@@ -1,5 +1,15 @@
 2016-03-10  Claudiu Zissulescu  <claziss@synopsys.com>
 
+	* common/config/arc/arc-common.c (arc_handle_option): Parse
+	mpy-option strings.
+	* config/arc/arc-arches.def: Allow selective mpy-option per
+	architecture.
+	* config/arc/arc-options.def: Define selective mpy-options.
+	* config/arc/arc.opt (arc_mpy_option): Target variable.
+	* doc/invoke.texi (Arc): Update text.
+
+2016-03-10  Claudiu Zissulescu  <claziss@synopsys.com>
+
 	* testsuite/gcc.target/arc/ieee_div.c: New test.
 	* testsuite/gcc.target/arc/ieee_eq.c: Likewise.
 

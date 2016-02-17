@@ -44,7 +44,8 @@ ARC_OPTX(FL_MPYOPT_7, (1ULL << 23), arc_mpy_option, 7)
 ARC_OPTX(FL_MPYOPT_8, (1ULL << 24), arc_mpy_option, 8)
 ARC_OPTX(FL_MPYOPT_9, (1ULL << 25), arc_mpy_option, 9)
 
-ARC_OPT (FL_MPYOPT, 0x3fe0000, 0, "mpy option")
+ARC_OPT (FL_MPYOPT_7_9, (0x01c2ULL << 17), 0, "mpy option")
+ARC_OPT (FL_MPYOPT_1_6, (0x003fULL << 17), 0, "mpy option")
 
 ARC_OPTX(FL_FPU_FPUS,      (1ULL << 26), arc_fpu_build, FPU_FPUS)
 ARC_OPTX(FL_FPU_FPUS_DIV,  (1ULL << 27), arc_fpu_build, FPU_FPUS_DIV)

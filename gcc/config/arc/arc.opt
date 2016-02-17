@@ -101,8 +101,11 @@ Same as -mcpu=archs
 
 ; END backward-compatibility aliases, translated by DRIVER_SELF_SPECS
 
+TargetVariable
+unsigned int arc_mpy_option = 0
+
 mmpy-option=
-Target RejectNegative Joined UInteger Var(arc_mpy_option) Init(0)
+Target RejectNegative Joined
 -mmpy-option={0,1,2,3,4,5,6,7,8,9} Compile ARCv2 code with a multiplier design option.
 
 mmpy16
