@@ -85,7 +85,45 @@ arc_handle_option (struct gcc_options *opts,
   const char *arg = decoded->arg;
   static int mcpu_seen = PROCESSOR_NONE;
   const arc_cpu_t *arc_selected_cpu;
+  static const arc_cpu_t *arc_default_cpu = &arc_cpu_types[0];
   static bool nompy_seen = false;
+  static bool initialize = true;
+  static int  init_flags = 0;
+  static bool seen_arc_mpy_option = false;
+  static bool seen_arc_fpu_build = false;
+
+  /* First, initialize the options as for the default choosen cpu.  */
+  if (initialize)
+    {
+      initialize = false;
+      int default_cpu;
+#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
+      default_cpu = PROCESSOR_arcem;
+#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
+      default_cpu = PROCESSOR_archs;
+#else
+      default_cpu = PROCESSOR_arc700;
+#endif
+      arc_default_cpu = &arc_cpu_types[(int) default_cpu];
+
+#define ARC_OPT(NAME, CODE, MASK, DOC)		\
+      do {					\
+	if (arc_default_cpu->flags & CODE)	\
+	  {					\
+	    opts->x_target_flags |= MASK;	\
+	    init_flags |= MASK;			\
+	  }					\
+      } while (0);
+#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
+      do {					\
+	if (arc_default_cpu->flags & CODE)	\
+	  opts->x_##VAR = VAL;			\
+      } while (0);
+#include "config/arc/arc-options.def"
+
+#undef ARC_OPTX
+#undef ARC_OPT
+   }
 
   switch (code)
     {
@@ -98,18 +136,33 @@ arc_handle_option (struct gcc_options *opts,
       mcpu_seen = value;
 
       arc_selected_cpu = &arc_cpu_types[(int) mcpu_seen];
+
+      /* Clean default set cpu related flags, taking into
+	 consideration flags already turned off/on.  */
+      opts->x_target_flags &= ~init_flags;
+      init_flags = 0;
+
       /* Set cpu flags accordingly.  */
 #define ARC_OPT(NAME, CODE, MASK, DOC)			\
       do {						\
-	if ((arc_selected_cpu->flags & CODE)		\
-	    && (!(opts_set->x_target_flags & MASK)))	\
-	  opts->x_target_flags |= MASK;			\
+	if (arc_selected_cpu->flags & CODE)		\
+	  {						\
+	    if (!(opts_set->x_target_flags & MASK))	\
+	      {						\
+		opts->x_target_flags |= MASK;		\
+		init_flags |= MASK;			\
+	      }						\
+	  }						\
       } while (0);
-#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
-      do {					\
-	if ((arc_selected_cpu->flags & CODE)	\
-	    && (opts->x_##VAR == 0)) 		\
-	    opts->x_##VAR = VAL;		\
+#define ARC_OPTX(NAME, CODE, VAR, VAL)			\
+      do {						\
+	if (arc_selected_cpu->flags & CODE)		\
+	  {						\
+	    opts->x_##VAR = VAL;			\
+	  }						\
+	else if ((arc_default_cpu->flags & CODE)	\
+		 && (!seen_##VAR))			\
+	  opts->x_##VAR = 0;				\
       } while (0);
 
 #include "config/arc/arc-options.def"
@@ -123,7 +176,10 @@ arc_handle_option (struct gcc_options *opts,
       break;
 
     case OPT_mmpy16:
+      /* If they are set/unset by the user clean them from default.  */
+      init_flags &= ~MASK_MPY16_SET;
     case OPT_mmpy:
+      init_flags &= ~MASK_MPY_SET;
       if (!value)
 	{
 	  opts->x_arc_mpy_option = 0;
@@ -132,8 +188,73 @@ arc_handle_option (struct gcc_options *opts,
       break;
 
     case OPT_mmpy_option_:
+      seen_arc_mpy_option = true;
       if (value < 0 || value > 9)
 	error_at (loc, "bad value %qs for -mmpy-option switch", arg);
+      break;
+
+    case OPT_mfpu_:
+      seen_arc_fpu_build = true;
+      break;
+
+    case OPT_mcode_density:
+      init_flags &= ~MASK_CODE_DENSITY;
+      break;
+
+    case OPT_mdiv_rem:
+      init_flags &= ~MASK_DIVREM;
+      break;
+
+    case OPT_mnorm:
+      init_flags &= ~MASK_NORM_SET;
+      break;
+
+    case OPT_matomic:
+      init_flags &= ~MASK_ATOMIC;
+      break;
+
+    case OPT_mll64:
+      init_flags &= ~MASK_LL64;
+      break;
+
+    case OPT_mbarrel_shifter:
+      init_flags &= ~MASK_BARREL_SHIFTER;
+      break;
+
+    case OPT_mswap:
+      init_flags &= ~MASK_SWAP_SET;
+      break;
+
+    case OPT_mmul64:
+      init_flags &= ~MASK_MUL64_SET;
+      break;
+
+    case OPT_mmul32x16:
+      init_flags &= ~MASK_MULMAC_32BY16_SET;
+      break;
+
+    case OPT_mEA:
+      init_flags &= ~MASK_EA_SET;
+      break;
+
+    case OPT_mspfp:
+    case OPT_mspfp_compact:
+    case OPT_mspfp_fast:
+      init_flags &= ~MASK_SPFP_COMPACT_SET;
+      break;
+
+    case OPT_mdpfp:
+    case OPT_mdpfp_compact:
+    case OPT_mdpfp_fast:
+      init_flags &= ~MASK_DPFP_COMPACT_SET;
+      break;
+
+    case OPT_margonaut:
+      init_flags &= ~MASK_ARGONAUT_SET;
+      break;
+
+    case OPT_msimd:
+      init_flags &= ~MASK_SIMD_SET;
       break;
 
     default:
@@ -155,7 +276,7 @@ arc_handle_option (struct gcc_options *opts,
 #define DEFAULT_NO_SDATA (TARGET_SDATA_DEFAULT ? 0 : MASK_NO_SDATA_SET)
 
 #undef  TARGET_DEFAULT_TARGET_FLAGS
-#define TARGET_DEFAULT_TARGET_FLAGS (DEFAULT_NO_SDATA)
+#define TARGET_DEFAULT_TARGET_FLAGS (DEFAULT_NO_SDATA | MASK_VOLATILE_CACHE_SET)
 
 #undef  TARGET_HANDLE_OPTION
 #define TARGET_HANDLE_OPTION arc_handle_option

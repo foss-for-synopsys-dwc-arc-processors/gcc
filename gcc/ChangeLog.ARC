@@ -1,3 +1,13 @@
+2016-02-17  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c (TARGET_DEFAULT_TARGET_FLAGS):
+	Add MASK_VOLATILE_CACHE_SET.
+	(arc_handle_option): Initialize the default options accordingly
+	with the cpu configured for.
+	* config/arc/arc.c (arc_init): Throw a warning and set ll64 option
+	when appropriate.
+	(arc_override_options): Remove option set for default processors.
+
 2016-02-03  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc-arches.def: New file.

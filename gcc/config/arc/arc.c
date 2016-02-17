@@ -1013,6 +1013,14 @@ arc_init (void)
   if (TARGET_LL64 && !TARGET_HS)
     error ("-mll64 available on HS cores only");
 
+  /* ll64 needs to be enabled when compiling for HS and using 64bit
+     mpy options.  */
+  if (TARGET_HS && (arc_mpy_option > 8) && !TARGET_LL64)
+    {
+      warning (DK_WARNING, "LL64 option is not on, turn it on");
+      target_flags |= MASK_LL64;
+    }
+
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
   if (flag_pic && (!(TARGET_ARC700 || TARGET_V2)))
     {
@@ -1092,25 +1100,7 @@ arc_override_options (void)
 #else
       arc_cpu = PROCESSOR_arc700;
 #endif
-      arc_selected_cpu = &arc_cpu_types[(int) arc_cpu];
-
-#define ARC_OPT(NAME, CODE, MASK, DOC)		\
-  do {						\
-    if (arc_selected_cpu->flags & CODE)		\
-      target_flags |= MASK;			\
-  } while (0);
-#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
-  do {						\
-    if (arc_selected_cpu->flags & CODE)		\
-      VAR = VAL;				\
-  } while (0);
-
-#include "arc-options.def"
-
-#undef ARC_OPTX
-#undef ARC_OPT
-
-  }
+    }
 
   /* Set the default cpu options.  */
   arc_selected_cpu = &arc_cpu_types[(int) arc_cpu];
