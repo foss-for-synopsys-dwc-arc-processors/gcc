@@ -183,7 +183,7 @@
    (set_attr "type" "fpus")])
 
 ;; Division
-(define_insn "divsf3"
+(define_insn "*divsf3_fpu"
   [(set (match_operand:SF 0 "register_operand"         "=r,r,r,r,r,  r,  r,  r")
 	(div:SF (match_operand:SF 1 "nonmemory_operand" "0,r,0,r,0,  0,  r,Cal")
 		(match_operand:SF 2 "nonmemory_operand" "r,r,L,L,I,Cal,Cal,  r")))]
@@ -203,7 +203,7 @@
 ;; see pattern in arc.md
 
 ;; Square root
-(define_insn "sqrtsf2"
+(define_insn "*sqrtsf2_fpu"
   [(set (match_operand:SF 0 "register_operand"           "=r,  r")
 	(sqrt:SF (match_operand:SF 1 "nonmemory_operand" "rL,Cal")))]
   "TARGET_FP_SSQRT"
@@ -400,7 +400,7 @@
 )
 
 ;; SI->SF
-(define_insn "floatsisf2"
+(define_insn "*floatsisf2_fpu"
   [(set (match_operand:SF 0 "register_operand"           "=r,r,  r")
 	(float:SF (match_operand:SI 1 "nonmemory_operand" "0,r,Cal")))]
   "TARGET_FP_SCONV"
@@ -436,7 +436,7 @@
 )
 
 ;; SF->SI (using rounding towards zero)
-(define_insn "fix_truncsfsi2"
+(define_insn "*fix_truncsfsi2_fpu"
   [(set (match_operand:SI 0 "register_operand"                "=r,r")
 	(fix:SI (fix:SF (match_operand:SF 1 "register_operand" "0,r"))))]
   "TARGET_FP_SCONV"

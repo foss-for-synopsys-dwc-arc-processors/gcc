@@ -123,6 +123,12 @@ BEGIN {
 	    line = line "/mmul64"
 	  else if (cpu_flg[i] == "FL_MUL32x16")
 	    line = line "/mmul32x16"
+	  else if (cpu_flg[i] == "FL_FPX_QUARK")
+	    line = line "/quark"
+	  else if (cpu_flg[i] == "FL_SPFP")
+	    line = line "/spfp"
+	  else if (cpu_flg[i] == "FL_DPFP")
+	    line = line "/dpfp"
 	  else
 	    {
 	      print "Don't know the flag " cpu_flg[i] > "/dev/stderr"

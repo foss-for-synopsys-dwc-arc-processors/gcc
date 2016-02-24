@@ -11303,6 +11303,10 @@ Compile for ARC 601 cpu with norm and mul32x16 instructions enabled.
 @opindex arc601_mul64
 Compile for ARC 601 cpu with norm and mul64 instructions enabled.
 
+@item quarkse
+@opindex quarkse
+Compile for ARC EM cpu QuarkSE variant.
+
 @end table
 
 @item -mdiv-rem

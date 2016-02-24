@@ -1,4 +1,4 @@
-2016-02-16  Claudiu Zissulescu  <claziss@synopsys.com>
+2016-02-26  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.h (SIGNED_INT16): Define.
 	* config/arc/arc.md (mulhisi3_imm, umulhisi3_imm): Use appropriate
@@ -7,6 +7,37 @@
 	* config/arc/predicates.md (short_const_int_operand): New
 	predicate.
 	* testsuite/gcc.target/arc/umulsihi3_z.c: New file.
+
+2016-02-23  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc-arches.def: Add FPX quarkse instruction as valid
+	for arcem.
+	* config/arc/arc-c.def (__ARC_FPX_QUARK__): Define.
+	* config/arc/arc-cpus.def (quarkse): Add.
+	* config/arc/arc-options.def (FL_FPX_QUARK, FL_QUARK): Likewise.
+	* config/arc/arc-opts.h (FPX_QK): Define.
+	* config/arc/arc-tables.opt: Regenerate.
+	* config/arc/arc.c (arc_init): Recognize quarkse new option.
+	(gen_compare_reg): Likewise.
+	(arc_register_move_cost): Avoid Dy,Dx moves.
+	* config/arc/arc.h (TARGET_HARD_FLOAT): Redefine.
+	(TARGET_FPX_QUARK, TARGET_FP_ASSIST): Define.
+	* config/arc/arc.md (cpu_facility): Add fpx facility.
+	(movdf_fpx): Fix predicates.
+	(subdf3): Fix rsub form when it is not available.
+	(divsf3, sqrtsf2, fix_truncsfsi2, floatsisf2): New expands.
+	* config/arc/driver-arc.c (arc_cpu_to_as): Pass mspfp/mdpfp
+	options to assembler.
+	* config/arc/fpu.md (divsf3_fpu, sqrtsf2_fpu, floatsisf2_fpu)
+	(fix_truncsfsi2_fpu): Rename.
+	* config/arc/fpx.md (subdf3_insn, dsubh_peep2_insn): Use fpx
+	facility.
+	(cmp_quark, cmpsf_quark_, cmpsf_quark_ord, cmpsf_quark_uneq)
+	(cmpsf_quark_eq, divsf3_quark, sqrtsf2_quark)
+	(fix_truncsfsi2_quark, floatsisf2_quark): New patterns.
+	* config/arc/genmultilib.awk: Recognize quarkse configuration.
+	* config/arc/t-multilib: Regenerate.
+	* doc/invoke.texi (ARC opt): Document quarkse option.
 
 2016-02-17  Claudiu Zissulescu  <claziss@synopsys.com>
 

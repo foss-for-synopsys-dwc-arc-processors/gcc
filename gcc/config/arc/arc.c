@@ -963,9 +963,11 @@ arc_init (void)
   /* FPU support only for V2 */
   if (arc_fpu_build > 0)
     {
-      if (TARGET_EM && (arc_fpu_build & ~(FPU_SP | FPU_SF | FPU_SC | FPU_SD | FPX_DP)))
+      if (TARGET_EM
+	  && (arc_fpu_build
+	      & ~(FPU_SP | FPU_SF | FPU_SC | FPU_SD | FPX_DP | FPX_QK)))
 	error ("FPU double precission options are available for ARC HS only.");
-      if (TARGET_HS && (arc_fpu_build & FPX_DP))
+      if (TARGET_HS && (arc_fpu_build & (FPX_DP | FPX_QK)))
 	error ("FPU double precission assist options are not available for ARC HS.");
       if (!TARGET_HS && !TARGET_EM)
 	error ("FPU options are available for ARC HS/EM only");
@@ -2139,6 +2141,26 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
 				gen_rtx_COMPARE (mode,
 						 gen_rtx_REG (CC_FPXmode, 61),
 						 const0_rtx)));
+    }
+  else if (TARGET_FPX_QUARK && (cmode == SFmode))
+    {
+      switch (code)
+	{
+	case NE: case EQ: case GT: case UNLE: case GE: case UNLT:
+	case UNEQ: case LTGT: case ORDERED: case UNORDERED:
+	  break;
+	case LT: case UNGE: case LE: case UNGT:
+	  code = swap_condition (code);
+	  tmp = x;
+	  x = y;
+	  y = tmp;
+	  break;
+	default:
+	  gcc_unreachable ();
+	}
+
+      emit_insn (gen_cmp_quark (cc_reg,
+				gen_rtx_COMPARE (mode, x, y)));
     }
   else if ((GET_MODE_CLASS (cmode) == MODE_FLOAT && TARGET_OPTFPE && !TARGET_HARD_FLOAT)
 	   || (cmode == DFmode && TARGET_OPTFPE && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE))
@@ -8744,7 +8766,7 @@ arc_register_move_cost (enum machine_mode,
     return 8;
 
   /* Force an attempt to 'mov Dy,Dx' to spill.  */
-  if (TARGET_ARC700 && TARGET_DPFP
+  if ((TARGET_ARC700 || TARGET_EM) && TARGET_DPFP
       && from_class == DOUBLE_REGS && to_class == DOUBLE_REGS)
     return 100;
 

@@ -103,7 +103,6 @@ along with GCC; see the file COPYING3.  If not see
 #define CPP_SPEC "\
 %{msimd:-D__Xsimd} %{mno-mpy:-D__Xno_mpy} %{mswap:-D__Xswap} \
 %{mmin-max:-D__Xmin_max} %{mEA:-D__Xea} \
-%{mspfp*:-D__Xspfp} %{mdpfp*:-D__Xdpfp} \
 %{mmac-d16:-D__Xxmac_d16} %{mmac-24:-D__Xxmac_24} \
 %{mdsp-packa:-D__Xdsp_packa} %{mcrc:-D__Xcrc} %{mdvbf:-D__Xdvbf} \
 %{mtelephony:-D__Xtelephony} %{mxy:-D__Xxy} %{mmul64: -D__Xmult32} \
@@ -1700,7 +1699,7 @@ enum
   arc_dump_stack_info(STREAM, NAME)
 
 /* FPU defines. */
-#define TARGET_HARD_FLOAT (arc_fpu_build != 0)
+#define TARGET_HARD_FLOAT ((arc_fpu_build & (FPU_SP | FPU_DP)) != 0)
 #define TARGET_FP_SINGLE  ((arc_fpu_build & FPU_SP) != 0)
 #define TARGET_FP_DOUBLE  ((arc_fpu_build & FPU_DP) != 0)
 #define TARGET_FP_SFUZED  ((arc_fpu_build & FPU_SF) != 0)
@@ -1709,5 +1708,9 @@ enum
 #define TARGET_FP_DCONV   ((arc_fpu_build & FPU_DC) != 0)
 #define TARGET_FP_SSQRT   ((arc_fpu_build & FPU_SD) != 0)
 #define TARGET_FP_DSQRT   ((arc_fpu_build & FPU_DD) != 0)
+
+#define TARGET_FPX_QUARK (TARGET_EM && TARGET_SPFP	\
+			  && (arc_fpu_build == FPX_QK))
+#define TARGET_FP_ASSIST ((arc_fpu_build & FPX_DP) != 0)
 
 #endif /* GCC_ARC_H */

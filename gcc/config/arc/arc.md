@@ -297,7 +297,7 @@
 		     - get_attr_length (insn)")))
 
 ; for ARCv2 we need to disable/enable different instruction alternatives
-(define_attr "cpu_facility" "standard,arcv1,em,cd,dis"
+(define_attr "cpu_facility" "standard,arcv1,em,cd,dis,fpx"
   (const_string "standard"))
 
 ; We should consider all the instructions enabled until otherwise
@@ -317,6 +317,10 @@
 	 (const_string "no")
 
 	 (eq_attr "cpu_facility" "dis")
+	 (const_string "no")
+
+	 (and (eq_attr "cpu_facility" "fpx")
+	      (match_test "TARGET_FP_ASSIST"))
 	 (const_string "no")
 	 ]
 	(const_string "yes")))
@@ -1119,8 +1123,8 @@
    (set_attr "length" "4,16,8,16,16,16")])
 
 (define_insn_and_split "movdf_fpx"
-  [(set (match_operand:DF 0 "move_dest_operand"      "=D,r,c,D")
-	(match_operand:DF 1 "move_double_src_operand" "r,D,c,D"))
+  [(set (match_operand:DF 0 "register_operand" "=D,r,c,D")
+	(match_operand:DF 1 "register_operand" "r,D,c,D"))
    (clobber (match_scratch:SI 2 "=&r,r,r,r"))]
   "TARGET_DPFP"
   "#"
@@ -5956,26 +5960,25 @@
 
 ;;sub
 (define_expand "subdf3"
-  [(set (match_operand:DF 0 "arc_double_register_operand"          "")
-		    (minus:DF (match_operand:DF 1 "nonmemory_operand" "")
-				  (match_operand:DF 2 "nonmemory_operand" "")))]
+  [(set (match_operand:DF 0 "arc_double_register_operand" "")
+	(minus:DF (match_operand:DF 1 "nonmemory_operand" "")
+		  (match_operand:DF 2 "nonmemory_operand" "")))]
   "TARGET_FP_DOUBLE || TARGET_DPFP"
   "
    if (TARGET_DPFP)
     {
+     if (TARGET_FP_ASSIST && (GET_CODE (operands[1]) == CONST_DOUBLE))
+       operands[1] = force_reg (DFmode, operands[1]);
      if ((GET_CODE (operands[1]) == CONST_DOUBLE) || GET_CODE (operands[2]) == CONST_DOUBLE)
       {
         rtx high, low, tmp;
         int const_index = ((GET_CODE (operands[1]) == CONST_DOUBLE) ? 1: 2);
         split_double (operands[const_index], &low, &high);
         tmp = force_reg (SImode, high);
-        if (TARGET_EM && GET_CODE (operands[1]) == CONST_DOUBLE)
-           emit_insn(gen_subdf3_insn(operands[0], operands[2], operands[1],tmp,const0_rtx));
-        else
-           emit_insn(gen_subdf3_insn(operands[0], operands[1], operands[2],tmp,const0_rtx));
+        emit_insn(gen_subdf3_insn (operands[0], operands[1], operands[2], tmp, const0_rtx));
       }
     else
-     emit_insn(gen_subdf3_insn(operands[0], operands[1], operands[2],const1_rtx,const1_rtx));
+     emit_insn(gen_subdf3_insn (operands[0], operands[1], operands[2], const1_rtx, const1_rtx));
     DONE;
    }
   else if (TARGET_HARD_FLOAT)
@@ -6015,6 +6018,51 @@
   else
    gcc_unreachable ();
  ")
+
+;;div
+(define_expand "divsf3"
+  [(set (match_operand:SF 0 "register_operand"        "")
+	(div:SF (match_operand:SF 1 "nonmemory_operand" "")
+		(match_operand:SF 2 "nonmemory_operand" "")))]
+  "TARGET_FPX_QUARK || TARGET_FP_SSQRT"
+  "
+  if (TARGET_FPX_QUARK)
+   {
+     operands[1] = force_reg (SFmode, operands[1]);
+     operands[2] = force_reg (SFmode, operands[2]);
+   }
+  ")
+
+;; Square root
+(define_expand "sqrtsf2"
+  [(set (match_operand:SF 0 "register_operand"           "")
+	(sqrt:SF (match_operand:SF 1 "nonmemory_operand" "")))]
+  "TARGET_FPX_QUARK || TARGET_FP_SSQRT"
+  "
+  if (TARGET_FPX_QUARK)
+   {
+     operands[1] = force_reg (SFmode, operands[1]);
+   }
+")
+
+;; SF->SI (using rounding towards zero)
+(define_expand "fix_truncsfsi2"
+  [(set (match_operand:SI 0 "register_operand"                "")
+	(fix:SI (fix:SF (match_operand:SF 1 "register_operand" ""))))]
+  "TARGET_FPX_QUARK || TARGET_FP_SCONV"
+  "")
+
+;; SI->SF
+(define_expand "floatsisf2"
+  [(set (match_operand:SF 0 "register_operand"            "")
+	(float:SF (match_operand:SI 1 "nonmemory_operand" "")))]
+  "TARGET_FPX_QUARK || TARGET_FP_SCONV"
+  "
+  if (TARGET_FPX_QUARK)
+   {
+     operands[1] = force_reg (SImode, operands[1]);
+   }
+  ")
 
 ;;
 ;;(define_insn "*movdf_vadd2"

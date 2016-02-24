@@ -61,6 +61,9 @@ arc_cpu_to_as (int argc, const char **argv)
     case BASE_ARCH_em:
       if (arc_selected_cpu->flags & FL_FPUDA)
 	return "-mcpu=arcem -mfpuda";
+      if ((arc_selected_cpu->flags & FL_SPFP)
+	  || (arc_selected_cpu->flags & FL_DPFP))
+	return "-mcpu=arcem -mspfp -mdpfp";
       return "-mcpu=arcem";
     case BASE_ARCH_hs:
       return "-mcpu=archs";
