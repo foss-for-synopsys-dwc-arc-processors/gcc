@@ -52,6 +52,7 @@ arc_def_warning_macro (cpp_reader * pfile, const char * name)
 void
 arc_cpu_cpp_builtins (cpp_reader * pfile)
 {
+  const arc_cpu_t *arc_default_cpu;
   builtin_assert ("cpu=arc");
   builtin_assert ("machine=arc");
 
@@ -69,27 +70,32 @@ arc_cpu_cpp_builtins (cpp_reader * pfile)
 #undef ARC_C_DEF
 #undef ARC_C_WARN_DEF
 
-  switch (TARGET_CPU_DEFAULT)
+#ifdef TARGET_CPU_BUILD
+  arc_default_cpu = &arc_cpu_types[(int) TARGET_CPU_BUILD];
+#else
+  arc_default_cpu = &arc_cpu_types[(int) TARGET_CPU_DEFAULT];
+#endif
+
+  switch (arc_default_cpu->arch)
     {
-    case TARGET_CPU_arc600:
-    case TARGET_CPU_arc601:
+    case BASE_ARCH_6xx:
       arc_def_warning_macro (pfile, "_CPU_DEFAULT_A6");
       builtin_define ("__CPU_DEFAULT_A6__");
       break;
-    case TARGET_CPU_arc700:
+    case BASE_ARCH_700:
       arc_def_warning_macro (pfile, "_CPU_DEFAULT_A7");
       builtin_define ("__CPU_DEFAULT_A7__");
       break;
-    case TARGET_CPU_EM:
-      arc_def_warning_macro (pfile, "_CPU_DEFAULT_EM");
-      builtin_define ("__CPU_DEFAULT_EM__");
-      break;
-    case TARGET_CPU_HS:
+    case BASE_ARCH_hs:
       arc_def_warning_macro (pfile, "_CPU_DEFAULT_HS");
       builtin_define ("__CPU_DEFAULT_HS__");
       break;
+    case BASE_ARCH_em:
+      arc_def_warning_macro (pfile, "_CPU_DEFAULT_EM");
+      builtin_define ("__CPU_DEFAULT_EM__");
+      break;
     default:
-      arc_def_warning_macro (pfile, "_CPU_DEFAULT_unk");
+      arc_def_warning_macro (pfile, "_CPU_DEFAULT_UNK");
       builtin_define ("__CPU_DEFAULT_UNK__");
       break;
     }

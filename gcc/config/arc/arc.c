@@ -1095,13 +1095,7 @@ arc_override_options (void)
   if (arc_cpu == PROCESSOR_NONE)
     {
       /* No cpu option is selected.  Use the default one.  */
-#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-      arc_cpu = PROCESSOR_arcem;
-#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-      arc_cpu = PROCESSOR_archs;
-#else
-      arc_cpu = PROCESSOR_arc700;
-#endif
+      arc_cpu = TARGET_CPU_DEFAULT;
     }
 
   /* Set the default cpu options.  */
@@ -1673,14 +1667,8 @@ arc_init_reg_tables (void)
   char rname57[5] = "r57";
   char rname58[5] = "r58";
   char rname59[5] = "r59";
-
-#if ((TARGET_CPU_DEFAULT == TARGET_CPU_EM) || (TARGET_CPU_DEFAULT == TARGET_CPU_HS))
-char rname29[7] = "ilink";
-char rname30[7] = "r30";
-#else
-char rname29[7] = "ilink1";
-char rname30[7] = "ilink2";
-#endif
+  char rname29[7] = "ilink1";
+  char rname30[7] = "ilink2";
 
 static void
 arc_conditional_register_usage (void)
@@ -12465,9 +12453,7 @@ irq_range (const char *cstr)
 
   /* At this moment we do not have the register names initialized
      accordingly.  */
-  if (((TARGET_CPU_DEFAULT != TARGET_CPU_EM)
-       && (TARGET_CPU_DEFAULT != TARGET_CPU_HS))
-      && !strcmp (dash + 1, "ilink"))
+  if (!strcmp (dash + 1, "ilink"))
     last = 29;
   else
     last = decode_reg_name (dash + 1);

@@ -36,22 +36,10 @@ along with GCC; see the file COPYING3.  If not see
    - incscc, decscc?
 
 */
-#define TARGET_CPU_arc600  1
-#define TARGET_CPU_arc601  2
-#define TARGET_CPU_arc700  3
-#define TARGET_CPU_EM      4
-#define TARGET_CPU_HS      5
-#define TARGET_CPU_generic 6
 
 #ifndef TARGET_CPU_DEFAULT
-#define TARGET_CPU_DEFAULT	TARGET_CPU_arc700
+#define TARGET_CPU_DEFAULT	PROCESSOR_arc700
 #endif
-
-#define PROCESSOR_ARC600 PROCESSOR_arc600
-#define PROCESSOR_ARC601 PROCESSOR_arc601
-#define PROCESSOR_ARC700 PROCESSOR_arc700
-#define PROCESSOR_ARCv2EM PROCESSOR_arcem
-#define PROCESSOR_ARCv2HS PROCESSOR_archs
 
 #define SYMBOL_FLAG_SHORT_CALL	(SYMBOL_FLAG_MACH_DEP << 0)
 #define SYMBOL_FLAG_MEDIUM_CALL	(SYMBOL_FLAG_MACH_DEP << 1)
@@ -129,7 +117,8 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 %{matomic:-mlock} %{mswape} %{mlock} %{mrtsc} \
 "
 
-#define OPTION_DEFAULT_SPECS \
+#define OPTION_DEFAULT_SPECS			\
+  {"cpu", "%{!mcpu=*:-mcpu=%(VALUE)}" },	\
   {"abi", "%{!mabi=*:-mabi=%(VALUE)}" }
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
@@ -273,16 +262,6 @@ extern bool arc_arc601;
 #define TARGET_EM (arc_arcem)
 #define TARGET_HS (arc_archs)
 #define TARGET_V2 (TARGET_EM || TARGET_HS)
-
-#ifndef MULTILIB_DEFAULTS
-#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-#define MULTILIB_DEFAULTS { "mcpu=arcem" }
-#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-#define MULTILIB_DEFAULTS { "mcpu=archs" }
-#else
-#define MULTILIB_DEFAULTS { "mcpu=arc700" }
-#endif
-#endif
 
 /* Target machine storage layout.  */
 

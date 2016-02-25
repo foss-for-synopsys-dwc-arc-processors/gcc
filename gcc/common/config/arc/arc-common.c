@@ -96,15 +96,7 @@ arc_handle_option (struct gcc_options *opts,
   if (initialize)
     {
       initialize = false;
-      int default_cpu;
-#if TARGET_CPU_DEFAULT == TARGET_CPU_EM
-      default_cpu = PROCESSOR_arcem;
-#elif TARGET_CPU_DEFAULT == TARGET_CPU_HS
-      default_cpu = PROCESSOR_archs;
-#else
-      default_cpu = PROCESSOR_arc700;
-#endif
-      arc_default_cpu = &arc_cpu_types[(int) default_cpu];
+      arc_default_cpu = &arc_cpu_types[(int) TARGET_CPU_DEFAULT];
 
 #define ARC_OPT(NAME, CODE, MASK, DOC)		\
       do {					\

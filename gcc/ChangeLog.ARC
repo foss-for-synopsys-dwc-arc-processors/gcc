@@ -8,6 +8,23 @@
 	predicate.
 	* testsuite/gcc.target/arc/umulsihi3_z.c: New file.
 
+2016-02-25  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c (arc_handle_option): Use
+	TARGET_CPU_DEFAULT to select default cpu.
+	* config.gcc (tm_defines): Add TARGET_CPU_BUILD.
+	Allow any cpu value as defined in arc-cpus.def.
+	* config/arc/arc-c.c (arc_cpu_cpp_builtins): Use TARGET_CPU_BUILD.
+	* config/arc/arc.c (arc_override_options): Use TARGET_CPU_DEFAULT.
+	(irq_range): Use current cpu info.
+	* config/arc/arc.h (TARGET_CPU_arc600, TARGET_CPU_arc601)
+	(TARGET_CPU_arc700, TARGET_CPU_EM, TARGET_CPU_HS)
+	(TARGET_CPU_generic, PROCESSOR_ARC600, PROCESSOR_ARC601)
+	(PROCESSOR_ARC700, PROCESSOR_ARCv2EM, PROCESSOR_ARCv2HS): Remove.
+	(TARGET_CPU_DEFAULT): Redefine.
+	(OPTION_DEFAULT_SPECS): Handle with-cpu option.
+	* config/arc/driver-arc.c (arc_cpu_to_as): Use TARGET_CPU_DEFAULT.
+
 2016-02-23  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc-arches.def: Add FPX quarkse instruction as valid
