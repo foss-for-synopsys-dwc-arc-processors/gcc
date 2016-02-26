@@ -1,3 +1,13 @@
+2016-02-16  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.h (SIGNED_INT16): Define.
+	* config/arc/arc.md (mulhisi3_imm, umulhisi3_imm): Use appropriate
+	16 bit constants constraints.
+	* config/arc/constraints.md (C16): New constraint.
+	* config/arc/predicates.md (short_const_int_operand): New
+	predicate.
+	* testsuite/gcc.target/arc/umulsihi3_z.c: New file.
+
 2016-02-17  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c (TARGET_DEFAULT_TARGET_FLAGS):

@@ -343,6 +343,12 @@
   "constant for arithmetic/logical operations"
   (match_test "immediate_operand (op, VOIDmode) && !arc_legitimate_pc_offset_p (op)"))
 
+(define_constraint "C16"
+  "@internal
+   A 16-bit signed integer constant"
+  (and (match_code "const_int")
+       (match_test "SIGNED_INT16 (ival)")))
+
 (define_constraint "C32"
   "32 bit constant for arithmetic/logical operations"
   (match_test "immediate_operand (op, VOIDmode)

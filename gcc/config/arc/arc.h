@@ -765,6 +765,7 @@ extern enum reg_class arc_regno_reg_class[];
   ((unsigned) (((X) >> (SHIFT)) + 0x100) \
    < 0x200 - ((unsigned) (OFFSET) >> (SHIFT)))
 #define SIGNED_INT12(X) ((unsigned) ((X) + 0x800) < 0x1000)
+#define SIGNED_INT16(X) ((unsigned) ((X) + 0x8000) < 0x10000)
 #define LARGE_INT(X) \
 (((X) < 0) \
  ? (X) >= (-(HOST_WIDE_INT) 0x7fffffff - 1) \

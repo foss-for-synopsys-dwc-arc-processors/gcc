@@ -781,3 +781,7 @@
    return (REG_P (op) && ((REGNO (op) >= FIRST_PSEUDO_REGISTER)
 			  || ((REGNO (op) & 1) == 0)));
   })
+
+(define_predicate "short_const_int_operand"
+  (and (match_operand 0 "const_int_operand")
+       (match_test "satisfies_constraint_C16 (op)")))

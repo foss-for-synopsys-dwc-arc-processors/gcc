@@ -1743,7 +1743,7 @@
 (define_insn "mulhisi3_imm"
   [(set (match_operand:SI 0 "register_operand"                         "=r,r,r,  r,  r")
 	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand" "0,r,0,  0,  r"))
-		 (match_operand 2 "immediate_operand"                   "L,L,I,Cal,Cal")))]
+		 (match_operand 2 "short_const_int_operand"             "L,L,I,C16,C16")))]
   "EM_MUL_MPYW"
   "mpyw%? %0,%1,%2"
   [(set_attr "length" "4,4,4,8,8")
@@ -1784,7 +1784,8 @@
 (define_insn "umulhisi3_imm"
   [(set (match_operand:SI 0 "register_operand"                          "=r, r,r,  r,  r")
 	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" " 0, r,0,  0,  r"))
-		 (match_operand 2 "immediate_operand"                   " L, L,I,Cal,Cal")))]
+		 (match_operand 2 "short_const_int_operand"             " L, L,I,C16,C16")))
+   (use (match_dup 2))]
   "EM_MUL_MPYW"
   "mpyuw%? %0,%1,%2"
   [(set_attr "length" "4,4,4,8,8")
