@@ -263,6 +263,12 @@ extern bool arc_arc601;
 #define TARGET_HS (arc_archs)
 #define TARGET_V2 (TARGET_EM || TARGET_HS)
 
+#ifdef ARC_MULTILIB_CPU_DEFAULT
+# ifndef MULTILIB_DEFAULTS
+#  define MULTILIB_DEFAULTS { "mcpu=" ARC_MULTILIB_CPU_DEFAULT }
+# endif
+#endif
+
 /* Target machine storage layout.  */
 
 /* We want zero_extract to mean the same

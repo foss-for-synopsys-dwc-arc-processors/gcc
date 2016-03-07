@@ -873,6 +873,7 @@ arc*-*-elf*)
 	extra_gcc_objs="driver-arc.o"
 	if test "x$with_cpu" != x; then
 		tm_defines="${tm_defines} TARGET_CPU_BUILD=PROCESSOR_$with_cpu"
+		tm_defines=${tm_defines}' ARC_MULTILIB_CPU_DEFAULT=\"'`echo $with_cpu`'\"'
 	fi
 	if test x${with_endian} = x; then
 		case ${target} in
@@ -897,6 +898,7 @@ arc*-*-linux-uclibc*)
 	extra_gcc_objs="driver-arc.o"
 	if test "x$with_cpu" != x; then
 		tm_defines="${tm_defines} TARGET_CPU_BUILD=PROCESSOR_$with_cpu"
+		tm_defines=${tm_defines}' ARC_MULTILIB_CPU_DEFAULT=\"'`echo $with_cpu`'\"'
 	fi
 	if test x${with_endian} = x; then
 		case ${target} in
