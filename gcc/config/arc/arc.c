@@ -1019,7 +1019,8 @@ arc_init (void)
      mpy options.  */
   if (TARGET_HS && (arc_mpy_option > 8) && !TARGET_LL64)
     {
-      warning (DK_WARNING, "LL64 option is not on, turn it on");
+      warning (DK_WARNING, "The MPY option plus_qmacw requires also "\
+	       "64-bit load/store instructions, turning LL64 on");
       target_flags |= MASK_LL64;
     }
 

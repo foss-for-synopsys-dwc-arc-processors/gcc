@@ -11491,7 +11491,8 @@ The multiply option is set to plus_qmacw.  It also accept 64 bit
 operations.  The following instructions are additionaly enabled:
 QMPYH, QMPYHU, DMPYWH, DMPYWHU, QMACH, QMACHU, DMACWH, DMACWHU,
 VADD4H, VSUB4H, VADDSUB4H, VSUBADD4H, VADD2, VSUB2, VADDSUB, and
-VSUBADD.  Not available for ARC EM.
+VSUBADD.  This options requires also the 64-bit load/store
+instructions.  Not available for ARC EM.
 
 @end table
 
