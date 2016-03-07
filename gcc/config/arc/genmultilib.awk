@@ -109,7 +109,8 @@ BEGIN {
 	    line = line "/mbarrel-shifter"
 	  else if (cpu_flg[i] == "FL_DIVREM")
 	    line = line "/mdiv-rem"
-	  else if (cpu_flg[i] == "FL_NORM")
+	  else if (cpu_flg[i] == "FL_NORM" \
+		   || cpu_flg[i] == "FL_SWAP") # SWAP option goes into norm folder.
 	    line = line "/mnorm"
 	  else if (cpu_flg[i] == "FL_FPU_FPUS")
 	    line = line "/mfpu.fpus"
