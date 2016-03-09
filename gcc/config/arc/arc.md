@@ -1172,7 +1172,7 @@
 	 (unspec_volatile:SI [(match_dup 1) (match_dup 5) (match_dup 4)] VUNSPEC_ARC_DEXCL ))
     ; Generate the second, which makes sure operand5 and operand4 values
     ; are put back in the Dx register properly.
-    (unspec_volatile:SI [(match_dup 1) (match_dup 5) (match_dup 4)] VUNSPEC_ARC_DEXCL_NORES )
+    (set (match_dup 1) (unspec_volatile:DF [(match_dup 5) (match_dup 4)] VUNSPEC_ARC_DEXCL_NORES))
 
     ; Note: we cannot use a (clobber (match_scratch)) here because
     ; the combine pass will end up replacing uses of it with 0

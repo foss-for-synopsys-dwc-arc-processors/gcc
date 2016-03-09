@@ -1,3 +1,13 @@
+2016-03-09  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_process_double_reg_moves ): Generate
+	dexcl_2op pattern.
+	* config/arc/arc.md (*movdf_insn_nolrsr): Update split part.
+	* config/arc/fpx.md (*lr_double_higher): Formating.
+	(*dexcl_3op_peep2_insn): Mark the double Dx register as
+	earlyclobber and destination.
+	(*dexcl_3op_peep2_insn_nores): Revamped to dexcl_2op.
+
 2016-02-26  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.h (SIGNED_INT16): Define.
