@@ -1,3 +1,8 @@
+2016-03-10  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* testsuite/gcc.target/arc/ieee_div.c: New test.
+	* testsuite/gcc.target/arc/ieee_eq.c: Likewise.
+
 2016-03-09  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_process_double_reg_moves ): Generate

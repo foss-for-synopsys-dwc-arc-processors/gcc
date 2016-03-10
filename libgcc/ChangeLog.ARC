@@ -1,3 +1,7 @@
+2016-03-10  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/ieee-754/eqdf2.S: Always handle FPX NaN.
+
 2015-06-01  Andrew Burgess  <andrew.burgess@embecosm.com>
 
 	Revert last commit.
