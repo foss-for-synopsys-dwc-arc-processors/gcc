@@ -17,10 +17,16 @@
       }							\
   } while (0)
 
+#ifndef __ARCHS__
 /* Special type of NaN found when using double FPX instructions.  */
 static const unsigned long long __nan = 0x7FF0000080000000ULL;
-#define W (*(double *) &__nan)
+# define W (*(double *) &__nan)
+#else
+# define W __builtin_nan ("")
+#endif
+
 #define Q __builtin_nan ("")
+#define H __builtin_inf ()
 
 int main (void)
 {
@@ -30,6 +36,9 @@ int main (void)
   TEST_EQ (double, 1, 2, 0);
   TEST_EQ (double, W, W, 0);
   TEST_EQ (double, Q, Q, 0);
+  TEST_EQ (double, __DBL_MAX__, __DBL_MAX__, 1);
+  TEST_EQ (double, __DBL_MIN__, __DBL_MIN__, 1);
+  TEST_EQ (double, H, H, 1);
 
   if (error)
     __builtin_abort();
