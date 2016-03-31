@@ -117,8 +117,9 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 %{matomic:-mlock} %{mswape} %{mlock} %{mrtsc} \
 "
 
-#define OPTION_DEFAULT_SPECS			\
-  {"cpu", "%{!mcpu=*:-mcpu=%(VALUE)}" },	\
+#define OPTION_DEFAULT_SPECS						\
+  {"cpu", "%{!mcpu=*:%{!mARC*:%{!marc*:%{!mA7:%{!mA6:%{!mav*:"		\
+      "%{!mEM:%{!mHS:-mcpu=%(VALUE)}}}}}}}}" },				\
   {"abi", "%{!mabi=*:-mabi=%(VALUE)}" }
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
