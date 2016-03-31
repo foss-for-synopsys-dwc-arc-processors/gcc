@@ -157,7 +157,7 @@ Target Report Mask(MUL64_SET)
 Generate mul64 and mulu64 instructions
 
 mmpy
-Target Report Mask(MPY_SET)
+Target Report Undocumented Mask(MPY_SET) Warn(%qs is deprecated)
 Generate MPYxW instructions. Default for ARC700. For ARC600 is not valid.
 
 mEA

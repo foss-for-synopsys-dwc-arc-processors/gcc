@@ -89,7 +89,7 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Match the macros used in the assembler.  */
 #define CPP_SPEC "\
-%{msimd:-D__Xsimd} %{mno-mpy:-D__Xno_mpy} %{mswap:-D__Xswap} \
+%{msimd:-D__Xsimd} %{mswap:-D__Xswap} \
 %{mmin-max:-D__Xmin_max} %{mEA:-D__Xea} \
 %{mmac-d16:-D__Xxmac_d16} %{mmac-24:-D__Xxmac_24} \
 %{mdsp-packa:-D__Xdsp_packa} %{mcrc:-D__Xcrc} %{mdvbf:-D__Xdvbf} \
@@ -110,7 +110,7 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 
 #define ASM_SPEC "%{mbig-endian|EB:-EB} %{EL} \
 %:cpu_to_as(%{mcpu=*:%*}) \
-%{mbarrel-shifter} %{mno-mpy} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
+%{mbarrel-shifter} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
 %{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*}				\
 %{msimd} %{mfpu=fpuda:-mfpuda}						\
 %{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \

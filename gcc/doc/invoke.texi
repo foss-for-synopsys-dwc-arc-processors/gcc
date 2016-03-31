@@ -11422,7 +11422,7 @@ available for ARCv2 cores@.
 @item -mmpy
 @opindex mmpy
 When using the negative variant, the compiler does not generate
-multiply instructions for ARC 700, and ARCv2 variants.
+multiply instructions ARCv2 variants.  This option is deprecated.
 
 @item -mmpy-option=@var{multo}
 @opindex mmpy-option

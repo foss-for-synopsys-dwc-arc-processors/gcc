@@ -1,3 +1,10 @@
+2016-03-31  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.h (CPP_SPEC, ASM_SPEC): Remove mno-mpy.
+	* config/arc/arc.opt: Mark mmpy deprecated.
+	* doc/invoke.texi (ARC): Update mmpy documentation.
+	* testsuite/gcc.target/arc/mulsi3_highpart-2.c: Update test.
+
 2016-03-10  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c (arc_handle_option): Parse
