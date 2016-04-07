@@ -1,3 +1,11 @@
+2016-04-07  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_process_double_reg_moves): Fix for
+	big-endian compilation.
+	* config/arc/arc.md (addf3): Likewise.
+	(subdf3): Likewise.
+	(muldf3): Likewise.
+
 2016-03-31  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.h (CPP_SPEC, ASM_SPEC): Remove mno-mpy.

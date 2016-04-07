@@ -10533,8 +10533,10 @@ arc_process_double_reg_moves (rtx *operands)
 	{
 	  /* When we have 'mov D, r' or 'mov D, D' then get the target
 	     register pair for use with LR insn.  */
-	  rtx destHigh = simplify_gen_subreg(SImode, dest, DFmode, 4);
-	  rtx destLow  = simplify_gen_subreg(SImode, dest, DFmode, 0);
+	  rtx destHigh = simplify_gen_subreg (SImode, dest, DFmode,
+					      TARGET_BIG_ENDIAN ? 0 : 4);
+	  rtx destLow  = simplify_gen_subreg (SImode, dest, DFmode,
+					      TARGET_BIG_ENDIAN ? 4 : 0);
 
 	  /* Produce the two LR insns to get the high and low parts.  */
 	  emit_insn (gen_rtx_SET (VOIDmode,
@@ -10551,8 +10553,10 @@ arc_process_double_reg_moves (rtx *operands)
     {
       /* When we have 'mov r, D' or 'mov D, D' and we have access to the
 	 LR insn get the target register pair.  */
-      rtx srcHigh = simplify_gen_subreg(SImode, src, DFmode, 4);
-      rtx srcLow  = simplify_gen_subreg(SImode, src, DFmode, 0);
+      rtx srcHigh = simplify_gen_subreg (SImode, src, DFmode,
+					 TARGET_BIG_ENDIAN ? 0 : 4);
+      rtx srcLow  = simplify_gen_subreg (SImode, src, DFmode,
+					 TARGET_BIG_ENDIAN ? 4 : 0);
 
       emit_insn (gen_dexcl_2op (dest, srcHigh, srcLow));
     }
