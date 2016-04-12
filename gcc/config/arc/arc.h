@@ -109,12 +109,13 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
   { "cpu_to_as", arc_cpu_to_as },
 
 #define ASM_SPEC "%{mbig-endian|EB:-EB} %{EL} \
-%:cpu_to_as(%{mcpu=*:%*}) \
-%{mbarrel-shifter} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm} \
+%:cpu_to_as(%{mcpu=*:%*})						\
+%{mbarrel-shifter} %{mmul64} %{mmul32x16:-mdsp-packa} %{mnorm}		\
 %{mswap} %{mEA} %{mmin-max} %{mspfp*} %{mdpfp*}				\
-%{msimd} %{mfpu=fpuda:-mfpuda}						\
+%{msimd} %{mfpu=fpuda:-mfpuda} %{mfpu=fpuda_all:-mfpuda}		\
+%{mfpu=fpuda_fma:-mfpuda} %{mfpu=fpuda_div:-mfpuda}			\
 %{mmac-d16} %{mmac-24} %{mdsp-packa} %{mcrc} %{mdvbf} %{mtelephony} %{mxy} \
-%{matomic:-mlock} %{mswape} %{mlock} %{mrtsc} \
+%{matomic:-mlock} %{mswape} %{mlock} %{mrtsc}				\
 "
 
 #define OPTION_DEFAULT_SPECS						\
