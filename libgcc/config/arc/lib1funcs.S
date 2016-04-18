@@ -1261,6 +1261,7 @@ SYM(__ld_r13_to_r14_ret):
 
 #endif /* L_millicodethunk_ret */
 
+#ifdef __ARC_BARREL_SHIFTER__
 #ifdef  L_adddf3
 #ifdef __ARC_NORM__
 #include "ieee-754/adddf3.S"
@@ -1424,3 +1425,4 @@ SYM(__ld_r13_to_r14_ret):
 #include "ieee-754/ordsf2.S"
 #endif
 #endif
+#endif /* __ARC_BARREL_SHIFTER__ */

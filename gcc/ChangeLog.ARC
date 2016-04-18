@@ -1,3 +1,11 @@
+2016-04-18  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_select_cc_mode): Clean up when we use
+	optimized fp emulation library.
+	(gen_compare_reg): Likewise.
+	* config/arc/arc.h (TARGET_OPTFPE): Check only for a multilpiler,
+	norm, and barrel-shifter hardware options.
+
 2016-04-07  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_process_double_reg_moves): Fix for

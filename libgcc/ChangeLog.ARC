@@ -1,3 +1,8 @@
+2016-04-18  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/lib1funcs.S: Use fp-optimized routines when we have
+	barrel-shifter.
+
 2016-03-10  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/ieee-754/eqdf2.S: Always handle FPX NaN.

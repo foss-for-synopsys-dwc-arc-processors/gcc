@@ -1474,20 +1474,9 @@ arc_select_cc_mode (enum rtx_code op, rtx x, rtx y)
 	return CC_FP_GEmode;
       default: gcc_unreachable ();
       }
-  else if ((GET_MODE_CLASS (mode) == MODE_FLOAT && TARGET_OPTFPE && !TARGET_HARD_FLOAT)
-	   || (mode == DFmode && TARGET_OPTFPE && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE))
-    switch (op)
-      {
-      case EQ: case NE: return CC_Zmode;
-      case LT: case UNGE:
-      case GT: case UNLE: return CC_FP_GTmode;
-      case LE: case UNGT:
-      case GE: case UNLT: return CC_FP_GEmode;
-      case UNEQ: case LTGT: return CC_FP_UNEQmode;
-      case ORDERED: case UNORDERED: return CC_FP_ORDmode;
-      default: gcc_unreachable ();
-      }
-  else if (GET_MODE_CLASS (mode) == MODE_FLOAT && TARGET_HARD_FLOAT)
+  else if (GET_MODE_CLASS (mode) == MODE_FLOAT
+	   && ((mode == SFmode && TARGET_FP_SINGLE)
+	       || (mode == DFmode && TARGET_FP_DOUBLE)))
     {
       switch (op)
 	{
@@ -1513,6 +1502,18 @@ arc_select_cc_mode (enum rtx_code op, rtx x, rtx y)
 	  gcc_unreachable ();
 	}
     }
+  else if (GET_MODE_CLASS (mode) == MODE_FLOAT && TARGET_OPTFPE)
+    switch (op)
+      {
+      case EQ: case NE: return CC_Zmode;
+      case LT: case UNGE:
+      case GT: case UNLE: return CC_FP_GTmode;
+      case LE: case UNGT:
+      case GE: case UNLT: return CC_FP_GEmode;
+      case UNEQ: case LTGT: return CC_FP_UNEQmode;
+      case ORDERED: case UNORDERED: return CC_FP_ORDmode;
+      default: gcc_unreachable ();
+      }
 
   return CCmode;
 }
@@ -2151,8 +2152,11 @@ gen_compare_reg (rtx comparison, enum machine_mode omode)
       emit_insn (gen_cmp_quark (cc_reg,
 				gen_rtx_COMPARE (mode, x, y)));
     }
-  else if ((GET_MODE_CLASS (cmode) == MODE_FLOAT && TARGET_OPTFPE && !TARGET_HARD_FLOAT)
-	   || (cmode == DFmode && TARGET_OPTFPE && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE))
+  else if (TARGET_HARD_FLOAT
+	   && ((cmode == SFmode && TARGET_FP_SINGLE)
+	       || (cmode == DFmode && TARGET_FP_DOUBLE)))
+    emit_insn (gen_rtx_SET (omode, cc_reg, gen_rtx_COMPARE (mode, x, y)));
+  else if (GET_MODE_CLASS (cmode) == MODE_FLOAT && TARGET_OPTFPE)
     {
       rtx op0 = gen_rtx_REG (cmode, 0);
       rtx op1 = gen_rtx_REG (cmode, GET_MODE_SIZE (cmode) / UNITS_PER_WORD);

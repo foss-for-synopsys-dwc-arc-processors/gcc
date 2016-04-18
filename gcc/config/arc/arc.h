@@ -224,13 +224,11 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 /* Non-zero means the cpu supports norm instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mnorm is given.  */
 #define TARGET_NORM (TARGET_ARC700 || TARGET_NORM_SET || TARGET_HS)
-/* Indicate if an optimized floating point emulation library is available.  */
-#define TARGET_OPTFPE \
-  (TARGET_ARC700							\
-   /* We need a barrel shifter and NORM.  */				\
-   || (TARGET_ARC600 && TARGET_NORM_SET)				\
-   || (TARGET_HS && !TARGET_HARD_FLOAT) || (TARGET_HS && TARGET_HARD_FLOAT && !TARGET_FP_DOUBLE) \
-   || (TARGET_EM && TARGET_NORM_SET))
+/* Indicate if an optimized floating point emulation library is
+   available.  We need a barrrel shifter, NORM and a multiplier.  */
+#define TARGET_OPTFPE							\
+  ((TARGET_MPY_SET || TARGET_MUL64_SET || TARGET_MULMAC_32BY16_SET)	\
+   && TARGET_NORM_SET && TARGET_BARREL_SHIFTER)
 
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */
