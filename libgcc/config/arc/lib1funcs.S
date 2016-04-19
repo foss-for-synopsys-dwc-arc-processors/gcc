@@ -1261,168 +1261,134 @@ SYM(__ld_r13_to_r14_ret):
 
 #endif /* L_millicodethunk_ret */
 
-#ifdef __ARC_BARREL_SHIFTER__
+#define ARC_OPTFPE (defined (__ARC_NORM__)				\
+		    && defined (__ARC_BARREL_SHIFTER__)			\
+		    && (defined (__ARC_MPY__)				\
+			|| defined (__ARC_MUL64__)			\
+			|| defined (__ARC_MUL32BY16__)))
+
+#if ARC_OPTFPE
 #ifdef  L_adddf3
-#ifdef __ARC_NORM__
 #include "ieee-754/adddf3.S"
-#endif
 #endif
 
 #ifdef  L_muldf3
-#if defined (__ARC700__) || (defined (__ARC_MPY__) && defined (__ARC_NORM__))
+#ifdef __ARC_MPY__
 #include "ieee-754/muldf3.S"
-#elif defined (__ARC_NORM__) && defined (__ARC_MUL64__)
+#elif defined (__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/muldf3.S"
-#elif defined (__ARC_NORM__) && defined (__ARC_MUL32BY16__)
+#elif defined (__ARC_MUL32BY16__)
 #include "ieee-754/arc600-dsp/muldf3.S"
 #endif
 #endif
 
 #ifdef  L_addsf3
-#ifdef __ARC_NORM__
 #include "ieee-754/addsf3.S"
-#endif
 #endif
 
 #ifdef  L_mulsf3
-#if defined (__ARC700__) || (defined (__ARC_MPY__) && defined (__ARC_NORM__))
+#if defined (__ARC_MPY__)
 #include "ieee-754/mulsf3.S"
-#elif defined (__ARC_NORM__) && defined (__ARC_MUL64__)
+#elif defined (__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/mulsf3.S"
-#elif defined (__ARC_NORM__) && defined (__ARC_MUL32BY16__)
+#elif defined (__ARC_MUL32BY16__)
 #include "ieee-754/arc600-dsp/mulsf3.S"
-#elif defined (__ARC_NORM__)
+#else
 #include "ieee-754/arc600/mulsf3.S"
 #endif
 #endif
 
 #ifdef  L_divdf3
-#if defined (__ARC700__) || (defined (__ARC_MPY__) && defined (__ARC_NORM__))
+#if defined (__ARC_MPY__)
 #include "ieee-754/divdf3.S"
-#elif defined (__ARC_NORM__) && defined (__ARC_MUL64__)
+#elif defined (__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/divdf3.S"
-#elif defined (__ARC_NORM__) && defined (__ARC_MUL32BY16__)
+#elif defined (__ARC_MUL32BY16__)
 #include "ieee-754/arc600-dsp/divdf3.S"
 #endif
 #endif
 
 #ifdef  L_divsf3
-#if defined (__ARC700__) || (defined (__ARC_MPY__) && defined (__ARC_NORM__))
+#if defined (__ARC_MPY__)
 #include "ieee-754/divsf3-stdmul.S"
-#elif defined (__ARC_NORM__) && defined(__ARC_MUL64__)
+#elif defined(__ARC_MUL64__)
 #include "ieee-754/arc600-mul64/divsf3.S"
-#elif defined (__ARC_NORM__) && defined(__ARC_MUL32BY16__)
+#elif defined(__ARC_MUL32BY16__)
 #include "ieee-754/arc600-dsp/divsf3.S"
-#elif defined (__ARC_NORM__)
+#else
 #include "ieee-754/arc600/divsf3.S"
 #endif
 #endif
 
 #ifdef L_extendsfdf2
-#ifdef __ARC_NORM__
 #include "ieee-754/extendsfdf2.S"
-#endif
 #endif
 
 #ifdef L_truncdfsf2
-#ifdef __ARC_NORM__
 #include "ieee-754/truncdfsf2.S"
-#endif
 #endif
 
 #ifdef L_floatsidf
-#ifdef __ARC_NORM__
 #include "ieee-754/floatsidf.S"
-#endif
 #endif
 
 #ifdef L_floatsisf
-#ifdef __ARC_NORM__
 #include "ieee-754/floatsisf.S"
-#endif
 #endif
 
 #ifdef L_floatunsidf
-#ifdef __ARC_NORM__
 #include "ieee-754/floatunsidf.S"
-#endif
 #endif
 
 #ifdef L_fixdfsi
-#ifdef __ARC_NORM__
 #include "ieee-754/fixdfsi.S"
-#endif
 #endif
 
 #ifdef L_fixsfsi
-#ifdef __ARC_NORM__
 #include "ieee-754/fixsfsi.S"
-#endif
 #endif
 
 #ifdef L_fixunsdfsi
-#ifdef __ARC_NORM__
 #include "ieee-754/fixunsdfsi.S"
-#endif
 #endif
 
 #ifdef L_eqdf2
-#ifdef __ARC_NORM__
 #include "ieee-754/eqdf2.S"
-#endif
 #endif
 
 #ifdef L_eqsf2
-#ifdef __ARC_NORM__
 #include "ieee-754/eqsf2.S"
-#endif
 #endif
 
 #ifdef L_gtdf2
-#ifdef __ARC_NORM__
 #include "ieee-754/gtdf2.S"
-#endif
 #endif
 
 #ifdef L_gtsf2
-#ifdef __ARC_NORM__
 #include "ieee-754/gtsf2.S"
-#endif
 #endif
 
 #ifdef L_gedf2
-#ifdef __ARC_NORM__
 #include "ieee-754/gedf2.S"
-#endif
 #endif
 
 #ifdef L_gesf2
-#ifdef __ARC_NORM__
 #include "ieee-754/gesf2.S"
-#endif
 #endif
 
 #ifdef L_uneqdf2
-#ifdef __ARC_NORM__
 #include "ieee-754/uneqdf2.S"
-#endif
 #endif
 
 #ifdef L_uneqsf2
-#ifdef __ARC_NORM__
 #include "ieee-754/uneqsf2.S"
-#endif
 #endif
 
 #ifdef L_orddf2
-#ifdef __ARC_NORM__
 #include "ieee-754/orddf2.S"
-#endif
 #endif
 
 #ifdef L_ordsf2
-#ifdef __ARC_NORM__
 #include "ieee-754/ordsf2.S"
 #endif
-#endif
-#endif /* __ARC_BARREL_SHIFTER__ */
+#endif /* ARC_OPTFPE */

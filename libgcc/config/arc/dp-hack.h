@@ -30,8 +30,13 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #define FINE_GRAINED_LIBRARIES
 #define ARC_DP_DEBUG 1
+#define ARC_OPTFPE (defined (__ARC_NORM__)				\
+		    && defined (__ARC_BARREL_SHIFTER__)			\
+		    && (defined (__ARC_MPY__)				\
+			|| defined (__ARC_MUL64__)			\
+			|| defined (__ARC_MUL32BY16__)))
 
-#if !defined (__ARC_NORM__) || ARC_DP_DEBUG
+#if ARC_OPTFPE || ARC_DP_DEBUG
 # define L_pack_df
 # define L_unpack_df
 # define L_make_df
@@ -39,7 +44,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 # define L_sf_to_df
 #endif
 
-#ifndef __ARC_NORM__
+#if !ARC_OPTFPE
 # define L_addsub_df
 #elif ARC_DP_DEBUG
 # define L_addsub_df
@@ -47,7 +52,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 # define __subdf3 __subdf3_c
 #endif
 
-#ifndef __ARC_NORM__
+#if !ARC_OPTFPE
 # define L_mul_df
 # define L_div_df
 #elif (!defined (__ARC700__) && !defined (__ARC_MUL64__) \
@@ -63,7 +68,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 # define __divdf3 __divdf3_c
 #endif
 
-#ifndef __ARC_NORM__
+#if !ARC_OPTFPE
 # define L_df_to_sf
 # define L_si_to_df
 # define L_df_to_si
@@ -82,7 +87,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 # define __floatunsidf __floatunsidf_c
 #endif
 
-#ifndef __ARC_NORM__
+#if !ARC_OPTFPE
 # define L_fpcmp_parts_df
 # define L_compare_df
 # define L_eq_df
