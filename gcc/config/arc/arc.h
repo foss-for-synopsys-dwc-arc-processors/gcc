@@ -225,10 +225,14 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
    default for A7, and only for pre A7 cores when -mnorm is given.  */
 #define TARGET_NORM (TARGET_ARC700 || TARGET_NORM_SET || TARGET_HS)
 /* Indicate if an optimized floating point emulation library is
-   available.  We need a barrrel shifter, NORM and a multiplier.  */
-#define TARGET_OPTFPE							\
-  ((TARGET_MPY_SET || TARGET_MUL64_SET || TARGET_MULMAC_32BY16_SET)	\
-   && TARGET_NORM_SET && TARGET_BARREL_SHIFTER)
+   available.  We need a barrrel shifter, NORM and a multiplier.
+   However, a customer may choose either to disable one of them when
+   all of them are on, or to enable all of them when they are off,
+   resulting in a missmatch between what the compiler outputs and the
+   libgcc support routines.  Hence, the optimized floating point
+   emulation library is available for ARC700 only as it always has all
+   the requires options on.  */
+#define TARGET_OPTFPE	TARGET_ARC700
 
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */

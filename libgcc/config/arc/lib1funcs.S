@@ -1261,11 +1261,18 @@ SYM(__ld_r13_to_r14_ret):
 
 #endif /* L_millicodethunk_ret */
 
+#if 0
+/* We need a safer way to enable the optimized floating point library
+   than checking for actuall existence of specific options.  Disable
+   this way for the time being.  */
 #define ARC_OPTFPE (defined (__ARC_NORM__)				\
 		    && defined (__ARC_BARREL_SHIFTER__)			\
 		    && (defined (__ARC_MPY__)				\
 			|| defined (__ARC_MUL64__)			\
 			|| defined (__ARC_MUL32BY16__)))
+#else
+#define ARC_OPTFPE TARGET_ARC700
+#endif
 
 #if ARC_OPTFPE
 #ifdef  L_adddf3
