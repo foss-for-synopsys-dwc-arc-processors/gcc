@@ -1271,7 +1271,7 @@ SYM(__ld_r13_to_r14_ret):
 			|| defined (__ARC_MUL64__)			\
 			|| defined (__ARC_MUL32BY16__)))
 #else
-#define ARC_OPTFPE TARGET_ARC700
+#define ARC_OPTFPE (defined (__ARC700__))
 #endif
 
 #if ARC_OPTFPE
