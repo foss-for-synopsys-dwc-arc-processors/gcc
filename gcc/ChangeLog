@@ -1,6 +1,12 @@
 2016-04-28  Joern Rennecke  <joern.rennecke@embecosm.com>
 	    Andrew Burgess  <andrew.burgess@embecosm.com>
 
+	* config/arc/arc.c (arc_print_operand): Print integer 'H' / 'L'
+	operands as 32-bits.
+
+2016-04-28  Joern Rennecke  <joern.rennecke@embecosm.com>
+	    Andrew Burgess  <andrew.burgess@embecosm.com>
+
 	* config/arc/arc.c (arc_conditional_register_usage): Take
 	TARGET_RRQ_CLASS into account.
 	(arc_print_operand): Support printing 'p' and 's' operands.
