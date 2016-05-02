@@ -1,3 +1,10 @@
+2016-05-02  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc-cpus.def: Change name to quarkse_em.
+	* config/arc/arc-tables.opt: Regenerate.
+	* config/arc/t-multilib: Regenerate.
+	* doc/invoke.texi (ARC): Update mcpu options.
+
 2016-04-18  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_select_cc_mode): Clean up when we use
