@@ -1,3 +1,9 @@
+2016-04-03  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/dp-hack.h (ARC_OPTFPE): Check for Quarkse.
+	* config/arc/fp-hack.h (ARC_OPTFPE): Likewise.
+	* config/arc/lib1funcs.S (ARC_OPTFPE): Likewise.
+
 2016-04-18  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/lib1funcs.S: Use fp-optimized routines when we have

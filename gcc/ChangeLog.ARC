@@ -1,3 +1,8 @@
+2016-04-03  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.h (TARGET_OPTFPE): Allow also QuarkSE EM
+	processors to use the optimized fp-library.
+
 2016-05-02  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc-cpus.def: Change name to quarkse_em.

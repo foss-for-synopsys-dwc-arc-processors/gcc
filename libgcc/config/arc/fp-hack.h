@@ -40,7 +40,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 			|| defined (__ARC_MUL64__)			\
 			|| defined (__ARC_MUL32BY16__)))
 #else
-#define ARC_OPTFPE (defined (__ARC700__))
+#define ARC_OPTFPE (defined (__ARC700__) || defined (__ARC_FPX_QUARK__))
 #endif
 
 

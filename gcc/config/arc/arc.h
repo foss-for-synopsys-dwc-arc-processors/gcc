@@ -232,7 +232,7 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
    libgcc support routines.  Hence, the optimized floating point
    emulation library is available for ARC700 only as it always has all
    the requires options on.  */
-#define TARGET_OPTFPE	TARGET_ARC700
+#define TARGET_OPTFPE	(TARGET_ARC700 || TARGET_FPX_QUARK)
 
 /* Non-zero means the cpu supports swap instruction.  This flag is set by
    default for A7, and only for pre A7 cores when -mswap is given.  */
