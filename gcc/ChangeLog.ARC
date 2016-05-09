@@ -1,3 +1,7 @@
+2016-05-09  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.c (arc_output_mi_thunk): Emit PIC calls.
+
 2016-04-03  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.h (TARGET_OPTFPE): Allow also QuarkSE EM
@@ -6293,3 +6297,4 @@ FIXME: Document changes since rev 59970
 
 	* output.h (get_unnamed_section_ggc): New macro.
 	* varasm.c (init_varasm_once): Use it.
+
