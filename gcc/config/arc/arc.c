@@ -1250,6 +1250,9 @@ arc_override_options (void)
       && optimize >= 3)
     flag_prefetch_loop_arrays = 1;
 
+  /* Predictive commoning is faulty see bug 71083.  */
+  flag_predictive_commoning = 0;
+
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
 }
