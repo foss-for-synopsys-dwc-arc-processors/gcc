@@ -1,3 +1,13 @@
+2016-05-18  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/lib1funcs.S (__mulsi3): Use __ARC_MPY__, and
+	__ARC_BARREL_SHIFTER__.
+	(__umulsi3_highpart): Likewise.
+	(__udivmodsi4): Use __ARC_EA__, and __ARC_BARREL_SHIFTER__.
+	(__divsi3): Use __ARC_EA__.
+	(__modsi3): Likewise.
+	(__clzsi2): Use __ARC_BARREL_SHIFTER__.
+
 2016-04-03  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/dp-hack.h (ARC_OPTFPE): Check for Quarkse.
@@ -21,7 +31,7 @@
 
 2015-04-30  Andrew Burgess/C. Zissulescu
 
-        * unwind-dw2.c: Comment out EH_RETURN_STACKADJ_RTX.
+	* unwind-dw2.c: Comment out EH_RETURN_STACKADJ_RTX.
 
 2014-01-22  Joern Rennecke  <joern.rennecke@embecosm.com>
 
@@ -61,25 +71,25 @@
 2013-11-20 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/dp-hack.h: Revert to the previous state.
-        * config/arc/fp-hack.h: Likewise.
+	* config/arc/fp-hack.h: Likewise.
 
 2013-11-19 Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/dp-hack.h: Enable various floating point routines
 	also when NORM optimized handmade routines are used.
-        * config/arc/fp-hack.h: Likewise.
+	* config/arc/fp-hack.h: Likewise.
 
 2013-11-14  Claudiu Zissulescu <claziss@synopsys.com>
 
 	* config/arc/gmon/dcache_linesz.S: Disable reading the cache
-          configuration for HS.
-	* config/arc/gmon/profil.S: Disable using profiling functions
-          for HS.
+	configuration for HS.
+	* config/arc/gmon/profil.S: Disable using profiling functions for
+	HS.
 	* config/arc/lib1funcs.S: Avoid shor move for HS.
 
 2013-11-07  Claudiu Zissulescu <claziss@synopsys.com>
 
-        * config/arc/t-arc-em: Remove file.
+	* config/arc/t-arc-em: Remove file.
 
 2013-09-04  Claudiu Zissulescu <claziss@synopsys.com>
 
@@ -228,3 +238,7 @@
 	(crti.o, crtn.o): Remove rules.
 	* config/arc/t-arc600-uClibc: Remove $(T).
 	* config/arc/t-arc700-uClibc, config/arc/t-arc-newlib: Likewise.
+
+;; Local Variables:
+;; mode: change-log
+;; End:
