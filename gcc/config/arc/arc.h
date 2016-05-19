@@ -137,21 +137,6 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 		   %{!marclinux*: %{pg|p|profile:-marclinux_prof;: -marclinux}} \
 		   %{!z:-z max-page-size=0x2000 -z common-page-size=0x2000} \
 		   %{shared:-shared}"
-/* Like the standard LINK_COMMAND_SPEC, but add %G when building
-   a shared library with -nostdlib, so that the hidden functions of libgcc
-   will be incorporated.
-   N.B., we don't want a plain -lgcc, as this would lead to re-exporting
-   non-hidden functions, so we have to consider libgcc_s.so.* first, which in
-   turn should be wrapped with --as-needed.  */
-#define LINK_COMMAND_SPEC "\
-%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:\
-    %(linker) %l " LINK_PIE_SPEC "%X %{o*} %{A} %{d} %{e*} %{m} %{N} %{n} %{r}\
-    %{s} %{t} %{u*} %{x} %{z} %{Z} %{!A:%{!nostdlib:%{!nostartfiles:%S}}}\
-    %{static:} %{L*} %(mfwrap) %(link_libgcc) %o\
-    %{fopenmp:%:include(libgomp.spec)%(link_gomp)} %(mflib)\
-    %{fprofile-arcs|fprofile-generate|coverage:-lgcov}\
-    %{!nostdlib:%{!nodefaultlibs:%(link_ssp) %(link_gcc_c_sequence)}}\
-    %{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} }}}}}}"
 
 #else
 #define LINK_SPEC "%{mbig-endian:-EB} %{EB} %{EL}\
