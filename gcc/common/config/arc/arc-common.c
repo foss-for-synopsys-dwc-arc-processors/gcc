@@ -1,8 +1,6 @@
 /* Common hooks for Synopsys DesignWare ARC
-   Copyright (C) 1994, 1995, 1997, 1998, 2007-2012
+   Copyright (C) 1994-2016
    Free Software Foundation, Inc.
-   Contributor: Joern Rennecke <joern.rennecke@embecosm.com>
-		on behalf of Synopsys Inc.
 
 This file is part of GCC.
 
@@ -84,39 +82,7 @@ arc_handle_option (struct gcc_options *opts,
   int value = decoded->value;
   const char *arg = decoded->arg;
   static int mcpu_seen = PROCESSOR_NONE;
-  const arc_cpu_t *arc_selected_cpu = &arc_cpu_types[0];
-  static const arc_cpu_t *arc_default_cpu = &arc_cpu_types[0];
-  static bool nompy_seen = false;
-  static bool initialize = true;
-  static int  init_flags = 0;
-  static bool seen_arc_mpy_option = false;
-  static bool seen_arc_fpu_build = false;
   char *p;
-
-  /* First, initialize the options as for the default choosen cpu.  */
-  if (initialize)
-    {
-      initialize = false;
-      arc_default_cpu = &arc_cpu_types[(int) TARGET_CPU_DEFAULT];
-
-#define ARC_OPT(NAME, CODE, MASK, DOC)		\
-      do {					\
-	if (arc_default_cpu->flags & CODE)	\
-	  {					\
-	    opts->x_target_flags |= MASK;	\
-	    init_flags |= MASK;			\
-	  }					\
-      } while (0);
-#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
-      do {					\
-	if (arc_default_cpu->flags & CODE)	\
-	  opts->x_##VAR = VAL;			\
-      } while (0);
-#include "config/arc/arc-options.def"
-
-#undef ARC_OPTX
-#undef ARC_OPT
-   }
 
   switch (code)
     {
@@ -127,60 +93,9 @@ arc_handle_option (struct gcc_options *opts,
       if (mcpu_seen != PROCESSOR_NONE && mcpu_seen != value)
 	warning_at (loc, 0, "multiple -mcpu= options specified.");
       mcpu_seen = value;
-
-      arc_selected_cpu = &arc_cpu_types[(int) mcpu_seen];
-
-      /* Clean default set cpu related flags, taking into
-	 consideration flags already turned off/on.  */
-      opts->x_target_flags &= ~init_flags;
-      init_flags = 0;
-
-      /* Set cpu flags accordingly.  */
-#define ARC_OPT(NAME, CODE, MASK, DOC)			\
-      do {						\
-	if (arc_selected_cpu->flags & CODE)		\
-	  {						\
-	    if (!(opts_set->x_target_flags & MASK))	\
-	      {						\
-		opts->x_target_flags |= MASK;		\
-		init_flags |= MASK;			\
-	      }						\
-	  }						\
-      } while (0);
-#define ARC_OPTX(NAME, CODE, VAR, VAL)			\
-      do {						\
-	if ((arc_selected_cpu->flags & CODE)		\
-	    && (!seen_##VAR))				\
-	  {						\
-	    opts->x_##VAR = VAL;			\
-	    seen_##VAR = false;			\
-	  }						\
-      } while (0);
-
-#include "config/arc/arc-options.def"
-
-#undef ARC_OPTX
-#undef ARC_OPT
-
-      if (nompy_seen)
-	opts->x_arc_mpy_option = 0;
-
-      break;
-
-    case OPT_mmpy16:
-      /* If they are set/unset by the user clean them from default.  */
-      init_flags &= ~MASK_MPY16_SET;
-    case OPT_mmpy:
-      init_flags &= ~MASK_MPY_SET;
-      if (!value)
-	{
-	  opts->x_arc_mpy_option = 0;
-	  nompy_seen = true;
-	}
       break;
 
     case OPT_mmpy_option_:
-      seen_arc_mpy_option = true;
       p = ASTRDUP (arg);
 
       if (!strcmp (p, "0")
@@ -222,68 +137,64 @@ arc_handle_option (struct gcc_options *opts,
 
       break;
 
-    case OPT_mfpu_:
-      seen_arc_fpu_build = true;
-      break;
-
     case OPT_mcode_density:
-      init_flags &= ~MASK_CODE_DENSITY;
+      opts->x_arc_seen_options |= MASK_CODE_DENSITY;
       break;
 
     case OPT_mdiv_rem:
-      init_flags &= ~MASK_DIVREM;
+      opts->x_arc_seen_options |= MASK_DIVREM;
       break;
 
     case OPT_mnorm:
-      init_flags &= ~MASK_NORM_SET;
+      opts->x_arc_seen_options |= MASK_NORM_SET;
       break;
 
     case OPT_matomic:
-      init_flags &= ~MASK_ATOMIC;
+      opts->x_arc_seen_options |= MASK_ATOMIC;
       break;
 
     case OPT_mll64:
-      init_flags &= ~MASK_LL64;
+      opts->x_arc_seen_options |= MASK_LL64;
       break;
 
     case OPT_mbarrel_shifter:
-      init_flags &= ~MASK_BARREL_SHIFTER;
+      opts->x_arc_seen_options |= MASK_BARREL_SHIFTER;
       break;
 
     case OPT_mswap:
-      init_flags &= ~MASK_SWAP_SET;
+      opts->x_arc_seen_options |= MASK_SWAP_SET;
       break;
 
     case OPT_mmul64:
-      init_flags &= ~MASK_MUL64_SET;
+      opts->x_arc_seen_options |= MASK_MUL64_SET;
       break;
 
     case OPT_mmul32x16:
-      init_flags &= ~MASK_MULMAC_32BY16_SET;
+      opts->x_arc_seen_options |= MASK_MULMAC_32BY16_SET;
       break;
 
     case OPT_mEA:
-      init_flags &= ~MASK_EA_SET;
+      opts->x_arc_seen_options |= MASK_EA_SET;
       break;
 
     case OPT_mspfp:
     case OPT_mspfp_compact:
     case OPT_mspfp_fast:
-      init_flags &= ~MASK_SPFP_COMPACT_SET;
+      opts->x_arc_seen_options |= MASK_SPFP_COMPACT_SET;
       break;
 
     case OPT_mdpfp:
     case OPT_mdpfp_compact:
     case OPT_mdpfp_fast:
-      init_flags &= ~MASK_DPFP_COMPACT_SET;
+      opts->x_arc_seen_options |= MASK_DPFP_COMPACT_SET;
       break;
 
     case OPT_margonaut:
-      init_flags &= ~MASK_ARGONAUT_SET;
+      opts->x_arc_seen_options |= MASK_ARGONAUT_SET;
       break;
 
     case OPT_msimd:
-      init_flags &= ~MASK_SIMD_SET;
+      opts->x_arc_seen_options |= MASK_SIMD_SET;
       break;
 
     default:

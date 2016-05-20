@@ -960,34 +960,13 @@ arc_init (void)
 	break;
       }
 
-  /* FPU support only for V2 */
-  if (arc_fpu_build > 0)
-    {
-      if (TARGET_EM
-	  && (arc_fpu_build
-	      & ~(FPU_SP | FPU_SF | FPU_SC | FPU_SD | FPX_DP | FPX_QK)))
-	error ("FPU double precission options are available for ARC HS only.");
-      if (TARGET_HS && (arc_fpu_build & (FPX_DP | FPX_QK)))
-	error ("FPU double precission assist options are not available for ARC HS.");
-      if (!TARGET_HS && !TARGET_EM)
-	error ("FPU options are available for ARC HS/EM only");
-    }
-
   /* Support matomic only for ARC700 and ARC HS.  */
   if (TARGET_ATOMIC && !(TARGET_ARC700 || TARGET_HS))
     error ("-matomic only supported for ARC700 or ARC HS");
 
-  /* Support mul64 generation only for ARC600.  */
-  if (TARGET_MUL64_SET && (TARGET_ARC700 || TARGET_V2))
-      error ("-mmul64 not supported for ARC700 or ARCv2");
-
   /* MPY instructions valid only for ARC700, and ARCv2  */
   if (TARGET_MPY_SET && !TARGET_ARC700 & !TARGET_V2)
       error ("-mmpy supported only for ARC700 or ARCv2");
-
-  /* mul/mac instructions only for ARC600.  */
-  if (TARGET_MULMAC_32BY16_SET && !(TARGET_ARC600 || TARGET_ARC601))
-      error ("-mmul32x16 supported only for ARC600 or ARC601");
 
   if (!TARGET_DPFP && TARGET_DPFP_DISABLE_LRSR)
       error ("-mno-dpfp-lrsr suppforted only with -mdpfp");
@@ -1001,19 +980,10 @@ arc_init (void)
   if (TARGET_SPFP_FAST_SET && (TARGET_ARC600 || TARGET_ARC601))
     error ("-mspfp_fast not available on ARC600 or ARC601");
 
-  /* FPX-3. No FPX extensions on pre-ARC600 cores.  */
-  if ((TARGET_DPFP || TARGET_SPFP)
-      && !(TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700 || TARGET_EM))
-    error ("FPX extensions not available on this core");
-
   /* FPX-4. No FPX extensions mixed with FPU extensions  */
-  if ((TARGET_DPFP || TARGET_SPFP)
-      && TARGET_HARD_FLOAT && TARGET_HS)
+  if ((TARGET_DPFP_FAST_SET || TARGET_DPFP_COMPACT_SET  || TARGET_SPFP)
+      && TARGET_HARD_FLOAT)
     error ("No FPX/FPU mixing allowed");
-
-  /* ll64 ops only available for HS. */
-  if (TARGET_LL64 && !TARGET_HS)
-    error ("-mll64 available on HS cores only");
 
   /* ll64 needs to be enabled when compiling for HS and using 64bit
      mpy options.  */
@@ -1037,12 +1007,6 @@ arc_init (void)
       warning (DK_WARNING, "No profiler support for %s.", arc_cpu_string);
       profile_flag = 0;
     }
-
-  if (TARGET_DIVREM && (!TARGET_V2))
-    error ("DIV/REM option is only available for ARCv2 processor family");
-
-  if (TARGET_CODE_DENSITY && (!TARGET_V2))
-    error ("CODE DENSITY option is only available for ARCv2 processor family");
 
   arc_init_reg_tables ();
 
@@ -1158,16 +1122,24 @@ arc_override_options (void)
 	  }
       }
 
-  /* Set cpu flags accordingly to architecture.  The cpu specific
-     flags are set in arc-common.c.  Those values are forced in to the
-     right value, regardless if they were set or not.  */
+  /* Set cpu flags accordingly to architecture/selected cpu.  The cpu
+     specific flags are set in arc-common.c.  The architecture forces
+     the default hardware configurations in, regardless what command
+     line options are saying.  The CPU optional hw options can be
+     turned on or off.  */
 #define ARC_OPT(NAME, CODE, MASK, DOC)		\
   do {						\
+    if ((arc_selected_cpu->flags & CODE)	\
+	&& ((arc_seen_options & MASK) == 0))	\
+      target_flags |= MASK;			\
     if (arc_selected_arch->dflags & CODE)	\
       target_flags |= MASK;			\
   } while (0);
-#define ARC_OPTX(NAME, CODE, VAR, VAL)		\
+#define ARC_OPTX(NAME, CODE, VAR, VAL, DOC)	\
   do {						\
+    if ((arc_selected_cpu->flags & CODE)	\
+	&& (VAR == DEFAULT_##VAR))		\
+      VAR = VAL;				\
     if (arc_selected_arch->dflags & CODE)	\
       VAR = VAL;				\
   } while (0);
@@ -1179,13 +1151,13 @@ arc_override_options (void)
 
   /* Check options against architecture options.  Throw an error if
      option is not allowed.  */
-#define ARC_OPTX(NAME, CODE, VAR, VAL)				\
+#define ARC_OPTX(NAME, CODE, VAR, VAL,DOC)			\
   do {								\
     if ((VAR == VAL)						\
 	&& (!(arc_selected_arch->flags & CODE)))		\
       {								\
-	error ("Illegal option for %s architecture",		\
-	       arc_selected_arch->name);			\
+	error ("%s is not available for %s architecture",	\
+	       DOC, arc_selected_arch->name);			\
       }								\
   } while (0);
 #define ARC_OPT(NAME, CODE, MASK, DOC)				\

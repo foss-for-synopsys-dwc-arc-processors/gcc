@@ -102,7 +102,7 @@ Same as -mcpu=archs
 ; END backward-compatibility aliases, translated by DRIVER_SELF_SPECS
 
 TargetVariable
-unsigned int arc_mpy_option = 0
+unsigned int arc_mpy_option = DEFAULT_arc_mpy_option
 
 mmpy-option=
 Target RejectNegative Joined
@@ -169,7 +169,7 @@ Target Report RejectNegative
 Dummy flag. This is the default unless FPX/FPU switches are provided explicitly
 
 mfpu=
-Target RejectNegative Joined Enum(arc_fpu) Var(arc_fpu_build) Init(0)
+Target RejectNegative Joined Enum(arc_fpu) Var(arc_fpu_build) Init(DEFAULT_arc_fpu_build)
 Specify the name of the target floating point configuration.
 
 Enum
@@ -477,3 +477,6 @@ Specify thread pointer register number
 
 mtp-regno=none
 Target RejectNegative Var(arc_tp_regno,-1)
+
+TargetVariable
+unsigned int arc_seen_options = 0

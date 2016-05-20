@@ -1,3 +1,20 @@
+2016-05-20  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* common/config/arc/arc-common.c (arc_handle_option): Remove all
+	specific cpu toggled option setting.
+	(init_flags): Remove.
+	* config/arc/arc-arch.h (ARC_OPTX): Update macro.
+	* config/arc/arc-options.def: Formating, add error messages.
+	(FL_FPUD): Don't consider fpuda as pure double precision fp
+	support.
+	* config/arc/arc-opts.h (DEFAULT_arc_fpu_build): Define.
+	(DEFAULT_arc_mpy_option): Define.
+	* config/arc/arc.c (arc_init): Remove duplicate error messages.
+	(arc_override_options): Update use of ARC_OPT and ARC_OPTX macros.
+	* config/arc/arc.opt (arc_mpy_option): Use DEFAULT_arc_mpy_option.
+	(mfpu): Use DEFAULT_arc_fpu_build.
+	(arc_seen_options): New target variable.
+
 2016-05-09  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.c (arc_output_mi_thunk): Emit PIC calls.

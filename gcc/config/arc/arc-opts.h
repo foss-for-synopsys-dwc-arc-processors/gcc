@@ -82,3 +82,8 @@ enum arc_abi_type
     ARC_ABI_MWABI
   };
 
+/* Default FPU option value.  */
+#define DEFAULT_arc_fpu_build 0
+
+/* Default MPY option value.  */
+#define DEFAULT_arc_mpy_option 0

@@ -27,8 +27,8 @@ along with GCC; see the file COPYING3.  If not see
 
 enum cpu_flags
   {
-#define ARC_OPT(NAME, CODE, MASK, DOC)	 NAME = CODE,
-#define ARC_OPTX(NAME, CODE, VAR, VAL)	 NAME = CODE,
+#define ARC_OPT(NAME, CODE, MASK, DOC)	    NAME = CODE,
+#define ARC_OPTX(NAME, CODE, VAR, VAL, DOC) NAME = CODE,
 #include "arc-options.def"
 #undef ARC_OPT
 #undef ARC_OPTX
