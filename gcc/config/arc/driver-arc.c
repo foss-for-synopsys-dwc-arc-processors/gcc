@@ -38,7 +38,7 @@ arc_cpu_to_as (int argc, const char **argv)
     }
   else
     {
-      name = argv[0];
+      name = argv[argc - 1];
       for (arc_selected_cpu = arc_cpu_types; arc_selected_cpu->name;
 	   arc_selected_cpu++)
 	{
