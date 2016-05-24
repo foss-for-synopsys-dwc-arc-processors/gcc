@@ -1,5 +1,12 @@
 2016-05-24  Claudiu Zissulescu  <claziss@synopsys.com>
 
+	* config/arc/arc-opts.h (DEFAULT_arc_fpu_build): Change.
+	(DEFAULT_arc_mpy_option): Likewsie.
+	* config/arc/arc.c (arc_override_options): Update condition.
+	* config/arc/arc.opt (arc_mpy_option): Change to int.
+
+2016-05-24  Claudiu Zissulescu  <claziss@synopsys.com>
+
 	* config/arc/driver-arc.c (arc_cpu_to_as): Selective use of
 	code-density option for ARC EM.
 

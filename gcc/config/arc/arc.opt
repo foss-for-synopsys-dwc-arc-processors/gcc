@@ -102,7 +102,7 @@ Same as -mcpu=archs
 ; END backward-compatibility aliases, translated by DRIVER_SELF_SPECS
 
 TargetVariable
-unsigned int arc_mpy_option = DEFAULT_arc_mpy_option
+int arc_mpy_option = DEFAULT_arc_mpy_option
 
 mmpy-option=
 Target RejectNegative Joined

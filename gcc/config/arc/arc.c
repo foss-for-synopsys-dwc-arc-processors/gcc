@@ -1135,13 +1135,14 @@ arc_override_options (void)
     if (arc_selected_arch->dflags & CODE)	\
       target_flags |= MASK;			\
   } while (0);
+
 #define ARC_OPTX(NAME, CODE, VAR, VAL, DOC)	\
-  do {						\
-    if ((arc_selected_cpu->flags & CODE)	\
-	&& (VAR == DEFAULT_##VAR))		\
-      VAR = VAL;				\
-    if (arc_selected_arch->dflags & CODE)	\
-      VAR = VAL;				\
+  do {					   	\
+    if ((arc_selected_cpu->flags & CODE)   	\
+	&& (VAR == DEFAULT_##VAR))	   	\
+      VAR = VAL;			   	\
+    if (arc_selected_arch->dflags & CODE)  	\
+      VAR = VAL;			   	\
   } while (0);
 
 #include "arc-options.def"
@@ -1175,7 +1176,7 @@ arc_override_options (void)
 
   /* If we have an multiplier configuration given via mmpy-option, set
      also the ARC700' MPY option, and the other way around.  */
-  if (arc_mpy_option)
+  if (arc_mpy_option > 0)
     {
       target_flags |= MASK_MPY_SET;
       target_flags |= MASK_MPY16_SET;

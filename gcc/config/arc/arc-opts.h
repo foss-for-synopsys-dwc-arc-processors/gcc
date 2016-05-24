@@ -18,6 +18,9 @@
    along with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
 
+#ifndef ARC_OPTS_H
+#define ARC_OPTS_H
+
 /* Various ARC cores.  */
 enum processor_type
 {
@@ -83,7 +86,9 @@ enum arc_abi_type
   };
 
 /* Default FPU option value.  */
-#define DEFAULT_arc_fpu_build 0
+#define DEFAULT_arc_fpu_build 0x10000000
 
 /* Default MPY option value.  */
-#define DEFAULT_arc_mpy_option 0
+#define DEFAULT_arc_mpy_option -1
+
+#endif /* ARC_OPTS_H */
