@@ -1,3 +1,8 @@
+2016-05-24  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/driver-arc.c (arc_cpu_to_as): Selective use of
+	code-density option for ARC EM.
+
 2016-05-20  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* common/config/arc/arc-common.c (arc_handle_option): Remove all

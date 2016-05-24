@@ -52,12 +52,17 @@ arc_cpu_to_as (int argc, const char **argv)
   switch (arc_selected_cpu->arch)
     {
     case BASE_ARCH_em:
+      if (arc_selected_cpu->flags & FL_CD)
+	name = "-mcode-density";
+      else
+	name = "";
       if (arc_selected_cpu->flags & FL_FPUDA)
-	return "-mcpu=arcem -mfpuda";
-      if ((arc_selected_cpu->flags & FL_SPFP)
-	  || (arc_selected_cpu->flags & FL_DPFP))
-	return "-mcpu=arcem -mspfp -mdpfp";
-      return "-mcpu=arcem";
+	name = concat ("-mfpuda ", name, NULL);
+      if (arc_selected_cpu->flags & FL_SPFP)
+	name = concat ("-mspfp ", name, NULL);
+      if (arc_selected_cpu->flags & FL_DPFP)
+	name = concat ("-mdpfp ", name, NULL);
+      return concat ("-mcpu=arcem ", name, NULL);
     case BASE_ARCH_hs:
       return "-mcpu=archs";
     case BASE_ARCH_700:
