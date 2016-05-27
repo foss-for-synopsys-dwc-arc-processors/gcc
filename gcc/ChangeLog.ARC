@@ -1,3 +1,13 @@
+2016-05-26  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.md (movsf): Change predicate.
+	(movdf): Likewise.
+	(floatsisf2, addsf3, subsf3, mulsf3): Change.
+	* config/arc/fpu.md (addsf3_fpu): Change.
+	(subsf3_fpu, mulsf3_fpu, fnmasf4_fpu, fmasf4_fpu, fmadf4_fpu)
+	(fnmadf4_fpu, divsf3_fpu, sqrtsf2_fpu, cmpsf_fpu, cmpsf_trap_fpu)
+	(adddf3_fpu, muldf3_fpu): Likewise.
+
 2016-05-24  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc-opts.h (DEFAULT_arc_fpu_build): Change.

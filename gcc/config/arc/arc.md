@@ -1058,7 +1058,7 @@
 ;; Floating point move insns.
 
 (define_expand "movsf"
-  [(set (match_operand:SF 0 "general_operand" "")
+  [(set (match_operand:SF 0 "move_dest_operand" "")
 	(match_operand:SF 1 "general_operand" ""))]
   ""
   "if (prepare_move_operands (operands, SFmode)) DONE;")
@@ -1081,7 +1081,7 @@
    ])
 
 (define_expand "movdf"
-  [(set (match_operand:DF 0 "nonimmediate_operand" "")
+  [(set (match_operand:DF 0 "move_dest_operand" "")
 	(match_operand:DF 1 "general_operand" ""))]
   ""
   "
@@ -5910,7 +5910,11 @@
 	(plus:SF (match_operand:SF 1 "nonmemory_operand" "")
 		 (match_operand:SF 2 "nonmemory_operand" "")))]
   "TARGET_FP_SINGLE || TARGET_SPFP"
-  "")
+  "
+  if (!register_operand (operands[1], SFmode)
+      && !register_operand (operands[2], SFmode))
+    operands[1] = force_reg (SFmode, operands[1]);
+  ")
 
 ;;sub
 (define_expand "subsf3"
@@ -5918,7 +5922,11 @@
 	(minus:SF (match_operand:SF 1 "nonmemory_operand" "")
 		  (match_operand:SF 2 "nonmemory_operand" "")))]
   "TARGET_FP_SINGLE || TARGET_SPFP"
-  "")
+  "
+  if (!register_operand (operands[1], SFmode)
+      && !register_operand (operands[2], SFmode))
+    operands[1] = force_reg (SFmode, operands[1]);
+  ")
 
 ;;mul
 (define_expand "mulsf3"
@@ -5926,7 +5934,11 @@
 	(mult:SF (match_operand:SF 1 "nonmemory_operand" "")
 		 (match_operand:SF 2 "nonmemory_operand" "")))]
   "TARGET_FP_SINGLE || TARGET_SPFP"
-  "")
+  "
+  if (!register_operand (operands[1], SFmode)
+      && !register_operand (operands[2], SFmode))
+    operands[1] = force_reg (SFmode, operands[1]);
+ ")
 
 ;;add
 (define_expand "adddf3"
@@ -6055,14 +6067,9 @@
 ;; SI->SF
 (define_expand "floatsisf2"
   [(set (match_operand:SF 0 "register_operand"            "")
-	(float:SF (match_operand:SI 1 "nonmemory_operand" "")))]
+	(float:SF (match_operand:SI 1 "register_operand" "")))]
   "TARGET_FPX_QUARK || TARGET_FP_SCONV"
-  "
-  if (TARGET_FPX_QUARK)
-   {
-     operands[1] = force_reg (SImode, operands[1]);
-   }
-  ")
+  "")
 
 ;;
 ;;(define_insn "*movdf_vadd2"
