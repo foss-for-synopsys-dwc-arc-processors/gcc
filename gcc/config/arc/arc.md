@@ -6043,6 +6043,12 @@
      operands[1] = force_reg (SFmode, operands[1]);
      operands[2] = force_reg (SFmode, operands[2]);
    }
+  else
+   {
+     if (!register_operand (operands[1], SFmode)
+        && !register_operand (operands[2], SFmode))
+       operands[1] = force_reg (SFmode, operands[1]);
+   }
   ")
 
 ;; Square root
