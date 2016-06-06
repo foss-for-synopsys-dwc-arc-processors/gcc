@@ -11231,14 +11231,15 @@ option is default on when configured with @samp{--with-cpu=arc700}@.
 
 @item arcem
 @opindex marcem
-Compile for ARC EM.  Aliases: @option{-marem}.  This option is default
-on when the tool chain is configured with @samp{--with-cpu=arcem}@.
+Compile for ARC EM.  Aliases: @option{-marem}, this alias is
+deprecated.  This option is default on when the tool chain is
+configured with @samp{--with-cpu=arcem}@.
 
 @item archs
 @opindex marchs
-Compile for ARC HS cpu family.  Aliases: @option{-marchs}.  This
-option is default on when the tool chain is configured with
-@samp{--with-cpu=archs}@.
+Compile for ARC HS cpu family.  Aliases: @option{-marchs}, this alias
+is deprecated.  This option is default on when the tool chain is
+configured with @samp{--with-cpu=archs}@.
 
 @item em
 @opindex em
@@ -11601,12 +11602,14 @@ define preprocessor macro symbols.
 @item -mdsp-packa
 @opindex mdsp-packa
 Passed down to the assembler to enable the DSP Pack A extensions.
-Also sets the preprocessor symbol @code{__Xdsp_packa}.
+Also sets the preprocessor symbol @code{__Xdsp_packa}.  This option is
+deprecated.
 
 @item -mdvbf
 @opindex mdvbf
 Passed down to the assembler to enable the dual viterbi butterfly
-extension.  Also sets the preprocessor symbol @code{__Xdvbf}.
+extension.  Also sets the preprocessor symbol @code{__Xdvbf}.  This
+option is deprecated.
 
 @c ARC700 4.10 extension instruction
 @item -mlock
@@ -11618,19 +11621,19 @@ Conditional extension.  Also sets the preprocessor symbol
 @item -mmac-d16
 @opindex mmac-d16
 Passed down to the assembler.  Also sets the preprocessor symbol
-@code{__Xxmac_d16}.
+@code{__Xxmac_d16}. This option is deprecated.
 
 @item -mmac-24
 @opindex mmac-24
 Passed down to the assembler.  Also sets the preprocessor symbol
-@code{__Xxmac_24}.
+@code{__Xxmac_24}.  This option is deprecated.
 
 @c ARC700 4.10 extension instruction
 @item -mrtsc
 @opindex mrtsc
 Passed down to the assembler to enable the 64-bit Time-Stamp Counter
 extension instruction.  Also sets the preprocessor symbol
-@code{__Xrtsc}.
+@code{__Xrtsc}.  This option is deprecated.
 
 @c ARC700 4.10 extension instruction
 @item -mswape
@@ -11643,12 +11646,12 @@ extension instruction.  Also sets the preprocessor symbol
 @opindex mtelephony
 Passed down to the assembler to enable dual and single operand
 instructions for telephony.  Also sets the preprocessor symbol
-@code{__Xtelephony}.
+@code{__Xtelephony}.  This option is deprecated.
 
 @item -mxy
 @opindex mxy
 Passed down to the assembler to enable the XY Memory extension.  Also
-sets the preprocessor symbol @code{__Xxy}.
+sets the preprocessor symbol @code{__Xxy}.  This option is deprecated.
 
 @end table
 
