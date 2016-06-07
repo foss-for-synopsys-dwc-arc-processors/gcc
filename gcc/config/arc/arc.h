@@ -555,10 +555,10 @@ enum reg_class
   "MPY_WRITABLE_CORE_REGS",   \
   "WRITABLE_CORE_REGS",   \
   "CHEAP_CORE_REGS",	  \
+  "ALL_CORE_REGS",	  \
   "R0R3_CD_REGS", \
   "R0R1_CD_REGS", \
   "AC16_H_REGS",	    \
-  "ALL_CORE_REGS",	  \
   "ALL_REGS"          	  \
 }
 

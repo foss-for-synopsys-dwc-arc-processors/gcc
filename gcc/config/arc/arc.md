@@ -2970,10 +2970,10 @@
    (set (match_dup 3) (match_dup 4))])
 
 (define_insn "*add_n"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,Rcw,W,W,w,w")
-	(plus:SI (mult:SI (match_operand:SI 1 "register_operand" "Rcqq,c,c,c,c,c")
-			  (match_operand:SI 2 "_2_4_8_operand" ""))
-		 (match_operand:SI 3 "nonmemory_operand" "0,0,c,?Cal,?c,??Cal")))]
+  [(set (match_operand:SI 0 "dest_reg_operand"                  "=Rcqq,Rcw,W,  W,w,w")
+	(plus:SI (mult:SI (match_operand:SI 1 "register_operand" "Rcqq,  c,c,  c,c,c")
+			  (match_operand:SI 2 "_2_4_8_operand"   ""))
+		 (match_operand:SI 3 "nonmemory_operand"            "0,  0,c,Cal,c,Cal")))]
   ""
   "add%z2%? %0,%3,%1%&"
   [(set_attr "type" "shift")
@@ -2985,8 +2985,8 @@
 ;; N.B. sub[123] has the operands of the MINUS in the opposite order from
 ;; what synth_mult likes.
 (define_insn "*sub_n"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcw,w,w")
-	(minus:SI (match_operand:SI 1 "nonmemory_operand" "0,c,?Cal")
+  [(set (match_operand:SI 0 "dest_reg_operand"                 "=Rcw,w,w")
+	(minus:SI (match_operand:SI 1 "nonmemory_operand"         "0,c,?Cal")
 		  (mult:SI (match_operand:SI 2 "register_operand" "c,c,c")
 			   (match_operand:SI 3 "_2_4_8_operand" ""))))]
   ""
@@ -3643,8 +3643,8 @@
 (define_insn "*movsi_ne"
   [(cond_exec
      (ne (match_operand:CC_Z 2 "cc_use_register"    "Rcc,  Rcc,  Rcc,Rcc,Rcc") (const_int 0))
-     (set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,Rcq#q,Rcq#q,  w,w")
-	  (match_operand:SI 1 "nonmemory_operand"   "C_0,    h, ?Cal, Lc,?Cal")))]
+     (set (match_operand:SI 0 "dest_reg_operand" "=Rcq#q,Rcq#q,Rcq#q,   w,w")
+	  (match_operand:SI 1 "nonmemory_operand"   "C_0,    h, ?Cal,LRac,?Cal")))]
   ""
   "@
 	* current_insn_predicate = 0; return \"sub%?.ne %0,%0,%0%&\";
