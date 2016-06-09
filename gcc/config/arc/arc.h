@@ -1405,8 +1405,11 @@ extern int arc_return_address_regs[4];
 
 /* Frame info.  */
 
-#define EH_RETURN_DATA_REGNO(N)	\
-  ((N) < 4 ? (N) : INVALID_REGNUM)
+#define EH_RETURN_DATA_REGNO(N)  ((N) < 2 ? (N) : INVALID_REGNUM)
+
+#define EH_RETURN_STACKADJ_RTX   gen_rtx_REG (Pmode, 2)
+
+#define EH_RETURN_HANDLER_RTX    arc_eh_return_address_location ()
 
 /* Turn off splitting of long stabs.  */
 #define DBX_CONTIN_LENGTH 0
