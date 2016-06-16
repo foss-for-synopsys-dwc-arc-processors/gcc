@@ -1,3 +1,7 @@
+2016-06-16  Claudiu Zissulescu  <claziss@synopsys.com>
+
+	* config/arc/arc.opt (mtp-regno): Update text.
+
 2016-05-02  Claudiu Zissulescu  <claziss@synopsys.com>
 
 	* config/arc/arc.md (mulsidi3): Change operand 0 predicate to
