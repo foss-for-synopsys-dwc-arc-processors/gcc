@@ -1,6 +1,7 @@
 // { dg-lto-do link }
 // { dg-lto-options "-O2 -rdynamic" } 
 // { dg-extra-ld-options "-r -nostdlib" }
+// { dg-skip-if "" { "arc-*-elf*" } { "*" } { "" } }
 #pragma GCC visibility push(hidden)
 struct A { int &operator[] (long); };
 template <typename> struct B;
