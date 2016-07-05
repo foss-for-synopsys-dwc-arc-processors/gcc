@@ -153,7 +153,7 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 #else
 #define STARTFILE_SPEC   " \
   %{!shared:%{pie:Scrt1.o%s;!mkernel:crt1.o%s}} crti.o%s \
-  %{!shared:%{}} %{shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+  %{!shared:%{pg|p|profile:crtg.o%s}} %{shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
