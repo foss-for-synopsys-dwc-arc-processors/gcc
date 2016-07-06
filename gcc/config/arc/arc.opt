@@ -95,8 +95,8 @@ marcem
 Target Undocumented Warn(%qs is deprecated, use -mcpu=arcem)
 Same as -mcpu=arcem
 
-marchs Undocumented Warn(%qs is deprecated, use -mcpu=archs)
-Target
+marchs
+Target Undocumented Warn(%qs is deprecated, use -mcpu=archs)
 Same as -mcpu=archs
 
 ; END backward-compatibility aliases, translated by DRIVER_SELF_SPECS
