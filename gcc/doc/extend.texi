@@ -3642,6 +3642,16 @@ the call site.  A function marked with the @code{short_call}
 attribute will always be close enough to be called with a conditional
 branch-and-link instruction, which has a 21-bit offset from
 the call site.
+
+@item jli_always
+@cindex @code{jli_always} function attribute, ARC
+Forces the particular function to be called using jli instruction.
+
+@item jli_fixed
+@cindex @code{jli_fixed} function attribute, ARC
+Identical like the above one, but the location of the function in the
+JLI table is known and given as an attribute parameter.
+
 @end table
 
 @node ARM Function Attributes
