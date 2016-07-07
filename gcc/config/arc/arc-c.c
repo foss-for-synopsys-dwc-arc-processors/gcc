@@ -20,10 +20,13 @@ along with GCC; see the file COPYING3.  If not see
 #include "system.h"
 #include "coretypes.h"
 #include "tm.h"
+#include "cpplib.h"
 #include "tree.h"
 #include "tm_p.h"
 #include "cpplib.h"
 #include "c-family/c-common.h"
+#include "c-family/c-pragma.h"
+#include "c-family/c-format.h"
 #include "target.h"
 
 #define builtin_define(TXT) cpp_define (pfile, TXT)
