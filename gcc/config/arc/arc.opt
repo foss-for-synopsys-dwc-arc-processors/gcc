@@ -56,6 +56,10 @@ Same as -mA7.
 TargetVariable
 int arc_mpy_option = DEFAULT_arc_mpy_option
 
+mjli-always
+Target Report Mask(JLI_ALWAYS)
+Force all calls to be made via a jli instruction.
+
 mmpy-option=
 Target RejectNegative Joined
 -mmpy-option=MPY Compile ARCv2 code with a multiplier design option.
