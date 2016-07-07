@@ -129,3 +129,8 @@ extern bool arc_bdr_iscond (rtx);
 
 extern bool insn_is_tls_gd_dispatch (rtx);
 extern void arc_cpu_cpp_builtins (cpp_reader *);
+
+extern bool arc_is_call_to_jli_function (rtx);
+extern const char* arc_gen_call_to_jli_function (rtx);
+extern void arc_pr_jli_call_fixed (struct cpp_reader *);
+extern void arc_pr_init (void);

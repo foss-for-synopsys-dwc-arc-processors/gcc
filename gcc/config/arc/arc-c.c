@@ -106,3 +106,97 @@ arc_cpu_cpp_builtins (cpp_reader * pfile)
     builtin_define ("__big_endian__");
 
 }
+
+void
+arc_pr_jli_call_fixed (struct cpp_reader * pfile ATTRIBUTE_UNUSED)
+{
+  tree x;
+  enum cpp_ttype type;
+  char *symbol;
+  int index;
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_OPEN_PAREN)
+  {
+    error ("expected '(' in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_NAME)
+  {
+    error ("expected function name in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  symbol = strndup (IDENTIFIER_POINTER (x), 2048);
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_COMMA)
+  {
+    free (symbol);
+
+    error ("expected ',' in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_NUMBER || TREE_CODE (x) != INTEGER_CST)
+  {
+    free (symbol);
+
+    error ("expected integer JLI index in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  index = TREE_INT_CST_LOW (x);
+
+  if (0 > index || index > 1023)
+  {
+    free (symbol);
+
+    error ("out of range JLI index in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_CLOSE_PAREN)
+  {
+    free (symbol);
+
+    error ("expected ')' in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  if (jli_table[index] != NULL)
+  {
+    free (jli_table[index]);
+
+    warning (OPT_Wpragmas, "function '%s' is already in the JLI table so the "
+      "index will be replaced with %d", symbol, index);
+  }
+
+  jli_table[index] = symbol;
+}
+
+void
+arc_pr_init (void)
+{
+  int i;
+
+  for(i = 0; i < 1024; ++i)
+  {
+    jli_table[i] = NULL;
+  }
+}

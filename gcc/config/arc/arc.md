@@ -3978,6 +3978,31 @@
    (set_attr "iscompact" "true")
    (set_attr "cond" "nocond")])
 
+(define_insn "jli_s"
+  [(match_operand:SI 0 "immediate_operand" "L")]
+  ""
+  "jli_s %0"
+  [(set_attr "type" "call")
+  (set_attr "iscompact" "true")
+  (set_attr "predicable" "yes")
+  (set_attr "length" "2")])
+
+(define_insn "*call_value_i_jli"
+  [
+    (set
+      (match_operand 0 "dest_reg_operand" "=w")
+      (call (mem:SI (match_operand:SI 1 "call_jli_operand" "Cbr"))
+        (match_operand 2 "" ""))
+    )
+    (clobber (reg:SI 31))
+  ]
+  ""
+  "*return arc_gen_call_to_jli_function (operands[1]);"
+  [(set_attr "type" "call")
+   (set_attr "iscompact" "*")
+   (set_attr "predicable" "no")
+   (set_attr "length" "2")])
+
 (define_expand "call"
   ;; operands[1] is stack_size_rtx
   ;; operands[2] is next_arg_register

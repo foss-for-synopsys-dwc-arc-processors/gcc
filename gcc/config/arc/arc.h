@@ -1703,4 +1703,13 @@ enum
 			  && (arc_fpu_build == FPX_QK))
 #define TARGET_FP_ASSIST ((arc_fpu_build & FPX_DP) != 0)
 
+/* Handle pragmas for JLI calls. */
+#define REGISTER_TARGET_PRAGMAS() do {                                  \
+  c_register_pragma (0, "jli_call_fixed", arc_pr_jli_call_fixed);       \
+  arc_pr_init();                                                        \
+} while (0)
+
+/* List of symbols in the JLI table. */
+extern char *jli_table[1024];
+
 #endif /* GCC_ARC_H */

@@ -12567,4 +12567,64 @@ insn_is_tls_gd_dispatch (rtx insn)
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
+char *jli_table[1024];
+
+bool
+arc_is_call_to_jli_function (rtx sym_ref)
+{
+  const char *symbol, *jli_symbol;
+  int i;
+
+  if (GET_CODE(sym_ref) == SYMBOL_REF)
+  {
+    symbol = XSTR(sym_ref, 0);
+
+    for(i = 0; i < 1024; ++i)
+    {
+      jli_symbol = jli_table[i];
+
+      if(NULL != jli_symbol && 0 == strcmp(symbol, jli_symbol))
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+const char*
+arc_gen_call_to_jli_function (rtx sym_ref)
+{
+  static char jli_inst[strlen("jli_s 1234")];
+
+  const char *symbol, *jli_symbol;
+  int i;
+
+  if (GET_CODE(sym_ref) == SYMBOL_REF)
+  {
+    symbol = XSTR(sym_ref, 0);
+
+    for(i = 0; i < 1024; ++i)
+    {
+      jli_symbol = jli_table[i];
+
+      if(NULL != jli_symbol && 0 == strcmp(symbol, jli_symbol))
+      {
+        sprintf (jli_inst, "jli_s %d", i);
+
+        return jli_inst;
+      }
+    }
+
+    error ("failed to determine index for JLI function '%s'", symbol);
+  }
+  else
+  {
+    error ("failed to determine JLI function name");
+  }
+
+  return "jli_s 0";
+}
+
 #include "gt-arc.h"
