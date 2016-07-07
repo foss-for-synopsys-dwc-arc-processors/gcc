@@ -68,6 +68,14 @@ along with GCC; see the file COPYING3.  If not see
 static char arc_cpu_name[10] = "";
 static const char *arc_cpu_string = arc_cpu_name;
 
+typedef struct GTY (()) _arc_jli_section
+{
+  char *name;
+  struct _arc_jli_section *next;
+} arc_jli_section;
+
+static arc_jli_section *arc_jli_sections = NULL;
+
 /* ??? Loads can handle any constant, stores can only handle small ones.  */
 /* OTOH, LIMMs cost extra, so their usefulness is limited.  */
 #define RTX_OK_FOR_OFFSET_P(MODE, X) \
@@ -211,6 +219,8 @@ static int get_arc_condition_code (rtx);
 
 static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
 static tree arc_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
+static tree arc_handle_jli_attribute (tree *, tree, tree, int, bool *);
+
 
 /* Initialized arc_attribute_table to NULL since arc doesnot have any
    machine specific supported attributes.  */
@@ -232,10 +242,18 @@ const struct attribute_spec arc_attribute_table[] =
   /* Function which are not having the prologue and epilogue generated
      by the compiler.  */
   { "naked", 0, 0, true, false, false, arc_handle_fndecl_attribute, false },
+  /* Functions calls made using jli instruction.  The pointer in JLI
+     table is found latter.  */
+  { "jli_always",    0, 0, false, true,  true,  NULL, false },
+  /* Functions calls made using jli instruction.  The pointer in JLI
+     table is given as input parameter.  */
+  { "jli_fixed",    1, 1, false, true,  true,  arc_handle_jli_attribute,
+    false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
 static int arc_comp_type_attributes (const_tree, const_tree);
 static void arc_file_start (void);
+static void arc_file_end (void);
 static void arc_internal_label (FILE *, const char *, unsigned long);
 static void arc_output_mi_thunk (FILE *, tree, HOST_WIDE_INT, HOST_WIDE_INT,
 				 tree);
@@ -380,6 +398,8 @@ static void arc_finalize_pic (void);
 #define TARGET_COMP_TYPE_ATTRIBUTES arc_comp_type_attributes
 #undef TARGET_ASM_FILE_START
 #define TARGET_ASM_FILE_START arc_file_start
+#undef TARGET_ASM_FILE_END
+#define TARGET_ASM_FILE_END arc_file_end
 #undef TARGET_ATTRIBUTE_TABLE
 #define TARGET_ATTRIBUTE_TABLE arc_attribute_table
 #undef TARGET_ASM_INTERNAL_LABEL
@@ -3635,7 +3655,7 @@ static int output_scaled = 0;
     'd'
     'D'
     'R': Second word
-    'S'
+    'S': JLI instruction
     'B': Branch comparison operand - suppress sda reference
     'H': Most significant word
     'L': Least significant word
@@ -3843,8 +3863,27 @@ arc_print_operand (FILE *file, rtx x, int code)
 	output_operand_lossage ("invalid operand to %%R code");
       return;
     case 'S' :
-	/* FIXME: remove %S option.  */
-	break;
+      if (GET_CODE (x) == SYMBOL_REF
+	  && arc_is_jli_call_p (x))
+	{
+	  if (SYMBOL_REF_DECL (x))
+	    {
+	      tree attrs = (TREE_TYPE (SYMBOL_REF_DECL (x)) != error_mark_node
+			    ? TYPE_ATTRIBUTES (TREE_TYPE (SYMBOL_REF_DECL (x)))
+			    : NULL_TREE);
+	      if (lookup_attribute ("jli_fixed", attrs))
+		{
+		  fprintf (file, "%ld\t; @",
+			   TREE_INT_CST_LOW (TREE_VALUE (TREE_VALUE (attrs))));
+		  assemble_name (file, XSTR (x, 0));
+		  return;
+		}
+	    }
+	  fprintf (file, "@__jli.");
+	  assemble_name (file, XSTR (x, 0));
+	  return;
+	}
+      break;
     case 'B' /* Branch or other LIMM ref - must not use sda references.  */ :
       if (CONSTANT_P (x))
 	{
@@ -4935,6 +4974,26 @@ static void arc_file_start (void)
 {
   default_file_start ();
   fprintf (asm_out_file, "\t.cpu %s\n", arc_cpu_string);
+}
+
+static void arc_file_end (void)
+{
+  arc_jli_section *sec = arc_jli_sections;
+
+  while (sec != NULL)
+  {
+    fprintf (asm_out_file, "\n");
+    fprintf (asm_out_file, "# JLI entry for function '%s'\n", sec->name);
+    fprintf (asm_out_file, "\t.section .jlitab, \"axG\", @progbits, "
+      ".jlitab.%s, comdat\n", sec->name);
+
+    fprintf (asm_out_file, "\t.align\t4\n");
+    fprintf (asm_out_file, "__jli.%s:\n", sec->name);
+    fprintf (asm_out_file, "\t.weak __jli.%s\n", sec->name);
+    fprintf (asm_out_file, "\tb\t@%s\n", sec->name);
+
+    sec = sec->next;
+  }
 }
 
 /* Cost functions.  */
@@ -7042,6 +7101,73 @@ workaround_arc_anomaly (void)
     }
 }
 
+/* Add the given function declaration to emit code in JLI section.  */
+
+static void
+arc_add_jli_section (rtx pat)
+{
+  const char *name;
+  tree attrs;
+  arc_jli_section *sec = arc_jli_sections, *new_section;
+  tree decl = SYMBOL_REF_DECL (pat);
+
+  if (!pat)
+    return;
+
+  if (decl)
+    {
+      /* For fixed locations do not generate the jli table entry.  It
+	 should be provided by the user as an asm file.  */
+      attrs = TYPE_ATTRIBUTES (TREE_TYPE (decl));
+      if (lookup_attribute ("jli_fixed", attrs))
+	return;
+    }
+
+  name = XSTR (pat, 0);
+
+  /* Don't insert the same symbol twice.  */
+  while (sec != NULL)
+    {
+      if(strcmp (name, sec->name) == 0)
+	return;
+      sec = sec->next;
+    }
+
+  /* New name, insert it.  */
+  new_section = (arc_jli_section *) xmalloc (sizeof (arc_jli_section));
+  gcc_assert (new_section != NULL);
+  new_section->name = strndup (name, 2048);
+  new_section->next = arc_jli_sections;
+  arc_jli_sections = new_section;
+}
+
+/* Scan all calls and add symbols to be emitted in the jli section if
+   needed.  */
+
+static void
+jli_call_scan (void)
+{
+  rtx_insn *insn;
+
+  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
+    {
+      if (!CALL_P (insn))
+	continue;
+
+      rtx pat = PATTERN (insn);
+      if (GET_CODE (pat) == COND_EXEC)
+	pat = COND_EXEC_CODE (pat);
+      pat =  XVECEXP (pat, 0, 0);
+      if (GET_CODE (pat) == SET)
+	pat = SET_SRC (pat);
+
+      pat = XEXP (XEXP (pat, 0), 0);
+      if (GET_CODE (pat) == SYMBOL_REF
+	  && arc_is_jli_call_p (pat))
+	arc_add_jli_section (pat);
+    }
+}
+
 static int arc_reorg_in_progress = 0;
 
 /* ARC's machince specific reorg function.  */
@@ -7056,6 +7182,7 @@ arc_reorg (void)
   int changed;
 
   workaround_arc_anomaly ();
+  jli_call_scan ();
 
   cfun->machine->arc_reorg_started = 1;
   arc_reorg_in_progress = 1;
@@ -7929,11 +8056,11 @@ arc_output_addsi (rtx *operands, bool cond_p, bool output_p)
   /* Try to emit a 16 bit opcode with long immediate.  */
   ret = 6;
   if (short_p && match)
-    ADDSI_OUTPUT1 ("add%? %0,%1,%S2");
+    ADDSI_OUTPUT1 ("add%? %0,%1,%2");
 
   /* We have to use a 32 bit opcode, and with a long immediate.  */
   ret = 8;
-  ADDSI_OUTPUT1 (intval < 0 ? "sub%? %0,%1,%n2" : "add%? %0,%1,%S2");
+  ADDSI_OUTPUT1 (intval < 0 ? "sub%? %0,%1,%n2" : "add%? %0,%1,%2");
 }
 
 /* Emit code for an commutative_cond_exec instruction with OPERANDS.
@@ -10610,6 +10737,68 @@ arc_builtin_setjmp_frame_value (void)
      had not been removed).  We really do want the raw frame pointer
      register value.  */
   return gen_raw_REG (Pmode, FRAME_POINTER_REGNUM);
+}
+
+/* Return nonzero if a jli call should be generated for a call from
+   the current function to DECL.  */
+
+bool
+arc_is_jli_call_p (rtx pat)
+{
+  tree attrs;
+  tree decl = SYMBOL_REF_DECL (pat);
+
+  /* If it is not a well defined public function then return false.  */
+  if (!decl || !SYMBOL_REF_FUNCTION_P (pat) || !TREE_PUBLIC (decl))
+    return false;
+
+  attrs = TYPE_ATTRIBUTES (TREE_TYPE (decl));
+  if (lookup_attribute ("jli_always", attrs))
+    return true;
+
+  if (lookup_attribute ("jli_fixed", attrs))
+    return true;
+
+  return TARGET_JLI_ALWAYS;
+}
+
+/* Handle and "jli" attribute; arguments as in struct
+   attribute_spec.handler.  */
+
+static tree
+arc_handle_jli_attribute (tree *node ATTRIBUTE_UNUSED,
+			  tree name, tree args, int,
+			  bool *no_add_attrs)
+{
+  if (!TARGET_V2)
+    {
+      warning (OPT_Wattributes,
+	       "%qE attribute only valid for ARCv2 architecture",
+	       name);
+      *no_add_attrs = true;
+    }
+
+  if (args == NULL_TREE)
+    {
+      warning (OPT_Wattributes,
+	       "argument of %qE attribute is missing",
+	       name);
+      *no_add_attrs = true;
+    }
+  else
+    {
+      if (TREE_CODE (TREE_VALUE (args)) == NON_LVALUE_EXPR)
+	TREE_VALUE (args) = TREE_OPERAND (TREE_VALUE (args), 0);
+      tree arg = TREE_VALUE (args);
+      if (TREE_CODE (arg) != INTEGER_CST)
+	{
+	  warning (0, "%qE attribute allows only an integer constant argument",
+		   name);
+	  *no_add_attrs = true;
+	}
+      /* FIXME! add range check.  TREE_INT_CST_LOW (arg) */
+    }
+   return NULL_TREE;
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
