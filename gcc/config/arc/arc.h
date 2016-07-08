@@ -1705,11 +1705,24 @@ enum
 
 /* Handle pragmas for JLI calls. */
 #define REGISTER_TARGET_PRAGMAS() do {                                  \
-  c_register_pragma (0, "jli_call_fixed", arc_pr_jli_call_fixed);       \
+  c_register_pragma (0, "jli_call_fixed",  arc_pr_jli_call_fixed);      \
+  c_register_pragma (0, "jli_call_always", arc_pr_jli_call_always);     \
   arc_pr_init();                                                        \
 } while (0)
 
-/* List of symbols in the JLI table. */
-extern char *jli_table[1024];
+/** Maximum number of JLI entries. */
+#define ARC_JLI_ENTRIES_MAX (1024)
+
+/** Number of JLI entries in the fixed table. */
+extern int jli_fixed_count;
+
+/* List of fixed symbols in the JLI table. */
+extern char *jli_fixed_table[ARC_JLI_ENTRIES_MAX];
+
+/** Number of JLI entries in the dynamic table. */
+extern int jli_dynamic_count;
+
+/* List of fixed symbols in the JLI table. */
+extern char *jli_dynamic_table[ARC_JLI_ENTRIES_MAX];
 
 #endif /* GCC_ARC_H */

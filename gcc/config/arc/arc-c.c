@@ -162,7 +162,7 @@ arc_pr_jli_call_fixed (struct cpp_reader * pfile ATTRIBUTE_UNUSED)
 
   index = TREE_INT_CST_LOW (x);
 
-  if (0 > index || index > 1023)
+  if (0 > index || index >= ARC_JLI_ENTRIES_MAX)
   {
     free (symbol);
 
@@ -182,15 +182,88 @@ arc_pr_jli_call_fixed (struct cpp_reader * pfile ATTRIBUTE_UNUSED)
     return;
   }
 
-  if (jli_table[index] != NULL)
+  if (jli_fixed_table[index] != NULL)
   {
-    free (jli_table[index]);
+    free (jli_fixed_table[index]);
 
     warning (OPT_Wpragmas, "function '%s' is already in the JLI table so the "
       "index will be replaced with %d", symbol, index);
   }
+  else if ((jli_fixed_count + jli_dynamic_count) >= ARC_JLI_ENTRIES_MAX)
+  {
+    free (symbol);
 
-  jli_table[index] = symbol;
+    error ("there are too many JLI entries");
+
+    return;
+  }
+  else
+  {
+    jli_dynamic_count++;
+  }
+
+  jli_fixed_table[index] = symbol;
+}
+
+void
+arc_pr_jli_call_always (struct cpp_reader * pfile ATTRIBUTE_UNUSED)
+{
+  tree x;
+  enum cpp_ttype type;
+  char *symbol;
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_OPEN_PAREN)
+  {
+    error ("expected '(' in #pragma jli_call_always");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_NAME)
+  {
+    error ("expected function name in #pragma jli_call_always");
+
+    return;
+  }
+
+  symbol = strndup (IDENTIFIER_POINTER (x), 2048);
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_CLOSE_PAREN)
+  {
+    free (symbol);
+
+    error ("expected ')' in #pragma jli_call_always");
+
+    return;
+  }
+
+  if (arc_jli_fixed_symbol_index (symbol) >= 0 ||
+    arc_jli_dynamic_symbol_index (symbol) >= 0)
+  {
+    free (symbol);
+
+    warning (OPT_Wpragmas, "'%s' has already been registered as a JLI "
+      "function; ignoring", symbol);
+
+    return;
+  }
+
+  if ((jli_fixed_count + jli_dynamic_count) >= ARC_JLI_ENTRIES_MAX)
+  {
+    free (symbol);
+
+    error ("there are too many JLI entries");
+
+    return;
+  }
+
+  jli_dynamic_table[jli_dynamic_count++] = symbol;
 }
 
 void
@@ -198,8 +271,12 @@ arc_pr_init (void)
 {
   int i;
 
-  for(i = 0; i < 1024; ++i)
+  jli_fixed_count = 0;
+  jli_dynamic_count = 0;
+
+  for (i = 0; i < ARC_JLI_ENTRIES_MAX; ++i)
   {
-    jli_table[i] = NULL;
+    jli_fixed_table[i] = NULL;
+    jli_dynamic_table[i] = NULL;
   }
 }
