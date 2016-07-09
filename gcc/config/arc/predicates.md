@@ -72,13 +72,18 @@
 		    && arc_legitimate_constant_p (VOIDmode, op)"))
 )
 
-(define_predicate "call_jli_operand"
+(define_predicate "call_jli_address_operand"
   (match_operand 0 "symbolic_jli_operand")
 )
 
 (define_predicate "call_operand"
   (and (match_code "mem")
        (match_test "call_address_operand (XEXP (op, 0), mode)"))
+)
+
+(define_predicate "call_jli_operand"
+  (and (match_code "mem")
+       (match_test "call_jli_address_operand (XEXP (op, 0), mode)"))
 )
 
 ;; Return true if OP is a unsigned 6-bit immediate (u6) value.

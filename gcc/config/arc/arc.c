@@ -12696,8 +12696,20 @@ arc_add_jli_section (const char *symbol)
 {
   arc_jli_section *sec = arc_jli_sections, *new_section;
 
+  // Don't insert the same symbol twice.
+  if(sec != NULL && strcmp(symbol, sec->name) == 0)
+  {
+    return;
+  }
+
   while (sec != NULL && sec->next != NULL)
   {
+    // Don't insert the same symbol twice.
+    if(strcmp(symbol, sec->name) == 0)
+    {
+      return;
+    }
+
     sec = sec->next;
   }
 

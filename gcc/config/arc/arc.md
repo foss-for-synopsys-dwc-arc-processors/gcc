@@ -3987,11 +3987,25 @@
   (set_attr "predicable" "yes")
   (set_attr "length" "2")])
 
-(define_insn "*call_value_i_jli"
+(define_insn "*call_jli"
+  [
+    (parallel [
+      (call (match_operand:SI 0 "call_jli_operand" "") (match_operand 1 "" ""))
+      (clobber (reg:SI 31))
+    ])
+  ]
+  ""
+  "*return arc_gen_call_to_jli_function (XEXP (operands[0], 0));"
+  [(set_attr "type" "call")
+   (set_attr "iscompact" "*")
+   (set_attr "predicable" "no")
+   (set_attr "length" "2")])
+
+(define_insn "*call_value_jli"
   [
     (set
       (match_operand 0 "dest_reg_operand" "=w")
-      (call (mem:SI (match_operand:SI 1 "call_jli_operand" "Cbr"))
+      (call (mem:SI (match_operand:SI 1 "call_jli_address_operand" ""))
         (match_operand 2 "" ""))
     )
     (clobber (reg:SI 31))
