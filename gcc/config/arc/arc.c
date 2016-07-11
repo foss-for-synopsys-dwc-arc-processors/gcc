@@ -77,6 +77,14 @@ typedef struct _arc_jli_section
 
 static arc_jli_section *arc_jli_sections = NULL;
 
+typedef struct _arc_jli_func_addr_stub
+{
+  char *name;
+  struct _arc_jli_func_addr_stub *next;
+} arc_jli_func_addr_stub;
+
+static arc_jli_func_addr_stub *arc_jli_func_addr_stubs = NULL;
+
 /* The macros REG_OK_FOR..._P assume that the arg is a REG rtx
    and check its validity for a certain class.
    We have two alternate definitions for each of them.
@@ -5105,6 +5113,7 @@ static void arc_file_end (void)
 {
   bool first = true;
   arc_jli_section *sec = arc_jli_sections;
+  arc_jli_func_addr_stub *stub = arc_jli_func_addr_stubs;
 
   while (sec != NULL)
   {
@@ -5128,6 +5137,25 @@ static void arc_file_end (void)
     fprintf (asm_out_file, "\tb %s\n", sec->name);
 
     sec = sec->next;
+  }
+
+  while (stub != NULL)
+  {
+    fprintf (asm_out_file, "\n");
+    fprintf (asm_out_file, "#####################\n");
+    fprintf (asm_out_file, "# JLI function address stub for function '%s'\n",
+      stub->name);
+    fprintf (asm_out_file, "#####################\n");
+    fprintf (asm_out_file, "\t.section .text$jlifuncaddr$%s, "
+      "\"ax\", @progbits\n", stub->name);
+    //fprintf (asm_out_file, ".linkonce same_contents\n");
+    fprintf (asm_out_file, "\t.align 4\n");
+    fprintf (asm_out_file, "__jlifuncaddr.%s:\n", stub->name);
+    fprintf (asm_out_file, "\tlr r8, [jli_base]\n");
+    fprintf (asm_out_file, "\tadd_jlioff r8, %s\n", stub->name);
+    fprintf (asm_out_file, "\tj [r8]\n", stub->name);
+
+    stub = stub->next;
   }
 }
 
@@ -12664,9 +12692,9 @@ arc_is_call_to_jli_function (rtx sym_ref)
   const char *symbol, *jli_fixed_symbol, *jli_dynamic_symbol;
   int i;
 
-  if (GET_CODE(sym_ref) == SYMBOL_REF)
+  if (GET_CODE (sym_ref) == SYMBOL_REF)
   {
-    symbol = XSTR(sym_ref, 0);
+    symbol = XSTR (sym_ref, 0);
 
     for (i = 0; i < ARC_JLI_ENTRIES_MAX; ++i)
     {
@@ -12691,13 +12719,53 @@ arc_is_call_to_jli_function (rtx sym_ref)
   return false;
 }
 
+void
+arc_add_jli_func_addr_stub (const char *symbol)
+{
+  arc_jli_func_addr_stub *stub = arc_jli_func_addr_stubs, *new_stub;
+
+  // Don't insert the same symbol twice.
+  if(stub != NULL && strcmp (symbol, stub->name) == 0)
+  {
+    return;
+  }
+
+  while (stub != NULL && stub->next != NULL)
+  {
+    // Don't insert the same symbol twice.
+    if(strcmp (symbol, stub->name) == 0)
+    {
+      return;
+    }
+
+    stub = stub->next;
+  }
+
+  new_stub = (arc_jli_func_addr_stub *) xmalloc (
+    sizeof (arc_jli_func_addr_stub));
+  new_stub->name = strndup (symbol, 2048);
+  new_stub->next = NULL;
+
+  if (new_stub != NULL)
+  {
+    if (stub != NULL)
+    {
+      stub->next = new_stub;
+    }
+    else
+    {
+      arc_jli_func_addr_stubs = new_stub;
+    }
+  }
+}
+
 static void
 arc_add_jli_section (const char *symbol)
 {
   arc_jli_section *sec = arc_jli_sections, *new_section;
 
   // Don't insert the same symbol twice.
-  if(sec != NULL && strcmp(symbol, sec->name) == 0)
+  if(sec != NULL && strcmp (symbol, sec->name) == 0)
   {
     return;
   }
@@ -12705,7 +12773,7 @@ arc_add_jli_section (const char *symbol)
   while (sec != NULL && sec->next != NULL)
   {
     // Don't insert the same symbol twice.
-    if(strcmp(symbol, sec->name) == 0)
+    if(strcmp (symbol, sec->name) == 0)
     {
       return;
     }

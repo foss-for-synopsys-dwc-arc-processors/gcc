@@ -82,3 +82,10 @@ enum arc_abi_type
     ARC_ABI_MWABI
   };
 
+enum arc_jli_func_addr_type
+  {
+    ARC_FUNC_ADDR_COMPAT,
+    ARC_FUNC_ADDR_INIT,
+    ARC_FUNC_ADDR_ALWAYS
+  };
+

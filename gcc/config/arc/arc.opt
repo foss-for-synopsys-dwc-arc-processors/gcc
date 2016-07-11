@@ -102,6 +102,25 @@ Same as -mcpu=archs
 ; END backward-compatibility aliases, translated by DRIVER_SELF_SPECS
 
 TargetVariable
+unsigned int arc_jli_func_addr = 0
+
+mjli-func-addr=
+Target RejectNegative Joined Var(arc_jli_func_addr) Enum(arc_jli_func_addr_type) Init(ARC_FUNC_ADDR_COMPAT)
+Specify the way the address of a function in the JLI table is obtained. Option 'compat' will use the Metaware method (jli_call_always will use the address of the function and jli_call_dynamic will use the address of the JLI entry). Option 'init' will use the address of the JLI entry using the jli_base register when the function pointer is saved. Option 'always' will use a stub function to call the JLI entry relative to the jli_base register upon calling the function pointed to.
+
+Enum
+Name(arc_jli_func_addr_type) Type(enum arc_jli_func_addr_type)
+
+EnumValue
+Enum(arc_jli_func_addr_type) String(compat) Value(ARC_FUNC_ADDR_COMPAT)
+
+EnumValue
+Enum(arc_jli_func_addr_type) String(init) Value(ARC_FUNC_ADDR_INIT)
+
+EnumValue
+Enum(arc_jli_func_addr_type) String(always) Value(ARC_FUNC_ADDR_ALWAYS)
+
+TargetVariable
 unsigned int arc_mpy_option = 0
 
 mmpy-option=

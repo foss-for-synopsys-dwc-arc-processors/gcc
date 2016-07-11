@@ -134,6 +134,7 @@ extern bool arc_is_call_to_jli_function (rtx);
 extern const char* arc_gen_call_to_jli_function (rtx);
 extern int arc_jli_fixed_symbol_index (const char *symbol);
 extern int arc_jli_dynamic_symbol_index (const char *symbol);
+extern void arc_add_jli_func_addr_stub (const char *symbol);
 extern void arc_pr_jli_call_fixed (struct cpp_reader *);
 extern void arc_pr_jli_call_always (struct cpp_reader *);
 extern void arc_pr_init (void);
