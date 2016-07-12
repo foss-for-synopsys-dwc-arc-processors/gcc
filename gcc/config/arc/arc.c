@@ -5121,7 +5121,7 @@ static void arc_file_end (void)
     fprintf (asm_out_file, "#####################\n");
     fprintf (asm_out_file, "# JLI entry for function '%s'\n", sec->name);
     fprintf (asm_out_file, "#####################\n");
-    fprintf (asm_out_file, "\t.section .jlitab$%s, \"ax\", @progbits\n",
+    fprintf (asm_out_file, "\t.section .jlitab$%s, \"ax\", @comdat\n",
       sec->name);
 
     if(first)
@@ -5134,6 +5134,7 @@ static void arc_file_end (void)
     fprintf (asm_out_file, "\t.align 4\n");
     fprintf (asm_out_file, "__jli.%s:\n", sec->name);
     fprintf (asm_out_file, "\t.weak __jli.%s\n", sec->name);
+    fprintf (asm_out_file, "\t.weak %s\n", sec->name);
     fprintf (asm_out_file, "\tb %s\n", sec->name);
 
     sec = sec->next;
@@ -5147,8 +5148,7 @@ static void arc_file_end (void)
       stub->name);
     fprintf (asm_out_file, "#####################\n");
     fprintf (asm_out_file, "\t.section .text$jlifuncaddr$%s, "
-      "\"ax\", @progbits\n", stub->name);
-    //fprintf (asm_out_file, ".linkonce same_contents\n");
+      "\"ax\", @comdat\n", stub->name);
     fprintf (asm_out_file, "\t.align 4\n");
     fprintf (asm_out_file, "__jlifuncaddr.%s:\n", stub->name);
     fprintf (asm_out_file, "\tlr r8, [jli_base]\n");
