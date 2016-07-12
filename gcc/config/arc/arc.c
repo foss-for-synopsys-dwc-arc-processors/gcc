@@ -3387,7 +3387,7 @@ arc_expand_epilogue (int sibcall_p)
    handler.  */
 
 rtx
-arc_eh_return_address_location ()
+arc_eh_return_address_location (void)
 {
   rtx mem;
   int offset;
@@ -3397,7 +3397,12 @@ arc_eh_return_address_location ()
   afi = &cfun->machine->frame_info;
 
   gcc_assert (crtl->calls_eh_return);
-  gcc_assert (afi->save_return_addr);
+
+  if (!afi->save_return_addr)
+    {
+      return gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
+    }
+
   gcc_assert (afi->extra_size >= 4);
 
   /* The '-4' removes the size of the return address, which is included in
