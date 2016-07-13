@@ -2573,7 +2573,7 @@ static bool arc_must_save_register (struct function *func, int regno)
 	  || (flag_pic && crtl->uses_pic_offset_table
 	      && regno == PIC_OFFSET_TABLE_REGNUM)
 	  || (crtl->calls_eh_return
-	      && (regno > 3 && regno < 27)));
+	      && (regno > 2 && regno < 27)));
 }
 
 /* Return true if the return address must be saved in the current function,
@@ -2584,8 +2584,7 @@ arc_must_save_return_addr ()
 {
   /* The first are the conditions under which the return address register
      needs to be saved to the stack.  */
-  return ((cfun->machine->frame_info.save_return_addr
-           || crtl->calls_eh_return));
+  return (cfun->machine->frame_info.save_return_addr);
 }
 
 /* Helper function to wrap FRAME_POINTER_NEEDED.  We do this as
@@ -2691,7 +2690,8 @@ arc_compute_frame_size ()	/* size = # of var. bytes allocated.  */
 	  <return addr reg size> (if required) + <fp size> (if required)
   */
   frame_info->save_return_addr
-    = (!crtl->is_leaf || df_regs_ever_live_p (RETURN_ADDR_REGNUM));
+    = (!crtl->is_leaf || df_regs_ever_live_p (RETURN_ADDR_REGNUM)
+       || crtl->calls_eh_return);
   /* Saving blink reg in case of leaf function for millicode thunk calls.  */
   if (optimize_size
       && !TARGET_NO_MILLICODE_THUNK_SET
@@ -3397,12 +3397,7 @@ arc_eh_return_address_location (void)
   afi = &cfun->machine->frame_info;
 
   gcc_assert (crtl->calls_eh_return);
-
-  if (!afi->save_return_addr)
-    {
-      return gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
-    }
-
+  gcc_assert (afi->save_return_addr);
   gcc_assert (afi->extra_size >= 4);
 
   /* The '-4' removes the size of the return address, which is included in
