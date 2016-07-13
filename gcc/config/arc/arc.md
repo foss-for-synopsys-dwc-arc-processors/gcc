@@ -161,6 +161,7 @@
   VUNSPEC_ARC_CAS
   VUNSPEC_ARC_SC
   VUNSPEC_ARC_LL
+  VUNSPEC_ARC_MOVSI_JLI
   VUNSPEC_ARC_ADD2_JLIOFF
 ])
 
@@ -726,10 +727,10 @@
   (set_attr "length" "4")])
 
 (define_insn_and_split "movsi_jli"
-  [(set
+  [(unspec_volatile [
     (match_operand:SI 0 "move_dest_operand" "")
     (match_operand:SI 1 "symbolic_operand" "")
-   )
+   ] VUNSPEC_ARC_MOVSI_JLI)
    (clobber (match_scratch:SI 2 "=r"))
   ]
   ""
