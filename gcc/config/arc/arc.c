@@ -5150,10 +5150,11 @@ static void arc_file_end (void)
     fprintf (asm_out_file, "\t.section .text$jlifuncaddr$%s, "
       "\"ax\", @comdat\n", stub->name);
     fprintf (asm_out_file, "\t.align 4\n");
+    fprintf (asm_out_file, ".global __jlifuncaddr.%s\n", stub->name);
     fprintf (asm_out_file, "__jlifuncaddr.%s:\n", stub->name);
     fprintf (asm_out_file, "\tlr r8, [jli_base]\n");
-    fprintf (asm_out_file, "\tadd_jlioff r8, %s\n", stub->name);
-    fprintf (asm_out_file, "\tj [r8]\n", stub->name);
+    fprintf (asm_out_file, "\tadd2_jlioff r8, r8, @%s\n", stub->name);
+    fprintf (asm_out_file, "\tj [r8]\n");
 
     stub = stub->next;
   }
