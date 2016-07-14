@@ -161,6 +161,8 @@
   VUNSPEC_ARC_CAS
   VUNSPEC_ARC_SC
   VUNSPEC_ARC_LL
+  VUNSPEC_ARC_MOVSI_JLI
+  VUNSPEC_ARC_ADD2_JLIOFF
 ])
 
 (define_constants
@@ -207,6 +209,7 @@
    (ILINK1_REGNUM 29)
    (ILINK2_REGNUM 30)
    (RETURN_ADDR_REGNUM 31)
+   (JLI_BASE 656)
    (MUL64_OUT_REG 58)
    (ARCV2_ACC 58)
 
@@ -709,11 +712,126 @@
    (set_attr "predicable" "yes,no,yes,no,yes,no,yes,yes,yes,no,no,no,no,no,no,no")
    (set_attr "cpu_facility" "*,*,arcv1,em,*,*,*,*,*,*,*,*,*,*,em,*")])
 
+(define_insn "add2_jlioff"
+  [
+    (unspec_volatile [
+      (match_operand:SI 0 "move_dest_operand" "")
+      (match_operand:SI 1 "symbolic_operand" "")
+    ] VUNSPEC_ARC_ADD2_JLIOFF)
+  ]
+  ""
+  "add2_jlioff %0, %0, %1"
+  [(set_attr "type" "unary")
+  (set_attr "iscompact" "true")
+  (set_attr "predicable" "yes")
+  (set_attr "length" "4")])
+
+(define_insn_and_split "movsi_jli"
+  [(unspec_volatile [
+    (match_operand:SI 0 "move_dest_operand" "")
+    (match_operand:SI 1 "symbolic_operand" "")
+   ] VUNSPEC_ARC_MOVSI_JLI)
+   (clobber (match_scratch:SI 2 "=r"))
+  ]
+  ""
+  "lr %0, [JLI_BASE]
+   add2_jlioff %0, %1
+   mov %0, %1"
+  "reload_completed"
+  [
+    (set (match_dup 2) (unspec_volatile:SI [(const_int JLI_BASE)] VUNSPEC_ARC_LR))
+    (unspec_volatile:SI [(match_dup 2) (match_dup 1)] VUNSPEC_ARC_ADD2_JLIOFF)
+    (set (match_dup 0) (match_dup 2))
+  ]
+  "")
+
 (define_expand "movsi"
   [(set (match_operand:SI 0 "move_dest_operand" "")
 	(match_operand:SI 1 "general_operand" ""))]
   ""
-  "if (prepare_move_operands (operands, SImode)) DONE;")
+  "// Use this to determine if the default action should be taken.
+   bool is_done = false;
+
+   // Check if the function is a JLI function first.
+   if (arc_is_call_to_jli_function (operands[1]))
+   {
+     const char *jli_symbol = XSTR (operands[1], 0);
+
+     switch (arc_jli_func_addr)
+     {
+       // -mjli-func-addr=compat
+       case ARC_FUNC_ADDR_COMPAT:
+       {
+         // jli_call_always uses the address of the JLI entry and
+         // jli_call_fixed uses the address of the function itself.
+         if (0 <= arc_jli_dynamic_symbol_index (jli_symbol))
+         {
+           // I have no idea when you are allowed to free this string...
+           // I just know I can't do it inside this block of code.
+           char *symbol = (char*) xmalloc (strlen (\"__jli.\") +
+             strlen (jli_symbol) + 1);
+
+           sprintf(symbol, \"__jli.%s\", jli_symbol);
+
+           emit_insn (gen_movsi (
+             operands[0],
+             gen_rtx_SYMBOL_REF (Pmode, symbol)
+           ));
+
+           DONE; is_done = true;
+         }
+
+         break;
+       }
+
+       // -mjli-func-addr=init
+       case ARC_FUNC_ADDR_INIT:
+       {
+         // I have no idea when you are allowed to free this string...
+         // I just know I can't do it inside this block of code.
+         char *symbol = (char*) xmalloc (strlen (\"__jli.\") +
+           strlen (jli_symbol) + 1);
+
+         sprintf (symbol, \"__jli.%s\", jli_symbol);
+
+         emit_insn (gen_movsi_jli (
+           operands[0],
+           gen_rtx_SYMBOL_REF (Pmode, symbol)
+         ));
+
+         DONE; is_done = true;
+
+         break;
+       }
+
+       // -mjli-func-addr=always
+       case ARC_FUNC_ADDR_ALWAYS:
+       {
+         // I have no idea when you are allowed to free this string...
+         // I just know I can't do it inside this block of code.
+         char *symbol = (char*) xmalloc (strlen (\"__jlifuncaddr.\") +
+           strlen (jli_symbol) + 1);
+
+         sprintf (symbol, \"__jlifuncaddr.%s\", jli_symbol);
+
+         emit_insn (gen_movsi (
+           operands[0],
+           gen_rtx_SYMBOL_REF (Pmode, symbol)
+         ));
+
+         arc_add_jli_func_addr_stub (jli_symbol);
+
+         DONE; is_done = true;
+
+         break;
+       }
+     }
+   }
+
+   if (!is_done && prepare_move_operands (operands, SImode))
+   {
+     DONE;
+   }")
 
 ; In order to allow the ccfsm machinery to do its work, the leading compact
 ; alternatives say 'canuse' - there is another alternative that will match
@@ -3977,6 +4095,45 @@
    (set_attr "type" "jump")
    (set_attr "iscompact" "true")
    (set_attr "cond" "nocond")])
+
+(define_insn "jli_s"
+  [(match_operand:SI 0 "immediate_operand" "L")]
+  ""
+  "jli_s %0"
+  [(set_attr "type" "call")
+  (set_attr "iscompact" "true")
+  (set_attr "predicable" "yes")
+  (set_attr "length" "2")])
+
+(define_insn "*call_jli"
+  [
+    (parallel [
+      (call (match_operand:SI 0 "call_jli_operand" "") (match_operand 1 "" ""))
+      (clobber (reg:SI 31))
+    ])
+  ]
+  ""
+  "*return arc_gen_call_to_jli_function (XEXP (operands[0], 0));"
+  [(set_attr "type" "call")
+   (set_attr "iscompact" "*")
+   (set_attr "predicable" "no")
+   (set_attr "length" "2")])
+
+(define_insn "*call_value_jli"
+  [
+    (set
+      (match_operand 0 "dest_reg_operand" "=w")
+      (call (mem:SI (match_operand:SI 1 "call_jli_address_operand" ""))
+        (match_operand 2 "" ""))
+    )
+    (clobber (reg:SI 31))
+  ]
+  ""
+  "*return arc_gen_call_to_jli_function (operands[1]);"
+  [(set_attr "type" "call")
+   (set_attr "iscompact" "*")
+   (set_attr "predicable" "no")
+   (set_attr "length" "2")])
 
 (define_expand "call"
   ;; operands[1] is stack_size_rtx

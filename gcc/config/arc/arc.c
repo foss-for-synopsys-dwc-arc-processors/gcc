@@ -69,6 +69,24 @@ along with GCC; see the file COPYING3.  If not see
 static char arc_cpu_name[10] = "";
 static const char *arc_cpu_string = arc_cpu_name;
 
+typedef struct _arc_jli_section
+{
+  char *name;
+  struct _arc_jli_section *next;
+} arc_jli_section;
+
+static arc_jli_section *arc_jli_sections = NULL;
+
+typedef struct _arc_jli_func_addr_stub
+{
+  char *name;
+  struct _arc_jli_func_addr_stub *next;
+} arc_jli_func_addr_stub;
+
+static arc_jli_func_addr_stub *arc_jli_func_addr_stubs = NULL;
+
+static bool arc_assemble_integer (rtx, unsigned int, int);
+
 /* The macros REG_OK_FOR..._P assume that the arg is a REG rtx
    and check its validity for a certain class.
    We have two alternate definitions for each of them.
@@ -438,6 +456,7 @@ const struct attribute_spec arc_attribute_table[] =
 };
 static int arc_comp_type_attributes (const_tree, const_tree);
 static void arc_file_start (void);
+static void arc_file_end (void);
 static void arc_internal_label (FILE *, const char *, unsigned long);
 static void arc_output_mi_thunk (FILE *, tree, HOST_WIDE_INT, HOST_WIDE_INT,
 				 tree);
@@ -543,6 +562,8 @@ static int arc_asm_insn_p (rtx x);
 #define TARGET_COMP_TYPE_ATTRIBUTES arc_comp_type_attributes
 #undef TARGET_ASM_FILE_START
 #define TARGET_ASM_FILE_START arc_file_start
+#undef TARGET_ASM_FILE_END
+#define TARGET_ASM_FILE_END arc_file_end
 #undef TARGET_ATTRIBUTE_TABLE
 #define TARGET_ATTRIBUTE_TABLE arc_attribute_table
 #undef TARGET_ASM_INTERNAL_LABEL
@@ -551,6 +572,8 @@ static int arc_asm_insn_p (rtx x);
 #define TARGET_RTX_COSTS arc_rtx_costs
 #undef TARGET_ADDRESS_COST
 #define TARGET_ADDRESS_COST arc_address_cost
+#undef TARGET_ASM_INTEGER
+#define TARGET_ASM_INTEGER arc_assemble_integer
 
 #undef TARGET_ENCODE_SECTION_INFO
 #define TARGET_ENCODE_SECTION_INFO arc_encode_section_info
@@ -5068,6 +5091,57 @@ static void arc_file_start (void)
   fprintf (asm_out_file, "\t.cpu %s\n", arc_cpu_string);
 }
 
+static void arc_file_end (void)
+{
+  bool first = true;
+  arc_jli_section *sec = arc_jli_sections;
+  arc_jli_func_addr_stub *stub = arc_jli_func_addr_stubs;
+
+  while (sec != NULL)
+  {
+    fprintf (asm_out_file, "\n");
+    fprintf (asm_out_file, "#####################\n");
+    fprintf (asm_out_file, "# JLI entry for function '%s'\n", sec->name);
+    fprintf (asm_out_file, "#####################\n");
+    fprintf (asm_out_file, "\t.section .jlitab$%s, \"ax\", @comdat\n",
+      sec->name);
+
+    if(first)
+    {
+      fprintf (asm_out_file, "\t.reloc 0, R_ARC_NONE, _init_jli\n");
+
+      first = false;
+    }
+
+    fprintf (asm_out_file, "\t.align 4\n");
+    fprintf (asm_out_file, "__jli.%s:\n", sec->name);
+    fprintf (asm_out_file, "\t.weak __jli.%s\n", sec->name);
+    fprintf (asm_out_file, "\t.weak %s\n", sec->name);
+    fprintf (asm_out_file, "\tb %s\n", sec->name);
+
+    sec = sec->next;
+  }
+
+  while (stub != NULL)
+  {
+    fprintf (asm_out_file, "\n");
+    fprintf (asm_out_file, "#####################\n");
+    fprintf (asm_out_file, "# JLI function address stub for function '%s'\n",
+      stub->name);
+    fprintf (asm_out_file, "#####################\n");
+    fprintf (asm_out_file, "\t.section .text$jlifuncaddr$%s, "
+      "\"ax\", @comdat\n", stub->name);
+    fprintf (asm_out_file, "\t.align 4\n");
+    fprintf (asm_out_file, ".global __jlifuncaddr.%s\n", stub->name);
+    fprintf (asm_out_file, "__jlifuncaddr.%s:\n", stub->name);
+    fprintf (asm_out_file, "\tlr r8, [jli_base]\n");
+    fprintf (asm_out_file, "\tadd2_jlioff r8, r8, @%s\n", stub->name);
+    fprintf (asm_out_file, "\tj [r8]\n");
+
+    stub = stub->next;
+  }
+}
+
 /* Cost functions.  */
 
 /* Compute a (partial) cost for rtx X.  Return true if the complete
@@ -7891,6 +7965,123 @@ compact_sda_memory_operand (rtx op, enum machine_mode mode)
   addr = XEXP (op, 0);
 
   return LEGITIMATE_SMALL_DATA_ADDRESS_P  (addr);
+}
+
+static bool
+arc_assemble_integer (rtx value, unsigned int size, int aligned_p)
+{
+  if (arc_is_call_to_jli_function (value))
+  {
+    const char *jli_symbol = XSTR (value, 0);
+
+    switch (arc_jli_func_addr)
+    {
+      // -mjli-func-addr=compat
+      case ARC_FUNC_ADDR_COMPAT:
+      {
+        // jli_call_always uses the address of the JLI entry and
+        // jli_call_fixed uses the address of the function itself.
+        if (0 <= arc_jli_dynamic_symbol_index (jli_symbol))
+        {
+          fprintf (asm_out_file, "\t.word\t@__jli.%s\n", jli_symbol);
+        }
+        else
+        {
+          fprintf (asm_out_file, "\t.word\t%s\n", jli_symbol);
+        }
+
+        break;
+      }
+
+      // -mjli-func-addr=init
+      case ARC_FUNC_ADDR_INIT:
+        fprintf (asm_out_file, "\t.reloc ., R_ARC_JLI_32, __jli.%s\n",
+          jli_symbol);
+        fprintf (asm_out_file, "\t.word\t0\n");
+      break;
+
+      // -mjli-func-addr=always
+      case ARC_FUNC_ADDR_ALWAYS:
+      {
+        fprintf (asm_out_file, "\t.word\t@__jlifuncaddr.%s\n", jli_symbol);
+
+        arc_add_jli_func_addr_stub (jli_symbol);
+
+        break;
+      }
+    } // switch (arc_jli_func_addr)
+
+    return true;
+  }
+  else
+  {
+    return default_assemble_integer(value, size, aligned_p);
+  }
+}
+
+/* Implement ASM_OUTPUT_INT.  */
+
+void
+arc_asm_output_int (FILE * stream, rtx value)
+{
+  if (arc_is_call_to_jli_function (value))
+  {
+    const char *jli_symbol = XSTR (value, 0);
+
+    switch (arc_jli_func_addr)
+    {
+      // -mjli-func-addr=compat
+      case ARC_FUNC_ADDR_COMPAT:
+      {
+        // jli_call_always uses the address of the JLI entry and
+        // jli_call_fixed uses the address of the function itself.
+        if (0 <= arc_jli_dynamic_symbol_index (jli_symbol))
+        {
+          fprintf (stream, "\t.word\t@__jli.%s\n", jli_symbol);
+        }
+        else
+        {
+          fprintf (stream, "\t.word\t%s\n", jli_symbol);
+        }
+
+        break;
+      }
+
+      // -mjli-func-addr=init
+      case ARC_FUNC_ADDR_INIT:
+        fprintf (stream, "\t.reloc ., R_ARC_JLI_32, __jli.%s\n",
+          jli_symbol);
+        fprintf (stream, "\t.word\t0\n");
+      break;
+
+      // -mjli-func-addr=always
+      case ARC_FUNC_ADDR_ALWAYS:
+      {
+        fprintf (stream, "\t.word\t@__jlifuncaddr.%s\n", jli_symbol);
+
+        arc_add_jli_func_addr_stub (jli_symbol);
+
+        break;
+      }
+    } // switch (arc_jli_func_addr)
+  }
+  else
+  {
+    fprintf (stream, "\t.word\t");
+
+    if (GET_CODE (value) == LABEL_REF)
+    {
+      fprintf (stream, "%%st(@");
+      output_addr_const (stream, (value));
+      fprintf (stream, ")");
+    }
+    else
+    {
+      output_addr_const (stream, (value));
+    }
+
+    fprintf (stream, "\n");
+  }
 }
 
 /* Implement ASM_OUTPUT_ALIGNED_DECL_LOCAL.  */
@@ -12544,5 +12735,215 @@ insn_is_tls_gd_dispatch (rtx insn)
 }
 
 struct gcc_target targetm = TARGET_INITIALIZER;
+
+/** Number of JLI entries in the fixed table. */
+int jli_fixed_count = 0;
+
+/* List of fixed symbols in the JLI table. */
+char *jli_fixed_table[ARC_JLI_ENTRIES_MAX] = { NULL };
+
+/** Number of JLI entries in the dynamic table. */
+int jli_dynamic_count = 0;
+
+/* List of fixed symbols in the JLI table. */
+char *jli_dynamic_table[ARC_JLI_ENTRIES_MAX] = { NULL };
+
+int
+arc_jli_fixed_symbol_index (const char *symbol)
+{
+  int i, index = -1;
+  const char *jli_symbol;
+
+  for (i = 0; index == -1 && i < ARC_JLI_ENTRIES_MAX; ++i)
+  {
+    jli_symbol = jli_fixed_table[i];
+
+    if (jli_symbol != NULL && strcmp (symbol, jli_symbol) == 0)
+    {
+      index = i;
+    }
+  }
+
+  return index;
+}
+
+int
+arc_jli_dynamic_symbol_index (const char *symbol)
+{
+  int i, index = -1;
+  const char *jli_symbol;
+
+  for (i = 0; index == -1 && i < jli_dynamic_count; ++i)
+  {
+    jli_symbol = jli_dynamic_table[i];
+
+    if (jli_symbol != NULL && strcmp (symbol, jli_symbol) == 0)
+    {
+      index = i;
+    }
+  }
+
+  return index;
+}
+
+bool
+arc_is_call_to_jli_function (rtx sym_ref)
+{
+  const char *symbol, *jli_fixed_symbol, *jli_dynamic_symbol;
+  int i;
+
+  if (GET_CODE (sym_ref) == SYMBOL_REF)
+  {
+    symbol = XSTR (sym_ref, 0);
+
+    for (i = 0; i < ARC_JLI_ENTRIES_MAX; ++i)
+    {
+      jli_fixed_symbol = jli_fixed_table[i];
+
+      if (jli_fixed_symbol != NULL &&
+        strcmp (symbol, jli_fixed_symbol) == 0)
+      {
+        return true;
+      }
+
+      jli_dynamic_symbol = jli_dynamic_table[i];
+
+      if (jli_dynamic_symbol != NULL &&
+        strcmp (symbol, jli_dynamic_symbol) == 0)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+void
+arc_add_jli_func_addr_stub (const char *symbol)
+{
+  arc_jli_func_addr_stub *stub = arc_jli_func_addr_stubs, *new_stub;
+
+  // Don't insert the same symbol twice.
+  if(stub != NULL && strcmp (symbol, stub->name) == 0)
+  {
+    return;
+  }
+
+  while (stub != NULL && stub->next != NULL)
+  {
+    // Don't insert the same symbol twice.
+    if(strcmp (symbol, stub->name) == 0)
+    {
+      return;
+    }
+
+    stub = stub->next;
+  }
+
+  new_stub = (arc_jli_func_addr_stub *) xmalloc (
+    sizeof (arc_jli_func_addr_stub));
+  new_stub->name = strndup (symbol, 2048);
+  new_stub->next = NULL;
+
+  if (new_stub != NULL)
+  {
+    if (stub != NULL)
+    {
+      stub->next = new_stub;
+    }
+    else
+    {
+      arc_jli_func_addr_stubs = new_stub;
+    }
+  }
+}
+
+static void
+arc_add_jli_section (const char *symbol)
+{
+  arc_jli_section *sec = arc_jli_sections, *new_section;
+
+  // Don't insert the same symbol twice.
+  if(sec != NULL && strcmp (symbol, sec->name) == 0)
+  {
+    return;
+  }
+
+  while (sec != NULL && sec->next != NULL)
+  {
+    // Don't insert the same symbol twice.
+    if(strcmp (symbol, sec->name) == 0)
+    {
+      return;
+    }
+
+    sec = sec->next;
+  }
+
+  new_section = (arc_jli_section *) xmalloc (sizeof (arc_jli_section));
+  new_section->name = strndup (symbol, 2048);
+  new_section->next = NULL;
+
+  if (new_section != NULL)
+  {
+    if (sec != NULL)
+    {
+      sec->next = new_section;
+    }
+    else
+    {
+      arc_jli_sections = new_section;
+    }
+  }
+}
+
+const char*
+arc_gen_call_to_jli_function (rtx sym_ref)
+{
+  static char jli_inst[strlen ("jli_s ") + 2048 + 1];
+
+  const char *symbol;
+  int index = -1;
+
+  if (GET_CODE (sym_ref) == SYMBOL_REF)
+  {
+    symbol = XSTR(sym_ref, 0);
+
+    if (symbol != NULL)
+    {
+      index = arc_jli_fixed_symbol_index (symbol);
+    }
+
+    if (index >= 0)
+    {
+      sprintf (jli_inst, "jli_s %d", index);
+
+      return jli_inst;
+    }
+
+    if (symbol != NULL)
+    {
+      index = arc_jli_dynamic_symbol_index (symbol);
+    }
+
+    if (index >= 0)
+    {
+      sprintf (jli_inst, "jli_s __jli.%s", symbol);
+
+      arc_add_jli_section (symbol);
+
+      return jli_inst;
+    }
+
+    error ("failed to determine index for JLI function '%s'", symbol);
+  }
+  else
+  {
+    error ("failed to determine JLI function name");
+  }
+
+  return "jli_s 0";
+}
 
 #include "gt-arc.h"

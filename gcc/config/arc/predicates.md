@@ -56,6 +56,14 @@
   (match_code "symbol_ref, label_ref, const")
 )
 
+;; Returns 1 if OP is a symbol reference.
+(define_predicate "symbolic_jli_operand"
+  (match_code "symbol_ref")
+  {
+    return arc_is_call_to_jli_function (op);
+  }
+)
+
 ;; Acceptable arguments to the call insn.
 (define_predicate "call_address_operand"
   (ior (match_code "const_int, reg")
@@ -64,9 +72,18 @@
 		    && arc_legitimate_constant_p (VOIDmode, op)"))
 )
 
+(define_predicate "call_jli_address_operand"
+  (match_operand 0 "symbolic_jli_operand")
+)
+
 (define_predicate "call_operand"
   (and (match_code "mem")
        (match_test "call_address_operand (XEXP (op, 0), mode)"))
+)
+
+(define_predicate "call_jli_operand"
+  (and (match_code "mem")
+       (match_test "call_jli_address_operand (XEXP (op, 0), mode)"))
 )
 
 ;; Return true if OP is a unsigned 6-bit immediate (u6) value.
