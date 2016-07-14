@@ -757,7 +757,7 @@
    {
      const char *jli_symbol = XSTR (operands[1], 0);
 
-     switch(arc_jli_func_addr)
+     switch (arc_jli_func_addr)
      {
        // -mjli-func-addr=compat
        case ARC_FUNC_ADDR_COMPAT:
@@ -792,7 +792,7 @@
          char *symbol = (char*) xmalloc (strlen (\"__jli.\") +
            strlen (jli_symbol) + 1);
 
-         sprintf(symbol, \"__jli.%s\", jli_symbol);
+         sprintf (symbol, \"__jli.%s\", jli_symbol);
 
          emit_insn (gen_movsi_jli (
            operands[0],
@@ -812,14 +812,14 @@
          char *symbol = (char*) xmalloc (strlen (\"__jlifuncaddr.\") +
            strlen (jli_symbol) + 1);
 
-         sprintf(symbol, \"__jlifuncaddr.%s\", jli_symbol);
+         sprintf (symbol, \"__jlifuncaddr.%s\", jli_symbol);
 
          emit_insn (gen_movsi (
            operands[0],
            gen_rtx_SYMBOL_REF (Pmode, symbol)
          ));
 
-         arc_add_jli_func_addr_stub(jli_symbol);
+         arc_add_jli_func_addr_stub (jli_symbol);
 
          DONE; is_done = true;
 

@@ -85,6 +85,8 @@ typedef struct _arc_jli_func_addr_stub
 
 static arc_jli_func_addr_stub *arc_jli_func_addr_stubs = NULL;
 
+static bool arc_assemble_integer (rtx, unsigned int, int);
+
 /* The macros REG_OK_FOR..._P assume that the arg is a REG rtx
    and check its validity for a certain class.
    We have two alternate definitions for each of them.
@@ -570,6 +572,8 @@ static int arc_asm_insn_p (rtx x);
 #define TARGET_RTX_COSTS arc_rtx_costs
 #undef TARGET_ADDRESS_COST
 #define TARGET_ADDRESS_COST arc_address_cost
+#undef TARGET_ASM_INTEGER
+#define TARGET_ASM_INTEGER arc_assemble_integer
 
 #undef TARGET_ENCODE_SECTION_INFO
 #define TARGET_ENCODE_SECTION_INFO arc_encode_section_info
@@ -7983,6 +7987,123 @@ compact_sda_memory_operand (rtx op, enum machine_mode mode)
   addr = XEXP (op, 0);
 
   return LEGITIMATE_SMALL_DATA_ADDRESS_P  (addr);
+}
+
+static bool
+arc_assemble_integer (rtx value, unsigned int size, int aligned_p)
+{
+  if (arc_is_call_to_jli_function (value))
+  {
+    const char *jli_symbol = XSTR (value, 0);
+
+    switch (arc_jli_func_addr)
+    {
+      // -mjli-func-addr=compat
+      case ARC_FUNC_ADDR_COMPAT:
+      {
+        // jli_call_always uses the address of the JLI entry and
+        // jli_call_fixed uses the address of the function itself.
+        if (0 <= arc_jli_dynamic_symbol_index (jli_symbol))
+        {
+          fprintf (asm_out_file, "\t.word\t@__jli.%s\n", jli_symbol);
+        }
+        else
+        {
+          fprintf (asm_out_file, "\t.word\t%s\n", jli_symbol);
+        }
+
+        break;
+      }
+
+      // -mjli-func-addr=init
+      case ARC_FUNC_ADDR_INIT:
+        fprintf (asm_out_file, "\t.reloc ., R_ARC_JLI_32, __jli.%s\n",
+          jli_symbol);
+        fprintf (asm_out_file, "\t.word\t0\n");
+      break;
+
+      // -mjli-func-addr=always
+      case ARC_FUNC_ADDR_ALWAYS:
+      {
+        fprintf (asm_out_file, "\t.word\t@__jlifuncaddr.%s\n", jli_symbol);
+
+        arc_add_jli_func_addr_stub (jli_symbol);
+
+        break;
+      }
+    } // switch (arc_jli_func_addr)
+
+    return true;
+  }
+  else
+  {
+    return default_assemble_integer(value, size, aligned_p);
+  }
+}
+
+/* Implement ASM_OUTPUT_INT.  */
+
+void
+arc_asm_output_int (FILE * stream, rtx value)
+{
+  if (arc_is_call_to_jli_function (value))
+  {
+    const char *jli_symbol = XSTR (value, 0);
+
+    switch (arc_jli_func_addr)
+    {
+      // -mjli-func-addr=compat
+      case ARC_FUNC_ADDR_COMPAT:
+      {
+        // jli_call_always uses the address of the JLI entry and
+        // jli_call_fixed uses the address of the function itself.
+        if (0 <= arc_jli_dynamic_symbol_index (jli_symbol))
+        {
+          fprintf (stream, "\t.word\t@__jli.%s\n", jli_symbol);
+        }
+        else
+        {
+          fprintf (stream, "\t.word\t%s\n", jli_symbol);
+        }
+
+        break;
+      }
+
+      // -mjli-func-addr=init
+      case ARC_FUNC_ADDR_INIT:
+        fprintf (stream, "\t.reloc ., R_ARC_JLI_32, __jli.%s\n",
+          jli_symbol);
+        fprintf (stream, "\t.word\t0\n");
+      break;
+
+      // -mjli-func-addr=always
+      case ARC_FUNC_ADDR_ALWAYS:
+      {
+        fprintf (stream, "\t.word\t@__jlifuncaddr.%s\n", jli_symbol);
+
+        arc_add_jli_func_addr_stub (jli_symbol);
+
+        break;
+      }
+    } // switch (arc_jli_func_addr)
+  }
+  else
+  {
+    fprintf (stream, "\t.word\t");
+
+    if (GET_CODE (value) == LABEL_REF)
+    {
+      fprintf (stream, "%%st(@");
+      output_addr_const (stream, (value));
+      fprintf (stream, ")");
+    }
+    else
+    {
+      output_addr_const (stream, (value));
+    }
+
+    fprintf (stream, "\n");
+  }
 }
 
 /* Implement ASM_OUTPUT_ALIGNED_DECL_LOCAL.  */

@@ -1156,19 +1156,7 @@ arc_select_cc_mode (OP, X, Y)
 /* This is how to output an assembler line defining an `int' constant.
    We also handle symbol output here.  Code addresses must be right shifted
    by 2 because that's how the jump instruction wants them.  */
-#define ASM_OUTPUT_INT(FILE, VALUE) \
-do {									\
-  fprintf (FILE, "\t.word\t");						\
-  if (GET_CODE (VALUE) == LABEL_REF)					\
-    {									\
-      fprintf (FILE, "%%st(@");						\
-      output_addr_const (FILE, (VALUE));				\
-      fprintf (FILE, ")");						\
-    }									\
-  else									\
-    output_addr_const (FILE, (VALUE));					\
-  fprintf (FILE, "\n");					                \
-} while (0)
+#define ASM_OUTPUT_INT(FILE, VALUE) arc_asm_output_int(FILE, VALUE);
 
 /* This is how to output an assembler line defining a `float' constant.  */
 #define ASM_OUTPUT_FLOAT(FILE, VALUE) \
