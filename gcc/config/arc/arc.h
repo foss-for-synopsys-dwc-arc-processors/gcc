@@ -151,16 +151,20 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 
 #define STARTFILE_SPEC "%{!shared:crt0.o%s} crti%O%s %{pg|p:crtg.o%s} %(arc_tls_extra_start_spec) crtbegin.o%s"
 #else
-#define STARTFILE_SPEC   " \
-  %{!shared:%{pie:Scrt1.o%s;!mkernel:crt1.o%s}} crti.o%s \
-  %{!shared:%{pg|p|profile:crtg.o%s}} %{shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+#define STARTFILE_SPEC \
+  LINUX_OR_ANDROID_LD (GNU_USER_TARGET_STARTFILE_SPEC, ANDROID_STARTFILE_SPEC)
+//#define STARTFILE_SPEC   " \
+//  %{!shared:%{pie:Scrt1.o%s;!mkernel:crt1.o%s}} crti.o%s \
+//  %{!shared:%{pg|p|profile:crtg.o%s}} %{shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
 #define ENDFILE_SPEC "%{pg|p:crtgend.o%s} crtend.o%s crtn%O%s"
 #else
-#define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s}} \
-  %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+#define ENDFILE_SPEC \
+  LINUX_OR_ANDROID_LD (GNU_USER_TARGET_ENDFILE_SPEC, ANDROID_ENDFILE_SPEC)
+//#define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s}} \
+//  %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
 #endif
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
