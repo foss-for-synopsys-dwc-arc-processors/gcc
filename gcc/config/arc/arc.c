@@ -5103,8 +5103,8 @@ static void arc_file_end (void)
     fprintf (asm_out_file, "#####################\n");
     fprintf (asm_out_file, "# JLI entry for function '%s'\n", sec->name);
     fprintf (asm_out_file, "#####################\n");
-    fprintf (asm_out_file, "\t.section .jlitab$%s, \"ax\", @comdat\n",
-      sec->name);
+    fprintf (asm_out_file, "\t.section .jlitab$%s, \"axG\", @progbits, "
+      ".jlitab, comdat\n", sec->name);
 
     if(first)
     {
@@ -5129,8 +5129,8 @@ static void arc_file_end (void)
     fprintf (asm_out_file, "# JLI function address stub for function '%s'\n",
       stub->name);
     fprintf (asm_out_file, "#####################\n");
-    fprintf (asm_out_file, "\t.section .text$jlifuncaddr$%s, "
-      "\"ax\", @comdat\n", stub->name);
+    fprintf (asm_out_file, "\t.section .text$jlifuncaddr$%s, \"axG\", "
+      "@progbits, .text$jlifuncaddr, comdat\n", stub->name);
     fprintf (asm_out_file, "\t.align 4\n");
     fprintf (asm_out_file, ".global __jlifuncaddr.%s\n", stub->name);
     fprintf (asm_out_file, "__jlifuncaddr.%s:\n", stub->name);
