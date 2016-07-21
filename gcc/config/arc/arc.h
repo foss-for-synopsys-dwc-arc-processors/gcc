@@ -153,9 +153,6 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 #else
 #define STARTFILE_SPEC \
   LINUX_OR_ANDROID_LD (GNU_USER_TARGET_STARTFILE_SPEC, ANDROID_STARTFILE_SPEC)
-//#define STARTFILE_SPEC   " \
-//  %{!shared:%{pie:Scrt1.o%s;!mkernel:crt1.o%s}} crti.o%s \
-//  %{!shared:%{pg|p|profile:crtg.o%s}} %{shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
 #endif
 
 #if DEFAULT_LIBC != LIBC_UCLIBC
@@ -163,8 +160,6 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 #else
 #define ENDFILE_SPEC \
   LINUX_OR_ANDROID_LD (GNU_USER_TARGET_ENDFILE_SPEC, ANDROID_ENDFILE_SPEC)
-//#define ENDFILE_SPEC "%{!shared:%{pg|p|profile:crtgend.o%s}} \
-//  %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
 #endif
 
 #if DEFAULT_LIBC == LIBC_UCLIBC
