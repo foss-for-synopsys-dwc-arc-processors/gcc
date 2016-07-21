@@ -720,7 +720,7 @@
     ] VUNSPEC_ARC_ADD2_JLIOFF)
   ]
   ""
-  "add2_jlioff %0, %0, %1"
+  "add2 %0, %0, %1@jli"
   [(set_attr "type" "unary")
   (set_attr "iscompact" "true")
   (set_attr "predicable" "yes")
