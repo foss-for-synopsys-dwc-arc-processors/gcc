@@ -1,14 +1,6 @@
 /* Definitions of target machine for GNU compiler, Synopsys DesignWare ARC cpu.
    Copyright (C) 1994-2016 Free Software Foundation, Inc.
 
-   Sources derived from work done by Sankhya Technologies (www.sankhya.com) on
-   behalf of Synopsys Inc.
-
-   Position Independent Code support added,Code cleaned up,
-   Comments and Support For ARC700 instructions added by
-   Saurabh Verma (saurabh.verma@codito.com)
-   Ramana Radhakrishnan(ramana.radhakrishnan@codito.com)
-
 This file is part of GCC.
 
 GCC is free software; you can redistribute it and/or modify
@@ -57,31 +49,8 @@ along with GCC; see the file COPYING3.  If not see
 #define SYMBOL_REF_SHORT_CALL_P(X)	\
 	((SYMBOL_REF_FLAGS (X) & SYMBOL_FLAG_SHORT_CALL) != 0)
 
-#undef ASM_SPEC
-#undef LINK_SPEC
-#undef STARTFILE_SPEC
-#undef ENDFILE_SPEC
-#undef SIZE_TYPE
-#undef PTRDIFF_TYPE
-#undef WCHAR_TYPE
-#undef WCHAR_TYPE_SIZE
-#undef ASM_APP_ON
-#undef ASM_APP_OFF
-#undef CC1_SPEC
-
 /* Names to predefine in the preprocessor for this target machine.  */
 #define TARGET_CPU_CPP_BUILTINS() arc_cpu_cpp_builtins (pfile)
-
-#if DEFAULT_LIBC == LIBC_UCLIBC
-
-#define TARGET_OS_CPP_BUILTINS() \
-  do \
-    { \
-      GNU_USER_TARGET_OS_CPP_BUILTINS (); \
-    } \
-  while (0)
-
-#endif /* DEFAULT_LIBC == LIBC_UCLIBC */
 
 /* Macros enabled by specific command line option.  FIXME: to be
    deprecatd.  */
@@ -95,6 +64,7 @@ along with GCC; see the file COPYING3.  If not see
 %{mlock:-D__Xlock} %{mswape:-D__Xswape} %{mrtsc:-D__Xrtsc} \
 %{mcpu=nps400:-D__NPS400__}"
 
+#undef CC1_SPEC
 #define CC1_SPEC "\
 %{EB:%{EL:%emay not use both -EB and -EL}} \
 %{EB:-mbig-endian} %{EL:-mlittle-endian} \
@@ -104,70 +74,15 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 #define EXTRA_SPEC_FUNCTIONS			\
   { "cpu_to_as", arc_cpu_to_as },
 
+#undef ASM_SPEC
 #define ASM_SPEC  "%{mbig-endian|EB:-EB} %{EL} "			\
   "%:cpu_to_as(%{mcpu=*:%*}) %{mspfp*} %{mdpfp*} %{mfpu=fpuda*:-mfpuda}"
 
 #define OPTION_DEFAULT_SPECS						\
   {"cpu", "%{!mcpu=*:%{!mARC*:%{!marc*:%{!mA7:%{!mA6:-mcpu=%(VALUE)}}}}}" }
 
-#if DEFAULT_LIBC == LIBC_UCLIBC
-/* Note that the default is to link against dynamic libraries, if they are
-   available.  Override with -static.  */
-#define LINK_SPEC "%{h*} \
-		   %{static:-Bstatic} \
-		   %{symbolic:-Bsymbolic} \
-		   %{rdynamic:-export-dynamic}\
-		   -dynamic-linker /lib/ld-uClibc.so.0 \
-		   -X %{mbig-endian:-EB} \
-		   %{EB} %{EL} \
-		   %{marclinux*} \
-		   %{!marclinux*: -marclinux} \
-		   %{!z:-z max-page-size=0x2000 -z common-page-size=0x2000} \
-		   %{shared:-shared}"
-#else
-#define LINK_SPEC "%{mbig-endian:-EB} %{EB} %{EL}"
-#endif
-
-#if DEFAULT_LIBC != LIBC_UCLIBC
-#define ARC_TLS_EXTRA_START_SPEC "crttls.o%s"
-
-#define EXTRA_SPECS \
-  { "arc_tls_extra_start_spec", ARC_TLS_EXTRA_START_SPEC }, \
-
-#define STARTFILE_SPEC "%{pg|p:gcrt0.o%s}%{!pg:%{!p:crt0.o%s}} crti%O%s " \
-  "%(arc_tls_extra_start_spec) crtbegin.o%s"
-#else
-#define STARTFILE_SPEC							\
-  LINUX_OR_ANDROID_LD (GNU_USER_TARGET_STARTFILE_SPEC, ANDROID_STARTFILE_SPEC)
-#endif
-
-#if DEFAULT_LIBC != LIBC_UCLIBC
-#define ENDFILE_SPEC "crtend.o%s crtn%O%s"
-#else
-#define ENDFILE_SPEC							\
-  LINUX_OR_ANDROID_LD (GNU_USER_TARGET_ENDFILE_SPEC, ANDROID_ENDFILE_SPEC)
-#endif
-
-#if DEFAULT_LIBC == LIBC_UCLIBC
-#undef LIB_SPEC
-#define LIB_SPEC  \
-  "%{pthread:-lpthread} \
-   %{shared:-lc} \
-   %{!shared:%{profile:-lc_p}%{!profile:-lc}}"
-#define TARGET_ASM_FILE_END file_end_indicate_exec_stack
-#else
-#undef LIB_SPEC
-#define LIB_SPEC "%{!shared:%{g*:-lg} -lc}"
-#endif
-
 #ifndef DRIVER_ENDIAN_SELF_SPECS
 #define DRIVER_ENDIAN_SELF_SPECS ""
-#endif
-#ifndef TARGET_SDATA_DEFAULT
-#define TARGET_SDATA_DEFAULT 1
-#endif
-#ifndef TARGET_MMEDIUM_CALLS_DEFAULT
-#define TARGET_MMEDIUM_CALLS_DEFAULT 0
 #endif
 
 #define DRIVER_SELF_SPECS DRIVER_ENDIAN_SELF_SPECS		   \
@@ -227,12 +142,6 @@ extern bool arc_arc601;
 #define TARGET_EM (arc_arcem)
 #define TARGET_HS (arc_archs)
 #define TARGET_V2 (TARGET_EM || TARGET_HS)
-
-#ifdef ARC_MULTILIB_CPU_DEFAULT
-# ifndef MULTILIB_DEFAULTS
-#  define MULTILIB_DEFAULTS { "mcpu=" ARC_MULTILIB_CPU_DEFAULT }
-# endif
-#endif
 
 #ifndef UNALIGNED_ACCESS_DEFAULT
 #define UNALIGNED_ACCESS_DEFAULT 0
@@ -316,14 +225,11 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
    `BIGGEST_ALIGNMENT' and `BIGGEST_FIELD_ALIGNMENT' to the
    alignment) is COMPUTED.  It overrides alignment only if the field
    alignment has not been set by the `__attribute__ ((aligned (N)))'
-   construct.
-*/
+   construct.  */
 
 #define ADJUST_FIELD_ALIGN(FIELD, COMPUTED) \
 (TYPE_MODE (strip_array_types (TREE_TYPE (FIELD))) == DFmode \
  ? MIN ((COMPUTED), 32) : (COMPUTED))
-
-
 
 /* No data type wants to be aligned rounder than this.  */
 /* This is bigger than currently necessary for the ARC.  If 8 byte floats are
@@ -375,13 +281,18 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 /* Define this as 1 if `char' should by default be signed; else as 0.  */
 #define DEFAULT_SIGNED_CHAR 0
 
+#undef SIZE_TYPE
 #define SIZE_TYPE "long unsigned int"
+
+#undef PTRDIFF_TYPE
 #define PTRDIFF_TYPE "long int"
+
+#undef WCHAR_TYPE
 #define WCHAR_TYPE "int"
+
+#undef WCHAR_TYPE_SIZE
 #define WCHAR_TYPE_SIZE 32
 
-
-/* ashwin : shifted from arc.c:102 */
 #define PROGRAM_COUNTER_REGNO 63
 
 /* Standard register usage.  */
@@ -1164,10 +1075,12 @@ arc_select_cc_mode (OP, X, Y)
 
 /* Output to assembler file text saying following lines
    may contain character constants, extra white space, comments, etc.  */
+#undef ASM_APP_ON
 #define ASM_APP_ON ""
 
 /* Output to assembler file text saying following lines
    no longer contain unusual constructs.  */
+#undef ASM_APP_OFF
 #define ASM_APP_OFF ""
 
 /* Globalizing directive for a label.  */
@@ -1462,15 +1375,6 @@ extern int arc_return_address_regs[4];
 #define INCOMING_RETURN_ADDR_RTX  gen_rtx_REG (Pmode, 31)
 
 /* Frame info.  */
-
-/* Define this macro to 0 if your target supports DWARF 2 frame unwind
-   information, but it does not yet work with exception handling.  */
-/* N.B. the below test is valid in an #if, but not in a C expression.  */
-#if DEFAULT_LIBC == LIBC_UCLIBC
-#define DWARF2_UNWIND_INFO 1
-#else
-#define DWARF2_UNWIND_INFO 0
-#endif
 
 #define EH_RETURN_DATA_REGNO(N)  ((N) < 2 ? (N) : INVALID_REGNUM)
 
