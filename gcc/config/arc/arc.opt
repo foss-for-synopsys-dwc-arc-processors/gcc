@@ -480,3 +480,7 @@ Target RejectNegative Var(arc_tp_regno,-1)
 
 TargetVariable
 unsigned int arc_seen_options = 0
+
+mstore-hazard=
+Target RejectNegative Joined UInteger Var(arc_store_hazard) Init(0)
+Checks for store cacheline fill hazard.  The number of loads is specify by command line.
