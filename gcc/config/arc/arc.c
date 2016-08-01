@@ -7128,6 +7128,87 @@ arc_invalid_within_doloop (const_rtx insn)
   return NULL;
 }
 
+static rtx
+arc_active_insn (rtx insn)
+{
+  rtx nxt = next_active_insn (insn);
+
+  if (nxt && GET_CODE (PATTERN (nxt)) == ASM_INPUT)
+    nxt = next_active_insn (nxt);
+  return nxt;
+}
+
+/* Search for a sequence made out of two stores and a given number of
+   loads, insert a nop if required.  */
+
+static void
+check_store_cacheline_hazard (void)
+{
+  rtx insn, succ0, insn1, insn2;
+  bool found = false;
+
+  for (insn = get_insns (); insn; insn = arc_active_insn (insn))
+    {
+      succ0 = arc_active_insn (insn);
+
+      if (!succ0)
+	return;
+
+      if (!single_set (insn) || !single_set (succ0))
+	continue;
+
+      if ((get_attr_type (insn) != TYPE_STORE)
+	  || (get_attr_type (succ0) != TYPE_STORE))
+	continue;
+
+      /* Found at least two consecutive stores.  Goto the end of the
+	 store sequence.  */
+      insn2 = arc_active_insn (succ0);
+      for (insn1 = insn2; insn1; insn1 = arc_active_insn (insn1))
+	if (single_set (insn1) && get_attr_type (insn1) != TYPE_STORE)
+	  break;
+
+      /* Now, check the next two instructions for the following cases:
+         1. next instruction is a LD => insert 2 nops between store
+	    sequence and load.
+	 2. next-next instruction is a LD => inset 1 nop after the store
+	    sequence.  */
+      if (insn1 && single_set (insn1)
+	  && (get_attr_type (insn1) == TYPE_LOAD))
+	{
+	  found = true;
+	  emit_insn_before (gen_nopv (), insn1);
+	  emit_insn_before (gen_nopv (), insn1);
+	}
+      else
+	{
+	  if (insn1 && (get_attr_type (insn1) == TYPE_COMPARE))
+	    {
+	      /* REG_SAVE_NOTE is used by Haifa scheduler, we are in
+		 reorg, so it is safe to reuse it for avoiding the
+		 current compare insn to be part of a BRcc
+		 optimization.  */
+	      add_reg_note (insn1, REG_SAVE_NOTE, GEN_INT (3));
+	    }
+	  insn1 = arc_active_insn (insn1);
+	  if (insn1 && single_set (insn1)
+	      && (get_attr_type (insn1) == TYPE_LOAD))
+	    {
+	      found = true;
+	      emit_insn_before (gen_nopv (), insn1);
+	    }
+	}
+
+      if (found)
+	{
+	  warning (0, "Potential lockup sequence found, patching");
+	  insn = insn1;
+	  found = false;
+	  continue;
+	}
+    }
+}
+
 /* The same functionality as arc_hazard. It is called in machine reorg
    before any other optimization. Hence, the NOP size is taken into
    account when doing branch shortening. */
@@ -7148,6 +7229,8 @@ workaround_arc_anomaly (void)
 
   if (!TARGET_ARC700)
     return;
+
+  check_store_cacheline_hazard ();
 
   for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
     {
@@ -7527,7 +7610,9 @@ arc_reorg (void)
 	      if (!link_insn
 		  /* Avoid FPU instructions. */
 		  || (GET_MODE (SET_DEST (PATTERN (link_insn))) == CC_FPUmode)
-		  || (GET_MODE (SET_DEST (PATTERN (link_insn))) == CC_FPUEmode))
+		  || (GET_MODE (SET_DEST (PATTERN (link_insn))) == CC_FPUEmode)
+		  /* Avoid insns which are part of a hw-hazard.  */
+		  || find_reg_note (link_insn, REG_SAVE_NOTE, GEN_INT (3)))
 		continue;
 	      else
 		/* Check if this is a data dependency.  */
