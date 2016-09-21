@@ -52,6 +52,7 @@ extern unsigned int arc_compute_frame_size ();
 extern bool arc_ccfsm_branch_deleted_p (void);
 extern void arc_ccfsm_record_branch_deleted (void);
 
+void arc_asm_output_int (FILE *, rtx);
 void arc_asm_output_aligned_decl_local (FILE *, tree, const char *,
 					unsigned HOST_WIDE_INT,
 					unsigned HOST_WIDE_INT,
@@ -129,3 +130,12 @@ extern bool arc_bdr_iscond (rtx);
 
 extern bool insn_is_tls_gd_dispatch (rtx);
 extern void arc_cpu_cpp_builtins (cpp_reader *);
+
+extern bool arc_is_call_to_jli_function (rtx);
+extern const char* arc_gen_call_to_jli_function (rtx);
+extern int arc_jli_fixed_symbol_index (const char *symbol);
+extern int arc_jli_dynamic_symbol_index (const char *symbol);
+extern void arc_add_jli_func_addr_stub (const char *symbol);
+extern void arc_pr_jli_call_fixed (struct cpp_reader *);
+extern void arc_pr_jli_call_always (struct cpp_reader *);
+extern void arc_pr_init (void);

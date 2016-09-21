@@ -1139,19 +1139,7 @@ arc_select_cc_mode (OP, X, Y)
 /* This is how to output an assembler line defining an `int' constant.
    We also handle symbol output here.  Code addresses must be right shifted
    by 2 because that's how the jump instruction wants them.  */
-#define ASM_OUTPUT_INT(FILE, VALUE) \
-do {									\
-  fprintf (FILE, "\t.word\t");						\
-  if (GET_CODE (VALUE) == LABEL_REF)					\
-    {									\
-      fprintf (FILE, "%%st(@");						\
-      output_addr_const (FILE, (VALUE));				\
-      fprintf (FILE, ")");						\
-    }									\
-  else									\
-    output_addr_const (FILE, (VALUE));					\
-  fprintf (FILE, "\n");					                \
-} while (0)
+#define ASM_OUTPUT_INT(FILE, VALUE) arc_asm_output_int(FILE, VALUE);
 
 /* This is how to output an assembler line defining a `float' constant.  */
 #define ASM_OUTPUT_FLOAT(FILE, VALUE) \
@@ -1685,5 +1673,27 @@ enum
 #define TARGET_FPX_QUARK (TARGET_EM && TARGET_SPFP	\
 			  && (arc_fpu_build == FPX_QK))
 #define TARGET_FP_ASSIST ((arc_fpu_build & FPX_DP) != 0)
+
+/* Handle pragmas for JLI calls. */
+#define REGISTER_TARGET_PRAGMAS() do {                                  \
+  c_register_pragma (0, "jli_call_fixed",  arc_pr_jli_call_fixed);      \
+  c_register_pragma (0, "jli_call_always", arc_pr_jli_call_always);     \
+  arc_pr_init();                                                        \
+} while (0)
+
+/** Maximum number of JLI entries. */
+#define ARC_JLI_ENTRIES_MAX (1024)
+
+/** Number of JLI entries in the fixed table. */
+extern int jli_fixed_count;
+
+/* List of fixed symbols in the JLI table. */
+extern char *jli_fixed_table[ARC_JLI_ENTRIES_MAX];
+
+/** Number of JLI entries in the dynamic table. */
+extern int jli_dynamic_count;
+
+/* List of fixed symbols in the JLI table. */
+extern char *jli_dynamic_table[ARC_JLI_ENTRIES_MAX];
 
 #endif /* GCC_ARC_H */

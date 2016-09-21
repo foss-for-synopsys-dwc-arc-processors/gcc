@@ -20,10 +20,13 @@ along with GCC; see the file COPYING3.  If not see
 #include "system.h"
 #include "coretypes.h"
 #include "tm.h"
+#include "cpplib.h"
 #include "tree.h"
 #include "tm_p.h"
 #include "cpplib.h"
 #include "c-family/c-common.h"
+#include "c-family/c-pragma.h"
+#include "c-family/c-format.h"
 #include "target.h"
 
 #define builtin_define(TXT) cpp_define (pfile, TXT)
@@ -105,4 +108,175 @@ arc_cpu_cpp_builtins (cpp_reader * pfile)
   if (TARGET_BIG_ENDIAN)
     builtin_define ("__big_endian__");
 
+}
+
+void
+arc_pr_jli_call_fixed (struct cpp_reader * pfile ATTRIBUTE_UNUSED)
+{
+  tree x;
+  enum cpp_ttype type;
+  char *symbol;
+  int index;
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_OPEN_PAREN)
+  {
+    error ("expected '(' in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_NAME)
+  {
+    error ("expected function name in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  symbol = strndup (IDENTIFIER_POINTER (x), 2048);
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_COMMA)
+  {
+    free (symbol);
+
+    error ("expected ',' in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_NUMBER || TREE_CODE (x) != INTEGER_CST)
+  {
+    free (symbol);
+
+    error ("expected integer JLI index in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  index = TREE_INT_CST_LOW (x);
+
+  if (0 > index || index >= ARC_JLI_ENTRIES_MAX)
+  {
+    free (symbol);
+
+    error ("out of range JLI index in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_CLOSE_PAREN)
+  {
+    free (symbol);
+
+    error ("expected ')' in #pragma jli_call_fixed");
+
+    return;
+  }
+
+  if (jli_fixed_table[index] != NULL)
+  {
+    free (jli_fixed_table[index]);
+
+    warning (OPT_Wpragmas, "function '%s' is already in the JLI table so the "
+      "index will be replaced with %d", symbol, index);
+  }
+  else if ((jli_fixed_count + jli_dynamic_count) >= ARC_JLI_ENTRIES_MAX)
+  {
+    free (symbol);
+
+    error ("there are too many JLI entries");
+
+    return;
+  }
+  else
+  {
+    jli_dynamic_count++;
+  }
+
+  jli_fixed_table[index] = symbol;
+}
+
+void
+arc_pr_jli_call_always (struct cpp_reader * pfile ATTRIBUTE_UNUSED)
+{
+  tree x;
+  enum cpp_ttype type;
+  char *symbol;
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_OPEN_PAREN)
+  {
+    error ("expected '(' in #pragma jli_call_always");
+
+    return;
+  }
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_NAME)
+  {
+    error ("expected function name in #pragma jli_call_always");
+
+    return;
+  }
+
+  symbol = strndup (IDENTIFIER_POINTER (x), 2048);
+
+  type = pragma_lex (&x);
+
+  if (type != CPP_CLOSE_PAREN)
+  {
+    free (symbol);
+
+    error ("expected ')' in #pragma jli_call_always");
+
+    return;
+  }
+
+  if (arc_jli_fixed_symbol_index (symbol) >= 0 ||
+    arc_jli_dynamic_symbol_index (symbol) >= 0)
+  {
+    free (symbol);
+
+    warning (OPT_Wpragmas, "'%s' has already been registered as a JLI "
+      "function; ignoring", symbol);
+
+    return;
+  }
+
+  if ((jli_fixed_count + jli_dynamic_count) >= ARC_JLI_ENTRIES_MAX)
+  {
+    free (symbol);
+
+    error ("there are too many JLI entries");
+
+    return;
+  }
+
+  jli_dynamic_table[jli_dynamic_count++] = symbol;
+}
+
+void
+arc_pr_init (void)
+{
+  int i;
+
+  jli_fixed_count = 0;
+  jli_dynamic_count = 0;
+
+  for (i = 0; i < ARC_JLI_ENTRIES_MAX; ++i)
+  {
+    jli_fixed_table[i] = NULL;
+    jli_dynamic_table[i] = NULL;
+  }
 }

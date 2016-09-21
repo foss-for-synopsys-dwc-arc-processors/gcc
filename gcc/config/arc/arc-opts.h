@@ -91,4 +91,12 @@ enum arc_abi_type
 /* Default MPY option value.  */
 #define DEFAULT_arc_mpy_option -1
 
+/* Ways to determine the address of a function in the JLI table. */
+enum arc_jli_func_addr_type
+  {
+    ARC_FUNC_ADDR_COMPAT,
+    ARC_FUNC_ADDR_INIT,
+    ARC_FUNC_ADDR_ALWAYS
+  };
+
 #endif /* ARC_OPTS_H */
