@@ -10879,7 +10879,8 @@ arc_epilogue_uses (int regno)
 	{
 	  if (!fixed_regs[regno])
 	    return true;
-	  return regno == arc_return_address_register (fn_type);
+	  return ((regno == arc_return_address_register (fn_type))
+		  || (regno == RETURN_ADDR_REGNUM));
 	}
       else
 	return regno == RETURN_ADDR_REGNUM;
