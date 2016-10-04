@@ -6194,6 +6194,14 @@
    (set_attr "iscompact" "maybe,false")
    (set_attr "predicable" "no,no")])
 
+;; Dummy pattern used as a place holder for automatically saved
+;; registers.
+(define_insn "stack_irq_dwarf"
+  [(unspec_volatile [(const_int 1)] VUNSPEC_ARC_STACK_IRQ)]
+  ""
+  ""
+  [(set_attr "length" "0")])
+
 ;; include the arc-FPX instructions
 (include "fpx.md")
 

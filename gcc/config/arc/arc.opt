@@ -426,3 +426,7 @@ Enable unaligned word and halfword accesses to packed data.
 
 TargetVariable
 unsigned int arc_seen_options = 0
+
+mirq-ctrl-saved=
+Target RejectNegative Joined Var(arc_deferred_options) Defer
+Specifies the registers that the processor saves on an interrupt entry and exit.
