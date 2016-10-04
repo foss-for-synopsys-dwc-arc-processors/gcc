@@ -63,6 +63,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "builtins.h"
 #include "rtl-iter.h"
 #include "alias.h"
+#include "opts.h"
 
 /* Which cpu we're compiling for (ARC600, ARC601, ARC700).  */
 static char arc_cpu_name[10] = "";
@@ -117,6 +118,29 @@ struct GTY (()) arc_ccfsm
   rtx_insn *target_insn;
   int target_label;
 };
+
+/* Status of the IRQ_CTRL_AUX register.  */
+typedef struct irq_ctrl_saved_t
+{
+  short irq_save_last_reg;      /* Last register number used by
+				   IRQ_CTRL_SAVED aux_reg.  */
+  bool  irq_save_blink;         /* True if BLINK is automatically
+				   saved.  */
+  bool  irq_save_lpcount;       /* True if LPCOUNT is automatically
+				   saved.  */
+} irq_ctrl_saved_t;
+static irq_ctrl_saved_t irq_ctrl_saved;
+
+#define ARC_AUTOBLINK_IRQ_P(FNTYPE)				\
+  (ARC_INTERRUPT_P (FNTYPE) && irq_ctrl_saved.irq_save_blink)
+
+#define ARC_AUTOFP_IRQ_P(FNTYPE)					\
+  (ARC_INTERRUPT_P (FNTYPE) && (irq_ctrl_saved.irq_save_last_reg > 26))
+
+#define ARC_AUTO_IRQ_P(FNTYPE)				\
+  (ARC_INTERRUPT_P (FNTYPE)				\
+   && (irq_ctrl_saved.irq_save_blink			\
+       || (irq_ctrl_saved.irq_save_last_reg >= 0)))
 
 #define arc_ccfsm_current cfun->machine->ccfsm_current
 
@@ -782,11 +806,110 @@ arc_init (void)
     }
 }
 
+/* Parse -mirq-ctrl-saved= option string.  Registers may be specified
+   individually, or as ranges such as "r0-r3".  Registers accepted are
+   r0 through r31 and lp_count.  Registers and ranges must be
+   comma-separated.  */
+
+static void
+irq_range (const char *cstr)
+{
+  int i, first, last, blink, lpcount, xreg;
+  char *str, *dash, *comma;
+
+  i = strlen (cstr);
+  str = (char *) alloca (i + 1);
+  memcpy (str, cstr, i + 1);
+  blink = -1;
+  lpcount = -1;
+
+  dash = strchr (str, '-');
+  if (!dash)
+    {
+      warning (0, "value of -mirq-ctrl-saved must have form R0-REGx");
+      return;
+    }
+  *dash = '\0';
+
+  comma = strchr (dash + 1, ',');
+  if (comma)
+    *comma = '\0';
+
+  first = decode_reg_name (str);
+  if (first != 0)
+    {
+      warning (0, "first register must be R0");
+      return;
+    }
+
+  /* At this moment we do not have the register names initialized
+     accordingly.  */
+  if (!strcmp (dash + 1, "ilink"))
+    last = 29;
+  else
+    last = decode_reg_name (dash + 1);
+
+  if (last < 0)
+    {
+      warning (0, "unknown register name: %s", dash + 1);
+      return;
+    }
+
+  if (!(last & 0x01))
+    {
+      warning (0, "last register name %s must be an odd register", dash + 1);
+      return;
+    }
+
+  *dash = '-';
+
+  if (first > last)
+    {
+      warning (0, "%s-%s is an empty range", str, dash + 1);
+      return;
+    }
+
+  while (comma)
+    {
+      *comma = ',';
+      str = comma + 1;
+
+      comma = strchr (str, ',');
+      if (comma)
+	*comma = '\0';
+
+      xreg = decode_reg_name (str);
+      switch (xreg)
+	{
+	case 31:
+	  blink = 31;
+	  break;
+
+	case 60:
+	  lpcount = 60;
+	  break;
+
+	default:
+	  warning (0, "unknown register name: %s", str);
+	  return;
+	}
+    }
+
+  irq_ctrl_saved.irq_save_last_reg = last;
+  irq_ctrl_saved.irq_save_blink    = (blink == 31) || (last == 31);
+  irq_ctrl_saved.irq_save_lpcount  = (lpcount == 60);
+}
+
 /* Check ARC options, generate derived target attributes.  */
 
 static void
 arc_override_options (void)
 {
+  unsigned int i;
+  cl_deferred_option *opt;
+  vec<cl_deferred_option> *vopt
+    = (vec<cl_deferred_option> *) arc_deferred_options;
+
   if (arc_cpu == PROCESSOR_NONE)
     arc_cpu = TARGET_CPU_DEFAULT;
 
@@ -814,6 +937,28 @@ arc_override_options (void)
     default:
       gcc_unreachable ();
     }
+
+  irq_ctrl_saved.irq_save_last_reg = -1;
+  irq_ctrl_saved.irq_save_blink    = false;
+  irq_ctrl_saved.irq_save_lpcount  = false;
+
+  /* Handle the deferred options.  */
+  if (vopt)
+    FOR_EACH_VEC_ELT (*vopt, i, opt)
+      {
+	switch (opt->opt_index)
+	  {
+	  case OPT_mirq_ctrl_saved_:
+	    if (TARGET_V2)
+	      irq_range (opt->arg);
+	    else
+	      warning (0, "option -mirq-ctrl-saved valid only for ARC v2 processors");
+	    break;
+
+	  default:
+	    gcc_unreachable();
+	  }
+      }
 
   /* Set cpu flags accordingly to architecture/selected cpu.  The cpu
      specific flags are set in arc-common.c.  The architecture forces
@@ -2213,15 +2358,43 @@ arc_compute_function_type (struct function *fun)
    code like this.  The number of frames that use __builtin_eh_return
    is pretty low, so optimising them is not critical right now.  */
 
-#define MUST_SAVE_REGISTER(regno, interrupt_p)				\
-  (((regno) != RETURN_ADDR_REGNUM && (regno) != FRAME_POINTER_REGNUM	\
-    && (df_regs_ever_live_p (regno)					\
-	&& (!call_used_regs[regno] || interrupt_p)))			\
-   || (flag_pic && crtl->uses_pic_offset_table				\
-       && regno == PIC_OFFSET_TABLE_REGNUM)				\
-   || (crtl->calls_eh_return && (regno > 2 && regno < 27)))
+static bool
+arc_must_save_register (int regno, struct function *func)
+{
+  enum arc_function_type fn_type = arc_compute_function_type (func);
+  bool irq_auto_save_p = ((irq_ctrl_saved.irq_save_last_reg >= regno)
+			  && ARC_INTERRUPT_P (fn_type));
 
-#define MUST_SAVE_RETURN_ADDR	(cfun->machine->frame_info.save_return_addr)
+  if ((regno) != RETURN_ADDR_REGNUM
+      && (regno) != FRAME_POINTER_REGNUM
+      && df_regs_ever_live_p (regno)
+      && (!call_used_regs[regno]
+	  || ARC_INTERRUPT_P (fn_type))
+      /* Do not emit code for auto saved regs.  */
+      && !irq_auto_save_p)
+    return true;
+
+  if (flag_pic && crtl->uses_pic_offset_table
+      && regno == PIC_OFFSET_TABLE_REGNUM)
+    return true;
+
+  if (crtl->calls_eh_return && (regno > 2 && regno < 27))
+    return true;
+
+  return false;
+}
+
+/* Return true if the return address must be saved in the current function,
+   otherwise return false.  */
+
+static bool
+arc_must_save_return_addr (struct function *func)
+{
+  if (func->machine->frame_info.save_return_addr)
+    return true;
+
+  return false;
+}
 
 /* Helper function to wrap FRAME_POINTER_NEEDED.  We do this as
    FRAME_POINTER_NEEDED will not be true until the IRA (Integrated
@@ -2239,9 +2412,9 @@ arc_compute_function_type (struct function *fun)
 
    As the frame pointer is handled as a special case in our prologue
    and epilogue code it must not be saved and restored using the
-   MUST_SAVE_REGISTER mechanism otherwise we run into issues where GCC
-   believes that the function is not using a frame pointer and that
-   the value in the fp register is the frame pointer, while the
+   arc_must_save_register mechanism otherwise we run into issues where
+   GCC believes that the function is not using a frame pointer and
+   that the value in the fp register is the frame pointer, while the
    prologue and epilogue are busy saving and restoring the fp
    register.  This issue is fixed in this commit too.
 
@@ -2311,8 +2484,6 @@ arc_compute_frame_size (void)
   unsigned int total_size, var_size, args_size, pretend_size, extra_size;
   unsigned int reg_size, reg_offset;
   unsigned int gmask;
-  enum arc_function_type fn_type;
-  int interrupt_p;
   struct arc_frame_info *frame_info;
   int size;
 
@@ -2337,15 +2508,13 @@ arc_compute_frame_size (void)
 
   reg_size = 0;
   gmask = 0;
-  fn_type = arc_compute_function_type (cfun);
-  interrupt_p = ARC_INTERRUPT_P (fn_type);
 
   for (regno = 0; regno <= 31; regno++)
     {
-      if (MUST_SAVE_REGISTER (regno, interrupt_p))
+      if (arc_must_save_register (regno, cfun))
 	{
 	  reg_size += UNITS_PER_WORD;
-	  gmask |= 1 << regno;
+	  gmask |= 1L << regno;
 	}
     }
 
@@ -2378,7 +2547,7 @@ arc_compute_frame_size (void)
     }
 
   extra_size = 0;
-  if (MUST_SAVE_RETURN_ADDR)
+  if (arc_must_save_return_addr (cfun))
     extra_size = 4;
   if (arc_frame_pointer_needed ())
     extra_size += 4;
@@ -2600,6 +2769,77 @@ arc_save_restore (rtx base_reg,
 int arc_return_address_regs[4]
   = {0, RETURN_ADDR_REGNUM, ILINK1_REGNUM, ILINK2_REGNUM};
 
+
+/* Build dwarf information when the context is saved via AUX_IRQ_CTRL
+   mechanism.  */
+
+static void
+arc_dwarf_emit_irq_save_regs (void)
+{
+  rtx tmp, par, insn, reg;
+  int i, offset, j;
+
+  par = gen_rtx_SEQUENCE (VOIDmode,
+			  rtvec_alloc (irq_ctrl_saved.irq_save_last_reg + 1
+				       + irq_ctrl_saved.irq_save_blink
+				       + irq_ctrl_saved.irq_save_lpcount
+				       + 1));
+
+  /* Build the stack adjustment note for unwind info.  */
+  j = 0;
+  offset = UNITS_PER_WORD * (irq_ctrl_saved.irq_save_last_reg + 1
+			     + irq_ctrl_saved.irq_save_blink
+			     + irq_ctrl_saved.irq_save_lpcount);
+  tmp = plus_constant (Pmode, stack_pointer_rtx, -1 * offset);
+  tmp = gen_rtx_SET (stack_pointer_rtx, tmp);
+  RTX_FRAME_RELATED_P (tmp) = 1;
+  XVECEXP (par, 0, j++) = tmp;
+
+  offset -= UNITS_PER_WORD;
+
+  /* 1st goes LP_COUNT.  */
+  if (irq_ctrl_saved.irq_save_lpcount)
+    {
+      reg = gen_rtx_REG (SImode, 60);
+      tmp = plus_constant (Pmode, stack_pointer_rtx, offset);
+      tmp = gen_frame_mem (SImode, tmp);
+      tmp = gen_rtx_SET (tmp, reg);
+      RTX_FRAME_RELATED_P (tmp) = 1;
+      XVECEXP (par, 0, j++) = tmp;
+      offset -= UNITS_PER_WORD;
+    }
+
+  /* 2nd goes BLINK.  */
+  if (irq_ctrl_saved.irq_save_blink)
+    {
+      reg = gen_rtx_REG (SImode, 31);
+      tmp = plus_constant (Pmode, stack_pointer_rtx, offset);
+      tmp = gen_frame_mem (SImode, tmp);
+      tmp = gen_rtx_SET (tmp, reg);
+      RTX_FRAME_RELATED_P (tmp) = 1;
+      XVECEXP (par, 0, j++) = tmp;
+      offset -= UNITS_PER_WORD;
+    }
+
+  /* Build the parallel of the remaining registers recorded as saved
+     for unwind.  */
+  for (i = irq_ctrl_saved.irq_save_last_reg; i >= 0; i--)
+    {
+      reg = gen_rtx_REG (SImode, i);
+      tmp = plus_constant (Pmode, stack_pointer_rtx, offset);
+      tmp = gen_frame_mem (SImode, tmp);
+      tmp = gen_rtx_SET (tmp, reg);
+      RTX_FRAME_RELATED_P (tmp) = 1;
+      XVECEXP (par, 0, j++) = tmp;
+      offset -= UNITS_PER_WORD;
+    }
+
+  /* Dummy insn used to anchor the dwarf info.  */
+  insn = emit_insn (gen_stack_irq_dwarf());
+  add_reg_note (insn, REG_FRAME_RELATED_EXPR, par);
+  RTX_FRAME_RELATED_P (insn) = 1;
+}
+
 /* Set up the stack and frame pointer (if desired) for the function.  */
 
 void
@@ -2613,6 +2853,7 @@ arc_expand_prologue (void)
      Change the stack layout so that we rather store a high register with the
      PRE_MODIFY, thus enabling more short insn generation.)  */
   int first_offset = 0;
+  enum arc_function_type fn_type = arc_compute_function_type (cfun);
 
   /* Compute total frame size.  */
   size = arc_compute_frame_size ();
@@ -2636,30 +2877,41 @@ arc_expand_prologue (void)
       frame_size_to_allocate -= cfun->machine->frame_info.pretend_size;
     }
 
+  /* IRQ using automatic save mechanism will save the register before
+     anything we do.  */
+  if (ARC_AUTO_IRQ_P (fn_type))
+    {
+      arc_dwarf_emit_irq_save_regs ();
+    }
+
   /* The home-grown ABI says link register is saved first.  */
-  if (MUST_SAVE_RETURN_ADDR)
+  if (arc_must_save_return_addr (cfun)
+      && !ARC_AUTOBLINK_IRQ_P (fn_type))
     {
       rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
-      rtx mem = gen_frame_mem (Pmode, gen_rtx_PRE_DEC (Pmode, stack_pointer_rtx));
+      rtx mem = gen_frame_mem (Pmode,
+			       gen_rtx_PRE_DEC (Pmode,
+						stack_pointer_rtx));
 
       frame_move_inc (mem, ra, stack_pointer_rtx, 0);
       frame_size_to_allocate -= UNITS_PER_WORD;
-
-    } /* MUST_SAVE_RETURN_ADDR */
+    }
 
   /* Save any needed call-saved regs (and call-used if this is an
      interrupt handler) for ARCompact ISA.  */
   if (cfun->machine->frame_info.reg_size)
     {
       first_offset = -cfun->machine->frame_info.reg_size;
+
       /* N.B. FRAME_POINTER_MASK and RETURN_ADDR_MASK are cleared in gmask.  */
       arc_save_restore (stack_pointer_rtx, gmask, 0, &first_offset);
       frame_size_to_allocate -= cfun->machine->frame_info.reg_size;
     }
 
-
-  /* Save frame pointer if needed.  */
-  if (arc_frame_pointer_needed ())
+  /* Save frame pointer if needed.  First save the FP on stack, if not
+     autosaved.  */
+  if (arc_frame_pointer_needed ()
+      && !ARC_AUTOFP_IRQ_P (fn_type))
     {
       rtx addr = gen_rtx_PLUS (Pmode, stack_pointer_rtx,
 			       GEN_INT (-UNITS_PER_WORD + first_offset));
@@ -2669,6 +2921,11 @@ arc_expand_prologue (void)
       frame_move_inc (mem, frame_pointer_rtx, stack_pointer_rtx, 0);
       frame_size_to_allocate -= UNITS_PER_WORD;
       first_offset = 0;
+    }
+
+  /* Emit mov fp,sp.  */
+  if (arc_frame_pointer_needed ())
+    {
       frame_move (frame_pointer_rtx, stack_pointer_rtx);
     }
 
@@ -2737,7 +2994,8 @@ arc_expand_epilogue (int sibcall_p)
 
 
   /* Restore any saved registers.  */
-  if (arc_frame_pointer_needed ())
+  if (arc_frame_pointer_needed ()
+      && !ARC_AUTOFP_IRQ_P (fn_type))
     {
       rtx addr = gen_rtx_POST_INC (Pmode, stack_pointer_rtx);
 
@@ -2775,14 +3033,15 @@ arc_expand_epilogue (int sibcall_p)
 	    : satisfies_constraint_C2a (GEN_INT (first_offset))))
        /* Also do this if we have both gprs and return
 	  address to restore, and they both would need a LIMM.  */
-       || (MUST_SAVE_RETURN_ADDR
-	   && !SMALL_INT ((cfun->machine->frame_info.reg_size + first_offset) >> 2)
-	   && cfun->machine->frame_info.gmask))
+      || (arc_must_save_return_addr (cfun)
+	  && !SMALL_INT ((cfun->machine->frame_info.reg_size + first_offset) >> 2)
+	  && cfun->machine->frame_info.gmask))
     {
       frame_stack_add (first_offset);
       first_offset = 0;
     }
-  if (MUST_SAVE_RETURN_ADDR)
+  if (arc_must_save_return_addr (cfun)
+      && !ARC_AUTOBLINK_IRQ_P (fn_type))
     {
       rtx ra = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
       int ra_offs = cfun->machine->frame_info.reg_size + first_offset;
@@ -2846,7 +3105,6 @@ arc_expand_epilogue (int sibcall_p)
 			   cfun->machine->frame_info.gmask
 			   & ~(FRAME_POINTER_MASK | RETURN_ADDR_MASK), 1, &first_offset);
     }
-
 
   /* The rest of this function does the following:
      ARCompact    : handle epilogue_delay, restore sp (phase-2), return
