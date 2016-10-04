@@ -605,7 +605,7 @@ Objective-C and Objective-C++ Dialects}.
 -mnorm  -mspfp  -mspfp-compact  -mspfp-fast  -msimd  -msoft-float  -mswap @gol
 -mcrc  -mdsp-packa  -mdvbf  -mlock  -mmac-d16  -mmac-24  -mrtsc  -mswape @gol
 -mtelephony  -mxy  -misize  -mannotate-align  -marclinux  -marclinux_prof @gol
--mlong-calls  -mmedium-calls  -msdata @gol
+-mlong-calls  -mmedium-calls  -msdata -mirq-ctrl-saved @gol
 -mvolatile-cache  -mtp-regno=@var{regno} @gol
 -malign-call  -mauto-modify-reg  -mbbit-peephole  -mno-brcc @gol
 -mcase-vector-pcrel  -mcompact-casesi  -mno-cond-exec  -mearly-cbranchsi @gol
@@ -14563,6 +14563,15 @@ Enables support for all single- and double-precision floating-point
 hardware extensions.  Not available for ARC EM@.
 
 @end table
+
+@item -mirq-ctrl-saved="REGS"
+@opindex mirq-ctrl-saved
+Specifies gneral-purposes registers that the processor saves/restores
+on interrupt entry and exit.  Permited values: r0-r29, fp, blink, and
+lp_count.  Registers needs to be specified as ranges such as "r0-r3".
+A register range always starts with r0.  Registers blink and lp_count
+can be specified individually.  Only valid for ARC EM and ARC HS
+cores.
 
 @end table
 
