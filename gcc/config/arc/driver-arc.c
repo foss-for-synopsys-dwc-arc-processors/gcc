@@ -54,7 +54,7 @@ arc_cpu_to_as (int argc, const char **argv)
 	name = "-mcode-density";
       else
 	name = "";
-      if (arc_selected_cpu->flags & FL_FPUDA)
+      if (arc_selected_cpu->flags & (FL_FPUDA | FL_QUARK2))
 	name = concat ("-mfpuda ", name, NULL);
       if (arc_selected_cpu->flags & FL_SPFP)
 	name = concat ("-mspfp ", name, NULL);

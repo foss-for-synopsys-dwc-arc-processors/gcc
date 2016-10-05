@@ -126,6 +126,8 @@ BEGIN {
 	    line = line "/mmul32x16"
 	  else if (cpu_flg[i] == "FL_FPX_QUARK")
 	    line = line "/quark"
+	  else if (cpu_flg[i] == "FL_FPX_QUARK2")
+	    line = line "/quark2"
 	  else if (cpu_flg[i] == "FL_SPFP")
 	    line = line "/spfp"
 	  else if (cpu_flg[i] == "FL_DPFP")

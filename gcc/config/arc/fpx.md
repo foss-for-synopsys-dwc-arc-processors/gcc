@@ -678,7 +678,7 @@
   [(set (match_operand:SF 0 "register_operand"        "=r")
 	(div:SF (match_operand:SF 1 "register_operand" "r")
 		(match_operand:SF 2 "register_operand" "r")))]
-  "TARGET_FPX_QUARK"
+  "TARGET_FPX_QUARK || TARGET_FPU_QUARK2"
   "dsp_fp_div\\t%0,%1,%2"
   [(set_attr "length" "4")
    (set_attr "predicable" "no")
@@ -687,7 +687,7 @@
 (define_insn "*sqrtsf2_quark"
   [(set (match_operand:SF 0 "register_operand"          "=r")
 	(sqrt:SF (match_operand:SF 1 "register_operand" "r")))]
-  "TARGET_FPX_QUARK"
+  "TARGET_FPX_QUARK || TARGET_FPU_QUARK2"
   "dsp_fp_sqrt\\t%0,%1"
   [(set_attr "length" "4")
    (set_attr "predicable" "no")
