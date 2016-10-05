@@ -6049,9 +6049,9 @@
   [(set (match_operand:SF 0 "register_operand"        "")
 	(div:SF (match_operand:SF 1 "nonmemory_operand" "")
 		(match_operand:SF 2 "nonmemory_operand" "")))]
-  "TARGET_FPX_QUARK || TARGET_FP_SP_SQRT"
+  "TARGET_FPX_QUARK || TARGET_FP_SP_SQRT || TARGET_FPU_QUARK2"
   "
-  if (TARGET_FPX_QUARK)
+  if (TARGET_FPX_QUARK || TARGET_FPU_QUARK2)
    {
      operands[1] = force_reg (SFmode, operands[1]);
      operands[2] = force_reg (SFmode, operands[2]);
@@ -6068,9 +6068,9 @@
 (define_expand "sqrtsf2"
   [(set (match_operand:SF 0 "register_operand"           "")
 	(sqrt:SF (match_operand:SF 1 "nonmemory_operand" "")))]
-  "TARGET_FPX_QUARK || TARGET_FP_SP_SQRT"
+  "TARGET_FPX_QUARK || TARGET_FP_SP_SQRT || TARGET_FPU_QUARK2"
   "
-  if (TARGET_FPX_QUARK)
+  if (TARGET_FPX_QUARK || TARGET_FPU_QUARK2)
    {
      operands[1] = force_reg (SFmode, operands[1]);
    }
