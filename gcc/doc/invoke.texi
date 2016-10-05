@@ -13272,6 +13272,11 @@ extension.
 Compile for ARC EM4 DMIPS cpu with single precision floating point and
 double assists instructions.
 
+@item quarkse2_em
+@opindex quarkse2_em
+Compile for ARC EM CPU on Intel QuarkSE2 microcontroller with single
+precision floating point.
+
 @item hs
 @opindex hs
 Compile for ARC HS cpu with no hardware extension, except the atomic
