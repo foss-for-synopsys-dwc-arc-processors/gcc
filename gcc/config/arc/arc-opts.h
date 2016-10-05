@@ -50,6 +50,8 @@ enum processor_type
 #define FPX_DP    0x0100
 /* Quark SE floating point instructions.  */
 #define FPX_QK    0x0200
+/* Quark SE2 floating point instructions.  */
+#define FPX_QK2   0x0400
 
 /* fpus option combi.  */
 #define FPU_FPUS  (FPU_SP | FPU_SC)
@@ -75,6 +77,8 @@ enum processor_type
 #define FPU_FPUD_FMA  (FPU_FPUS_FMA | FPU_DP | FPU_DC | FPU_DF)
 /* fpud_all option combi.  */
 #define FPU_FPUD_ALL  (FPU_FPUS_ALL | FPU_DP | FPU_DC | FPU_DF | FPU_DD)
+/* QuarkSE2 combi.  */
+#define FPU_FPUDA_QK2 (FPU_SP | FPU_SC | FPX_DP | FPX_QK2)
 
 /* Default FPU option value.  */
 #define DEFAULT_arc_fpu_build 0x10000000
