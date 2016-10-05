@@ -1672,5 +1672,8 @@ enum
 /* Custom FP instructions used by QuarkSE EM cpu.  */
 #define TARGET_FPX_QUARK    (TARGET_EM && TARGET_SPFP		\
 			     && (arc_fpu_build == FPX_QK))
-
+/* Custom FP instructions used by QuarkSE2 EM cpu.  */
+#define TARGET_FPU_QUARK2   (TARGET_EM					\
+			     && ((arc_fpu_build				\
+				  & FPU_FPUDA_QK2) == FPU_FPUDA_QK2))
 #endif /* GCC_ARC_H */
