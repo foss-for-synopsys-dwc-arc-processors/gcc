@@ -5051,6 +5051,9 @@
       len = get_attr_length (scan);
       size += len;
     }
+    /* Check if we found the end of the loop.  If not go safe.  */
+    if (!scan)
+      size = 2048;
   /* Try to verify that there are at least three instruction fetches
      between the loop setup and the first encounter of the loop end.  */
   for (scan = NEXT_INSN (insn); scan && n_insns < 3; scan = NEXT_INSN (scan))
