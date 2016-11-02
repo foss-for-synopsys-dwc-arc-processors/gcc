@@ -282,10 +282,10 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 #define DEFAULT_SIGNED_CHAR 0
 
 #undef SIZE_TYPE
-#define SIZE_TYPE "long unsigned int"
+#define SIZE_TYPE "unsigned int"
 
 #undef PTRDIFF_TYPE
-#define PTRDIFF_TYPE "long int"
+#define PTRDIFF_TYPE "int"
 
 #undef WCHAR_TYPE
 #define WCHAR_TYPE "int"
