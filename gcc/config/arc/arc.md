@@ -2944,7 +2944,7 @@
 (define_insn "*sub_n"
   [(set (match_operand:SI 0 "dest_reg_operand"                 "=Rcw,w,w")
 	(minus:SI (match_operand:SI 1 "nonmemory_operand"         "0,c,?Cal")
-		  (mult:SI (match_operand:SI 2 "register_operand" "w,w,w")
+		  (mult:SI (match_operand:SI 2 "register_operand" "c,c,c")
 			   (match_operand:SI 3 "_2_4_8_operand" ""))))]
   ""
   "sub%z3%? %0,%1,%2"
