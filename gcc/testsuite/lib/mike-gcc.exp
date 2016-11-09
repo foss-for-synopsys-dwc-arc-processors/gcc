@@ -226,7 +226,7 @@ proc postbase  { src_code run groups args } {
 	    if { $verbose > 1 } {
 		send_user "Checking:\n$program_output\nto see if it matches:\n$output\n\n"
 	    }
-	    if ![regexp -- $program_output $output] {
+	    if ![regexp -- $program_output $output a b] {
 		set pass no
 		if { $verbose > 1 } {
 		    send_user "Nope, does not match.\n\n"
@@ -235,6 +235,7 @@ proc postbase  { src_code run groups args } {
 		if { $verbose > 1 } {
 		    send_user "Yes, it matches.\n\n"
 		}
+		lappend pass_message $b
 	    }
 	}
     } else {
