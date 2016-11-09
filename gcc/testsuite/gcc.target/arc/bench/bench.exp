@@ -1,0 +1,78 @@
+# Exit immediately if this isn't an arc target.
+if ![istarget arc*-*-*] then {
+  return
+}
+
+global PERF_TEST
+if { ![info exists PERF_TEST] || "$PERF_TEST" != "yes" } {
+    return
+}
+
+# If a testcase doesn't have special options, use these.
+global DHRYSTONE_CFLAGS
+if ![info exists DHRYSTONE_CFLAGS] then {
+    set DHRYSTONE_CFLAGS "-O2 -mindexed-loads -mauto-modify-reg  \
+-fno-branch-count-reg \
+-fno-jump-tables -fno-ivopts -fira-loop-pressure -fno-gcse -frename-registers \
+-fno-tree-dominator-opts -flto"
+}
+
+global COREMARK_CFLAGS
+if ![info exists COREMARK_CFLAGS] then {
+    set COREMARK_CFLAGS "-O2 -fno-tree-loop-ivcanon -fgcse -frename-registers \
+-funroll-all-loops -funroll-loops -fira-region=all -fira-loop-pressure \
+-fno-cse-follow-jumps -funswitch-loops -fgcse-las -fsched-pressure \
+-fno-sched-interblock -fno-toplevel-reorder --param max-unroll-times=10000 \
+--param max-unrolled-insns=1000 --param max-pending-list-length=1000000 \
+-mauto-modify-reg -finline-functions-called-once -finline-small-functions \
+-finline-limit=500 -fno-jump-tables -flto"
+}
+
+# Load support procs.
+load_lib mike-gcc.exp
+load_lib gcc-defs.exp
+
+prebase
+set actions run
+set compiler_output "^$"
+set program_output "Dhrystones per Second:\\s+(\\d+)"
+postbase dhry.c $run $groups "-w -fno-inline -DREG=register -DMSC_CLOCK \
+$DHRYSTONE_CFLAGS"
+
+prebase
+set actions run
+set compiler_output "^$"
+set program_output "Iterations/Sec\\s+:\\s(\\d+\\.\\d+)"
+postbase coremark.c $run $groups "-DCLOCKS_PER_SEC=1000000 \
+-DPERFORMANCE_RUN=1 -DITERATIONS=20 $COREMARK_CFLAGS"
+
+prebase
+set actions run
+set compiler_output "^$"
+set program_output "Whetstones:\\s(\\d+\\.\\d+)"
+postbase whetstone.c $run $groups "-DPRINTOUT -O3 -DITERATIONS=20"
+
+prebase
+set actions run
+set compiler_output "^$"
+set program_output "Whetstones:\\s(\\d+\\.\\d+)"
+postbase whetstone.c $run $groups "-DDOUBLE_FLOAT -DPRINTOUT -O3 -DITERATIONS=10"
+
+# linpack cannot be run in a simulator.
+#     prebase
+#     set actions run
+#     set compiler_output "^$"
+#     set program_output "Average:\\s+(\\d+\\.\\d+)"
+#     postbase linpack-pc.c $run $groups "-DSP -DROLL -O3"
+
+prebase
+set actions run
+set compiler_output "^$"
+set program_output "1024\\s+(\\d+\\.\\d+)"
+postbase cachebench.c $run $groups "-DUSE_INT -O3"
+
+prebase
+set actions run
+set compiler_output "^$"
+set program_output "msec\\s=\\s(\\d+\\.\\d+)"
+postbase SearchGame.c $run $groups " -O2"
