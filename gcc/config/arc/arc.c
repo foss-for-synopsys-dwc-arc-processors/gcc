@@ -1620,10 +1620,11 @@ arc_conditional_register_usage (void)
      However, we can't actually use this approach, because for ARC the
      delay slot scheduling pass is active, which runs after
      machine_dependent_reorg.  */
-  if (TARGET_ARC600)
-    CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], LP_COUNT);
-  else if (!TARGET_LP_WR_INTERLOCK)
-    fixed_regs[LP_COUNT] = 1;
+  if (TARGET_ARC600_FAMILY)
+    {
+      CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], LP_COUNT);
+      fixed_regs[LP_COUNT] = 1;
+    }
   for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
     if (!call_used_regs[regno])
       CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], regno);

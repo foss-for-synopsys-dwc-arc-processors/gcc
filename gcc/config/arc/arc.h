@@ -1629,9 +1629,6 @@ enum
 /* ARC600, ARC601 and ARC700 feature macro.  */
 #define TARGET_ARCOMPACT_FAMILY				\
   (TARGET_ARC600 || TARGET_ARC601 || TARGET_ARC700)
-/* Loop count register can be read in very next instruction after has
-   been written to by an ordinary instruction.  */
-#define TARGET_LP_WR_INTERLOCK (!TARGET_ARC600_FAMILY)
 
 /* FPU defines.  */
 /* Any FPU support.  */
