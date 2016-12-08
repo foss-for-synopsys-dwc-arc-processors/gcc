@@ -1764,8 +1764,9 @@ arc_conditional_register_usage (void)
   arc_regno_reg_class[PROGRAM_COUNTER_REGNO] = GENERAL_REGS;
 
   /*ARCV2 Accumulator.  */
-  if (TARGET_V2
-      && (TARGET_FP_DP_FUSED || TARGET_FP_SP_FUSED))
+  if ((TARGET_V2
+       && (TARGET_FP_DP_FUSED || TARGET_FP_SP_FUSED))
+      || TARGET_PLUS_DMPY)
   {
     arc_regno_reg_class[ACCL_REGNO] = WRITABLE_CORE_REGS;
     arc_regno_reg_class[ACCH_REGNO] = WRITABLE_CORE_REGS;
@@ -1773,6 +1774,8 @@ arc_conditional_register_usage (void)
     SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], ACCH_REGNO);
     SET_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], ACCL_REGNO);
     SET_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], ACCH_REGNO);
+    SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], ACCL_REGNO);
+    SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], ACCH_REGNO);
     arc_hard_regno_mode_ok[ACC_REG_FIRST] = D_MODES;
   }
 }
