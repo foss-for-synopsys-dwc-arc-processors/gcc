@@ -296,9 +296,6 @@ AC_DEFUN([GLIBCXX_CHECK_LINKER_FEATURES], [
       fi
       rm -f conftest.c conftest.o conftest
     fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
-    fi
     AC_MSG_RESULT($ac_gcsections)
 
     if test "$ac_test_CFLAGS" = set; then

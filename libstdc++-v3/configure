@@ -20753,9 +20753,6 @@ rm -f core conftest.err conftest.$ac_objext \
       fi
       rm -f conftest.c conftest.o conftest
     fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
-    fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
 
@@ -27788,9 +27785,6 @@ rm -f core conftest.err conftest.$ac_objext \
       fi
       rm -f conftest.c conftest.o conftest
     fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
-    fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
 
@@ -33718,9 +33712,6 @@ rm -f core conftest.err conftest.$ac_objext \
 	fi
       fi
       rm -f conftest.c conftest.o conftest
-    fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
@@ -45596,9 +45587,6 @@ rm -f core conftest.err conftest.$ac_objext \
       fi
       rm -f conftest.c conftest.o conftest
     fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
-    fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
 
@@ -45809,9 +45797,6 @@ rm -f core conftest.err conftest.$ac_objext \
 	fi
       fi
       rm -f conftest.c conftest.o conftest
-    fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
@@ -46284,9 +46269,6 @@ rm -f core conftest.err conftest.$ac_objext \
 	fi
       fi
       rm -f conftest.c conftest.o conftest
-    fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
@@ -52570,9 +52552,6 @@ rm -f core conftest.err conftest.$ac_objext \
       fi
       rm -f conftest.c conftest.o conftest
     fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
-    fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
 
@@ -58486,9 +58465,6 @@ rm -f core conftest.err conftest.$ac_objext \
       fi
       rm -f conftest.c conftest.o conftest
     fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
-    fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
 
@@ -58652,9 +58628,6 @@ rm -f core conftest.err conftest.$ac_objext \
 	fi
       fi
       rm -f conftest.c conftest.o conftest
-    fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
@@ -58880,9 +58853,6 @@ rm -f core conftest.err conftest.$ac_objext \
 	fi
       fi
       rm -f conftest.c conftest.o conftest
-    fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
@@ -64796,9 +64766,6 @@ rm -f core conftest.err conftest.$ac_objext \
 	fi
       fi
       rm -f conftest.c conftest.o conftest
-    fi
-    if test "$ac_gcsections" = "yes"; then
-      SECTION_LDFLAGS="-Wl,--gc-sections $SECTION_LDFLAGS"
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_gcsections" >&5
 $as_echo "$ac_gcsections" >&6; }
