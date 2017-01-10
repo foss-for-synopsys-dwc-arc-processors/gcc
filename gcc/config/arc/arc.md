@@ -783,8 +783,8 @@
   [(set_attr "type" "store")])
 
 (define_insn_and_split "*movsi_set_cc_insn"
-  [(set (match_operand:CC_ZN 2 "cc_set_register" "")
-	(match_operator:CC_ZN 3 "zn_compare_operator"
+  [(set (match_operand 2 "cc_set_register" "")
+	(match_operator 3 "zn_compare_operator"
 	  [(match_operand:SI 1 "nonmemory_operand" "cI,cL,Cal") (const_int 0)]))
    (set (match_operand:SI 0 "register_operand" "=w,w,w")
 	(match_dup 1))]
@@ -800,8 +800,8 @@
    (set_attr "length" "4,4,8")])
 
 (define_insn "unary_comparison"
-  [(set (match_operand:CC_ZN 0 "cc_set_register" "")
-	(match_operator:CC_ZN 3 "zn_compare_operator"
+  [(set (match_operand 0 "cc_set_register" "")
+	(match_operator 3 "zn_compare_operator"
 	  [(match_operator:SI 2 "unary_operator"
 	     [(match_operand:SI 1 "register_operand" "c")])
 	   (const_int 0)]))]
@@ -892,7 +892,7 @@
 ; so we rather use an extra pattern for tst;
 ; since this is about constants, reload shouldn't care.
 (define_insn "*tst_bitfield_tst"
-  [(set (match_operand:CC_ZN 0 "cc_set_register" "")
+  [(set (match_operand 0 "cc_set_register" "")
 	(match_operator 4 "zn_compare_operator"
 	  [(zero_extract:SI
 	     (match_operand:SI 1 "register_operand"  "c")
@@ -910,7 +910,7 @@
 
 ; Likewise for asr.f.
 (define_insn "*tst_bitfield_asr"
-  [(set (match_operand:CC_ZN 0 "cc_set_register" "")
+  [(set (match_operand 0 "cc_set_register" "")
 	(match_operator 4 "zn_compare_operator"
 	  [(zero_extract:SI
 	     (match_operand:SI 1 "register_operand"  "c")
@@ -925,7 +925,7 @@
    (set_attr "length" "4")])
 
 (define_insn "*tst_bitfield"
-  [(set (match_operand:CC_ZN 0 "cc_set_register" "")
+  [(set (match_operand 0 "cc_set_register" "")
 	(match_operator 5 "zn_compare_operator"
 	  [(zero_extract:SI
 	     (match_operand:SI 1 "register_operand" "%Rcqq,c,  c,Rrq,c")
@@ -946,8 +946,8 @@
    (set_attr "length" "*,4,4,4,8")])
 
 (define_insn "*commutative_binary_comparison"
-  [(set (match_operand:CC_ZN 0 "cc_set_register" "")
-	(match_operator:CC_ZN 5 "zn_compare_operator"
+  [(set (match_operand 0 "cc_set_register" "")
+	(match_operator 5 "zn_compare_operator"
 	  [(match_operator:SI 4 "commutative_operator"
 	     [(match_operand:SI 1 "register_operand" "%c,c")
 	      (match_operand:SI 2 "nonmemory_operand" "cL,Cal")])
@@ -1048,8 +1048,8 @@
    (set_attr "length" "4,4,8")])
 
 (define_insn "*noncommutative_binary_comparison"
-  [(set (match_operand:CC_ZN 0 "cc_set_register" "")
-	(match_operator:CC_ZN 5 "zn_compare_operator"
+  [(set (match_operand 0 "cc_set_register" "")
+	(match_operator 5 "zn_compare_operator"
 	  [(match_operator:SI 4 "noncommutative_operator"
 	     [(match_operand:SI 1 "register_operand" "c,c")
 	      (match_operand:SI 2 "nonmemory_operand" "cL,Cal")])
@@ -3697,7 +3697,7 @@
 
 (define_insn_and_split "*scc_insn"
   [(set (match_operand:SI 0 "dest_reg_operand" "=w")
-	(match_operator:SI 1 "proper_comparison_operator" [(reg CC_REG) (const_int 0)]))]
+	(match_operator 1 "proper_comparison_operator" [(reg CC_REG) (const_int 0)]))]
   ""
   "#"
   "reload_completed"
@@ -3720,7 +3720,7 @@
 ;; ??? Look up negscc insn.  See pa.md for example.
 (define_insn "*neg_scc_insn"
   [(set (match_operand:SI 0 "dest_reg_operand" "=w")
-	(neg:SI (match_operator:SI 1 "proper_comparison_operator"
+	(neg:SI (match_operator 1 "proper_comparison_operator"
 		 [(reg CC_REG) (const_int 0)])))]
   ""
   "mov %0,-1\;sub.%D1 %0,%0,%0"
@@ -3729,7 +3729,7 @@
 
 (define_insn "*not_scc_insn"
   [(set (match_operand:SI 0 "dest_reg_operand" "=w")
-	(not:SI (match_operator:SI 1 "proper_comparison_operator"
+	(not:SI (match_operator 1 "proper_comparison_operator"
 		 [(reg CC_REG) (const_int 0)])))]
   ""
   "mov %0,1\;sub.%d1 %0,%0,%0"
