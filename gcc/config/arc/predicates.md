@@ -415,7 +415,7 @@
 ;; Return 1 if OP is a comparison operator valid for the mode of CC.
 ;; This allows the use of MATCH_OPERATOR to recognize all the branch insns.
 
-(define_predicate "proper_comparison_operator"
+(define_special_predicate "proper_comparison_operator"
   (match_code "eq, ne, le, lt, ge, gt, leu, ltu, geu, gtu, unordered, ordered, uneq, unge, ungt, unle, unlt, ltgt")
 {
   enum rtx_code code = GET_CODE (op);
@@ -466,7 +466,7 @@
   }
 })
 
-(define_predicate "equality_comparison_operator"
+(define_special_predicate "equality_comparison_operator"
   (match_code "eq, ne"))
 
 (define_predicate "brcc_nolimm_operator"
