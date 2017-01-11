@@ -17,10 +17,10 @@ foo (int n, int m)
   bar (n + m);
 }
 /* { dg-final { scan-assembler "\tbl @bar" } } */
-/* { dg-final { scan-assembler "\trtie" { xfail { arc700 || arc6xx } } } } */
-/* { dg-final { scan-assembler "j.*\[ilink1\]" { xfail { archs || arcem } } } } */
 
 /* Look for things that would appear in a non-naked function, but which
    should not appear in a naked function.  */
+/* { dg-final { scan-assembler-not "\trtie" } } */
+/* { dg-final { scan-assembler-not "j.*\[ilink1\]" } } */
 /* { dg-final { scan-assembler-not "\tst.* " } } */
 /* { dg-final { scan-assembler-not "\tmov fp,sp" } } */

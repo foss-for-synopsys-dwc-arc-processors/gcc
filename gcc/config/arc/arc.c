@@ -3135,11 +3135,7 @@ arc_expand_epilogue (int sibcall_p)
 
   /* Naked functions don't have epilogue.  */
   if (ARC_NAKED_P (fn_type))
-    {
-      if (sibcall_p == FALSE)
-	emit_jump_insn (gen_simple_return ());
-      return;
-    }
+    return;
 
   size = arc_compute_frame_size ();
 

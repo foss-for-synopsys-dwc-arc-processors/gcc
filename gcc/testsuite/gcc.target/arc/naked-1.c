@@ -10,9 +10,9 @@ foo (int n, int m)
   bar (n + m);
 }
 /* { dg-final { scan-assembler "\tbl @bar" } } */
-/* { dg-final { scan-assembler "\tj.* \\\[blink\\\]" } } */
 
 /* Look for things that would appear in a non-naked function, but which
    should not appear in a naked function.  */
+/* { dg-final { scan-assembler-not "\tj.* \\\[blink\\\]" } } */
 /* { dg-final { scan-assembler-not "\tst.* " } } */
 /* { dg-final { scan-assembler-not "\tmov fp,sp" } } */
