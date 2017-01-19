@@ -5446,6 +5446,92 @@
   [(set_attr "type" "call")
    (set_attr "is_SIBCALL" "yes")])
 
+; EXPERIMENTAL: implement enter_s, assume at least 3 set from reg
+; in this order [blink] r13 [r14 [r15 ...]] [fp]
+; fp management not completly implemented
+(define_insn "*push_multiple"
+  [(match_parallel 0 "push_multi_register"
+    [(set (reg:SI SP_REG)
+          (plus:SI (reg:SI SP_REG) (match_operand 1 "immediate_operand" "")))
+     (set (match_operand:SI 2 "memory_operand" "")
+          (match_operand:SI 3 "register_operand" ""))
+     (set (match_operand:SI 4 "memory_operand" "")
+          (match_operand:SI 5 "register_operand" ""))])]
+  "TARGET_V2 && TARGET_CODE_DENSITY_FRAME"
+{
+  char pattern[100];
+  const char *blink = "";
+  const char *fp = "";
+
+  int len = XVECLEN (operands[0], 0);
+  rtx first_reg = XEXP(XVECEXP (operands[0], 0, 1), 1);
+  rtx last_reg = XEXP(XVECEXP (operands[0], 0, len - 1), 1);
+
+  if (REGNO(first_reg) == RETURN_ADDR_REGNUM)
+    blink = ",blink";
+
+  if (REGNO(last_reg) == FRAME_POINTER_REGNUM) {
+    fp = ",fp";
+    last_reg = XEXP(XVECEXP (operands[0], 0, len - 2), 1);
+  }
+
+  sprintf(pattern, "enter_s {r13-r%d%s%s}", REGNO(last_reg), fp, blink);
+  output_asm_insn (pattern, operands);
+
+  return "";
+}
+  [(set_attr "type" "store")
+   (set_attr "iscompact" "true")
+   (set_attr "in_delay_slot" "false")])
+
+; EXPERIMENTAL: implement leave_s, assume at least 3 set to reg
+; in this order [blink] r13 [r14 [r15 ...]] [fp]
+; fp management not completly implemented
+; (blink+return) case incorrectly implemented but working
+(define_insn "*pop_multiple"
+  [(match_parallel 0 "pop_multi_register"
+    [(set (reg:SI SP_REG)
+          (plus:SI (reg:SI SP_REG) (match_operand 1 "immediate_operand" "")))
+     (set (match_operand:SI 2 "register_operand" "")
+          (match_operand:SI 3 "memory_operand" ""))
+     (set (match_operand:SI 4 "register_operand" "")
+          (match_operand:SI 5 "memory_operand" ""))])]
+  "TARGET_V2 && TARGET_CODE_DENSITY_FRAME"
+{
+  char pattern[100];
+  const char *blink = "";
+  const char *fp = "";
+  const char *pcl = "";
+
+  rtx first_reg = XEXP(XVECEXP (operands[0], 0, 1), 0);
+  if (REGNO(first_reg) == RETURN_ADDR_REGNUM)
+    blink = ",blink";
+
+  int last = XVECLEN (operands[0], 0);
+  rtx last_rtx = XVECEXP (operands[0], 0, --last);
+
+  rtx last_reg;
+  if (last_rtx == ret_rtx) {
+    pcl = ",pcl";
+    last_reg = XEXP(XVECEXP (operands[0], 0, --last), 0);
+  } else {
+    last_reg = XEXP(last_rtx, 0);
+  }
+
+  if (REGNO(last_reg) == FRAME_POINTER_REGNUM) {
+    fp = ",fp";
+    last_reg = XEXP(XVECEXP (operands[0], 0, --last), 0);
+  }
+
+  sprintf(pattern, "leave_s {r13-r%d%s%s%s}", REGNO(last_reg), fp, blink, pcl);
+  output_asm_insn (pattern, operands);
+
+  return "";
+}
+  [(set_attr "type" "load")
+   (set_attr "iscompact" "true")
+   (set_attr "in_delay_slot" "false")])
+
 (define_insn "tls_load_tp_soft"
   [(set (reg:SI R0_REG) (unspec:SI [(const_int 0)] UNSPEC_TLS_OFF))
    (clobber (reg:SI RETURN_ADDR_REGNUM))]

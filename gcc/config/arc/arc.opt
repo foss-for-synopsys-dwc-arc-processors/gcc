@@ -130,6 +130,10 @@ mno-millicode
 Target Report Mask(NO_MILLICODE_THUNK_SET)
 Do not generate millicode thunks (needed only with -Os).
 
+mcode-density-frame
+Target Report Mask(CODE_DENSITY_FRAME)
+Enable ENTER_S and LEAVE_S opcodes for ARCv2 (EXPERIMENTAL).
+
 mspfp
 Target Report Mask(SPFP_COMPACT_SET)
 FPX: Generate Single Precision FPX (compact) instructions.

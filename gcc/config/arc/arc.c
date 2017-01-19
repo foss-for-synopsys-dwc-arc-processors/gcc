@@ -2703,6 +2703,7 @@ arc_compute_frame_size (void)
   /* Saving blink reg in case of leaf function for millicode thunk calls.  */
   if (optimize_size
       && !TARGET_NO_MILLICODE_THUNK_SET
+      && !TARGET_CODE_DENSITY_FRAME
       && !crtl->calls_eh_return)
     {
       if (arc_compute_millicode_save_restore_regs (gmask, frame_info))
@@ -2928,6 +2929,70 @@ arc_save_restore (rtx base_reg,
     }
 } /* arc_save_restore */
 
+
+/* Common code to generate enter_s/leave_s description.
+   reg_cnt: register count to save/restore, (blink, r13 to r26)
+   epilogue 0: prologue 1:epilogue 2:epilogue, sibling thunk
+
+   TODO: implement frame pointer management */
+static void arc_emit_enter_leave(int reg_cnt, int epilogue)
+{
+  rtx par, addr, set;
+  /* Generate the enclosing parralel insn and the SP move */
+  if (!epilogue)
+    {
+      par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (reg_cnt + 1));
+      addr = plus_constant (Pmode, stack_pointer_rtx,
+			    -UNITS_PER_WORD * reg_cnt);
+    }
+  else
+    {
+      par = gen_rtx_PARALLEL (VOIDmode,
+			      rtvec_alloc (reg_cnt + 1 + (epilogue == 2)));
+      addr = plus_constant (Pmode, stack_pointer_rtx,
+			    UNITS_PER_WORD * reg_cnt);
+    }
+  set = gen_rtx_SET (stack_pointer_rtx, addr);
+  RTX_FRAME_RELATED_P (set) = 1;
+  XVECEXP (par, 0, 0) = set;
+
+  /* Registers to save/restore: optional BLINK, then r13, r14... */
+  int reg_idx = arc_must_save_return_addr(cfun) ? RETURN_ADDR_REGNUM : 13;
+  int i = 0;
+  for (; i < reg_cnt; i++)
+    {
+      rtx reg = gen_rtx_REG (SImode, reg_idx);
+      reg_idx = (reg_idx == RETURN_ADDR_REGNUM)? 13 : reg_idx + 1;
+
+      if (!epilogue)
+	{
+	  addr = plus_constant (Pmode, stack_pointer_rtx,
+				UNITS_PER_WORD * (i - reg_cnt));
+	  set = gen_rtx_SET (gen_frame_mem (SImode, addr), reg);
+	}
+      else
+	{
+	  addr = plus_constant (Pmode, stack_pointer_rtx, UNITS_PER_WORD * i);
+	  set = gen_rtx_SET (reg, gen_frame_mem (SImode, addr));
+	}
+
+      RTX_FRAME_RELATED_P (set) = 1;
+      XVECEXP (par, 0, i + 1) = set;
+    }
+
+  if (epilogue == 2)
+    {
+    /* If BLINK was just restored, this is not correct: ret_rtx means that the
+       old BLINK would be used. However, this subtlety is ignored by arc.md and
+       it avoids problems later. */
+      XVECEXP (par, 0, i + 1) = ret_rtx;
+      par = emit_jump_insn (par);
+    } else {
+      par = emit_insn (par);
+    }
+}
+
+
 /* Build dwarf information when the context is saved via AUX_IRQ_CTRL
    mechanism.  */
 
@@ -3047,28 +3112,48 @@ arc_expand_prologue (void)
       arc_dwarf_emit_irq_save_regs ();
     }
 
-  /* The home-grown ABI says link register is saved first.  */
-  if (arc_must_save_return_addr (cfun)
-      && !ARC_AUTOBLINK_IRQ_P (fn_type))
-    {
-      rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
-      rtx mem = gen_frame_mem (Pmode,
-			       gen_rtx_PRE_DEC (Pmode,
-						stack_pointer_rtx));
+  /* EXPERIMENTAL: use enter_s opcode to save multiple registers.
+     The 4 last cases (IRQs / FP needed / EH / non-ARCv2) are disabled because
+     they are not implemented or tested yet. */
+  int reg_cnt = cfun->machine->frame_info.reg_size/UNITS_PER_WORD
+	        + arc_must_save_return_addr(cfun);
+  bool use_opcode_enter_p = TARGET_CODE_DENSITY_FRAME
+			    && reg_cnt > 1
+			    && fn_type == ARC_FUNCTION_NORMAL
+			    && !arc_frame_pointer_needed()
+			    && !crtl->calls_eh_return
+			    && TARGET_V2;
 
-      frame_move_inc (mem, ra, stack_pointer_rtx, 0);
-      frame_size_to_allocate -= UNITS_PER_WORD;
+  if (use_opcode_enter_p)
+    {
+      arc_emit_enter_leave(reg_cnt, 0);
+      first_offset = UNITS_PER_WORD * reg_cnt;
     }
-
-  /* Save any needed call-saved regs (and call-used if this is an
-     interrupt handler) for ARCompact ISA.  */
-  if (cfun->machine->frame_info.reg_size)
+  else
     {
-      first_offset = -cfun->machine->frame_info.reg_size;
+      /* The home-grown ABI says link register is saved first.  */
+      if (arc_must_save_return_addr (cfun)
+	  && !ARC_AUTOBLINK_IRQ_P (fn_type))
+	{
+	  rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
+	  rtx mem = gen_frame_mem (Pmode,
+			  gen_rtx_PRE_DEC (Pmode,
+				  stack_pointer_rtx));
 
-      /* N.B. FRAME_POINTER_MASK and RETURN_ADDR_MASK are cleared in gmask.  */
-      arc_save_restore (stack_pointer_rtx, gmask, 0, &first_offset);
-      frame_size_to_allocate -= cfun->machine->frame_info.reg_size;
+	  frame_move_inc (mem, ra, stack_pointer_rtx, 0);
+	  frame_size_to_allocate -= UNITS_PER_WORD;
+	}
+
+      /* Save any needed call-saved regs (and call-used if this is an
+	interrupt handler) for ARCompact ISA.  */
+      if (cfun->machine->frame_info.reg_size)
+	{
+	  first_offset = -cfun->machine->frame_info.reg_size;
+
+	  /* N.B. FRAME_POINTER_MASK and RETURN_ADDR_MASK are cleared in gmask.  */
+	  arc_save_restore (stack_pointer_rtx, gmask, 0, &first_offset);
+	  frame_size_to_allocate -= cfun->machine->frame_info.reg_size;
+	}
     }
 
   /* Save frame pointer if needed.  First save the FP on stack, if not
@@ -3150,6 +3235,22 @@ arc_expand_epilogue (int sibcall_p)
      Maybe in time we'll do them all.  For now, always restore regs from
      sp, but don't restore sp if we don't have to.  */
 
+  /* EXPERIMENTAL: use leave_s opcode to restore multiple registers and return.
+     The 4 last cases (IRQs / FP needed / EH / non-ARCv2) are disabled because
+     they are not implemented or tested yet. */
+  int reg_cnt = cfun->machine->frame_info.reg_size/UNITS_PER_WORD
+		+ arc_must_save_return_addr(cfun);
+  bool use_opcode_leave_p = TARGET_CODE_DENSITY_FRAME
+			    && reg_cnt > 1
+			    && fn_type == ARC_FUNCTION_NORMAL
+			    && !arc_frame_pointer_needed()
+			    && !crtl->calls_eh_return
+			    && TARGET_V2;
+
+  int sibthunk_p = (!sibcall_p
+		    && fn_type == ARC_FUNCTION_NORMAL
+		    && !cfun->machine->frame_info.pretend_size);
+
   if (!can_trust_sp_p)
     gcc_assert (arc_frame_pointer_needed ());
 
@@ -3185,10 +3286,6 @@ arc_expand_epilogue (int sibcall_p)
   /* Load blink after the calls to thunk calls in case of optimize size.  */
   if (millicode_p)
     {
-	  int sibthunk_p = (!sibcall_p
-			    && fn_type == ARC_FUNCTION_NORMAL
-			    && !cfun->machine->frame_info.pretend_size);
-
 	  gcc_assert (!(cfun->machine->frame_info.gmask
 			& (FRAME_POINTER_MASK | RETURN_ADDR_MASK)));
 	  arc_save_restore (stack_pointer_rtx,
@@ -3209,13 +3306,16 @@ arc_expand_epilogue (int sibcall_p)
 	  address to restore, and they both would need a LIMM.  */
       || (arc_must_save_return_addr (cfun)
 	  && !SMALL_INT ((cfun->machine->frame_info.reg_size + first_offset) >> 2)
-	  && cfun->machine->frame_info.gmask))
+	  && cfun->machine->frame_info.gmask)
+       /* Also do this if we must adjust sp before leave_s (variadic case) */
+      || (use_opcode_leave_p && first_offset))
     {
       frame_stack_add (first_offset);
       first_offset = 0;
     }
   if (arc_must_save_return_addr (cfun)
-      && !ARC_AUTOBLINK_IRQ_P (fn_type))
+      && !ARC_AUTOBLINK_IRQ_P (fn_type)
+      && !use_opcode_leave_p)
     {
       rtx ra = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
       int ra_offs = cfun->machine->frame_info.reg_size + first_offset;
@@ -3271,7 +3371,12 @@ arc_expand_epilogue (int sibcall_p)
       add_reg_note (insn, REG_CFA_RESTORE, ra);
     }
 
-  if (!millicode_p)
+  if (use_opcode_leave_p)
+    {
+      arc_emit_enter_leave(reg_cnt, 1 + sibthunk_p);
+      first_offset = -UNITS_PER_WORD * reg_cnt;
+    }
+  else if (!millicode_p)
     {
        if (cfun->machine->frame_info.reg_size)
 	 arc_save_restore (stack_pointer_rtx,
@@ -3305,7 +3410,7 @@ arc_expand_epilogue (int sibcall_p)
 			      EH_RETURN_STACKADJ_RTX));
 
   /* Emit the return instruction.  */
-  if (sibcall_p == FALSE)
+  if (sibcall_p == FALSE && (!use_opcode_leave_p || pretend_size))
     emit_jump_insn (gen_simple_return ());
 }
 
