@@ -115,3 +115,11 @@ along with GCC; see the file COPYING3.  If not see
 		    : "=r" (_beg)					\
 		    : "0" (_beg), "r" (_end), "r" (_xtr), "r" (_scno));	\
 }
+
+#if DEFAULT_LIBC == LIBC_GLIBC
+/* Override linux.h LINK_EH_SPEC definition.
+   Signalize that because we have fde-glibc, we don't need all C shared libs
+   linked against -lgcc_s.  */
+#undef LINK_EH_SPEC
+#define LINK_EH_SPEC "--eh-frame-hdr"
+#endif
