@@ -1,4 +1,5 @@
 /* { dg-options "-O2 -fdump-ipa-profile" } */
+/* { dg-skip-if "" { "arc*-*-elf*" } { "*" } { "" } } */
 
 #include <unistd.h>
 
