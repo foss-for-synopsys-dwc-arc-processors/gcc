@@ -1,5 +1,5 @@
-/* { dg-skip-if "jli only available for ARCv2" { arc700 || arc6xx } } */
 /* { dg-do compile } */
+/* { dg-skip-if "jli only available for ARCv2" { arc700 || arc6xx } } */
 /* { dg-options "-O0 -mcode-density" } */
 
 int func(int i) __attribute__((jli_fixed(2)));

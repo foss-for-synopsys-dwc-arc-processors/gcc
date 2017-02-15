@@ -70,7 +70,7 @@ static const char *arc_cpu_string = arc_cpu_name;
 
 typedef struct GTY (()) _arc_jli_section
 {
-  char *name;
+  const char *name;
   struct _arc_jli_section *next;
 } arc_jli_section;
 
@@ -7136,7 +7136,7 @@ arc_add_jli_section (rtx pat)
   /* New name, insert it.  */
   new_section = (arc_jli_section *) xmalloc (sizeof (arc_jli_section));
   gcc_assert (new_section != NULL);
-  new_section->name = strndup (name, 2048);
+  new_section->name = name;
   new_section->next = arc_jli_sections;
   arc_jli_sections = new_section;
 }
