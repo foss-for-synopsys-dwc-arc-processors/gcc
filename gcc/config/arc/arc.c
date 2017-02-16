@@ -4983,15 +4983,21 @@ static void arc_file_end (void)
   while (sec != NULL)
   {
     fprintf (asm_out_file, "\n");
-    fprintf (asm_out_file, "# JLI entry for function '%s'\n", sec->name);
-    fprintf (asm_out_file, "\t.section .jlitab, \"axG\", @progbits, "
-      ".jlitab.%s, comdat\n", sec->name);
+    fprintf (asm_out_file, "# JLI entry for function ");
+    assemble_name (asm_out_file, sec->name);
+    fprintf (asm_out_file, "\n\t.section .jlitab, \"axG\", @progbits, "
+	     ".jlitab.");
+    assemble_name (asm_out_file, sec->name);
+    fprintf (asm_out_file,", comdat\n");
 
     fprintf (asm_out_file, "\t.align\t4\n");
-    fprintf (asm_out_file, "__jli.%s:\n", sec->name);
-    fprintf (asm_out_file, "\t.weak __jli.%s\n", sec->name);
-    fprintf (asm_out_file, "\tb\t@%s\n", sec->name);
-
+    fprintf (asm_out_file, "__jli.");
+    assemble_name (asm_out_file, sec->name);
+    fprintf (asm_out_file, ":\n\t.weak __jli.");
+    assemble_name (asm_out_file, sec->name);
+    fprintf (asm_out_file, "\n\tb\t@");
+    assemble_name (asm_out_file, sec->name);
+    fprintf (asm_out_file, "\n");
     sec = sec->next;
   }
 }
