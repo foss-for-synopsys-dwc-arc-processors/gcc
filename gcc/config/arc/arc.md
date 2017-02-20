@@ -730,9 +730,9 @@
    mov%? %0,%1		;11
    add %0,%1		;12
    add %0,pcl,%1@pcl    ;13
-   mov%? %0,%1%&	;14
-   mov%? %0,%1		;15
-   mov%? %0,%1		;16
+   mov%? %0,%j1%&	;14
+   mov%? %0,%j1		;15
+   mov%? %0,%j1		;16
    ld%? %0,%1%&		;17
    st%? %1,%0%&		;18
    * return arc_short_long (insn, \"push%? %1%&\", \"st%U0 %1,%0%&\");
@@ -4234,7 +4234,7 @@
 ; alternative 1 ("q"), that means that we can't use the short form.
 (define_insn "*call_i"
   [(call (mem:SI (match_operand:SI 0
-		  "call_address_operand" "Rcq,q,c,Cji,Cbp,Cbr,L,I,Cal"))
+		  "call_address_operand" "Rcq,q,c,Cji,Csc,Cbp,Cbr,L,I,Cal"))
 	 (match_operand 1 "" ""))
    (clobber (reg:SI 31))]
   ""
@@ -4243,15 +4243,16 @@
    jl%!%* [%0]%&
    jl%!%* [%0]
    jli_s %S0
+   sjli  %S0
    bl%!%* %P0
    bl%!%* %P0
    jl%!%* %0
    jl%* %0
    jl%! %0"
-  [(set_attr "type" "call,call,call,call_no_delay_slot,call,call,call,call,call_no_delay_slot")
-   (set_attr "iscompact" "maybe,false,*,true,*,*,*,*,*")
-   (set_attr "predicable" "no,no,yes,no,yes,no,yes,no,yes")
-   (set_attr "length" "*,*,4,2,4,4,4,4,8")])
+  [(set_attr "type" "call,call,call,call_no_delay_slot,call_no_delay_slot,call,call,call,call,call_no_delay_slot")
+   (set_attr "iscompact" "maybe,false,*,true,*,*,*,*,*,*")
+   (set_attr "predicable" "no,no,yes,no,no,yes,no,yes,no,yes")
+   (set_attr "length" "*,*,4,2,4,4,4,4,4,8")])
 
 (define_expand "call_value"
   ;; operand 2 is stack_size_rtx
@@ -4277,9 +4278,9 @@
 ; At instruction output time, if it doesn't match and we end up with
 ; alternative 1 ("q"), that means that we can't use the short form.
 (define_insn "*call_value_i"
-  [(set (match_operand 0 "dest_reg_operand"  "=Rcq,q,w,  w,  w,  w,w,w,  w")
+  [(set (match_operand 0 "dest_reg_operand"  "=Rcq,q,w,  w,  w,  w,  w,w,w,  w")
 	(call (mem:SI (match_operand:SI 1
-		       "call_address_operand" "Rcq,q,c,Cji,Cbp,Cbr,L,I,Cal"))
+		       "call_address_operand" "Rcq,q,c,Cji,Csc,Cbp,Cbr,L,I,Cal"))
 	      (match_operand 2 "" "")))
    (clobber (reg:SI 31))]
   ""
@@ -4288,15 +4289,16 @@
    jl%!%* [%1]%&
    jl%!%* [%1]
    jli_s %S1
+   sjli  %S1
    bl%!%* %P1;1
    bl%!%* %P1;1
    jl%!%* %1
    jl%* %1
    jl%! %1"
-  [(set_attr "type" "call,call,call,call_no_delay_slot,call,call,call,call,call_no_delay_slot")
-   (set_attr "iscompact" "maybe,false,*,true,*,*,*,*,*")
-   (set_attr "predicable" "no,no,yes,no,yes,no,yes,no,yes")
-   (set_attr "length" "*,*,4,2,4,4,4,4,8")])
+  [(set_attr "type" "call,call,call,call_no_delay_slot,call_no_delay_slot,call,call,call,call,call_no_delay_slot")
+   (set_attr "iscompact" "maybe,false,*,true,false,*,*,*,*,*")
+   (set_attr "predicable" "no,no,yes,no,no,yes,no,yes,no,yes")
+   (set_attr "length" "*,*,4,2,4,4,4,4,4,8")])
 
 ; There is a bl_s instruction (16 bit opcode branch-and-link), but we can't
 ; use it for lack of inter-procedural branch shortening.
