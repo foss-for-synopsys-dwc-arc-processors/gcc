@@ -6847,12 +6847,24 @@ check_if_valid_sleep_operand (rtx *operands, int opno)
 /* Return true if it is ok to make a tail-call to DECL.  */
 
 static bool
-arc_function_ok_for_sibcall (tree decl ATTRIBUTE_UNUSED,
+arc_function_ok_for_sibcall (tree decl,
 			     tree exp ATTRIBUTE_UNUSED)
 {
+  tree attrs = NULL_TREE;
+
   /* Never tailcall from an ISR routine - it needs a special exit sequence.  */
   if (ARC_INTERRUPT_P (arc_compute_function_type (cfun)))
     return false;
+
+  if (decl)
+    {
+      attrs = TYPE_ATTRIBUTES (TREE_TYPE (decl));
+
+      if (lookup_attribute ("jli_always", attrs))
+	return false;
+      if (lookup_attribute ("jli_fixed", attrs))
+	return false;
+    }
 
   /* Everything else is ok.  */
   return true;
