@@ -117,3 +117,4 @@ extern void arc_secondary_reload_conv (rtx, rtx, rtx, bool);
 extern void arc_cpu_cpp_builtins (cpp_reader *);
 extern rtx arc_eh_return_address_location (void);
 extern bool arc_is_jli_call_p (rtx);
+extern bool arc_is_secure_call_p (rtx);

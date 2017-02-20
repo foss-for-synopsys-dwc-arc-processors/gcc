@@ -220,6 +220,7 @@ static int get_arc_condition_code (rtx);
 static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
 static tree arc_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
 static tree arc_handle_jli_attribute (tree *, tree, tree, int, bool *);
+static tree arc_handle_secure_attribute (tree *, tree, tree, int, bool *);
 
 
 /* Initialized arc_attribute_table to NULL since arc doesnot have any
@@ -248,6 +249,9 @@ const struct attribute_spec arc_attribute_table[] =
   /* Functions calls made using jli instruction.  The pointer in JLI
      table is given as input parameter.  */
   { "jli_fixed",    1, 1, false, true,  true,  arc_handle_jli_attribute,
+    false },
+  /* Call a function using secure-mode.  */
+  { "secure_call",  1, 1, false, true, true, arc_handle_secure_attribute,
     false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
@@ -3883,6 +3887,17 @@ arc_print_operand (FILE *file, rtx x, int code)
 	  assemble_name (file, XSTR (x, 0));
 	  return;
 	}
+      if (GET_CODE (x) == SYMBOL_REF
+	  && arc_is_secure_call_p (x))
+	{
+	  tree attrs = (TREE_TYPE (SYMBOL_REF_DECL (x)) != error_mark_node
+			? TYPE_ATTRIBUTES (TREE_TYPE (SYMBOL_REF_DECL (x)))
+			: NULL_TREE);
+	  fprintf (file, "%ld\t; @",
+		   TREE_INT_CST_LOW (TREE_VALUE (TREE_VALUE (attrs))));
+	  assemble_name (file, XSTR (x, 0));
+	  return;
+	}
       break;
     case 'B' /* Branch or other LIMM ref - must not use sda references.  */ :
       if (CONSTANT_P (x))
@@ -6863,6 +6878,8 @@ arc_function_ok_for_sibcall (tree decl,
       if (lookup_attribute ("jli_always", attrs))
 	return false;
       if (lookup_attribute ("jli_fixed", attrs))
+	return false;
+      if (lookup_attribute ("secure_call", attrs))
 	return false;
     }
 
@@ -10818,6 +10835,64 @@ arc_handle_jli_attribute (tree *node ATTRIBUTE_UNUSED,
     }
    return NULL_TREE;
 }
+
+/* Handle and "scure" attribute; arguments as in struct
+   attribute_spec.handler.  */
+
+static tree
+arc_handle_secure_attribute (tree *node ATTRIBUTE_UNUSED,
+			  tree name, tree args, int,
+			  bool *no_add_attrs)
+{
+  if (!TARGET_EM)
+    {
+      warning (OPT_Wattributes,
+	       "%qE attribute only valid for ARC EM architecture",
+	       name);
+      *no_add_attrs = true;
+    }
+
+  if (args == NULL_TREE)
+    {
+      warning (OPT_Wattributes,
+	       "argument of %qE attribute is missing",
+	       name);
+      *no_add_attrs = true;
+    }
+  else
+    {
+      if (TREE_CODE (TREE_VALUE (args)) == NON_LVALUE_EXPR)
+	TREE_VALUE (args) = TREE_OPERAND (TREE_VALUE (args), 0);
+      tree arg = TREE_VALUE (args);
+      if (TREE_CODE (arg) != INTEGER_CST)
+	{
+	  warning (0, "%qE attribute allows only an integer constant argument",
+		   name);
+	  *no_add_attrs = true;
+	}
+      /* FIXME! add range check.  TREE_INT_CST_LOW (arg) */
+    }
+   return NULL_TREE;
+}
+
+/* Return nonzero if the symbol is a secure function.  */
+
+bool
+arc_is_secure_call_p (rtx pat)
+{
+  tree attrs;
+  tree decl = SYMBOL_REF_DECL (pat);
+
+  if (!decl)
+    return false;
+
+  attrs = TYPE_ATTRIBUTES (TREE_TYPE (decl));
+  if (lookup_attribute ("secure_call", attrs))
+    return true;
+
+  return false;
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
