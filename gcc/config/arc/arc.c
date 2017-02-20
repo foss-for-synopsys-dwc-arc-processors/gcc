@@ -221,6 +221,7 @@ static int get_arc_condition_code (rtx);
 static tree arc_handle_interrupt_attribute (tree *, tree, tree, int, bool *);
 static tree arc_handle_fndecl_attribute (tree *, tree, tree, int, bool *);
 static tree arc_handle_jli_attribute (tree *, tree, tree, int, bool *);
+static tree arc_handle_secure_attribute (tree *, tree, tree, int, bool *);
 
 
 /* Initialized arc_attribute_table to NULL since arc doesnot have any
@@ -249,6 +250,9 @@ const struct attribute_spec arc_attribute_table[] =
   /* Functions calls made using jli instruction.  The pointer in JLI
      table is given as input parameter.  */
   { "jli_fixed",    1, 1, false, true,  true,  arc_handle_jli_attribute,
+    false },
+  /* Call a function using secure-mode.  */
+  { "secure_call",  1, 1, false, true, true, arc_handle_secure_attribute,
     false },
   { NULL, 0, 0, false, false, false, NULL, false }
 };
@@ -3579,6 +3583,46 @@ arc_trampoline_adjust_address (rtx addr)
   return plus_constant (Pmode, addr, 2);
 }
 
+/* Add the given function declaration to emit code in JLI section.  */
+
+static void
+arc_add_jli_section (rtx pat)
+{
+  const char *name;
+  tree attrs;
+  arc_jli_section *sec = arc_jli_sections, *new_section;
+  tree decl = SYMBOL_REF_DECL (pat);
+
+  if (!pat)
+    return;
+
+  if (decl)
+    {
+      /* For fixed locations do not generate the jli table entry.  It
+	 should be provided by the user as an asm file.  */
+      attrs = TYPE_ATTRIBUTES (TREE_TYPE (decl));
+      if (lookup_attribute ("jli_fixed", attrs))
+	return;
+    }
+
+  name = XSTR (pat, 0);
+
+  /* Don't insert the same symbol twice.  */
+  while (sec != NULL)
+    {
+      if(strcmp (name, sec->name) == 0)
+	return;
+      sec = sec->next;
+    }
+
+  /* New name, insert it.  */
+  new_section = (arc_jli_section *) xmalloc (sizeof (arc_jli_section));
+  gcc_assert (new_section != NULL);
+  new_section->name = name;
+  new_section->next = arc_jli_sections;
+  arc_jli_sections = new_section;
+}
+
 /* This is set briefly to 1 when we output a ".as" address modifer, and then
    reset when we output the scaled address.  */
 static int output_scaled = 0;
@@ -3606,6 +3650,7 @@ static int output_scaled = 0;
     'D'
     'R': Second word
     'S': JLI instruction
+    'j': used by mov instruction to properly emit jli related labels.
     'B': Branch comparison operand - suppress sda reference
     'H': Most significant word
     'L': Least significant word
@@ -3812,6 +3857,7 @@ arc_print_operand (FILE *file, rtx x, int code)
       else
 	output_operand_lossage ("invalid operand to %%R code");
       return;
+    case 'j':
     case 'S' :
       if (GET_CODE (x) == SYMBOL_REF
 	  && arc_is_jli_call_p (x))
@@ -3823,6 +3869,9 @@ arc_print_operand (FILE *file, rtx x, int code)
 			    : NULL_TREE);
 	      if (lookup_attribute ("jli_fixed", attrs))
 		{
+		  /* No special treatment for jli_fixed functions.  */
+		  if (code == 'j' )
+		    break;
 		  fprintf (file, "%ld\t; @",
 			   TREE_INT_CST_LOW (TREE_VALUE (TREE_VALUE (attrs))));
 		  assemble_name (file, XSTR (x, 0));
@@ -3830,6 +3879,22 @@ arc_print_operand (FILE *file, rtx x, int code)
 		}
 	    }
 	  fprintf (file, "@__jli.");
+	  assemble_name (file, XSTR (x, 0));
+	  if (code == 'j')
+	    arc_add_jli_section (x);
+	  return;
+	}
+      if (GET_CODE (x) == SYMBOL_REF
+	  && arc_is_secure_call_p (x))
+	{
+	  /* No special treatment for secure functions.  */
+	  if (code == 'j' )
+	    break;
+	  tree attrs = (TREE_TYPE (SYMBOL_REF_DECL (x)) != error_mark_node
+			? TYPE_ATTRIBUTES (TREE_TYPE (SYMBOL_REF_DECL (x)))
+			: NULL_TREE);
+	  fprintf (file, "%ld\t; @",
+		   TREE_INT_CST_LOW (TREE_VALUE (TREE_VALUE (attrs))));
 	  assemble_name (file, XSTR (x, 0));
 	  return;
 	}
@@ -6760,6 +6825,8 @@ arc_function_ok_for_sibcall (tree decl,
 	return false;
       if (lookup_attribute ("jli_fixed", attrs))
 	return false;
+      if (lookup_attribute ("secure_call", attrs))
+	return false;
     }
 
   /* Everything else is ok.  */
@@ -7088,46 +7155,6 @@ workaround_arc_anomaly (void)
 	    emit_insn_after (gen_nopv (), insn);
 	}
     }
-}
-
-/* Add the given function declaration to emit code in JLI section.  */
-
-static void
-arc_add_jli_section (rtx pat)
-{
-  const char *name;
-  tree attrs;
-  arc_jli_section *sec = arc_jli_sections, *new_section;
-  tree decl = SYMBOL_REF_DECL (pat);
-
-  if (!pat)
-    return;
-
-  if (decl)
-    {
-      /* For fixed locations do not generate the jli table entry.  It
-	 should be provided by the user as an asm file.  */
-      attrs = TYPE_ATTRIBUTES (TREE_TYPE (decl));
-      if (lookup_attribute ("jli_fixed", attrs))
-	return;
-    }
-
-  name = XSTR (pat, 0);
-
-  /* Don't insert the same symbol twice.  */
-  while (sec != NULL)
-    {
-      if(strcmp (name, sec->name) == 0)
-	return;
-      sec = sec->next;
-    }
-
-  /* New name, insert it.  */
-  new_section = (arc_jli_section *) xmalloc (sizeof (arc_jli_section));
-  gcc_assert (new_section != NULL);
-  new_section->name = name;
-  new_section->next = arc_jli_sections;
-  arc_jli_sections = new_section;
 }
 
 /* Scan all calls and add symbols to be emitted in the jli section if
@@ -10790,6 +10817,64 @@ arc_handle_jli_attribute (tree *node ATTRIBUTE_UNUSED,
     }
    return NULL_TREE;
 }
+
+/* Handle and "scure" attribute; arguments as in struct
+   attribute_spec.handler.  */
+
+static tree
+arc_handle_secure_attribute (tree *node ATTRIBUTE_UNUSED,
+			  tree name, tree args, int,
+			  bool *no_add_attrs)
+{
+  if (!TARGET_EM)
+    {
+      warning (OPT_Wattributes,
+	       "%qE attribute only valid for ARC EM architecture",
+	       name);
+      *no_add_attrs = true;
+    }
+
+  if (args == NULL_TREE)
+    {
+      warning (OPT_Wattributes,
+	       "argument of %qE attribute is missing",
+	       name);
+      *no_add_attrs = true;
+    }
+  else
+    {
+      if (TREE_CODE (TREE_VALUE (args)) == NON_LVALUE_EXPR)
+	TREE_VALUE (args) = TREE_OPERAND (TREE_VALUE (args), 0);
+      tree arg = TREE_VALUE (args);
+      if (TREE_CODE (arg) != INTEGER_CST)
+	{
+	  warning (0, "%qE attribute allows only an integer constant argument",
+		   name);
+	  *no_add_attrs = true;
+	}
+      /* FIXME! add range check.  TREE_INT_CST_LOW (arg) */
+    }
+   return NULL_TREE;
+}
+
+/* Return nonzero if the symbol is a secure function.  */
+
+bool
+arc_is_secure_call_p (rtx pat)
+{
+  tree attrs;
+  tree decl = SYMBOL_REF_DECL (pat);
+
+  if (!decl)
+    return false;
+
+  attrs = TYPE_ATTRIBUTES (TREE_TYPE (decl));
+  if (lookup_attribute ("secure_call", attrs))
+    return true;
+
+  return false;
+}
+
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
