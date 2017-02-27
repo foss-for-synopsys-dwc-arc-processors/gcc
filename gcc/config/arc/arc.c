@@ -6000,6 +6000,19 @@ arc_legitimate_constant_p (machine_mode mode, rtx x)
 
 	return (t1 && t2);
       }
+
+    case CONST_VECTOR:
+      switch (mode)
+	{
+	case V2HImode:
+	  return TARGET_PLUS_DMPY;
+	case V2SImode:
+	case V4HImode:
+	  return TARGET_PLUS_QMACW;
+	default:
+	  return false;
+	}
+
     case UNSPEC:
       switch (XINT (x, 1))
 	{
@@ -6011,6 +6024,7 @@ arc_legitimate_constant_p (machine_mode mode, rtx x)
 	  break;
 	}
       /* Fall through.  */
+
     default:
       fatal_insn ("unrecognized supposed constant", x);
     }
