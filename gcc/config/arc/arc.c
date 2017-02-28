@@ -366,8 +366,6 @@ static void arc_function_arg_advance (cumulative_args_t, machine_mode,
 				      const_tree, bool);
 static rtx arc_legitimize_address_0 (rtx, rtx, machine_mode mode);
 
-static void arc_finalize_pic (void);
-
 /* initialize the GCC target structure.  */
 #undef  TARGET_COMP_TYPE_ATTRIBUTES
 #define TARGET_COMP_TYPE_ATTRIBUTES arc_comp_type_attributes
@@ -2522,10 +2520,6 @@ arc_must_save_register (int regno, struct function *func)
       && !firq_auto_save_p)
     return true;
 
-  if (flag_pic && crtl->uses_pic_offset_table
-      && regno == PIC_OFFSET_TABLE_REGNUM)
-    return true;
-
   if (crtl->calls_eh_return && (regno > 2 && regno < 27))
     return true;
 
@@ -3095,10 +3089,6 @@ arc_expand_prologue (void)
 	emit_insn (gen_stack_tie (stack_pointer_rtx,
 				  hard_frame_pointer_rtx));
     }
-
-  /* Setup the gp register, if needed.  */
-  if (crtl->uses_pic_offset_table)
-    arc_finalize_pic ();
 }
 
 /* Do any necessary cleanup after a function to restore stack, frame,
@@ -3343,37 +3333,6 @@ arc_unspec_offset (rtx loc, int unspec)
 					       unspec));
 }
 
-/* Emit special PIC prologues and epilogues.  */
-/* If the function has any GOTOFF relocations, then the GOTBASE
-   register has to be setup in the prologue
-   The instruction needed at the function start for setting up the
-   GOTBASE register is
-      add rdest, pc,
-   ----------------------------------------------------------
-   The rtl to be emitted for this should be:
-     set (reg basereg)
-         (plus (reg pc)
-               (const (unspec (symref _DYNAMIC) 3)))
-   ----------------------------------------------------------  */
-
-static void
-arc_finalize_pic (void)
-{
-  rtx pat;
-  rtx baseptr_rtx = gen_rtx_REG (Pmode, PIC_OFFSET_TABLE_REGNUM);
-
-  if (crtl->uses_pic_offset_table == 0)
-    return;
-
-  gcc_assert (flag_pic != 0);
-
-  pat = gen_rtx_SYMBOL_REF (Pmode, "_DYNAMIC");
-  pat = arc_unspec_offset (pat, ARC_UNSPEC_GOT);
-  pat = gen_rtx_SET (baseptr_rtx, pat);
-
-  emit_insn (pat);
-}
-
 /* !TARGET_BARREL_SHIFTER support.  */
 /* Emit a shift insn to set OP0 to OP1 shifted by OP2; CODE specifies what
    kind of shift.  */
