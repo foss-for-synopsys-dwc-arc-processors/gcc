@@ -21,9 +21,9 @@
 # along with GCC; see the file COPYING3.  If not see
 # <http://www.gnu.org/licenses/>.
 
-MULTILIB_OPTIONS = mcpu=em/mcpu=arcem/mcpu=em4/mcpu=em4_dmips/mcpu=em4_fpus/mcpu=em4_fpuda/mcpu=quarkse_em/mcpu=quarkse2_em/mcpu=hs/mcpu=archs/mcpu=hs34/mcpu=hs38/mcpu=hs38_linux/mcpu=arc600/mcpu=arc600_norm/mcpu=arc600_mul64/mcpu=arc600_mul32x16/mcpu=arc601/mcpu=arc601_norm/mcpu=arc601_mul64/mcpu=arc601_mul32x16/mcpu=arc700/mcpu=nps400
+MULTILIB_OPTIONS = mcpu=em/mcpu=arcem/mcpu=em4/mcpu=em4_dmips/mcpu=em4_fpus/mcpu=em4_fpuda/mcpu=quarkse_em/mcpu=quarkse2_em/mcpu=hs/mcpu=archs/mcpu=hs34/mcpu=hs38/mcpu=hs38_linux/mcpu=hs4x/mcpu=hs4xd/mcpu=arc600/mcpu=arc600_norm/mcpu=arc600_mul64/mcpu=arc600_mul32x16/mcpu=arc601/mcpu=arc601_norm/mcpu=arc601_mul64/mcpu=arc601_mul32x16/mcpu=arc700/mcpu=nps400
 
-MULTILIB_DIRNAMES = em arcem em4 em4_dmips em4_fpus em4_fpuda quarkse_em quarkse2_em hs archs hs34 hs38 hs38_linux arc600 arc600_norm arc600_mul64 arc600_mul32x16 arc601 arc601_norm arc601_mul64 arc601_mul32x16 arc700 nps400
+MULTILIB_DIRNAMES = em arcem em4 em4_dmips em4_fpus em4_fpuda quarkse_em quarkse2_em hs archs hs34 hs38 hs38_linux hs4x hs4xd arc600 arc600_norm arc600_mul64 arc600_mul32x16 arc601 arc601_norm arc601_mul64 arc601_mul32x16 arc700 nps400
 
 MULTILIB_REUSE =mcpu.arcem=mcpu.em/mmpy-option.2/mcode-density/mbarrel-shifter
 MULTILIB_REUSE +=mcpu.em4=mcpu.em/mcode-density
@@ -36,6 +36,8 @@ MULTILIB_REUSE +=mcpu.archs=mcpu.hs/mmpy-option.2/mdiv-rem/mll64
 MULTILIB_REUSE +=mcpu.hs34=mcpu.hs/mmpy-option.2
 MULTILIB_REUSE +=mcpu.hs38=mcpu.hs/mmpy-option.9/mdiv-rem/mll64
 MULTILIB_REUSE +=mcpu.hs38_linux=mcpu.hs/mmpy-option.9/mdiv-rem/mll64/mfpu.fpud_all
+MULTILIB_REUSE +=mcpu.hs4x=mcpu.hs/mmpy-option.9/mdiv-rem/mll64
+MULTILIB_REUSE +=mcpu.hs4xd=mcpu.hs/mmpy-option.9/mdiv-rem/mll64
 MULTILIB_REUSE +=mcpu.arc600=mcpu.601/mbarrel-shifter
 MULTILIB_REUSE +=mcpu.arc600_norm=mcpu.601/mbarrel-shifter/mnorm
 MULTILIB_REUSE +=mcpu.arc600_mul64=mcpu.601/mbarrel-shifter/mnorm/mmul64
