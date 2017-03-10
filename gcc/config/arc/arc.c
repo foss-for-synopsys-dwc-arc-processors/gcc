@@ -376,6 +376,22 @@ arc_autovectorize_vector_sizes (void)
   return TARGET_PLUS_QMACW ? (8 | 4) : 0;
 }
 
+
+/* Implements target hook TARGET_SCHED_ISSUE_RATE.  */
+static int
+arc_sched_issue_rate (void)
+{
+  switch (arc_tune)
+    {
+    case TUNE_ARCHS4X:
+    case TUNE_ARCHS4XD:
+      return 3;
+    default:
+      break;
+    }
+  return 1;
+}
+
 /* TARGET_PRESERVE_RELOAD_P is still awaiting patch re-evaluation / review.  */
 static bool arc_preserve_reload_p (rtx in) ATTRIBUTE_UNUSED;
 static rtx arc_delegitimize_address (rtx);
@@ -457,6 +473,12 @@ static rtx arc_legitimize_address_0 (rtx, rtx, machine_mode mode);
 
 #undef  TARGET_SCHED_ADJUST_PRIORITY
 #define TARGET_SCHED_ADJUST_PRIORITY arc_sched_adjust_priority
+
+#undef TARGET_SCHED_ISSUE_RATE
+#define TARGET_SCHED_ISSUE_RATE arc_sched_issue_rate
+
+#undef TARGET_SCHED_EXPOSED_PIPELINE
+#define TARGET_SCHED_EXPOSED_PIPELINE true
 
 #undef TARGET_VECTOR_MODE_SUPPORTED_P
 #define TARGET_VECTOR_MODE_SUPPORTED_P arc_vector_mode_supported_p
@@ -10874,7 +10896,6 @@ arc_is_secure_call_p (rtx pat)
 
   return false;
 }
-
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
