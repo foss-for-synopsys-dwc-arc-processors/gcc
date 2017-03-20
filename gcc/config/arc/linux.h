@@ -91,3 +91,7 @@ along with GCC; see the file COPYING3.  If not see
 #define SUBTARGET_CPP_SPEC "\
    %{pthread:-D_REENTRANT} \
 "
+
+/* Build attribute: procedure call standard.  */
+#undef ATTRIBUTE_PCS
+#define ATTRIBUTE_PCS 3
