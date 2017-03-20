@@ -19,9 +19,15 @@
    E, F and G are passed on stack.  So the size of the stack argument
    data is 20.  */
 #define STACK_ARGUMENTS_SIZE  20
-#elif defined __MMIX__ || defined __arc__
+#elif defined __MMIX__
 /* No parameters on stack for bar.  */
 #define STACK_ARGUMENTS_SIZE 0
+#elif defined __arc__
+# ifdef __ARC_RF16__
+#  define STACK_ARGUMENTS_SIZE 4*4
+# else
+#  define STACK_ARGUMENTS_SIZE 0
+# endif
 #else
 #define STACK_ARGUMENTS_SIZE  64
 #endif

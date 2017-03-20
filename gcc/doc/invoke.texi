@@ -599,6 +599,7 @@ Objective-C and Objective-C++ Dialects}.
 
 @emph{ARC Options}
 @gccoptlist{-mbarrel-shifter -mjli-always @gol
+<<<<<<< HEAD
 -mcpu=@var{cpu}  -mA6  -mARC600  -mA7  -mARC700 @gol
 -mdpfp  -mdpfp-compact  -mdpfp-fast  -mno-dpfp-lrsr @gol
 -mea  -mno-mpy  -mmul32x16  -mmul64  -matomic @gol
@@ -615,7 +616,7 @@ Objective-C and Objective-C++ Dialects}.
 -mmixed-code  -mq-class  -mRcq  -mRcw  -msize-level=@var{level} @gol
 -mtune=@var{cpu}  -mmultcost=@var{num} @gol
 -munalign-prob-threshold=@var{probability}  -mmpy-option=@var{multo} @gol
--mdiv-rem  -mcode-density  -mll64  -mfpu=@var{fpu}}
+-mdiv-rem  -mcode-density  -mll64  -mfpu=@var{fpu} -mrf16}
 
 @emph{ARM Options}
 @gccoptlist{-mapcs-frame  -mno-apcs-frame @gol
@@ -14595,6 +14596,12 @@ ARC V2 family processor.
 
 Permitted values are 4, 8, 16, 32 and specify the number of registers
 that are covered by the second register bank.
+
+@item -mrf16
+@opindex mrf16
+This option instructs the compiler to generate code for a 16-entry
+register file.  This option defines the @code{__ARC_RF16__}
+preprocessor macro.
 
 @end table
 
