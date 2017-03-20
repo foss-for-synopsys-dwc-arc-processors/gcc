@@ -587,7 +587,7 @@
 ;;   is made that makes conditional execution required.
 
 (define_attr "tune" "none, arc600, arc700_4_2_std, arc700_4_2_xmac, archs4x, \
-archs4xd, archs4x_slow, archs4xd_slow"
+archs4xd, archs4xd_slow"
   (const
    (cond [(symbol_ref "arc_tune == TUNE_ARC600")
 	  (const_string "arc600")
@@ -595,8 +595,7 @@ archs4xd, archs4x_slow, archs4xd_slow"
 	  (const_string "arc700_4_2_std")
 	  (symbol_ref "arc_tune == TUNE_ARC700_4_2_XMAC")
 	  (const_string "arc700_4_2_xmac")
-	  (ior (symbol_ref "arc_tune == TUNE_ARCHS4X")
-	       (symbol_ref "arc_tune == TUNE_ARCHS4X_SLOW"))
+	  (symbol_ref "arc_tune == TUNE_ARCHS4X")
 	  (const_string "archs4x")
 	  (ior (symbol_ref "arc_tune == TUNE_ARCHS4XD")
 	       (symbol_ref "arc_tune == TUNE_ARCHS4XD_SLOW"))
@@ -613,9 +612,8 @@ archs4xd, archs4x_slow, archs4xd_slow"
   (cond [(ior (symbol_ref "arc_tune == TUNE_ARCHS4X")
 	      (symbol_ref "arc_tune == TUNE_ARCHS4XD"))
 	 (const_string "fast")
-	 (ior (symbol_ref "arc_tune == TUNE_ARCHS4X_SLOW")
-	      (symbol_ref "arc_tune == TUNE_ARCHS4XD_SLOW"))
-	  (const_string "slow")]
+	 (symbol_ref "arc_tune == TUNE_ARCHS4XD_SLOW")
+	 (const_string "slow")]
 	(const_string "none"))))
 
 ;; Move instructions.
