@@ -92,3 +92,12 @@ along with GCC; see the file COPYING3.  If not see
 /* Pre/post modify with register displacement are default off.  */
 #undef TARGET_AUTO_MODIFY_REG_DEFAULT
 #define TARGET_AUTO_MODIFY_REG_DEFAULT 0
+
+#undef SUBTARGET_CPP_SPEC
+#define SUBTARGET_CPP_SPEC "\
+   %{pthread:-D_REENTRANT} \
+"
+
+/* Build attribute: procedure call standard.  */
+#undef ATTRIBUTE_PCS
+#define ATTRIBUTE_PCS 3
