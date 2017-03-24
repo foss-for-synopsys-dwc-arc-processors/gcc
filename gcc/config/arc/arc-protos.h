@@ -93,7 +93,6 @@ extern void arc_clear_unalign (void);
 extern void arc_toggle_unalign (void);
 extern void split_addsi (rtx *);
 extern void split_subsi (rtx *);
-extern void arc_pad_return (void);
 extern void arc_split_move (rtx *);
 extern int arc_verify_short (rtx_insn *insn, int unalign, int);
 extern const char *arc_short_long (rtx_insn *insn, const char *, const char *);
