@@ -5969,12 +5969,6 @@ arc_legitimate_constant_p (machine_mode mode, rtx x)
 	{
 	  if (arc_legitimate_pic_addr_p (x))
 	    return true;
-	  /* arc_legitimate_pic addr_p cannot handle TLS_OFF, hence if it
-	     fails, check for it.  */
-	  if ((GET_CODE (XEXP (x, 0)) == UNSPEC)
-	      && XINT (XEXP (x, 0), 1) == UNSPEC_TLS_OFF)
-	    return true;
-	  return false;
 	}
       return arc_legitimate_constant_p (mode, XEXP (x, 0));
 
@@ -5990,6 +5984,12 @@ arc_legitimate_constant_p (machine_mode mode, rtx x)
     case CONST_DOUBLE:
       return true;
 
+    case NEG:
+      /* Assembler does not understand -(@label@gotoff).  Also, we do
+	 not print such pic address constant.  */
+      if (GET_CODE (XEXP (x, 0)) == UNSPEC)
+	return false;
+      return arc_legitimate_constant_p (mode, XEXP (x, 0));
     case PLUS:
     case MINUS:
       {
