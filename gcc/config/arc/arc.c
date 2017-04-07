@@ -257,7 +257,6 @@ const struct attribute_spec arc_attribute_table[] =
 };
 static int arc_comp_type_attributes (const_tree, const_tree);
 static void arc_file_start (void);
-static void arc_file_end (void);
 static void arc_internal_label (FILE *, const char *, unsigned long);
 static void arc_output_mi_thunk (FILE *, tree, HOST_WIDE_INT, HOST_WIDE_INT,
 				 tree);
@@ -415,8 +414,6 @@ static rtx arc_legitimize_address_0 (rtx, rtx, machine_mode mode);
 #define TARGET_COMP_TYPE_ATTRIBUTES arc_comp_type_attributes
 #undef TARGET_ASM_FILE_START
 #define TARGET_ASM_FILE_START arc_file_start
-#undef TARGET_ASM_FILE_END
-#define TARGET_ASM_FILE_END arc_file_end
 #undef TARGET_ATTRIBUTE_TABLE
 #define TARGET_ATTRIBUTE_TABLE arc_attribute_table
 #undef TARGET_ASM_INTERNAL_LABEL
@@ -4988,7 +4985,10 @@ static void arc_file_start (void)
 	       TARGET_OPTFPE ? 1 : 0);
 }
 
-static void arc_file_end (void)
+/* Implement `TARGET_ASM_FILE_END'.  */
+/* Outputs to the stdio stream FILE jli related text.  */
+
+void arc_file_end (void)
 {
   arc_jli_section *sec = arc_jli_sections;
 
@@ -5012,6 +5012,7 @@ static void arc_file_end (void)
     fprintf (asm_out_file, "\n");
     sec = sec->next;
   }
+  file_end_indicate_exec_stack ();
 }
 
 /* Cost functions.  */
