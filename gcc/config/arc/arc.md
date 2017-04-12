@@ -728,8 +728,8 @@ archs4xd, archs4xd_slow"
 ; insns it should lengthen the return insn.
 ; N.B. operand 1 of alternative 7 expands into pcl,symbol@gotpc .
 (define_insn "*movsi_insn"                      ;   0     1     2     3    4  5 6   7   8   9   10  11  12  13    14  15   16  17  18     19     20  21  22    23    24 25 26    27 28  29   30   31
-  [(set (match_operand:SI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h, w,w,  w,  w,  w,  w,???w, ?w,  w,Rcq#q,  h,   w,Rcq,  S,   Us<,RcqRck,!*x,  r,!*Rsd,!*Rcd,r,Ucm,  Usd,m,???m,VUsc,VUsc")
-	(match_operand:SI 1 "move_src_operand"  "  cL,   cP,Rcq#q,    P,hCm1,cL,I,Crr,Clo,Chi,Cbi,?Rac,Cpc,Clb, ?Cal,Cal,?Cal,  T,Rcq,RcqRck,   Us>,Usd,Ucm,  Usd,  Ucd,m,  w,!*Rzd,c,?Rac, Cm3, C32"))]
+  [(set (match_operand:SI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h, w,w,  w,  w,  w,  w,???w, ?w,  w,Rcq#q,  h,   w,Rcq,  S,   Us<,RcqRck,!*x,  r,!*Rsd,!*Rcd,r,Ucm,  Us0,m,???m,VUsc,VUsc")
+	(match_operand:SI 1 "move_src_operand"  "  cL,   cP,Rcq#q,    P,hCm1,cL,I,Crr,Clo,Chi,Cbi,?Rac,Cpc,Clb, ?Cal,Cal,?Cal,  T,Rcq,RcqRck,   Us>,Usd,Ucm,  Us0,  Ucd,m,  w,!*Rzd,c,?Rac, Cm3, C32"))]
   "register_operand (operands[0], SImode)
    || register_operand (operands[1], SImode)
    || (CONSTANT_P (operands[1])

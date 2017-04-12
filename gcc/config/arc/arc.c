@@ -4025,6 +4025,26 @@ arc_print_operand (FILE *file, rtx x, int code)
 		  fputs (".as", file);
 		  output_scaled = 1;
 		}
+	      else if (LEGITIMATE_SMALL_DATA_ADDRESS_P (addr)
+		       && GET_MODE_SIZE (GET_MODE (x)) > 1)
+		{
+		  tree decl = NULL_TREE;
+		  int align = 0;
+		  if (GET_CODE (XEXP (addr, 1)) == SYMBOL_REF)
+		    decl = SYMBOL_REF_DECL (XEXP (addr, 1));
+		  else if (GET_CODE (XEXP (XEXP (XEXP (addr, 1), 0), 0))
+			   == SYMBOL_REF)
+		    decl = SYMBOL_REF_DECL (XEXP (XEXP (XEXP (addr, 1), 0), 0));
+		  if (decl)
+		    align = DECL_ALIGN (decl);
+		  align = align / BITS_PER_UNIT;
+		  if ((GET_MODE_SIZE (GET_MODE (x)) == 2)
+		      && align && ((align & 1) == 0))
+		    fputs (".as", file);
+		  if ((GET_MODE_SIZE (GET_MODE (x)) >= 4)
+		      && align && ((align & 3) == 0))
+		    fputs (".as", file);
+		}
 	      break;
 	    case REG:
 	      break;
@@ -7806,7 +7826,8 @@ arc_in_small_data_p (const_tree decl)
 /*     return false; */
 
   /* Allow only <=4B long data types into sdata.  */
-  return (size > 0 && size <= 4);
+  return (size > 0 && ((!TARGET_LL64 && size <= 4)
+		       || (TARGET_LL64 && size <= 8)));
 }
 
 /* Return true if X is a small data address that can be rewritten
@@ -7896,10 +7917,12 @@ small_data_pattern (rtx op, machine_mode)
 /* volatile cache option still to be handled.  */
 
 bool
-compact_sda_memory_operand (rtx op, machine_mode mode)
+compact_sda_memory_operand (rtx op, machine_mode mode, bool code_density)
 {
   rtx addr;
   int size;
+  tree decl = NULL_TREE;
+  int align = 0;
 
   /* Eliminate non-memory operations.  */
   if (GET_CODE (op) != MEM)
@@ -7911,13 +7934,31 @@ compact_sda_memory_operand (rtx op, machine_mode mode)
   size = GET_MODE_SIZE (mode);
 
   /* dword operations really put out 2 instructions, so eliminate them.  */
-  if (size > UNITS_PER_WORD)
+  if ((!TARGET_LL64 && size > UNITS_PER_WORD)
+      || (TARGET_LL64 && (size > 2*UNITS_PER_WORD)))
     return false;
 
   /* Decode the address now.  */
   addr = XEXP (op, 0);
 
-  return LEGITIMATE_SMALL_DATA_ADDRESS_P  (addr);
+  if (!LEGITIMATE_SMALL_DATA_ADDRESS_P (addr))
+    return false;
+
+  if (!code_density || size != 4)
+    return true;
+
+  /* Now check for the alignment, the new Code Density short loads using
+     gp require the addresses to be aligned.  */
+  if (GET_CODE (XEXP (addr, 1)) == SYMBOL_REF)
+    decl = SYMBOL_REF_DECL (XEXP (addr, 1));
+  else if (GET_CODE (XEXP (XEXP (XEXP (addr, 1), 0), 0)) == SYMBOL_REF)
+    decl = SYMBOL_REF_DECL (XEXP (XEXP (XEXP (addr, 1), 0), 0));
+  if (decl)
+    align = DECL_ALIGN (decl);
+  align = align / BITS_PER_UNIT;
+  if (align && ((align & 3) == 0))
+    return true;
+  return false;
 }
 
 /* Implement ASM_OUTPUT_ALIGNED_DECL_LOCAL.  */

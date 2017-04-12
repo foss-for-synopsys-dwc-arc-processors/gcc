@@ -1,0 +1,35 @@
+/* Check if sdata access is done correctly, specially
+   for variables which are having a different alignment
+   than the default data type indicates.  */
+/* { dg-do compile } */
+/* { dg-options "-O2" } */
+
+int g_a __attribute__ ((aligned (1)));
+int g_b;
+short g_c;
+char g_d;
+long long g_e;
+
+#define TEST(name, optype)			\
+  void test_ ## name (optype x)			\
+  {						\
+    g_ ## name += x;				\
+  }
+
+TEST (a, int)
+TEST (b, int)
+TEST (c, short)
+TEST (d, char)
+TEST (e, long long)
+
+/* { dg-final { scan-assembler "ld r2,\\\[gp,@g_a@sda\\\]" } } */
+/* { dg-final { scan-assembler "ld.as r2,\\\[gp,@g_b@sda\\\]" } } */
+/* { dg-final { scan-assembler "ldh.as r2,\\\[gp,@g_c@sda\\\]" } } */
+/* { dg-final { scan-assembler "ldb r2,\\\[gp,@g_d@sda\\\]" } } */
+/* { dg-final { scan-assembler "ldd.as r2,\\\[gp,@g_e@sda\\\]" } } */
+
+/* { dg-final { scan-assembler "st r0,\\\[gp,@g_a@sda\\\]" } } */
+/* { dg-final { scan-assembler "st_s r0,\\\[gp,@g_b@sda\\\]" } } */
+/* { dg-final { scan-assembler "sth.as r0,\\\[gp,@g_c@sda\\\]" } } */
+/* { dg-final { scan-assembler "stb r0,\\\[gp,@g_d@sda\\\]" } } */
+/* { dg-final { scan-assembler "std.as r0,\\\[gp,@g_e@sda\\\]" } } */
