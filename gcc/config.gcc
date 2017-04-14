@@ -341,7 +341,7 @@ arc-*-* | arc[eb]*-*-*)
 	c_target_objs="arc-c.o"
 	cxx_target_objs="arc-c.o"
 	extra_options="${extra_options} arc/arc-tables.opt g.opt"
-	extra_headers="arc-simd.h"
+	extra_headers="arc-simd.h arcle.h"
 	;;
 arc64-*-*)
 	cpu_type=arc64
