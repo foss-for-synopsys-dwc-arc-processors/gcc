@@ -752,9 +752,9 @@ archs4xd, archs4xd_slow"
    mov%? %0,%1		;11
    add %0,%1		;12
    add %0,pcl,%1@pcl    ;13
-   mov%? %0,%1%&	;14
-   mov%? %0,%1		;15
-   mov%? %0,%1		;16
+   mov%? %0,%j1%&	;14
+   mov%? %0,%j1		;15
+   mov%? %0,%j1		;16
    ld%? %0,%1%&		;17
    st%? %1,%0%&		;18
    * return arc_short_long (insn, \"push%? %1%&\", \"st%U0 %1,%0%&\");
