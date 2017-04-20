@@ -355,13 +355,6 @@
    "@internal
     A valid _small-data_ memory operand for ARCompact instructions"
    (and (match_code "mem")
-	(match_test "compact_sda_memory_operand (op, VOIDmode, false)")))
-
-(define_constraint "Us0"
-   "@internal
-    A valid _small-data_ memory operand for short ARCompact instructions"
-   (and (match_code "mem")
-	(match_test "TARGET_CODE_DENSITY")
 	(match_test "compact_sda_memory_operand (op, VOIDmode, true)")))
 
 (define_memory_constraint "Usc"

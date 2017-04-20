@@ -7917,12 +7917,13 @@ small_data_pattern (rtx op, machine_mode)
 /* volatile cache option still to be handled.  */
 
 bool
-compact_sda_memory_operand (rtx op, machine_mode mode, bool code_density)
+compact_sda_memory_operand (rtx op, machine_mode mode, bool short_p)
 {
   rtx addr;
   int size;
   tree decl = NULL_TREE;
   int align = 0;
+  int mask = 0;
 
   /* Eliminate non-memory operations.  */
   if (GET_CODE (op) != MEM)
@@ -7944,11 +7945,11 @@ compact_sda_memory_operand (rtx op, machine_mode mode, bool code_density)
   if (!LEGITIMATE_SMALL_DATA_ADDRESS_P (addr))
     return false;
 
-  if (!code_density || size != 4)
+  if (!short_p || size == 1)
     return true;
 
-  /* Now check for the alignment, the new Code Density short loads using
-     gp require the addresses to be aligned.  */
+  /* Now check for the alignment, the short loads using gp require the
+     addresses to be aligned.  */
   if (GET_CODE (XEXP (addr, 1)) == SYMBOL_REF)
     decl = SYMBOL_REF_DECL (XEXP (addr, 1));
   else if (GET_CODE (XEXP (XEXP (XEXP (addr, 1), 0), 0)) == SYMBOL_REF)
@@ -7956,7 +7957,18 @@ compact_sda_memory_operand (rtx op, machine_mode mode, bool code_density)
   if (decl)
     align = DECL_ALIGN (decl);
   align = align / BITS_PER_UNIT;
-  if (align && ((align & 3) == 0))
+
+  switch (mode)
+    {
+    case HImode:
+      mask = 1;
+      break;
+    default:
+      mask = 3;
+      break;
+    }
+
+  if (align && ((align & mask) == 0))
     return true;
   return false;
 }
