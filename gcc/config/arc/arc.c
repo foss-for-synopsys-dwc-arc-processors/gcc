@@ -7768,12 +7768,10 @@ arc_in_small_data_p (const_tree decl)
 {
   HOST_WIDE_INT size;
 
+  /* Strings and functions are never in small data area.  */
   if (TREE_CODE (decl) == STRING_CST || TREE_CODE (decl) == FUNCTION_DECL)
     return false;
 
-
-  /* We don't yet generate small-data references for -mabicalls.  See related
-     -G handling in override_options.  */
   if (TARGET_NO_SDATA_SET)
     return false;
 
@@ -7792,7 +7790,7 @@ arc_in_small_data_p (const_tree decl)
 	  return true;
     }
   /* Only global variables go into sdata section for now.  */
-  else if (1)
+  else
     {
       /* Don't put constants into the small data section: we want them
 	 to be in ROM rather than RAM.  */
@@ -7822,12 +7820,8 @@ arc_in_small_data_p (const_tree decl)
 
   size = int_size_in_bytes (TREE_TYPE (decl));
 
-/*   if (AGGREGATE_TYPE_P (TREE_TYPE (decl))) */
-/*     return false; */
-
   /* Allow only <=4B long data types into sdata.  */
-  return (size > 0 && ((!TARGET_LL64 && size <= 4)
-		       || (TARGET_LL64 && size <= 8)));
+  return (size > 0 && size <= 4);
 }
 
 /* Return true if X is a small data address that can be rewritten
@@ -7935,8 +7929,7 @@ compact_sda_memory_operand (rtx op, machine_mode mode, bool short_p)
   size = GET_MODE_SIZE (mode);
 
   /* dword operations really put out 2 instructions, so eliminate them.  */
-  if ((!TARGET_LL64 && size > UNITS_PER_WORD)
-      || (TARGET_LL64 && (size > 2*UNITS_PER_WORD)))
+  if (size > UNITS_PER_WORD)
     return false;
 
   /* Decode the address now.  */
