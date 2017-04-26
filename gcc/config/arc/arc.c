@@ -2047,14 +2047,6 @@ arc_comp_type_attributes (const_tree type1,
   return 1;
 }
 
-/* Set the default attributes for TYPE.  */
-
-void
-arc_set_default_type_attributes (tree type ATTRIBUTE_UNUSED)
-{
-  gcc_unreachable();
-}
-
 /* Misc. utilities.  */
 
 /* X and Y are two things to compare using CODE.  Emit the compare insn and
@@ -2284,7 +2276,7 @@ arc_setup_incoming_varargs (cumulative_args_t args_so_far,
 /* Provide the costs of an addressing mode that contains ADDR.
    If ADDR is not a valid address, its cost is irrelevant.  */
 
-int
+static int
 arc_address_cost (rtx addr, machine_mode, addr_space_t, bool speed)
 {
   switch (GET_CODE (addr))
@@ -4896,7 +4888,7 @@ arc_next_active_insn (rtx_insn *insn, struct arc_ccfsm *statep)
    zero if the current insn is aligned to a 4-byte-boundary, two otherwise.
    If CHECK_ATTR is greater than 0, check the iscompact attribute first.  */
 
-int
+static int
 arc_verify_short (rtx_insn *insn, int, int check_attr)
 {
   enum attr_iscompact iscompact;
@@ -5001,7 +4993,7 @@ arc_frame_pointer_required (void)
 
 /* Return the destination address of a branch.  */
 
-int
+static int
 branch_dest (rtx branch)
 {
   rtx pat = PATTERN (branch);
@@ -7076,61 +7068,6 @@ arc_return_in_memory (const_tree type, const_tree fntype ATTRIBUTE_UNUSED)
       HOST_WIDE_INT size = int_size_in_bytes (type);
       return (size == -1 || size > (TARGET_V2 ? 16 : 8));
     }
-}
-
-
-/* This was in rtlanal.c, and can go in there when we decide we want
-   to submit the change for inclusion in the GCC tree.  */
-/* Like note_stores, but allow the callback to have side effects on the rtl
-   (like the note_stores of yore):
-   Call FUN on each register or MEM that is stored into or clobbered by X.
-   (X would be the pattern of an insn).  DATA is an arbitrary pointer,
-   ignored by note_stores, but passed to FUN.
-   FUN may alter parts of the RTL.
-
-   FUN receives three arguments:
-   1. the REG, MEM, CC0 or PC being stored in or clobbered,
-   2. the SET or CLOBBER rtx that does the store,
-   3. the pointer DATA provided to note_stores.
-
-  If the item being stored in or clobbered is a SUBREG of a hard register,
-  the SUBREG will be passed.  */
-
-/* For now.  */ static
-void
-walk_stores (rtx x, void (*fun) (rtx, rtx, void *), void *data)
-{
-  int i;
-
-  if (GET_CODE (x) == COND_EXEC)
-    x = COND_EXEC_CODE (x);
-
-  if (GET_CODE (x) == SET || GET_CODE (x) == CLOBBER)
-    {
-      rtx dest = SET_DEST (x);
-
-      while ((GET_CODE (dest) == SUBREG
-	      && (!REG_P (SUBREG_REG (dest))
-		  || REGNO (SUBREG_REG (dest)) >= FIRST_PSEUDO_REGISTER))
-	     || GET_CODE (dest) == ZERO_EXTRACT
-	     || GET_CODE (dest) == STRICT_LOW_PART)
-	dest = XEXP (dest, 0);
-
-      /* If we have a PARALLEL, SET_DEST is a list of EXPR_LIST expressions,
-	 each of whose first operand is a register.  */
-      if (GET_CODE (dest) == PARALLEL)
-	{
-	  for (i = XVECLEN (dest, 0) - 1; i >= 0; i--)
-	    if (XEXP (XVECEXP (dest, 0, i), 0) != 0)
-	      (*fun) (XEXP (XVECEXP (dest, 0, i), 0), x, data);
-	}
-      else
-	(*fun) (dest, x, data);
-    }
-
-  else if (GET_CODE (x) == PARALLEL)
-    for (i = XVECLEN (x, 0) - 1; i >= 0; i--)
-      walk_stores (XVECEXP (x, 0, i), fun, data);
 }
 
 static bool
@@ -9585,7 +9522,7 @@ arc_regno_use_in (unsigned int regno, rtx x)
 /* Return the integer value of the "type" attribute for INSN, or -1 if
    INSN can't have attributes.  */
 
-int
+static int
 arc_attr_type (rtx_insn *insn)
 {
   if (NONJUMP_INSN_P (insn)
