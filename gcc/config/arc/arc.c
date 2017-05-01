@@ -351,7 +351,7 @@ legitimate_scaled_address_p (machine_mode mode, rtx op, bool strict)
    register, an immediate or an long immediate. */
 
 static bool
-legitimate_offset_address_p (enum machine_mode mode, rtx x, bool index,
+legitimate_offset_address_p (machine_mode mode, rtx x, bool index,
 			     bool strict)
 {
   if (GET_CODE (x) != PLUS)
@@ -4826,42 +4826,6 @@ arc_ccfsm_cond_exec_p (void)
 {
   return (cfun->machine->prescan_initialized
 	  && ARC_CCFSM_COND_EXEC_P (&arc_ccfsm_current));
-}
-
-/* Like next_active_insn, but return NULL if we find an ADDR_(DIFF_)VEC,
-   and look inside SEQUENCEs.  */
-
-static rtx_insn *
-arc_next_active_insn (rtx_insn *insn, struct arc_ccfsm *statep)
-{
-  rtx pat;
-
-  do
-    {
-      if (statep)
-	arc_ccfsm_post_advance (insn, statep);
-      insn = NEXT_INSN (insn);
-      if (!insn || BARRIER_P (insn))
-	return NULL;
-      if (statep)
-	arc_ccfsm_advance (insn, statep);
-    }
-  while (NOTE_P (insn)
-	 || (cfun->machine->arc_reorg_started
-	     && LABEL_P (insn) && !label_to_alignment (insn))
-	 || (NONJUMP_INSN_P (insn)
-	     && (GET_CODE (PATTERN (insn)) == USE
-		 || GET_CODE (PATTERN (insn)) == CLOBBER)));
-  if (!LABEL_P (insn))
-    {
-      gcc_assert (INSN_P (insn));
-      pat = PATTERN (insn);
-      if (GET_CODE (pat) == ADDR_VEC || GET_CODE (pat) == ADDR_DIFF_VEC)
-	return NULL;
-      if (GET_CODE (pat) == SEQUENCE)
-	return as_a <rtx_insn *> (XVECEXP (pat, 0, 0));
-    }
-  return insn;
 }
 
 /* When deciding if an insn should be output short, we want to know something
