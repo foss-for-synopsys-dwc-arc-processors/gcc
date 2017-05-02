@@ -1209,6 +1209,9 @@ arc_override_options (void)
   if (!global_options_set.x_g_switch_value && !TARGET_NO_SDATA_SET)
     g_switch_value = TARGET_LL64 ? 8 : 4;
 
+  if ((target_flags_explicit & MASK_NEW_REGS) == 0)
+    target_flags |= MASK_NEW_REGS;
+
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
 }
@@ -1826,10 +1829,6 @@ arc_conditional_register_usage (void)
   gcc_assert (FIRST_PSEUDO_REGISTER >= 144);
 
   /* Handle Special Registers.  */
-  arc_regno_reg_class[29] = LINK_REGS; /* ilink1 register.  */
-  if (!TARGET_V2)
-    arc_regno_reg_class[30] = LINK_REGS; /* ilink2 register.  */
-  arc_regno_reg_class[31] = LINK_REGS; /* blink register.  */
   arc_regno_reg_class[60] = LPCOUNT_REG;
   arc_regno_reg_class[61] = NO_REGS;      /* CC_REG: must be NO_REGS.  */
   arc_regno_reg_class[62] = GENERAL_REGS;
@@ -1847,6 +1846,7 @@ arc_conditional_register_usage (void)
 	    {
 	    /* Make sure no 'c', 'w', 'W', or 'Rac' constraint is
 	       interpreted to mean they can use D1 or D2 in their insn.  */
+	    CLEAR_HARD_REG_BIT(reg_class_contents[GENERAL_REGS          ], i);
 	    CLEAR_HARD_REG_BIT(reg_class_contents[CHEAP_CORE_REGS       ], i);
 	    CLEAR_HARD_REG_BIT(reg_class_contents[ALL_CORE_REGS         ], i);
 	    CLEAR_HARD_REG_BIT(reg_class_contents[WRITABLE_CORE_REGS    ], i);
@@ -9308,17 +9308,20 @@ split_subsi (rtx *operands)
 static bool
 arc_process_double_reg_moves (rtx *operands)
 {
+  enum usesDxState { none, srcDx, destDx, maxDx };
+  enum usesDxState state = none;
   rtx dest = operands[0];
   rtx src  = operands[1];
 
-  enum usesDxState { none, srcDx, destDx, maxDx };
-  enum usesDxState state = none;
-
   if (refers_to_regno_p (40, 44, src, 0))
-    state = srcDx;
+    {
+      state = srcDx;
+      gcc_assert (REG_P (dest));
+    }
   if (refers_to_regno_p (40, 44, dest, 0))
     {
       /* Via arc_register_move_cost, we should never see D,D moves.  */
+      gcc_assert (REG_P (src));
       gcc_assert (state == none);
       state = destDx;
     }

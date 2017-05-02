@@ -527,3 +527,7 @@ Enum(arc_lpc) String(28) Value(28)
 
 EnumValue
 Enum(arc_lpc) String(32) Value(32)
+
+mnew-regs
+Target Report Mask(NEW_REGS)
+Force using new register classes (lra compatible, but not using lra).
