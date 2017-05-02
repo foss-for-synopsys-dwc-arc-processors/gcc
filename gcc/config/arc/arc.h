@@ -470,25 +470,23 @@ enum reg_class
 {
    NO_REGS,
    R0_REGS,			/* 'x' */
+   R0R1_CD_REGS,		/* 'Rsd' */
+   R0R3_CD_REGS,		/* 'Rcd' */
+   ARCOMPACT16_REGS,		/* 'q' */
    GP_REG,			/* 'Rgp' */
-   FP_REG,			/* 'f' */
    SP_REGS,			/* 'b' */
    LPCOUNT_REG, 		/* 'l' */
-   LINK_REGS,	 		/* 'k' */
-   DOUBLE_REGS,			/* D0, D1 */
-   SIMD_VR_REGS,		/* VR00-VR63 */
-   SIMD_DMA_CONFIG_REGS,	/* DI0-DI7,DO0-DO7 */
-   ARCOMPACT16_REGS,		/* 'q' */
-   AC16_BASE_REGS,  		/* 'e' */
+   DOUBLE_REGS,			/* 'D' */
    SIBCALL_REGS,		/* "Rsc" */
+   AC16_H_REGS,			/* 'h' */
    GENERAL_REGS,		/* 'r' */
+   AC16_BASE_REGS,  		/* 'e' */
+   SIMD_VR_REGS,		/* 'v' */
+   SIMD_DMA_CONFIG_REGS,	/* 'd' */
    MPY_WRITABLE_CORE_REGS,	/* 'W' */
    WRITABLE_CORE_REGS,		/* 'w' */
    CHEAP_CORE_REGS,		/* 'c' */
    ALL_CORE_REGS,		/* 'Rac' */
-   R0R3_CD_REGS,		/* 'Rcd' */
-   R0R1_CD_REGS,		/* 'Rsd' */
-   AC16_H_REGS,			/* 'h' */
    ALL_REGS,
    LIM_REG_CLASSES
 };
@@ -499,25 +497,23 @@ enum reg_class
 #define REG_CLASS_NAMES	  \
 {                         \
   "NO_REGS",           	  \
-  "R0_REGS",            	  \
+  "R0_REGS",           	  \
+  "R0R1_CD_REGS",         \
+  "R0R3_CD_REGS",         \
+  "ARCOMPACT16_REGS",  	  \
   "GP_REG",            	  \
-  "FP_REG",            	  \
   "SP_REGS",		  \
   "LPCOUNT_REG",	  \
-  "LINK_REGS",         	  \
   "DOUBLE_REGS",          \
+  "SIBCALL_REGS",	  \
+  "AC16_H_REGS",          \
+  "GENERAL_REGS",      	  \
+  "AC16_BASE_REGS",       \
   "SIMD_VR_REGS",         \
   "SIMD_DMA_CONFIG_REGS", \
-  "ARCOMPACT16_REGS",  	  \
-  "AC16_BASE_REGS",       \
-  "SIBCALL_REGS",	  \
-  "GENERAL_REGS",      	  \
   "MPY_WRITABLE_CORE_REGS",   \
   "WRITABLE_CORE_REGS",   \
   "CHEAP_CORE_REGS",	  \
-  "R0R3_CD_REGS", \
-  "R0R1_CD_REGS", \
-  "AC16_H_REGS",	    \
   "ALL_CORE_REGS",	  \
   "ALL_REGS"          	  \
 }
@@ -530,29 +526,27 @@ enum reg_class
 {													\
   {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* No Registers */			\
   {0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'x', r0 register , r0 */	\
+  {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
+  {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
+  {0x0000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'q', r0-r3, r12-r15 */		\
   {0x04000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rgp', Global Pointer, r26 */	\
-  {0x08000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'f', Frame Pointer, r27 */	\
   {0x10000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'b', Stack Pointer, r28 */	\
   {0x00000000, 0x10000000, 0x00000000, 0x00000000, 0x00000000},      /* 'l', LPCOUNT Register, r60 */	\
-  {0xe0000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'k', LINK Registers, r29-r31 */	\
   {0x00000000, 0x00000f00, 0x00000000, 0x00000000, 0x00000000},      /* 'D', D1, D2 Registers */	\
-  {0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0x00000000},      /* 'V', VR00-VR63 Registers */	\
-  {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000ffff},      /* 'V', DI0-7,DO0-7 Registers */	\
-  {0x0000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'q', r0-r3, r12-r15 */		\
+  {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* "Rsc", r0-r12 */ \
+  {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h', r0-r28, r31 */ \
+  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r60, pcl */	\
   {0x1000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'e', r0-r3, r12-r15, sp */	\
-  {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},    /* "Rsc", r0-r12 */ \
-  {0x9fffffff, 0x80000000, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r28, blink, ap and pcl */	\
+  {0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0x00000000},      /* 'v', VR00-VR63 Registers */	\
+  {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000ffff},      /* 'd', DI0-7,DO0-7 Registers */	\
   {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'W',  r0-r31 */ \
   /* Include ap / pcl in WRITABLE_CORE_REGS for sake of symmetry.  As these \
      registers are fixed, it does not affect the literal meaning of the \
      constraints, but it makes it a superset of GENERAL_REGS, thus \
      enabling some operations that would otherwise not be possible.  */ \
-  {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'w', r0-r31, r60 */ \
-  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
-  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
-  {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
-  {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
-  {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h',  r0-28, r30 */ \
+  {0xffffffff, 0xd0000000, 0x00000000, 0x00000000, 0x00000000},      /* 'w', r0-r31, r60 */ \
+  {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
+  {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
@@ -1619,7 +1613,13 @@ enum
 /* Custom FP instructions used by QuarkSE EM cpu.  */
 #define TARGET_FPX_QUARK    (TARGET_EM && TARGET_SPFP		\
 			     && (arc_fpu_build == FPX_QK))
+
 /* DBNZ support is available for ARCv2 core3 cpus.  */
 #define TARGET_DBNZ (TARGET_V2 && (arc_tune == ARC_TUNE_CORE_3))
 
+#ifndef TARGET_LRA
+#define TARGET_LRA !TARGET_NO_LRA
+#endif
+
+#define TARGET_CLEAN_REGS (TARGET_LRA || TARGET_NEW_REGS)
 #endif /* GCC_ARC_H */
