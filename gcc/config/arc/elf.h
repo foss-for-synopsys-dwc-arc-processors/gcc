@@ -82,3 +82,8 @@ along with GCC; see the file COPYING3.  If not see
     fun = gen_rtx_SYMBOL_REF (Pmode, "__mcount");		\
     emit_library_call (fun, LCT_NORMAL, VOIDmode);		\
   }
+
+/* If no specs file is enforced, default to nosys libarary.  */
+#undef LINK_GCC_C_SEQUENCE_SPEC
+#define LINK_GCC_C_SEQUENCE_SPEC				\
+  "--start-group %G %{!specs=*:-lc -lnosys} --end-group"
