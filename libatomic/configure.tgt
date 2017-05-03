@@ -39,6 +39,7 @@ case "${target_cpu}" in
   rs6000 | powerpc*)	ARCH=powerpc ;;
   riscv*)		ARCH=riscv ;;
   sh*)			ARCH=sh ;;
+  arc*)			ARCH=arc ;;
 
   arm*)
 	ARCH=arm
@@ -109,6 +110,11 @@ fi
 
 # Other system configury
 case "${target}" in
+  arc*-*-elf*)
+	# bare-metal support for ARC custom spinlocks
+	config_path="{config_path} elf/arc"
+	;;
+
   arm*-*-linux*)
 	# OS support for atomic primitives.
 	config_path="${config_path} linux/arm posix"
