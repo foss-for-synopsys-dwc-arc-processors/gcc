@@ -780,3 +780,84 @@
 (define_predicate "arc_short_operand"
   (ior (match_test "register_operand (op, mode)")
        (match_test "short_unsigned_const_operand (op, mode)")))
+
+; EXPERIMENTAL: Check if parallel rtx matches with enter_s. Must matches:
+;   set sp, (sp - (len-1)*4)
+;   set whatever, r13 or blink
+;   set whatever, any reg
+;   ...
+(define_predicate "push_multi_register"
+  (match_code "parallel")
+{
+  int len = XVECLEN (op, 0);
+  if (len < 3)
+    return FALSE;
+  rtx op0 = XVECEXP (op, 0, 0);
+  rtx op1 = XVECEXP (op, 0, 1);
+  rtx op2 = XVECEXP (op, 0, 2);
+  if (GET_CODE (op0) != SET || GET_CODE (op1) != SET || GET_CODE (op2) != SET)
+    return FALSE;
+  rtx op00 = XEXP (op0, 0);
+  rtx op01 = XEXP (op0, 1);
+  if (   (GET_CODE (op00) != REG)
+      || (REGNO (op00) != STACK_POINTER_REGNUM)
+      || (GET_CODE (op01) != PLUS))
+    return FALSE;
+  rtx op010 = XEXP (op01, 0);
+  rtx op011 = XEXP (op01, 1);
+  if (   (GET_CODE (op010) != REG)
+      || (REGNO (op010) != STACK_POINTER_REGNUM)
+      || (GET_CODE (op011) != CONST_INT)
+      || (INTVAL (op011) != -(len-1) * UNITS_PER_WORD))
+    return FALSE;
+  rtx op11 = XEXP (op1, 1);
+  rtx op21 = XEXP (op2, 1);
+  if (   (GET_CODE (op11) != REG)
+      || (GET_CODE (op21) != REG)
+      || (   (REGNO (op11) != RETURN_ADDR_REGNUM)
+          && (REGNO (op11) != 13)))
+    return FALSE;
+
+  return true;
+})
+
+; EXPERIMENTAL: Check if parallel rtx matches leave_s. Must matches:
+;   set sp, (sp + (len-(1 or 2))*4)
+;   set r13 or blink, whatever
+;   set any reg, whatever
+;   ...
+(define_predicate "pop_multi_register"
+  (match_code "parallel")
+{
+  unsigned len = XVECLEN (op, 0);
+  if (len < 3)
+    return FALSE;
+  rtx op0 = XVECEXP (op, 0, 0);
+  rtx op1 = XVECEXP (op, 0, 1);
+  rtx op2 = XVECEXP (op, 0, 2);
+  if (GET_CODE (op0) != SET || GET_CODE (op1) != SET || GET_CODE (op2) != SET)
+    return FALSE;
+  rtx op00 = XEXP (op0, 0);
+  rtx op01 = XEXP (op0, 1);
+  if (   (GET_CODE (op00) != REG)
+      || (REGNO (op00) != STACK_POINTER_REGNUM)
+      || (GET_CODE (op01) != PLUS))
+    return FALSE;
+  rtx op010 = XEXP (op01, 0);
+  rtx op011 = XEXP (op01, 1);
+  if (   (GET_CODE (op010) != REG)
+      || (REGNO (op010) != STACK_POINTER_REGNUM)
+      || (GET_CODE (op011) != CONST_INT)
+      || (   (INTVAL (op011) != (len-1) * UNITS_PER_WORD)
+          && (INTVAL (op011) != (len-2) * UNITS_PER_WORD)))
+    return FALSE;
+  rtx op10 = XEXP (op1, 0);
+  rtx op20 = XEXP (op2, 0);
+  if (   (GET_CODE (op10) != REG)
+      || (GET_CODE (op20) != REG)
+      || (   (REGNO (op10) != RETURN_ADDR_REGNUM)
+          && (REGNO (op10) != 13)))
+    return FALSE;
+
+  return true;
+})
