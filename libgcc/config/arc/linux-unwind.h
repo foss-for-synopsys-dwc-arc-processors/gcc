@@ -64,9 +64,11 @@ register_id_for_index[REGISTER_STACK_ORDER_SIZE] = {
 #if __BIG_ENDIAN__
 #define MOV_R8_139	  0x8a20c212
 #define TRAP_S_J_S_BLINK  0x1e78e07e
+#define SWI		  0x6f223f00
 #elif __LITTLE_ENDIAN__
 #define MOV_R8_139	  0x12c2208a 
 #define TRAP_S_J_S_BLINK  0x7ee0781e
+#define SWI		  0x003f226f
 #endif
 
 #define MD_FALLBACK_FRAME_STATE_FOR arc_fallback_frame_state
@@ -87,8 +89,13 @@ arc_fallback_frame_state (struct _Unwind_Context *context,
   _Unwind_Ptr new_cfa;
   int i;
 
+#ifdef __ARC700__
+  if (pc[1] != SWI)
+    return _URC_END_OF_STACK;
+#else
   if (pc[1] != TRAP_S_J_S_BLINK)
     return _URC_END_OF_STACK;
+#endif
 
   if (pc[0] == MOV_R8_139)
     {
