@@ -6047,11 +6047,8 @@ arc_legitimate_constant_p (machine_mode mode, rtx x)
       return true;
 
     case NEG:
-      /* Assembler does not understand -(@label@gotoff).  Also, we do
-	 not print such pic address constant.  */
-      if (GET_CODE (XEXP (x, 0)) == UNSPEC)
-	return false;
       return arc_legitimate_constant_p (mode, XEXP (x, 0));
+
     case PLUS:
     case MINUS:
       {
@@ -6081,7 +6078,9 @@ arc_legitimate_constant_p (machine_mode mode, rtx x)
 	case UNSPEC_TLS_IE:
 	  return true;
 	default:
-	  break;
+	  /* Any other unspec ending here are pic related, hence the above
+	     constant pic address checking returned false.  */
+	  return false;
 	}
       /* Fall through.  */
 
