@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-skip-if "" { ! { clmcpu } } } */
-/* { dg-options "-mcpu=arch2 -Os -fpic -mno-sdata -mno-indexed-loads -w" } */
+/* { dg-options "-mcpu=archs -Os -fpic -mno-sdata -mno-indexed-loads -w" } */
 a;
 c() {
   static char b[25];
