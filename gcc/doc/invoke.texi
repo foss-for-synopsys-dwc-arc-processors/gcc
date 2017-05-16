@@ -599,15 +599,14 @@ Objective-C and Objective-C++ Dialects}.
 
 @emph{ARC Options}
 @gccoptlist{-mbarrel-shifter -mjli-always @gol
-<<<<<<< HEAD
 -mcpu=@var{cpu}  -mA6  -mARC600  -mA7  -mARC700 @gol
 -mdpfp  -mdpfp-compact  -mdpfp-fast  -mno-dpfp-lrsr @gol
 -mea  -mno-mpy  -mmul32x16  -mmul64  -matomic @gol
 -mnorm  -mspfp  -mspfp-compact  -mspfp-fast  -msimd  -msoft-float  -mswap @gol
 -mcrc  -mdsp-packa  -mdvbf  -mlock  -mmac-d16  -mmac-24  -mrtsc  -mswape @gol
 -mtelephony  -mxy  -misize  -mannotate-align  -marclinux  -marclinux_prof @gol
--mlong-calls  -mmedium-calls  -msdata -mirq-ctrl-saved
--mrgf-banked-regs @gol
+-mlong-calls  -mmedium-calls  -msdata -mirq-ctrl-saved @gol
+-mrgf-banked-regs -mlpc-width @gol
 -mvolatile-cache  -mtp-regno=@var{regno} @gol
 -malign-call  -mauto-modify-reg  -mbbit-peephole  -mno-brcc @gol
 -mcase-vector-pcrel  -mcompact-casesi  -mno-cond-exec  -mearly-cbranchsi @gol
@@ -14602,6 +14601,18 @@ that are covered by the second register bank.
 This option instructs the compiler to generate code for a 16-entry
 register file.  This option defines the @code{__ARC_RF16__}
 preprocessor macro.
+
+@item -mlpc-width=@var{lpcw}
+@opindex mlpc-width
+Specify the width of the LP_COUNT register.  Valid values for
+@var{lpcw} are 8, 16, 20, 24, 28 and 32.  The default width is fixed
+to 32.  If the width is less than 32, the compiler does not attempt to
+transform loops in your program to use the zero-delay loop mechanism
+unless it is known that the @samp{LP_COUNT} register can hold the
+required loop-counter value.  Depending on the size specified, the
+compiler and run-time library might continue to use the loop mechanism
+for various needs.  This option defines macro @code{__ARC_LPC_WIDTH__}
+with the value of size.
 
 @end table
 
