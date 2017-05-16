@@ -1348,7 +1348,7 @@ do {							\
    of a loop.  */
 /* On the ARC, align loops to 4 byte boundaries unless doing all-out size
    optimization.  */
-#define LOOP_ALIGN JUMP_ALIGN
+#define LOOP_ALIGN(X) 0
 
 #define LABEL_ALIGN(LABEL) (arc_label_align (LABEL))
 
