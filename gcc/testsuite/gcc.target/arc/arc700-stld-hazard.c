@@ -1,4 +1,5 @@
 /* { dg-do compile } */
+/* { dg-skip-if "" { ! { clmcpu } } } */
 /* { dg-options "-mcpu=arc700 -mno-sdata" } */
 
 volatile int a;
