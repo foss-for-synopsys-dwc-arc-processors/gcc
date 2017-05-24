@@ -805,20 +805,65 @@ archs4xd, archs4xd_slow"
   "st%U0 %1,%0\;st%U0.di %1,%0"
   [(set_attr "type" "store")])
 
+;; Combiner patterns for compare with zero
+
+(define_insn "*xbfu_cmp0_noout"
+  [(set (match_operand 0 "cc_set_register" "")
+	(compare:CC_Z
+	 (zero_extract:SI
+	  (match_operand:SI 1 "register_operand"  "  r,r")
+	  (match_operand:SI 2 "const_int_operand" "C3p,n")
+	  (match_operand:SI 3 "const_int_operand" "  n,n"))
+	 (const_int 0)))]
+  "TARGET_HS && TARGET_BARREL_SHIFTER"
+  {
+   int assemble_op2 = (((INTVAL (operands[2]) - 1) & 0x1f) << 5) | (INTVAL (operands[3]) & 0x1f);
+   operands[2] = GEN_INT (assemble_op2);
+   return "xbfu%?.f\\t0,%1,%2";
+  }
+  [(set_attr "type"       "shift")
+   (set_attr "iscompact"  "false")
+   (set_attr "length"     "4,8")
+   (set_attr "predicable" "no")
+   (set_attr "cond"       "set_zn")])
+
+(define_insn "*xbfu_cmp0"
+  [(set (match_operand 4 "cc_set_register" "")
+	(compare:CC_Z
+	 (zero_extract:SI
+	  (match_operand:SI 1 "register_operand"  "0  ,r,0")
+	  (match_operand:SI 2 "const_int_operand" "C3p,n,n")
+	  (match_operand:SI 3 "const_int_operand" "n  ,n,n"))
+	 (const_int 0)))
+   (set (match_operand:SI 0 "register_operand"  "=r,r,r")
+	(zero_extract:SI (match_dup 1) (match_dup 2) (match_dup 3)))]
+  "TARGET_HS && TARGET_BARREL_SHIFTER"
+  {
+   int assemble_op2 = (((INTVAL (operands[2]) - 1) & 0x1f) << 5) | (INTVAL (operands[3]) & 0x1f);
+   operands[2] = GEN_INT (assemble_op2);
+   return "xbfu%?.f\\t%0,%1,%2";
+  }
+  [(set_attr "type"       "shift")
+   (set_attr "iscompact"  "false")
+   (set_attr "length"     "4,8,8")
+   (set_attr "predicable" "yes,no,yes")
+   (set_attr "cond"       "set_zn")])
+
+; splitting to 'tst' allows short insns and combination into brcc.
 (define_insn_and_split "*movsi_set_cc_insn"
   [(set (match_operand 2 "cc_set_register" "")
 	(match_operator 3 "zn_compare_operator"
-	  [(match_operand:SI 1 "nonmemory_operand" "cI,cL,Cal") (const_int 0)]))
-   (set (match_operand:SI 0 "register_operand" "=w,w,w")
+			[(match_operand:SI 1 "nonmemory_operand" "rL,rI,Cal")
+			 (const_int 0)]))
+   (set (match_operand:SI 0 "register_operand" "=r,r,r")
 	(match_dup 1))]
   ""
-  "mov%?.f %0,%1"
-  ; splitting to 'tst' allows short insns and combination into brcc.
+  "mov%?.f\\t%0,%1"
   "reload_completed && operands_match_p (operands[0], operands[1])"
   [(set (match_dup 2) (match_dup 3))]
   ""
   [(set_attr "type" "compare")
-   (set_attr "predicable" "no,yes,yes")
+   (set_attr "predicable" "yes,no,yes")
    (set_attr "cond" "set_zn")
    (set_attr "length" "4,4,8")])
 
@@ -968,19 +1013,35 @@ archs4xd, archs4xd_slow"
    (set_attr "cond" "set_zn")
    (set_attr "length" "*,4,4,4,8")])
 
-(define_insn "*commutative_binary_comparison"
+;; The next two patterns are for plos, ior, xor, and, and mult.
+(define_insn "*commutative_binary_cmp0_noout"
   [(set (match_operand 0 "cc_set_register" "")
-	(match_operator 5 "zn_compare_operator"
-	  [(match_operator:SI 4 "commutative_operator"
-	     [(match_operand:SI 1 "register_operand" "%c,c")
-	      (match_operand:SI 2 "nonmemory_operand" "cL,Cal")])
-	   (const_int 0)]))
-   (clobber (match_scratch:SI 3 "=X,X"))]
+	(match_operator 4 "zn_compare_operator"
+	  [(match_operator:SI 3 "commutative_operator"
+	     [(match_operand:SI 1 "register_operand" "%r,r")
+	      (match_operand:SI 2 "nonmemory_operand" "rL,Cal")])
+	   (const_int 0)]))]
   ""
-  "%O4.f 0,%1,%2"
+  "%O3.f\\t0,%1,%2"
   [(set_attr "type" "compare")
    (set_attr "cond" "set_zn")
    (set_attr "length" "4,8")])
+
+(define_insn "*commutative_binary_cmp0"
+  [(set (match_operand 3 "cc_set_register" "")
+	(match_operator 5 "zn_compare_operator"
+	  [(match_operator:SI 4 "commutative_operator"
+	     [(match_operand:SI 1 "register_operand"  "%0, 0,r,r")
+	      (match_operand:SI 2 "nonmemory_operand" "rL,rI,r,Cal")])
+	   (const_int 0)]))
+   (set (match_operand:SI 0 "register_operand" "=r,r,r,r")
+	(match_dup 4))]
+  ""
+  "%O4.f\\t%0,%1,%2"
+  [(set_attr "type" "compare")
+   (set_attr "cond" "set_zn")
+   (set_attr "predicable" "yes,yes,no,no")
+   (set_attr "length" "4,4,4,8")])
 
 ; for flag setting 'add' instructions like if (a+b) { ...}
 ; the combiner needs this pattern
@@ -1054,32 +1115,60 @@ archs4xd, archs4xd_slow"
    (set_attr "cond" "set_zn,set_zn,set_zn")
    (set_attr "length" "4,4,8")])
 
-; this pattern is needed by combiner for cases like if (c=a<<b) { ... }
-(define_insn "*noncommutative_binary_comparison_result_used"
-  [(set (match_operand 3 "cc_register" "")
+(define_insn "*noncommutative_binary_cmp0"
+  [(set (match_operand 3 "cc_set_register" "")
 	(match_operator 5 "zn_compare_operator"
 	  [(match_operator:SI 4 "noncommutative_operator"
-	     [(match_operand:SI 1 "register_operand" "c,0,c")
-	      (match_operand:SI 2 "nonmemory_operand" "cL,I,?Cal")])
-	       (const_int 0)]))
-   (set (match_operand:SI 0 "register_operand" "=w,w,w")
-	(match_dup 4 ))]
-  "TARGET_BARREL_SHIFTER || GET_CODE (operands[4]) == MINUS"
-  "%O4.f %0,%1,%2"
-  [(set_attr "type" "compare,compare,compare")
-   (set_attr "cond" "set_zn,set_zn,set_zn")
-   (set_attr "length" "4,4,8")])
-
-(define_insn "*noncommutative_binary_comparison"
-  [(set (match_operand 0 "cc_set_register" "")
-	(match_operator 5 "zn_compare_operator"
-	  [(match_operator:SI 4 "noncommutative_operator"
-	     [(match_operand:SI 1 "register_operand" "c,c")
-	      (match_operand:SI 2 "nonmemory_operand" "cL,Cal")])
+	     [(match_operand:SI 1 "register_operand"   "0,r,0,  0,r")
+	      (match_operand:SI 2 "nonmemory_operand" "rL,r,I,Cal,Cal")])
 	   (const_int 0)]))
-   (clobber (match_scratch:SI 3 "=X,X"))]
-  "TARGET_BARREL_SHIFTER || GET_CODE (operands[4]) == MINUS"
-  "%O4.f 0,%1,%2"
+   (set (match_operand:SI 0 "register_operand" "=r,r,r,r,r")
+	(match_dup 4))]
+  ""
+  "%O4%?.f\\t%0,%1,%2"
+  [(set_attr "type" "compare")
+   (set_attr "cond" "set_zn")
+   (set_attr "predicable" "yes,no,no,yes,no")
+   (set_attr "length" "4,4,4,8,8")])
+
+(define_insn "*noncommutative_binary_cmp0_noout"
+  [(set (match_operand 0 "cc_set_register" "")
+	(match_operator 3 "zn_compare_operator"
+	  [(match_operator:SI 4 "noncommutative_operator"
+	     [(match_operand:SI 1 "register_operand"   "r,r")
+	      (match_operand:SI 2 "nonmemory_operand" "rL,Cal")])
+	   (const_int 0)]))]
+  ""
+  "%O4.f\\t0,%1,%2"
+  [(set_attr "type" "compare")
+   (set_attr "cond" "set_zn")
+   (set_attr "length" "4,8")])
+
+;;rsub variants
+(define_insn "*rsub_cmp0"
+  [(set (match_operand 4 "cc_set_register" "")
+	(match_operator 3 "zn_compare_operator"
+	  [(minus:SI
+	    (match_operand:SI 1 "nonmemory_operand" "rL,Cal")
+	    (match_operand:SI 2 "register_operand"   "r,r"))
+	   (const_int 0)]))
+   (set (match_operand:SI 0 "register_operand" "=r,r")
+	(minus:SI (match_dup 1) (match_dup 2)))]
+  ""
+  "rsub.f\\t%0,%2,%1"
+  [(set_attr "type" "compare")
+   (set_attr "cond" "set_zn")
+   (set_attr "length" "4,8")])
+
+(define_insn "*rsub_cmp0_noout"
+  [(set (match_operand 0 "cc_set_register" "")
+	(match_operator 3 "zn_compare_operator"
+	  [(minus:SI
+	    (match_operand:SI 1 "nonmemory_operand" "rL,Cal")
+	    (match_operand:SI 2 "register_operand"   "r,r"))
+	   (const_int 0)]))]
+  ""
+  "rsub.f\\t0,%2,%1"
   [(set_attr "type" "compare")
    (set_attr "cond" "set_zn")
    (set_attr "length" "4,8")])
@@ -5552,23 +5641,22 @@ archs4xd, archs4xd_slow"
  DONE;
 })
 
-
 (define_insn "extzvsi"
-  [(set (match_operand:SI 0 "register_operand"                  "=r  , r  , r, r, r")
-	(zero_extract:SI (match_operand:SI 1 "register_operand"  "0  , r  , 0, 0, r")
-			 (match_operand:SI 2 "const_int_operand" "C3p, C3p, i, i, i")
-			 (match_operand:SI 3 "const_int_operand" "i  , i  , i, i, i")))]
+  [(set (match_operand:SI 0 "register_operand"                  "=r  ,  r,r,r")
+	(zero_extract:SI (match_operand:SI 1 "register_operand"  "0  ,  r,r,0")
+			 (match_operand:SI 2 "const_int_operand" "C3p,C3p,n,n")
+			 (match_operand:SI 3 "const_int_operand" "n  ,  n,n,n")))]
   "TARGET_HS && TARGET_BARREL_SHIFTER"
   {
    int assemble_op2 = (((INTVAL (operands[2]) - 1) & 0x1f) << 5) | (INTVAL (operands[3]) & 0x1f);
    operands[2] = GEN_INT (assemble_op2);
-   return "xbfu%? %0,%1,%2";
+   return "xbfu%?\\t%0,%1,%2";
   }
   [(set_attr "type"       "shift")
    (set_attr "iscompact"  "false")
-   (set_attr "length"     "4,4,4,8,8")
-   (set_attr "predicable" "yes,no,no,yes,no")
-   (set_attr "cond"       "canuse,nocond,nocond,canuse,nocond")])
+   (set_attr "length"     "4,4,8,8")
+   (set_attr "predicable" "yes,no,no,yes")
+   (set_attr "cond"       "canuse,nocond,nocond,canuse_limm")])
 
 (define_insn "kflag"
   [(unspec_volatile [(match_operand:SI 0 "nonmemory_operand" "rL,I,Cal")]
