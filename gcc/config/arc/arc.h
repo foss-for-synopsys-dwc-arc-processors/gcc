@@ -572,7 +572,7 @@ enum reg_class
   {0x00000000, 0x00000f00, 0x00000000, 0x00000000, 0x00000000},      /* 'D', D1, D2 Registers */	\
   {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* "Rsc", r0-r12 */ \
   {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h', r0-r28, r31 */ \
-  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r60, pcl */	\
+  {0xffffffff, 0x8fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r59, pcl */	\
   {0x1000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'e', r0-r3, r12-r15, sp */	\
   {0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0x00000000},      /* 'v', VR00-VR63 Registers */	\
   {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000ffff},      /* 'd', DI0-7,DO0-7 Registers */	\
@@ -581,9 +581,9 @@ enum reg_class
      registers are fixed, it does not affect the literal meaning of the \
      constraints, but it makes it a superset of GENERAL_REGS, thus \
      enabling some operations that would otherwise not be possible.  */ \
-  {0xffffffff, 0xd0000000, 0x00000000, 0x00000000, 0x00000000},      /* 'w', r0-r31, r60 */ \
-  {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
-  {0xffffffff, 0xdfffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
+  {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'w', r0-r31 */ \
+  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
+  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
