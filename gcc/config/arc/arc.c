@@ -7242,7 +7242,8 @@ hwloop_fail (hwloop_info loop)
   rtx insn = loop->loop_end;
 
   if (TARGET_V2
-      && (loop->length && (loop->length <= ARC_MAX_LOOP_LENGTH)))
+      && (loop->length && (loop->length <= ARC_MAX_LOOP_LENGTH))
+      && REG_P (loop->iter_reg))
     {
       /* TARGET_V2 has dbnz instructions.  */
       test = gen_decrement_and_branch_until_zero (loop->iter_reg,
@@ -7290,6 +7291,8 @@ hwloop_optimize (hwloop_info loop)
   rtx iter_reg, end_label;
   rtx_insn *insn, *seq, *entry_after, *last_insn;
   unsigned int length;
+  bool need_fix = false;
+  rtx lp_reg = gen_rtx_REG (SImode, LP_COUNT);
 
   if (loop->depth > 1)
     {
@@ -7355,15 +7358,32 @@ hwloop_optimize (hwloop_info loop)
       return false;
     }
 
+  /* Check if we use a register or not.  */
+  if (!REG_P (loop->iter_reg))
+    {
+      if (dump_file)
+        fprintf (dump_file, ";; loop %d iterator is MEM\n",
+                 loop->loop_no);
+      return false;
+    }
+
   /* Check if loop register is lpcount.  */
-  if (!REG_P (loop->iter_reg)
-      || (REG_P (loop->iter_reg) && (REGNO (loop->iter_reg)) != LP_COUNT))
+  if (REG_P (loop->iter_reg) && (REGNO (loop->iter_reg)) != LP_COUNT)
     {
       if (dump_file)
         fprintf (dump_file, ";; loop %d doesn't use lp_count as loop"
 		 " iterator\n",
                  loop->loop_no);
-      return false;
+      /* This loop doesn't use the lp_count, check though if we can
+	 fix it.  */
+      if (TEST_HARD_REG_BIT (loop->regs_set_in_loop, LP_COUNT)
+	  /* In very unique cases we may have LP_COUNT alive.  */
+	  || (loop->incoming_src
+	      && REGNO_REG_SET_P (df_get_live_out (loop->incoming_src),
+				  LP_COUNT)))
+	return false;
+      else
+	need_fix = true;
     }
 
   /* Check for control like instruction as the last instruction of a
@@ -7404,10 +7424,12 @@ hwloop_optimize (hwloop_info loop)
       return false;
     }
 
-  if ((TARGET_ARC600 || TARGET_HS)
+  if ((TARGET_ARC600_FAMILY || TARGET_HS)
       && INSN_P (last_insn)
       && (JUMP_P (last_insn) || CALL_P (last_insn)
-	  || GET_CODE (PATTERN (last_insn)) == SEQUENCE))
+	  || GET_CODE (PATTERN (last_insn)) == SEQUENCE
+	  || get_attr_type (last_insn) == TYPE_BRCC
+	  || get_attr_type (last_insn) == TYPE_BRCC_NO_DELAY_SLOT))
     {
       if (loop->length + 2 > ARC_MAX_LOOP_LENGTH)
 	{
@@ -7445,8 +7467,13 @@ hwloop_optimize (hwloop_info loop)
       break;
 
   if (entry_edge == NULL)
-    return false;
-
+    {
+      if (dump_file)
+	fprintf (dump_file, ";; loop %d has no fallthru edge jumping"
+		 "into the loop\n",
+		 loop->loop_no);
+      return false;
+    }
   /* The loop is good.  */
   end_label = gen_label_rtx ();
   loop->end_label = end_label;
@@ -7455,13 +7482,31 @@ hwloop_optimize (hwloop_info loop)
   entry_bb = entry_edge->src;
 
   start_sequence ();
-  insn = emit_insn (gen_arc_lp (loop->iter_reg,
+
+  if (need_fix)
+    {
+      /* The loop uses a R-register, but the lp_count is free, thus
+	 use lp_count.  */
+      emit_insn (gen_movsi (lp_reg, iter_reg));
+      SET_HARD_REG_BIT (loop->regs_set_in_loop, LP_COUNT);
+      iter_reg = lp_reg;
+      if (dump_file)
+	{
+	  fprintf (dump_file, ";; fix loop %d to use lp_count\n",
+		   loop->loop_no);
+	}
+    }
+
+  insn = emit_insn (gen_arc_lp (iter_reg,
 				loop->start_label,
 				loop->end_label));
 
   seq = get_insns ();
+  end_sequence ();
 
-  if (!single_succ_p (entry_bb) || vec_safe_length (loop->incoming) > 1)
+  entry_after = BB_END (entry_bb);
+  if (!single_succ_p (entry_bb) || vec_safe_length (loop->incoming) > 1
+      || !entry_after)
     {
       basic_block new_bb;
       edge e;
@@ -7482,18 +7527,20 @@ hwloop_optimize (hwloop_info loop)
     }
   else
     {
-      entry_after = BB_END (entry_bb);
+#if 0
       while (DEBUG_INSN_P (entry_after)
              || (NOTE_P (entry_after)
                  && NOTE_KIND (entry_after) != NOTE_INSN_BASIC_BLOCK
 		 /* Make sure we don't split a call and its corresponding
 		    CALL_ARG_LOCATION note.  */
                  && NOTE_KIND (entry_after) != NOTE_INSN_CALL_ARG_LOCATION))
-        entry_after = PREV_INSN (entry_after);
+        entry_after = NEXT_INSN (entry_after);
+#endif
+      entry_after = next_nonnote_insn_bb (entry_after);
 
-      emit_insn_after (seq, entry_after);
+      gcc_assert (entry_after);
+      emit_insn_before (seq, entry_after);
     }
-  end_sequence ();
 
   delete_insn (loop->loop_end);
   /* Insert the loop end label before the last instruction of the
@@ -8101,11 +8148,11 @@ arc_register_move_cost (machine_mode,
 	return 6;
     }
 
-  /* The ARC700 stalls for 3 cycles when *reading* from lp_count.  */
-  if (TARGET_ARC700
-      && (from_class == LPCOUNT_REG || from_class == ALL_CORE_REGS
-	  || from_class == WRITABLE_CORE_REGS))
-    return 8;
+  /* Using lp_count as scratch reg is a VERY bad idea.  */
+  if (from_class == LPCOUNT_REG)
+    return 1000;
+  if (to_class == LPCOUNT_REG)
+    return 6;
 
   /* Force an attempt to 'mov Dy,Dx' to spill.  */
   if ((TARGET_ARC700 || TARGET_EM) && TARGET_DPFP
