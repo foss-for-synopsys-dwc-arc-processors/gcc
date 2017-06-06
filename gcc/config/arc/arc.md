@@ -809,6 +809,31 @@ archs4xd, archs4xd_slow"
   [(set_attr "type" "store")])
 
 ;; Combiner patterns for compare with zero
+(define_mode_iterator SQH [QI HI])
+(define_mode_attr SQH_postfix [(QI "b") (HI "%_")])
+
+(define_code_iterator SEZ [sign_extend zero_extend])
+(define_code_attr SEZ_prefix [(sign_extend "sex") (zero_extend "ext")])
+
+(define_insn "*<SEZ_prefix>xt<SQH_postfix>_cmp0_noout"
+  [(set (match_operand 0 "cc_set_register" "")
+	(compare:CC_ZN (SEZ:SI (match_operand:SQH 1 "register_operand" "r"))
+		       (const_int 0)))]
+  ""
+  "<SEZ_prefix><SQH_postfix>.f\\t0,%1"
+  [(set_attr "type" "compare")
+   (set_attr "cond" "set_zn")])
+
+(define_insn "*<SEZ_prefix>xt<SQH_postfix>_cmp0"
+  [(set (match_operand 0 "cc_set_register" "")
+	(compare:CC_ZN (SEZ:SI (match_operand:SQH 1 "register_operand" "r"))
+		       (const_int 0)))
+   (set (match_operand:SI 2 "register_operand" "=r")
+	(SEZ:SI (match_dup 1)))]
+  ""
+  "<SEZ_prefix><SQH_postfix>.f\\t%2,%1"
+  [(set_attr "type" "compare")
+   (set_attr "cond" "set_zn")])
 
 (define_insn "*xbfu_cmp0_noout"
   [(set (match_operand 0 "cc_set_register" "")
