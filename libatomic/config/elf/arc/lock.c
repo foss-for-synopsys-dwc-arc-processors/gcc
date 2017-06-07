@@ -27,17 +27,20 @@
 
 /* ARC700 and all basic configuration of ARCv2 are having EX
    instruction.  */
-#ifdef WANT_SPECIALCASE_RELAXED
+#if defined (WANT_SPECIALCASE_RELAXED) || defined (__ARC600__) \
+  || defined (__ARC601__)
 # define MEMORY_MODEL __ATOMIC_RELAXED
-# define ARC_ATOMIC_EXCHANGE(_MEM_,_VAL_)	\
-  do {						\
-    (*(_MEM_)) = (_VAL_);			\
-    __builtin_arc_sync ();			\
-  } while (0)
+# define ARC_ATOMIC_EXCHANGE(_MEM_,_VAL_,_MEMORY_MODEL_)	\
+  ({								\
+    unsigned int __tmp = (*(_MEM_));				\
+    (*(_MEM_)) = (_VAL_);					\
+    __builtin_arc_sync ();					\
+    __tmp;							\
+  })
 #else
 # define MEMORY_MODEL __ATOMIC_SEQ_CST
-# define ARC_ATOMIC_EXCHANGE(_MEM_,_VAL_)		\
-  __atomic_exchange_n (_MEM_, _VAL_, MEMORY_MODEL)
+# define ARC_ATOMIC_EXCHANGE(_MEM_,_VAL_,_MEMORY_MODEL_)	\
+  __atomic_exchange_n (_MEM_, _VAL_, _MEMORY_MODEL_)
 #endif
 
 #if HAVE_ATOMIC_CAS_4
@@ -53,7 +56,7 @@
     uint32_t __readbackval = _VAL_;					\
     do									\
       {									\
-	__readbackval = __atomic_exchange_n (_MEM_, __readbackval,	\
+	__readbackval = ARC_ATOMIC_EXCHANGE (_MEM_, __readbackval,	\
 					     MEMORY_MODEL);		\
       } while (_EXPECT_ != __readbackval);				\
     _EXPECT_ = __readbackval;						\
@@ -120,7 +123,7 @@ uint32_t __arc_spin_unlock (__arc_spinlock_t *lock)
   uint32_t key;
 
   ARC_DISABLE_IRQ (key);
-  val = ARC_ATOMIC_EXCHANGE (lock, 0);
+  val = ARC_ATOMIC_EXCHANGE (lock, 0, MEMORY_MODEL);
   ARC_ENABLE_IRQ (key);
   return val;
 }
