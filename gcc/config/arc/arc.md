@@ -779,7 +779,7 @@ archs4xd, archs4xd_slow"
    (set_attr "iscompact" "maybe,maybe,maybe,true,true,false,false,         false,false,false,false,false, false, false,maybe_limm,maybe_limm,false,true, true, true,true,true,false,true,true,false,false, true,false,false,false,false")
    ; Use default length for iscompact to allow for COND_EXEC.  But set length
    ; of Crr to 4.
-   (set_attr "length" "*,*,*,*,*,4,4,4,4,4,4,4,8,8,*,*,*,*,*,*,*,*,4,*,4,*,*,*,*,*,4,8")
+   (set_attr "length" "*,*,*,*,*,4,4,4,4,4,4,4,8,8,*,*,*,*,*,*,*,*,4,*,4,*,*,*,*,*,*,8")
    (set_attr "predicable" "yes,no,yes,no,no,yes,no,no,no,no,no,yes,no,no,yes,yes,yes,no,no,no,no,no,no,no,no,no,no,no,no,no,no,no")
    (set_attr "cpu_facility" "av1,av1,av1,av2,av2,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,av2,av2,*,*,av2,*,*,av2,*")])
 
