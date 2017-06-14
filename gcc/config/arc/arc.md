@@ -5277,10 +5277,10 @@ archs4xd, archs4xd_slow"
    (set_attr "length" "4")
    (set_attr "predicable" "yes")])
 
-(define_insn_and_split "decrement_and_branch_until_zero"
+(define_insn_and_split "dbnz"
   [(set (pc)
 	(if_then_else
-	 (ge (plus:SI (match_operand:SI 0 "nonimmediate_operand" "+lr,m")
+	 (ne (plus:SI (match_operand:SI 0 "nonimmediate_operand" "+r!l,m")
 		      (const_int -1))
 	     (const_int 0))
 	 (label_ref (match_operand 1 "" ""))
