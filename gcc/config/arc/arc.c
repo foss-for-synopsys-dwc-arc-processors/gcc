@@ -7282,8 +7282,7 @@ hwloop_fail (hwloop_info loop)
       && REG_P (loop->iter_reg))
     {
       /* TARGET_V2 has dbnz instructions.  */
-      test = gen_decrement_and_branch_until_zero (loop->iter_reg,
-						  loop->start_label);
+      test = gen_dbnz (loop->iter_reg, loop->start_label);
       insn = emit_jump_insn_before (test, loop->loop_end);
     }
   else if (REG_P (loop->iter_reg) && (REGNO (loop->iter_reg) == LP_COUNT))
