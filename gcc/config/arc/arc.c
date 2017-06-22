@@ -3163,7 +3163,7 @@ arc_expand_prologue (void)
   if (arc_must_save_return_addr (cfun)
       && !ARC_AUTOBLINK_IRQ_P (fn_type))
     {
-      rtx ra = gen_rtx_REG (SImode, RETURN_ADDR_REGNUM);
+      rtx ra = gen_rtx_REG (Pmode, RETURN_ADDR_REGNUM);
       rtx mem = gen_frame_mem (Pmode,
 			       gen_rtx_PRE_DEC (Pmode,
 						stack_pointer_rtx));
@@ -3298,7 +3298,7 @@ arc_expand_epilogue (int sibcall_p)
 			     stack_pointer_rtx, 0);
       add_reg_note (insn, REG_CFA_RESTORE, frame_pointer_rtx);
       add_reg_note (insn, REG_CFA_DEF_CFA,
-		    plus_constant (SImode, stack_pointer_rtx,
+		    plus_constant (Pmode, stack_pointer_rtx,
 				   4));
       size_to_deallocate -= UNITS_PER_WORD;
     }
@@ -3386,7 +3386,7 @@ arc_expand_epilogue (int sibcall_p)
 
 	  add_reg_note (insn, note,
 			gen_rtx_SET (stack_pointer_rtx,
-				     plus_constant (SImode, stack_pointer_rtx,
+				     plus_constant (Pmode, stack_pointer_rtx,
 						    cfa_adjust)));
 	}
       add_reg_note (insn, REG_CFA_RESTORE, ra);
