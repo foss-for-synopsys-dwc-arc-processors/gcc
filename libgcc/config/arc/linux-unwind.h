@@ -79,7 +79,7 @@ arc_fallback_frame_state (struct _Unwind_Context *context,
 {
   struct rt_sigframe {
     siginfo_t info;
-    struct ucontext uc;
+    ucontext_t uc;
     unsigned int sigret_magic;
   };
 
