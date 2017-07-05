@@ -624,6 +624,11 @@
        (match_test "INTVAL (op) == 2 || INTVAL (op) == 4 || INTVAL (op) == 8"))
 )
 
+(define_predicate "_1_2_3_operand"
+  (and (match_code "const_int")
+       (match_test "INTVAL (op) == 1 || INTVAL (op) == 2 || INTVAL (op) == 3"))
+)
+
 (define_predicate "arc_double_register_operand"
   (match_code "reg")
 {

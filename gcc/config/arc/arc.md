@@ -6501,6 +6501,75 @@ archs4xd, archs4xd_slow"
    (set_attr "type" "block")]
   )
 
+(define_insn "*add_shift"
+  [(set (match_operand:SI 0 "register_operand" "=q,r,r")
+	(plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "q,r,r")
+			    (match_operand:SI 2 "_1_2_3_operand" ""))
+		 (match_operand:SI 3 "nonmemory_operand"  "0,r,Cal")))]
+  ""
+  "add%2%?\\t%0,%3,%1"
+  [(set_attr "length" "*,4,8")
+   (set_attr "iscompact" "maybe,false,false")
+   (set_attr "cond" "canuse,nocond,nocond")])
+
+(define_insn "*add_shift2"
+  [(set (match_operand:SI 0 "register_operand" "=q,r,r")
+	(plus:SI (match_operand:SI 1 "nonmemory_operand"  "0,r,Cal")
+		 (ashift:SI (match_operand:SI 2 "register_operand" "q,r,r")
+			    (match_operand:SI 3 "_1_2_3_operand" ""))))]
+  ""
+  "add%3%?\\t%0,%1,%2"
+  [(set_attr "length" "*,4,8")
+   (set_attr "iscompact" "maybe,false,false")
+   (set_attr "cond" "canuse,nocond,nocond")])
+
+(define_insn "*sub_shift"
+  [(set (match_operand:SI 0"register_operand" "=r,r,r")
+	 (minus:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal")
+		   (ashift:SI (match_operand:SI 2 "register_operand" "r,r,r")
+			      (match_operand:SI 3 "_1_2_3_operand" ""))))]
+  ""
+  "sub%3\\t%0,%1,%2"
+  [(set_attr "length" "4,4,8")
+   (set_attr "cond" "canuse,nocond,nocond")
+   (set_attr "predicable" "yes,no,no")])
+
+(define_insn "*sub_shift_cmp0_noout"
+  [(set (match_operand 0 "cc_set_register" "")
+	(compare:CC
+	 (minus:SI (match_operand:SI 1 "register_operand" "r")
+		   (ashift:SI (match_operand:SI 2 "register_operand" "r")
+			      (match_operand:SI 3 "_1_2_3_operand" "")))
+	 (const_int 0)))]
+  ""
+  "sub%3.f\\t0,%1,%2"
+  [(set_attr "length" "4")])
+
+(define_insn "*compare_si_ashiftsi"
+  [(set (match_operand 0 "cc_set_register" "")
+	(compare:CC (match_operand:SI 1 "register_operand" "r")
+		    (ashift:SI (match_operand:SI 2 "register_operand" "r")
+			       (match_operand:SI 3 "_1_2_3_operand" ""))))]
+  ""
+  "sub%3.f\\t0,%1,%2"
+  [(set_attr "length" "4")])
+
+;; Convert the sequence
+;;  asl rd,rn,_1_2_3
+;;  cmp ra,rd
+;; into
+;;  sub{123}.f 0,ra,rn
+(define_peephole2
+  [(set (match_operand:SI 0 "register_operand" "")
+	(ashift:SI (match_operand:SI 1 "register_operand" "")
+		   (match_operand:SI 2 "_1_2_3_operand" "")))
+   (set (reg:CC CC_REG)
+	(compare:CC (match_operand:SI 3 "register_operand" "")
+		    (match_dup 0)))]
+  "peep2_reg_dead_p (2, operands[0])"
+  [(set (reg:CC CC_REG) (compare:CC (match_dup 3)
+				    (ashift:SI (match_dup 1) (match_dup 2))))])
+
 ;; include the arc-FPX instructions
 (include "fpx.md")
 
