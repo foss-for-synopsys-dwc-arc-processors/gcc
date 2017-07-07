@@ -6509,6 +6509,7 @@ archs4xd, archs4xd_slow"
   ""
   "add%2%?\\t%0,%3,%1"
   [(set_attr "length" "*,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "iscompact" "maybe,false,false")
    (set_attr "cond" "canuse,nocond,nocond")])
 
@@ -6520,6 +6521,7 @@ archs4xd, archs4xd_slow"
   ""
   "add%3%?\\t%0,%1,%2"
   [(set_attr "length" "*,4,8")
+   (set_attr "predicable" "yes,no,no")
    (set_attr "iscompact" "maybe,false,false")
    (set_attr "cond" "canuse,nocond,nocond")])
 
