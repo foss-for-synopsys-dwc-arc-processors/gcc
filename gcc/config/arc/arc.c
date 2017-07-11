@@ -1203,6 +1203,16 @@ arc_override_options (void)
 #undef ARC_OPTX
 #undef ARC_OPT
 
+  /* Set extras.  */
+  switch (arc_selected_cpu->extra)
+    {
+    case HAS_LPCOUNT_16:
+      arc_lpcwidth = 16;
+      break;
+    default:
+      break;
+    }
+
   /* Set Tune option.  */
   if (arc_tune == TUNE_NONE)
     arc_tune = (enum attr_tune) arc_selected_cpu->tune;
