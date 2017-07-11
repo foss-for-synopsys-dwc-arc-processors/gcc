@@ -336,14 +336,19 @@ legitimate_scaled_address_p (machine_mode mode, rtx op, bool strict)
     return true;
 
   if (flag_pic)
-    if (CONST_INT_P (XEXP (op, 1)))
-      return true;
-    else
+    {
+      if (CONST_INT_P (XEXP (op, 1)))
+	return true;
       return false;
-  else if (CONSTANT_P (XEXP (op, 1))
-	   /* Scalled addresses for sdata is done other places.  */
-	   && !SYMBOL_REF_SMALL_P (XEXP (op, 1)))
-    return true;
+    }
+  if (CONSTANT_P (XEXP (op, 1)))
+    {
+      /* Scalled addresses for sdata is done other places.  */
+      if (GET_CODE (XEXP (op, 1)) == SYMBOL_REF
+	  && SYMBOL_REF_SMALL_P (XEXP (op, 1)))
+	return false;
+      return true;
+    }
 
   return false;
 }
