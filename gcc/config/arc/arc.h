@@ -1675,6 +1675,8 @@ enum
 #define TARGET_FPU_QUARK2   (TARGET_EM					\
 			     && ((arc_fpu_build				\
 				  & FPU_FPUDA_QK2) == FPU_FPUDA_QK2))
-
+#ifndef TARGET_LRA
+#define TARGET_LRA !TARGET_NO_LRA
+#endif
 #define TARGET_CLEAN_REGS (TARGET_LRA || TARGET_NEW_REGS)
 #endif /* GCC_ARC_H */
