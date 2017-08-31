@@ -9289,14 +9289,16 @@ arc_delegitimize_address (rtx orig_x)
 {
   rtx x = orig_x;
 
-  if (GET_CODE (x) != MEM)
+  if (MEM_P (x))
+    x = XEXP (x, 0);
+
+  x = arc_delegitimize_address_0 (x);
+  if (!x)
     return orig_x;
 
-  x = XEXP (x, 0);
-  x = arc_delegitimize_address_0 (x);
-  if (x)
-    return x;
-  return orig_x;
+  if (MEM_P (orig_x))
+    x = replace_equiv_address_nv (orig_x, x);
+  return x;
 }
 
 /* Return a REG rtx for acc1.  N.B. the gcc-internal representation may
