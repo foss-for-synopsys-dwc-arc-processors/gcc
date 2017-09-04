@@ -286,7 +286,8 @@ assign_spill_hard_regs (int *pseudo_regnos, int n)
 	  if (TEST_HARD_REG_BIT (eliminable_regset, hard_regno)
 	      || !targetm.hard_regno_mode_ok (hard_regno, mode))
 	    continue;
-	  if (! overlaps_hard_reg_set_p (conflict_hard_regs, mode, hard_regno))
+	  if (! overlaps_hard_reg_set_p (conflict_hard_regs, mode, hard_regno)
+	      && targetm.hard_regno_mode_ok (hard_regno, mode))
 	    break;
 	}
       if (k >= spill_class_size)
