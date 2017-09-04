@@ -284,7 +284,8 @@ assign_spill_hard_regs (int *pseudo_regnos, int n)
       for (k = 0; k < spill_class_size; k++)
 	{
 	  hard_regno = ira_class_hard_regs[spill_class][k];
-	  if (! overlaps_hard_reg_set_p (conflict_hard_regs, mode, hard_regno))
+	  if (! overlaps_hard_reg_set_p (conflict_hard_regs, mode, hard_regno)
+	      && targetm.hard_regno_mode_ok (hard_regno, mode))
 	    break;
 	}
       if (k >= spill_class_size)
