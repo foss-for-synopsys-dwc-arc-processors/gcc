@@ -75,7 +75,8 @@ enum arc_tune_attr
     ARC_TUNE_ARC700_4_2_XMAC,
     ARC_TUNE_ARCHS4X,
     ARC_TUNE_ARCHS4XD,
-    ARC_TUNE_ARCHS4XD_SLOW
+    ARC_TUNE_ARCHS4XD_SLOW,
+    ARC_TUNE_CORE_3
   };
 
 /* Extra options for a processor.  */
