@@ -1802,10 +1802,10 @@ arc_conditional_register_usage (void)
 	reg_alloc_order [i] = i;
     }
 
-  /* Reduced configuration: don't use r4-r7, r16-r25.  */
+  /* Reduced configuration: don't use r4-r9, r16-r25.  */
   if (TARGET_RF16)
     {
-      for (i = 4; i <= 7; i++)
+      for (i = 4; i <= 9; i++)
 	{
 	  fixed_regs[i] = call_used_regs[i] = 1;
 	}
