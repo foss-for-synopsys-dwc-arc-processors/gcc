@@ -26,7 +26,7 @@ TEST (d, char)
 /* { dg-final { scan-assembler "ldb r2,\\\[gp,@g_d@sda\\\]" } } */
 
 /* { dg-final { scan-assembler "st r0,\\\[gp,@g_a@sda\\\]" } } */
-/* { dg-final { scan-assembler "st_s r0,\\\[gp,@g_b@sda\\\]" { target { arcem || archs } } } } */
-/* { dg-final { scan-assembler "st\\\.as r0,\\\[gp,@g_b@sda\\\]" { target { arc700 || arc6xx } } } } */
+/* { dg-final { scan-assembler "st_s r0,\\\[gp,@g_b@sda\\\]" { target { codedensity } } } } */
+/* { dg-final { scan-assembler "st\\\.as r0,\\\[gp,@g_b@sda\\\]" { target { ! { codedensity } } } } } */
 /* { dg-final { scan-assembler "st\[hw\]\\\.as r0,\\\[gp,@g_c@sda\\\]" } } */
 /* { dg-final { scan-assembler "stb r0,\\\[gp,@g_d@sda\\\]" } } */
