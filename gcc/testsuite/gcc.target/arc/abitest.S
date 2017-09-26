@@ -25,7 +25,13 @@ END(tsyscall)
 END(clone)
 
 ENTRY(abidi)
+#ifdef __LITTLE_ENDIAN__
 	add.f r0,r1,1
         j_s.d [blink]
         adc r1,r2,0
+#else
+	add.f r1,r2,1
+        j_s.d [blink]
+        adc r0,r1,0
+#endif
 END(abidi)
