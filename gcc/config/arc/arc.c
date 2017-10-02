@@ -906,7 +906,7 @@ arc_init (void)
   /* Warn for unimplemented PIC in pre-ARC700 cores, and disable flag_pic.  */
   if (flag_pic && TARGET_ARC600_FAMILY)
     {
-      warning (OPT_fpic,
+      warning (0,
 	       "PIC is not supported for %s. Generating non-PIC code only..",
 	       arc_cpu_string);
       flag_pic = 0;
