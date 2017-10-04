@@ -30,8 +30,9 @@ ENTRY(abidi)
         j_s.d [blink]
         adc r1,r2,0
 #else
+	mov r0,r1
 	add.f r1,r2,1
         j_s.d [blink]
-        adc r0,r1,0
+        add.lo r0,r0,1
 #endif
 END(abidi)
