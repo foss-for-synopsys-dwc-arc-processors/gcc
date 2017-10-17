@@ -1174,13 +1174,6 @@ arc_override_options (void)
 	&& (VAR == VAL))					\
       error ("Option %s=%s is not available for %s CPU.",	\
 	     DOC0, DOC1, arc_selected_cpu->name);		\
-    if ((arc_selected_cpu->flags & CODE)			\
-	&& (VAR != DEFAULT_##VAR)				\
-	&& (VAR != VAL))					\
-      warning (0,						\
-	       "Option %s overrides default %s value for"	\
-	       " %s CPU.",					\
-	       DOC0, DOC1, arc_selected_cpu->name);		\
     if ((arc_selected_cpu->arch_info->dflags & CODE)		\
 	&& (VAR != DEFAULT_##VAR)				\
 	&& (VAR != VAL))					\
@@ -1200,11 +1193,6 @@ arc_override_options (void)
       warning (0, "Unset option %s is ignored, it is always"	\
 	       " enabled for %s CPU.", DOC,			\
 	       arc_selected_cpu->name);				\
-    if ((arc_selected_cpu->flags & CODE)			\
-	&& (target_flags_explicit & MASK)			\
-	&& (!(target_flags & MASK)))				\
-      warning (0, "Option %s overrides default on setting "	\
-	       "for %s CPU", DOC, arc_selected_cpu->name);	\
   } while (0);
 
 #include "arc-options.def"
