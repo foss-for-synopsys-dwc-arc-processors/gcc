@@ -45,6 +45,7 @@ core
 !core/
 
 lost+found
+commit_message
 
 # ignore ./contrib/gcc_update output
 LAST_UPDATED
