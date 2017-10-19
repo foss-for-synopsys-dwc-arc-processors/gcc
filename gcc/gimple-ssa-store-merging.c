@@ -129,7 +129,7 @@
 #include "selftest.h"
 
 /* The maximum size (in bits) of the stores this pass should generate.  */
-#define MAX_STORE_BITSIZE (BITS_PER_WORD)
+#define MAX_STORE_BITSIZE (TARGET_LL64 ? 2 * BITS_PER_WORD : BITS_PER_WORD)
 #define MAX_STORE_BYTES (MAX_STORE_BITSIZE / BITS_PER_UNIT)
 
 namespace {
