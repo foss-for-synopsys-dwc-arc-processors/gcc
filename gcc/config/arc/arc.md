@@ -741,9 +741,10 @@ archs4xd, archs4xd_slow, core_3"
    || (CONSTANT_P (operands[1])
        /* Don't use a LIMM that we could load with a single insn - we loose
 	  delay-slot filling opportunities.  */
-       && (satisfies_constraint_Cm3 (operands[1])
-       	    || !satisfies_constraint_I (operands[1]))
-       && satisfies_constraint_Usc (operands[0]))"
+       && !satisfies_constraint_I (operands[1])
+       && satisfies_constraint_Usc (operands[0]))
+   || (satisfies_constraint_Cm3 (operands[1])
+      && memory_operand (operands[0], SImode))"
   "@
    mov%? %0,%1%&	;0
    mov%? %0,%1%&	;1
