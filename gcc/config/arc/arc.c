@@ -7505,6 +7505,8 @@ hwloop_optimize (hwloop_info loop)
       && INSN_P (last_insn)
       && (JUMP_P (last_insn) || CALL_P (last_insn)
 	  || GET_CODE (PATTERN (last_insn)) == SEQUENCE
+	  || (prev_active_insn (last_insn)
+	      && JUMP_P (prev_active_insn (last_insn)))
 	  /* At this stage we can have (insn (clobber (mem:BLK
 	     (reg)))) instructions, ignpre them.  */
 	  || (GET_CODE (PATTERN (last_insn)) != CLOBBER
@@ -7522,7 +7524,13 @@ hwloop_optimize (hwloop_info loop)
 		 "add a nop\n",
 		 loop->loop_no);
 
-      last_insn = emit_insn_after (gen_nopv (), last_insn);
+      if (JUMP_P (prev_active_insn (last_insn)))
+	/* SAVE_NOTE is used by haifa scheduler.  However, we are
+	   aftert it and we can use it to indicate this instruction
+	   cannot be part of a delay slot.  */
+	add_reg_note (last_insn, REG_SAVE_NOTE, GEN_INT (2));
+      else
+	last_insn = emit_insn_after (gen_nopv (), last_insn);
     }
 
   if (LABEL_P (last_insn))
