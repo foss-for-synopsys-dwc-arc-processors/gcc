@@ -26,10 +26,15 @@ extern "C" {
 #include <stdint.h>
 
 /* Recognized data types.  */
-typedef char  __simd32_int4x8_t  __attribute__ ((vector_size (4)));
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 typedef short __simd32_int2x16_t __attribute__ ((vector_size (4)));
+#endif
+
+#ifdef __ARC_MPY_QMACW_
+typedef char  __simd32_int4x8_t  __attribute__ ((vector_size (4)));
 typedef short __simd64_int4x16_t __attribute__ ((vector_size (8)));
 typedef int   __simd64_int2x32_t __attribute__ ((vector_size (8)));
+#endif
 
 /* Recognized extension functions.  */
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
@@ -222,11 +227,13 @@ _cmpyhnfr (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmach (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_dmach (__a, __b);
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmachbl (int32_t __a, int32_t __b)
@@ -268,12 +275,14 @@ _dmachfr (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmachu (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_dmachu (__a, __b);
 }
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline int64_t __attribute__ ((__always_inline__))
 _dmacwh (__simd64_int2x32_t __a, __simd32_int2x16_t __b)
 {
@@ -285,6 +294,8 @@ _dmacwhu (__simd64_int2x32_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_dmacwhu (__a, __b);
 }
+#endif
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmacwhf (int32_t __a, int32_t __b)
@@ -296,11 +307,13 @@ _dmacwhf (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmpyh (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_dmpyh (__a, __b);
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmpyhbl (int32_t __a, int32_t __b)
@@ -342,11 +355,13 @@ _dmpyhfr (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmpyhu (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_dmpyhu (__a, __b);
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _dmpyhwf (int32_t __a, int32_t __b)
@@ -682,6 +697,7 @@ _normacc (int32_t __a)
   return __dst;
 }
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline int64_t __attribute__ ((__always_inline__))
 _qmach (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
@@ -693,6 +709,7 @@ _qmachu (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
   return __builtin_arc_qmachu (__a, __b);
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _qmachf (int64_t __a, int64_t __b)
@@ -704,6 +721,7 @@ _qmachf (int64_t __a, int64_t __b)
   return __dst;
 }
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline int64_t __attribute__ ((__always_inline__))
 _qmpyh (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
@@ -715,6 +733,7 @@ _qmpyhu (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
   return __builtin_arc_qmpyhu (__a, __b);
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _qmpyhf (int64_t __a, int64_t __b)
@@ -772,6 +791,7 @@ _subs (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vabs2h (__simd32_int2x16_t __a)
 {
@@ -781,6 +801,7 @@ _vabs2h (__simd32_int2x16_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vabss2h (int32_t __a)
@@ -792,11 +813,13 @@ _vabss2h (int32_t __a)
   return __dst;
 }
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int2x32_t __attribute__ ((__always_inline__))
 _vadd2 (__simd64_int2x32_t __a, __simd64_int2x32_t __b)
 {
   return __a + __b;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vadds2 (int32_t __a, int32_t __b)
@@ -808,12 +831,15 @@ _vadds2 (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vadd2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __a + __b;
 }
+#endif
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int4x8_t __attribute__ ((__always_inline__))
 _vadd4b (__simd32_int4x8_t __a, __simd32_int4x8_t __b)
 {
@@ -823,12 +849,15 @@ _vadd4b (__simd32_int4x8_t __a, __simd32_int4x8_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int4x16_t __attribute__ ((__always_inline__))
 _vadd4h (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
   return __a + __b;
 }
+#endif
 
 __extension__ static __inline int64_t __attribute__ ((__always_inline__))
 _vadds4h (int64_t __a, int64_t __b)
@@ -850,6 +879,7 @@ _vadds2h (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int2x32_t __attribute__ ((__always_inline__))
 _vaddsub (__simd64_int2x32_t __a, __simd64_int2x32_t __b)
 {
@@ -865,13 +895,17 @@ _vaddsubs (int64_t __a, int64_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vaddsub2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_vaddsub2h (__a, __b);
 }
+#endif
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int4x16_t __attribute__ ((__always_inline__))
 _vaddsub4h (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
@@ -887,6 +921,7 @@ _vaddsubs4h (int64_t __a, int64_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vaddsubs2h (int32_t __a, int32_t __b)
@@ -898,6 +933,7 @@ _vaddsubs2h (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _valgn2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
@@ -917,6 +953,7 @@ _vasl2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
           : "r" (__a), "rCal" (__b));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vasls2h (int32_t __a, int32_t __b)
@@ -928,6 +965,7 @@ _vasls2h (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vasr2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
@@ -937,6 +975,7 @@ _vasr2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vasrs2h (int32_t __a, int32_t __b)
@@ -958,6 +997,7 @@ _vasrsr2h (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int4x8_t __attribute__ ((__always_inline__))
 _vext2bhl (__simd32_int4x8_t __a)
 {
@@ -967,7 +1007,9 @@ _vext2bhl (__simd32_int4x8_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int4x8_t __attribute__ ((__always_inline__))
 _vext2bhm (__simd32_int4x8_t __a)
 {
@@ -977,7 +1019,9 @@ _vext2bhm (__simd32_int4x8_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vlsr2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
@@ -987,12 +1031,15 @@ _vlsr2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int2x32_t __attribute__ ((__always_inline__))
 _vmac2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_vmac2h (__a, __b);
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vmac2hf (int32_t __a, int32_t __b)
@@ -1024,6 +1071,7 @@ _vmac2hnfr (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int2x32_t __attribute__ ((__always_inline__))
 _vmac2hu (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
@@ -1035,6 +1083,7 @@ _vmpy2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_vmpy2h (__a, __b);
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vmpy2hf (int32_t __a, int32_t __b)
@@ -1056,11 +1105,13 @@ _vmpy2hfr (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int2x32_t __attribute__ ((__always_inline__))
 _vmpy2hu (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_vmpy2hu (__a, __b);
 }
+#endif
 
 __extension__ static __inline int64_t __attribute__ ((__always_inline__))
 _vmpy2hwf (int32_t __a, int32_t __b)
@@ -1072,6 +1123,7 @@ _vmpy2hwf (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vmax2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
@@ -1091,6 +1143,7 @@ _vmin2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vmsub2hf (int32_t __a, int32_t __b)
@@ -1122,6 +1175,7 @@ _vmsub2hnfr (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vneg2h (__simd32_int2x16_t __a)
 {
@@ -1131,6 +1185,7 @@ _vneg2h (__simd32_int2x16_t __a)
 	   : "r" (__a) );
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vnegs2h (int32_t __a)
@@ -1142,6 +1197,7 @@ _vnegs2h (int32_t __a)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vnorm2h (__simd32_int2x16_t __a)
 {
@@ -1171,7 +1227,9 @@ _vrep2hm (__simd32_int2x16_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vsext2bhl (__simd32_int4x8_t __a)
 {
@@ -1181,7 +1239,9 @@ _vsext2bhl (__simd32_int4x8_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vsext2bhm (__simd32_int4x8_t __a)
 {
@@ -1191,12 +1251,15 @@ _vsext2bhm (__simd32_int4x8_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int2x32_t __attribute__ ((__always_inline__))
 _vsub2 (__simd64_int2x32_t __a, __simd64_int2x32_t __b)
 {
   return __a - __b;
 }
+#endif
 
 __extension__ static __inline int64_t __attribute__ ((__always_inline__))
 _vsubs2 (int64_t __a, int64_t __b)
@@ -1208,12 +1271,15 @@ _vsubs2 (int64_t __a, int64_t __b)
   return __dst;
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vsub2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __a - __b;
 }
+#endif
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int4x8_t __attribute__ ((__always_inline__))
 _vsub4b (__simd32_int4x8_t __a, __simd32_int4x8_t __b)
 {
@@ -1223,7 +1289,9 @@ _vsub4b (__simd32_int4x8_t __a, __simd32_int4x8_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int4x16_t __attribute__ ((__always_inline__))
 _vsub4h (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
@@ -1255,18 +1323,23 @@ _vsubadds (int64_t __a, int64_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vsubadd2h (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
   return __builtin_arc_vsubadd2h (__a, __b);
 }
+#endif
 
+#ifdef __ARC_MPY_QMACW_
 __extension__ static __inline __simd64_int4x16_t __attribute__ ((__always_inline__))
 _vsubadd4h (__simd64_int4x16_t __a, __simd64_int4x16_t __b)
 {
   return __builtin_arc_vsubadd4h (__a, __b);
 }
+#endif
 
 __extension__ static __inline int64_t __attribute__ ((__always_inline__))
 _vsubadds4h (int64_t __a, int64_t __b)
@@ -1429,11 +1502,12 @@ _msubwhfmr (int32_t __a, int32_t __b)
 }
 
 __extension__ static __inline void __attribute__ ((__always_inline__))
-_trap (unit32_t __a)
+_trap (uint32_t __a)
 {
   __builtin_arc_trap_s (__a);
 }
 
+#if defined (__ARC_MPY_DMPY__) || defined (__ARC_MPY_QMACW__)
 __extension__ static __inline __simd32_int2x16_t __attribute__ ((__always_inline__))
 _vpack2hl (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 {
@@ -1453,6 +1527,7 @@ _vpack2hm (__simd32_int2x16_t __a, __simd32_int2x16_t __b)
 	   : "r" (__a), "r" (__b));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vperm (int32_t __a, int32_t __b)
@@ -1464,6 +1539,7 @@ _vperm (int32_t __a, int32_t __b)
   return __dst;
 }
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int4x8_t __attribute__ ((__always_inline__))
 _vpack2hbl (__simd32_int4x8_t __a)
 {
@@ -1473,7 +1549,9 @@ _vpack2hbl (__simd32_int4x8_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int4x8_t __attribute__ ((__always_inline__))
 _vpack2hbm (__simd32_int4x8_t __a)
 {
@@ -1483,6 +1561,7 @@ _vpack2hbm (__simd32_int4x8_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vpack2hblf (int32_t __a)
@@ -1494,6 +1573,7 @@ _vpack2hblf (int32_t __a)
   return __dst;
 }
 
+#ifdef __ARC_DSP__
 __extension__ static __inline __simd32_int4x8_t __attribute__ ((__always_inline__))
 _vpack2hbmf (__simd32_int4x8_t __a)
 {
@@ -1503,6 +1583,7 @@ _vpack2hbmf (__simd32_int4x8_t __a)
 	   : "r" (__a));
   return __dst;
 }
+#endif
 
 __extension__ static __inline int32_t __attribute__ ((__always_inline__))
 _vext2bhlf (int32_t __a)
@@ -1552,6 +1633,15 @@ _divf (int32_t __a, int32_t __b)
 	   : "=r" (__dst)
 	   : "r" (__a), "r" (__b));
   return __dst;
+}
+
+__extension__ static __inline void __attribute__ ((__always_inline__))
+_wevt (int32_t __a)
+{
+  __asm__ ("wevt	%0\n"
+	   :
+	   :"r" (__a)
+	   : "memory");
 }
 
 #ifdef __cplusplus
