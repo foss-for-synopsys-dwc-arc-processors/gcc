@@ -7505,7 +7505,8 @@ hwloop_optimize (hwloop_info loop)
       && INSN_P (last_insn)
       && (JUMP_P (last_insn) || CALL_P (last_insn)
 	  || GET_CODE (PATTERN (last_insn)) == SEQUENCE
-	  || JUMP_P (prev_active_insn (last_insn))
+	  || (prev_active_insn (last_insn)
+	      && JUMP_P (prev_active_insn (last_insn)))
 	  /* At this stage we can have (insn (clobber (mem:BLK
 	     (reg)))) instructions, ignpre them.  */
 	  || (GET_CODE (PATTERN (last_insn)) != CLOBBER
