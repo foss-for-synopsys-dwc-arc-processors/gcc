@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-skip-if "Not available for ARCv1" { arc700 || arc6xx } } */
-/* { dg-options "-O2 -mirq-ctrl-saved=r0-r17" } */
+/* { dg-options "-O2 -mirq-ctrl-saved=r0-r17 -msdata" } */
 
 /* Check if the registers R0-R17 are automatically saved.  GP is saved
    by the compiler.  */

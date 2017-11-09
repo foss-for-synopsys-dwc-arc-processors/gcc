@@ -2,7 +2,7 @@
    for variables which are having a different alignment
    than the default data type indicates.  */
 /* { dg-do compile } */
-/* { dg-options "-O2" } */
+/* { dg-options "-O2 -msdata" } */
 
 int g_a __attribute__ ((aligned (1)));
 int g_b;
