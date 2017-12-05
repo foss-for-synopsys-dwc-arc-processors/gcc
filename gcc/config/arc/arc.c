@@ -7567,7 +7567,7 @@ hwloop_optimize (hwloop_info loop)
     {
       /* The loop uses a R-register, but the lp_count is free, thus
 	 use lp_count.  */
-      emit_insn (gen_movsi (lp_reg, iter_reg));
+      emit_insn (gen_rtx_SET (lp_reg, iter_reg));
       SET_HARD_REG_BIT (loop->regs_set_in_loop, LP_COUNT);
       iter_reg = lp_reg;
       if (dump_file)
@@ -7577,8 +7577,7 @@ hwloop_optimize (hwloop_info loop)
 	}
     }
 
-  insn = emit_insn (gen_arc_lp (iter_reg,
-				loop->start_label,
+  insn = emit_insn (gen_arc_lp (loop->start_label,
 				loop->end_label));
 
   seq = get_insns ();
@@ -8277,12 +8276,6 @@ arc_register_move_cost (machine_mode,
       else if (to_class == WRITABLE_CORE_REGS)
 	return 6;
     }
-
-  /* Using lp_count as scratch reg is a VERY bad idea.  */
-  if (from_class == LPCOUNT_REG)
-    return 1000;
-  if (to_class == LPCOUNT_REG)
-    return 6;
 
   /* Force an attempt to 'mov Dy,Dx' to spill.  */
   if ((TARGET_ARC700 || TARGET_EM) && TARGET_DPFP
