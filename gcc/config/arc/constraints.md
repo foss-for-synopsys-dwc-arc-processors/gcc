@@ -46,9 +46,11 @@
   "TARGET_CLEAN_REGS ? GENERAL_REGS : MPY_WRITABLE_CORE_REGS"
   "writable core register except @code{LP_COUNT} (@code{r60}): @code{r0}-@code{r31}, nonfixed core register")
 
-(define_register_constraint "l" "LPCOUNT_REG"
+(define_constraint "l"
   "@internal
-   Loop count register @code{r60}")
+   Loop count register @code{r60}"
+  (and (match_code "reg")
+       (match_test "REGNO (op) == LP_COUNT")))
 
 (define_register_constraint "x" "R0_REGS"
   "@code{R0} register.")
