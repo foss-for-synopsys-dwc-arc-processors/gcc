@@ -7452,7 +7452,11 @@ hwloop_optimize (hwloop_info loop)
 	  || (loop->incoming_src
 	      && REGNO_REG_SET_P (df_get_live_out (loop->incoming_src),
 				  LP_COUNT)))
-	return false;
+	{
+	  if (dump_file)
+	    fprintf (dump_file, ";; loop %d, lp_count is alive", loop->loop_no);
+	  return false;
+	}
       else
 	need_fix = true;
     }
