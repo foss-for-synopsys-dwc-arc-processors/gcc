@@ -650,8 +650,8 @@ archs4x, archs4xd, archs4xd_slow"
 ; The iscompact attribute allows the epilogue expander to know for which
 ; insns it should lengthen the return insn.
 (define_insn "*movqi_insn"
-  [(set (match_operand:QI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h,w*l,w*l,???w,h,w*l,Rcq,  S,!*x,  r,r, Ucm,m,???m,  m,Usc")
-	(match_operand:QI 1 "move_src_operand"  "  cL,   cP,Rcq#q,    P,hCm1, cL,  I,?Rac,i, ?i,  T,Rcq,Usd,Ucm,m,?Rac,c,?Rac,Cm3,i"))]
+  [(set (match_operand:QI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h, w, w,???w,h, w,Rcq,  S,!*x,  r,r, Ucm,m,???m,  m,Usc")
+	(match_operand:QI 1 "move_src_operand"  "  cL,   cP,Rcq#q,    P,hCm1,cL, I,?Rac,i,?i,  T,Rcq,Usd,Ucm,m,?Rac,c,?Rac,Cm3,i"))]
   "register_operand (operands[0], QImode)
    || register_operand (operands[1], QImode)"
   "@
@@ -687,8 +687,8 @@ archs4x, archs4xd, archs4xd_slow"
   "if (prepare_move_operands (operands, HImode)) DONE;")
 
 (define_insn "*movhi_insn"
-  [(set (match_operand:HI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h,w*l,w*l,???w,Rcq#q,h,w*l,Rcq,  S,  r,r, Ucm,m,???m,  m,VUsc")
-	(match_operand:HI 1 "move_src_operand" "   cL,   cP,Rcq#q,    P,hCm1, cL,  I,?Rac,    i,i, ?i,  T,Rcq,Ucm,m,?Rac,c,?Rac,Cm3,i"))]
+  [(set (match_operand:HI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h, w, w,???w,Rcq#q,h, w,Rcq,  S,  r,r, Ucm,m,???m,  m,VUsc")
+	(match_operand:HI 1 "move_src_operand" "   cL,   cP,Rcq#q,    P,hCm1,cL, I,?Rac,    i,i,?i,  T,Rcq,Ucm,m,?Rac,c,?Rac,Cm3,i"))]
   "register_operand (operands[0], HImode)
    || register_operand (operands[1], HImode)
    || (CONSTANT_P (operands[1])
@@ -738,9 +738,9 @@ archs4x, archs4xd, archs4xd_slow"
 ; the iscompact attribute allows the epilogue expander to know for which
 ; insns it should lengthen the return insn.
 ; N.B. operand 1 of alternative 7 expands into pcl,symbol@gotpc .
-(define_insn "*movsi_insn"                      ;   0     1     2     3    4  5    6   7   8   9   10    11  12  13    14  15   16  17  18     19     20  21  22    23    24 25 26    27 28  29  30   31
-  [(set (match_operand:SI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h,w*l,w*l,  w,  w,  w,  w,  ???w, ?w,  w,Rcq#q,  h, w*l,Rcq,  S,   Us<,RcqRck,!*x,  r,!*Rsd,!*Rcd,r,Ucm,  Usd,m,???m,  m,VUsc")
-	(match_operand:SI 1 "move_src_operand"  "  cL,   cP,Rcq#q,    P,hCm1, cL,  I,Crr,Clo,Chi,Cbi,?Rac*l,Cpc,Clb, ?Cal,Cal,?Cal,Uts,Rcq,RcqRck,   Us>,Usd,Ucm,  Usd,  Ucd,m,  w,!*Rzd,c,?Rac,Cm3, C32"))]
+(define_insn "*movsi_insn"                      ;   0     1     2     3    4  5  6   7   8   9   10  11  12  13    14  15   16  17  18     19     20  21  22    23    24 25 26    27 28  29  30   31
+  [(set (match_operand:SI 0 "move_dest_operand" "=Rcq,Rcq#q,    w,Rcq#q,   h,wl, w,  w,  w,  w,  w,???w, ?w,  w,Rcq#q,  h,  wl,Rcq,  S,   Us<,RcqRck,!*x,  r,!*Rsd,!*Rcd,r,Ucm,  Usd,m,???m,  m,VUsc")
+	(match_operand:SI 1 "move_src_operand"  "  cL,   cP,Rcq#q,    P,hCm1,cL, I,Crr,Clo,Chi,Cbi,?Rac,Cpc,Clb, ?Cal,Cal,?Cal,Uts,Rcq,RcqRck,   Us>,Usd,Ucm,  Usd,  Ucd,m,  w,!*Rzd,c,?Rac,Cm3, C32"))]
   "register_operand (operands[0], SImode)
    || register_operand (operands[1], SImode)
    || (CONSTANT_P (operands[1])
@@ -5239,12 +5239,12 @@ archs4x, archs4xd, archs4xd_slow"
 })
 
 (define_insn "arc_lp"
-  [(unspec:SI [(match_operand:SI 0 "register_operand" "l")]
+  [(unspec:SI [(reg:SI LP_COUNT)]
 	      UNSPEC_ARC_LP)
-   (use (label_ref (match_operand 1 "" "")))
-   (use (label_ref (match_operand 2 "" "")))]
+   (use (label_ref (match_operand 0 "" "")))
+   (use (label_ref (match_operand 1 "" "")))]
   ""
-  "lp\\t@%l2\\t; %0:@%l1->@%l2"
+  "lp\\t@%l1\\t; lp_count:@%l0->@%l1"
   [(set_attr "type" "loop_setup")
    (set_attr "length" "4")])
 
@@ -5252,16 +5252,16 @@ archs4x, archs4xd, archs4xd_slow"
 ;; register, instead of going to memory.
 (define_insn "loop_end"
   [(set (pc)
-	(if_then_else (ne (match_operand:SI 2 "nonimmediate_operand" "0,0")
+	(if_then_else (ne (match_operand:SI 2 "nonimmediate_operand" "0,m")
 			  (const_int 1))
 		      (label_ref (match_operand 1 "" ""))
 		      (pc)))
-   (set (match_operand:SI 0 "nonimmediate_operand" "=l!r,m")
+   (set (match_operand:SI 0 "nonimmediate_operand" "=r,m")
 	(plus (match_dup 2) (const_int -1)))
    (unspec [(const_int 0)] UNSPEC_ARC_LP)
    (clobber (match_scratch:SI 3 "=X,&r"))]
   ""
-  "\\t;%0 %1 %2"
+  "; ZOL_END, begins @%l1"
   [(set_attr "length" "0")
    (set_attr "predicable" "no")
    (set_attr "type" "loop_end")])
@@ -5306,7 +5306,7 @@ archs4x, archs4xd, archs4xd_slow"
 (define_insn_and_split "dbnz"
   [(set (pc)
 	(if_then_else
-	 (ne (plus:SI (match_operand:SI 0 "nonimmediate_operand" "+r!l,m")
+	 (ne (plus:SI (match_operand:SI 0 "nonimmediate_operand" "+rl,m")
 		      (const_int -1))
 	     (const_int 0))
 	 (label_ref (match_operand 1 "" ""))
