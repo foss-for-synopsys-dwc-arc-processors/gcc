@@ -5240,7 +5240,7 @@ archs4xd, archs4xd_slow, core_3"
    (unspec [(const_int 0)] UNSPEC_ARC_LP)
    (clobber (match_scratch:SI 3 "=X,&r"))]
   ""
-  "\\t;%0 %1 %2"
+  "; ZOL_END, begins @%l1"
   [(set_attr "length" "0")
    (set_attr "predicable" "no")
    (set_attr "type" "loop_end")])

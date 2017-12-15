@@ -7625,7 +7625,6 @@ hwloop_optimize (hwloop_info loop)
       emit_insn_before (seq, entry_after);
     }
 
-  delete_insn (loop->loop_end);
   /* Insert the loop end label before the last instruction of the
      loop.  */
   emit_label_after (end_label, loop->last_insn);
