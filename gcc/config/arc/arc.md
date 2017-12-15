@@ -5231,11 +5231,11 @@ archs4xd, archs4xd_slow, core_3"
 ;; register, instead of going to memory.
 (define_insn "loop_end"
   [(set (pc)
-	(if_then_else (ne (match_operand:SI 2 "nonimmediate_operand" "0,0")
+	(if_then_else (ne (match_operand:SI 2 "nonimmediate_operand" "0,m")
 			  (const_int 1))
 		      (label_ref (match_operand 1 "" ""))
 		      (pc)))
-   (set (match_operand:SI 0 "nonimmediate_operand" "=l!r,m")
+   (set (match_operand:SI 0 "nonimmediate_operand" "=r,m")
 	(plus (match_dup 2) (const_int -1)))
    (unspec [(const_int 0)] UNSPEC_ARC_LP)
    (clobber (match_scratch:SI 3 "=X,&r"))]
