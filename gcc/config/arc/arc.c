@@ -464,6 +464,7 @@ static rtx frame_insn (rtx);
 static void arc_function_arg_advance (cumulative_args_t, machine_mode,
 				      const_tree, bool);
 static rtx arc_legitimize_address_0 (rtx, rtx, machine_mode mode);
+static bool arc_rtx_costs (rtx, machine_mode, int, int, int *, bool);
 
 /* initialize the GCC target structure.  */
 #undef  TARGET_COMP_TYPE_ATTRIBUTES
@@ -5151,13 +5152,402 @@ void arc_file_end (void)
 
 /* Cost functions.  */
 
+/* Helper function for computing costs, returns true if operand is a
+   shift left and can fit one of the sub123 or add123 instructions.  */
+static bool
+shift_op_p (rtx op)
+{
+  enum rtx_code code = GET_CODE (op);
+
+  if (code == MULT
+      && _2_4_8_operand (XEXP (op, 1), VOIDmode)
+      && REG_P (XEXP (op, 0)))
+    return true;
+
+  if (code == ASHIFT
+      && _1_2_3_operand (XEXP (op, 1), VOIDmode)
+      && REG_P (XEXP (op, 1)))
+    return true;
+
+  return false;
+}
+
+static int
+arc_operand_rtx_cost (rtx x, machine_mode mode, enum rtx_code outer,
+		      int opno, bool speed_p)
+{
+  enum rtx_code code = GET_CODE (x);
+  int total;
+
+  switch (code)
+    {
+    case SUBREG:
+    case REG:
+      if (speed_p || satisfies_constraint_Rcq (x))
+	total = 0;
+      else
+	total = COSTS_N_INSNS (1);
+      return total;
+
+    default:
+      break;
+    }
+
+  total = 0;
+  arc_rtx_costs (x, mode, outer, opno, &total, speed_p);
+  return total;
+}
+
+/* RTX costs.  Make an estimate of the cost of executing the operation
+   X, which is contained with an operation with code OUTER_CODE.
+   SPEED_P indicates whether the cost desired is the performance cost,
+   or the size cost.  The estimate is stored in COST and the return
+   value is TRUE if the cost calculation is final, or FALSE if the
+   caller should recurse through the operands of X to add additional
+   costs.  */
+
+static bool
+arc_rtx_costs_internal (rtx x, enum rtx_code outer_code,
+			int *cost, bool speed_p)
+{
+  machine_mode mode = GET_MODE (x);
+  enum rtx_code code = GET_CODE (x);
+  int factor;
+
+  factor = GET_MODE_SIZE (mode) / UNITS_PER_WORD;
+  if (factor == 0)
+    factor = 1;
+
+  *cost = COSTS_N_INSNS (1);
+
+  switch (code)
+    {
+    case CONST_INT:
+      *cost = 0;
+      switch (outer_code)
+	{
+	case AND:
+	  if (satisfies_constraint_C1p (x)
+	      || satisfies_constraint_C2p (x)
+	      || satisfies_constraint_C0p (x)
+	      || satisfies_constraint_Chs (x)
+	      || satisfies_constraint_Cbf (x)
+	      || satisfies_constraint_CnL (x)
+	      || satisfies_constraint_Ccp (x))
+	    return true;
+	case SET:
+	  if (UNSIGNED_INT8 (INTVAL (x)))
+	    return true;
+	  *cost = speed_p ? 0 : 1;
+	  return true;
+	default:
+	  break;
+	}
+      /* Small immediates are always cheap.  */
+      if (SMALL_INT (INTVAL (x)))
+	return true;
+
+      /* Fall-through.  */
+    case CONST:
+    case CONST_FIXED:
+    case LABEL_REF:
+    case SYMBOL_REF:
+      /* All long immediates.  LIMM is expensive for size.  */
+      *cost = speed_p ? 0 : factor * COSTS_N_INSNS (4);
+      return true;
+
+    case CONST_DOUBLE:
+      {
+	rtx first, second;
+	split_double (x, &first, &second);
+	*cost = speed_p ? 0 : COSTS_N_INSNS (4)
+	  * (!SMALL_INT (INTVAL (first))
+	     + !SMALL_INT (INTVAL (second)));
+	return true;
+      }
+
+    case MEM:
+      /* with LL64 we have double load/store ops.  */
+      *cost = COSTS_N_INSNS (1) * (TARGET_LL64 && factor > 1)
+	? factor >> 1 : factor;
+
+      if (speed_p || legitimate_scaled_address_p (mode, XEXP (x,0), false))
+	return true;
+
+      *cost += arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+      return true;
+
+    case NOT:
+    case ABS:
+    case NEG:
+      if (GET_MODE_SIZE (mode) >= UNITS_PER_WORD)
+	*cost = COSTS_N_INSNS (1) * factor;
+      else
+	*cost = COSTS_N_INSNS (1) + 1;
+      *cost += arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+      return true;
+
+    case SIGN_EXTEND:
+    case ZERO_EXTEND:
+      *cost = COSTS_N_INSNS (1);
+      if (GET_MODE_SIZE (mode) > UNITS_PER_WORD)
+	return false;
+
+      switch (outer_code)
+	{
+	case MULT:
+	  if (TARGET_ANY_MPY)
+	    {
+	      *cost = 0;
+	      return true;
+	    }
+	  /* Fall-through.  */
+	case SET:
+	  *cost += arc_operand_rtx_cost (XEXP (x, 0), GET_MODE (XEXP (x, 0)),
+					 code, 0, speed_p);
+	  break;
+	default:
+	  *cost = 0;
+	  break;
+	}
+
+      return true;
+
+   case SET:
+     *cost = 0;
+     if (REG_P (SET_SRC (x))
+	 && REG_P (SET_DEST (x)))
+       return true;
+     if (REG_P (SET_DEST (x))
+	 && CONST_INT_P (SET_SRC (x))
+	 && !SMALL_INT (INTVAL (SET_SRC (x))))
+       {
+	 *cost += speed_p ? 0 : 1;
+	 return true;
+       }
+     if (MEM_P (SET_DEST (x))
+	 && CONST_INT_P (SET_SRC (x))
+	 && satisfies_constraint_Cm3 (SET_SRC (x)))
+       {
+	 *cost = COSTS_N_INSNS (1);
+	 return true;
+       }
+     return false;
+
+    case MOD:
+    case UMOD:
+    case DIV:
+    case UDIV:
+      if (TARGET_DIVREM || TARGET_FP_SP_SQRT || TARGET_FP_DP_SQRT)
+	*cost = COSTS_N_INSNS (1);
+      else
+	*cost = COSTS_N_INSNS (speed_p ? 30 : 1);
+      *cost += arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+      *cost += arc_operand_rtx_cost (XEXP (x, 1), mode, code, 1, speed_p);
+      return true;
+
+    case MULT:
+      switch (mode)
+	{
+	case DFmode:
+	case SFmode:
+	  if (TARGET_HARD_FLOAT)
+	    *cost = COSTS_N_INSNS (1);
+	  else
+	    *cost = arc_multcost;
+	  break;
+
+	default:
+	  if (TARGET_ANY_MPY || TARGET_MUL64_SET)
+	    *cost = COSTS_N_INSNS (1);
+	  else if (speed_p)
+	    *cost = arc_multcost;
+	  else
+	    *cost = COSTS_N_INSNS (2);
+	  break;
+	}
+      *cost += arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+      *cost += arc_operand_rtx_cost (XEXP (x, 1), mode, code, 0, speed_p);
+      return true;
+
+    case ASHIFT:
+    case ASHIFTRT:
+    case LSHIFTRT:
+    case ROTATE:
+      if (!TARGET_BARREL_SHIFTER)
+	{
+	  int val;
+	  /* Not having barrel shifter, everything is expensive.  */
+	  if (CONST_INT_P (XEXP (x, 1)))
+	    val = INTVAL (XEXP (x, 1));
+	  else
+	    val = GET_MODE_SIZE (mode);
+
+	  *cost = COSTS_N_INSNS (val > 0 ? val : 1);
+	}
+      else
+	*cost += arc_operand_rtx_cost (XEXP (x, 1), mode, code, 0, speed_p);
+      *cost += arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+      return true;
+
+    case PLUS:
+      if (outer_code == MEM)
+	{
+	  *cost = arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+	  *cost += arc_operand_rtx_cost (XEXP (x, 1), mode, code, 0, speed_p);
+	  return true;
+	}
+    case MINUS:
+      if ((TARGET_FP_SP_BASE && mode == SFmode)
+	  || (TARGET_FP_DP_BASE && mode == DFmode))
+	{
+	  /* fmadd/fmsub operations.  */
+	  if ((TARGET_FP_SP_FUSED && mode == SFmode)
+	      && (TARGET_FP_DP_FUSED && mode == DFmode)
+	      && GET_CODE (XEXP (x, 0)) == MULT)
+	    *cost = COSTS_N_INSNS (1);
+	  else
+	    {
+	      rtx mul_op0, mul_op1, add_op;
+	      mul_op0 = XEXP (XEXP (x, 0), 0);
+	      mul_op1 = XEXP (XEXP (x, 0), 1);
+	      add_op = XEXP (x, 1);
+
+	      *cost = COSTS_N_INSNS (1);
+	      *cost += arc_operand_rtx_cost (mul_op0, mode, code, 0, speed_p)
+		+ arc_operand_rtx_cost (mul_op1, mode, code, 0, speed_p)
+		+ arc_operand_rtx_cost (add_op, mode, code, 0, speed_p);
+	    }
+	  return true;
+	}
+      if (shift_op_p (XEXP (x, (code == PLUS) ? 0 : 1)))
+	{
+	  *cost += arc_operand_rtx_cost (XEXP
+					 (x, (code == PLUS) ? 1 : 0),
+					 mode, code, 0,
+					 speed_p);
+	  return true;
+	}
+      return false;
+
+    case IOR:
+    case XOR:
+      *cost = COSTS_N_INSNS (1);
+      /* Check for bsets/bxors.  */
+      if (CONST_INT_P (XEXP (x, 1))
+	  && IS_POWEROF2_P (INTVAL (XEXP (x, 1))))
+	{
+	  *cost += arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+	  return true;
+	}
+      if (GET_CODE (XEXP (x, 0)) == ASHIFT
+	  && CONST_INT_P (XEXP (XEXP (x, 0), 0))
+	  && INTVAL (XEXP (XEXP (x, 0), 0)) == 1)
+	{
+	  *cost += arc_operand_rtx_cost (XEXP (x, 1), mode, code, 0, speed_p);
+	  return true;
+	}
+      if (GET_CODE (XEXP (x, 1)) == ASHIFT
+	  && CONST_INT_P (XEXP (XEXP (x, 1), 0))
+	  && INTVAL (XEXP (XEXP (x, 1), 0)) == 1)
+	{
+	  *cost += arc_operand_rtx_cost (XEXP (x, 0), mode, code, 0, speed_p);
+	  return true;
+	}
+      return false;
+
+    case COMPARE:
+      {
+	*cost = 0;
+	rtx op0 = XEXP (x, 0);
+	rtx op1 = XEXP (x, 1);
+
+	if (REG_P (op0) && op1 == const0_rtx)
+	  {
+	    /* Compare with zero are for free.  */
+	    *cost = 0;
+	    return true;
+	  }
+	if (GET_CODE (op0) == ZERO_EXTRACT && op1 == const0_rtx
+	    && XEXP (op0, 1) == const1_rtx)
+	  {
+	    /* btst / bbit0 / bbit1: Small integers and registers are
+	       free; everything else can be put in a register.  */
+	    mode = GET_MODE (XEXP (op0, 0));
+	    *cost = arc_operand_rtx_cost (XEXP (op0, 0), mode, SET, 0, speed_p)
+	      + arc_operand_rtx_cost (XEXP (op0, 2), mode, SET, 0, speed_p);
+	    return true;
+	  }
+	if (GET_CODE (op0) == AND && op1 == const0_rtx
+	    && satisfies_constraint_C1p (XEXP (op0, 1)))
+	  {
+	    /* bmsk.f */
+	    *cost = arc_operand_rtx_cost (XEXP (op0, 0), VOIDmode, SET, 0,
+					  speed_p);
+	    return true;
+	  }
+	if (GET_CODE (op1) == ASHIFT && REG_P (op0))
+	  {
+	    *cost = COSTS_N_INSNS (1);
+	    return true;
+	  }
+	return false;
+      }
+
+    case EQ:
+    case NE:
+      if (outer_code == IF_THEN_ELSE
+	  && GET_CODE (XEXP (x, 0)) == ZERO_EXTRACT
+	  && XEXP (x, 1) == const0_rtx
+	  && XEXP (XEXP (x, 0), 1) == const1_rtx)
+	{
+	  /* btst / bbit0 / bbit1: Small integers and registers are
+	     free; everything else can be put in a register.  */
+	  rtx op0 = XEXP (x, 0);
+
+	  mode = GET_MODE (XEXP (op0, 0));
+	  *cost = arc_operand_rtx_cost (XEXP (op0, 0), mode, SET, 0, speed_p)
+	    + arc_operand_rtx_cost (XEXP (op0, 2), mode, SET, 0, speed_p);
+	  return true;
+	}
+      if (outer_code == COND_EXEC
+	  && cc_set_register (XEXP (x, 0), VOIDmode)
+	  && XEXP (x, 1) == const0_rtx)
+	{
+	  *cost = 0;
+	  return true;
+	}
+      /* Fall through.  */
+    case LT:
+    case LE:
+    case GT:
+    case GE:
+    case LTU:
+    case LEU:
+    case GEU:
+    case GTU:
+    case ORDERED:
+    case UNORDERED:
+    case UNEQ:
+    case UNLE:
+    case UNLT:
+    case UNGE:
+    case UNGT:
+    case LTGT:
+      *cost = COSTS_N_INSNS (1);
+      return false;
+    default:
+      return false;
+    }
+}
+
 /* Compute a (partial) cost for rtx X.  Return true if the complete
    cost has been computed, and false if subexpressions should be
    scanned.  In either case, *TOTAL contains the cost result.  */
 
 static bool
-arc_rtx_costs (rtx x, machine_mode mode, int outer_code,
-	       int opno ATTRIBUTE_UNUSED, int *total, bool speed)
+arc_rtx_costs_default (rtx x, machine_mode mode, int outer_code,
+		       int opno ATTRIBUTE_UNUSED, int *total, bool speed)
 {
   int code = GET_CODE (x);
 
@@ -5372,6 +5762,30 @@ arc_rtx_costs (rtx x, machine_mode mode, int outer_code,
     default:
       return false;
     }
+}
+
+/* RTX costs entry point.  */
+
+static bool
+arc_rtx_costs (rtx x, machine_mode mode, int outer_code,
+	       int opno ATTRIBUTE_UNUSED, int *total, bool speed)
+{
+  bool result;
+  int ttt = *total;
+
+#if 0
+  result = arc_rtx_costs_default (x, mode, outer_code, opno, total, speed);
+#else
+  result = arc_rtx_costs_internal (x, (enum rtx_code) outer_code, total, speed);
+#endif
+
+  if (dump_file && (dump_flags & TDF_DETAILS))
+    {
+      print_rtl_single (dump_file, x);
+      fprintf (dump_file, "\n%s cost: %d o:%d (%s)\n", speed ? "speed" : "size",
+	       *total, ttt, result ? "final" : "partial");
+    }
+  return result;
 }
 
 /* Return true if ADDR is a valid pic address.
@@ -10883,6 +11297,16 @@ arc_cannot_substitute_mem_equiv_p (rtx)
   return true;
 }
 
+/* Return the register class which is size friendly if possible.  */
+static reg_class_t
+arc_preferred_rename_class (reg_class_t rclass)
+{
+  if (rclass == GENERAL_REGS)
+    return ARCOMPACT16_REGS;
+  else
+    return NO_REGS;
+}
+
 #undef TARGET_USE_ANCHORS_FOR_SYMBOL_P
 #define TARGET_USE_ANCHORS_FOR_SYMBOL_P arc_use_anchors_for_symbol_p
 
@@ -10891,6 +11315,9 @@ arc_cannot_substitute_mem_equiv_p (rtx)
 
 #undef TARGET_ASM_TRAMPOLINE_TEMPLATE
 #define TARGET_ASM_TRAMPOLINE_TEMPLATE arc_asm_trampoline_template
+
+#undef TARGET_PREFERRED_RENAME_CLASS
+#define TARGET_PREFERRED_RENAME_CLASS arc_preferred_rename_class
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
