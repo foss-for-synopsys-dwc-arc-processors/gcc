@@ -5397,30 +5397,34 @@ arc_rtx_costs_internal (rtx x, enum rtx_code outer_code,
 	  *cost += arc_operand_rtx_cost (XEXP (x, 1), mode, code, 0, speed_p);
 	  return true;
 	}
+      /* Fall through.  */
     case MINUS:
       if ((TARGET_FP_SP_BASE && mode == SFmode)
 	  || (TARGET_FP_DP_BASE && mode == DFmode))
 	{
 	  /* fmadd/fmsub operations.  */
-	  if ((TARGET_FP_SP_FUSED && mode == SFmode)
-	      && (TARGET_FP_DP_FUSED && mode == DFmode)
-	      && GET_CODE (XEXP (x, 0)) == MULT)
-	    *cost = COSTS_N_INSNS (1);
-	  else
+	  if (GET_CODE (XEXP (x, 0)) == MULT)
 	    {
-	      rtx mul_op0, mul_op1, add_op;
-	      mul_op0 = XEXP (XEXP (x, 0), 0);
-	      mul_op1 = XEXP (XEXP (x, 0), 1);
-	      add_op = XEXP (x, 1);
+	      if ((TARGET_FP_SP_FUSED && mode == SFmode)
+		  && (TARGET_FP_DP_FUSED && mode == DFmode))
+		*cost = COSTS_N_INSNS (1);
+	      else
+		{
+		  rtx mul_op0, mul_op1, add_op;
+		  mul_op0 = XEXP (XEXP (x, 0), 0);
+		  mul_op1 = XEXP (XEXP (x, 0), 1);
+		  add_op = XEXP (x, 1);
 
-	      *cost = COSTS_N_INSNS (1);
-	      *cost += arc_operand_rtx_cost (mul_op0, mode, code, 0, speed_p)
-		+ arc_operand_rtx_cost (mul_op1, mode, code, 0, speed_p)
-		+ arc_operand_rtx_cost (add_op, mode, code, 0, speed_p);
+		  *cost = COSTS_N_INSNS (1);
+		  *cost += arc_operand_rtx_cost (mul_op0, mode, code, 0,
+						 speed_p)
+		    + arc_operand_rtx_cost (mul_op1, mode, code, 0, speed_p)
+		    + arc_operand_rtx_cost (add_op, mode, code, 0, speed_p);
+		}
+	      return true;
 	    }
-	  return true;
 	}
-      if (shift_op_p (XEXP (x, (code == PLUS) ? 0 : 1)))
+      else if (shift_op_p (XEXP (x, (code == PLUS) ? 0 : 1)))
 	{
 	  *cost += arc_operand_rtx_cost (XEXP
 					 (x, (code == PLUS) ? 1 : 0),
