@@ -5287,9 +5287,8 @@ arc_rtx_costs_internal (rtx x, enum rtx_code outer_code,
       {
 	rtx first, second;
 	split_double (x, &first, &second);
-	*cost = speed_p ? 0 : COSTS_N_INSNS (4)
-	  * (!SMALL_INT (INTVAL (first))
-	     + !SMALL_INT (INTVAL (second)));
+	*cost = COSTS_N_INSNS (!SMALL_INT (INTVAL (first))
+			       + !SMALL_INT (INTVAL (second)));
 	return true;
       }
 
@@ -5341,7 +5340,6 @@ arc_rtx_costs_internal (rtx x, enum rtx_code outer_code,
       return true;
 
    case SET:
-     *cost = 0;
      if (REG_P (SET_SRC (x))
 	 && REG_P (SET_DEST (x)))
        return true;
