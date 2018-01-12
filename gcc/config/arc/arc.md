@@ -1777,7 +1777,7 @@ archs4x, archs4xd, archs4xd_slow"
   [(set (match_operand:HI 0 "dest_reg_operand" "")
 	(zero_extend:HI (match_operand:QI 1 "nonvol_nonimm_operand" "")))]
   ""
-  "if (prepare_extend_operands (operands, ZERO_EXTEND, HImode)) DONE;"
+  ""
 )
 
 (define_insn "*zero_extendqisi2_ac"
@@ -1801,7 +1801,7 @@ archs4x, archs4xd, archs4xd_slow"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(zero_extend:SI (match_operand:QI 1 "nonvol_nonimm_operand" "")))]
   ""
-  "if (prepare_extend_operands (operands, ZERO_EXTEND, SImode)) DONE;"
+  ""
 )
 
 (define_insn "*zero_extendhisi2_i"
@@ -1826,7 +1826,7 @@ archs4x, archs4xd, archs4xd_slow"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(zero_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "")))]
   ""
-  "if (prepare_extend_operands (operands, ZERO_EXTEND, SImode)) DONE;"
+  ""
 )
 
 ;; Sign extension instructions.
@@ -1849,7 +1849,7 @@ archs4x, archs4xd, archs4xd_slow"
   [(set (match_operand:HI 0 "dest_reg_operand" "")
 	(sign_extend:HI (match_operand:QI 1 "nonvol_nonimm_operand" "")))]
   ""
-  "if (prepare_extend_operands (operands, SIGN_EXTEND, HImode)) DONE;"
+  ""
 )
 
 (define_insn "*extendqisi2_ac"
@@ -1869,7 +1869,7 @@ archs4x, archs4xd, archs4xd_slow"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(sign_extend:SI (match_operand:QI 1 "nonvol_nonimm_operand" "")))]
   ""
-  "if (prepare_extend_operands (operands, SIGN_EXTEND, SImode)) DONE;"
+  ""
 )
 
 (define_insn "*extendhisi2_i"
@@ -1890,7 +1890,7 @@ archs4x, archs4xd, archs4xd_slow"
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(sign_extend:SI (match_operand:HI 1 "nonvol_nonimm_operand" "")))]
   ""
-  "if (prepare_extend_operands (operands, SIGN_EXTEND, SImode)) DONE;"
+  ""
 )
 
 ;; Unary arithmetic insns
@@ -2783,11 +2783,6 @@ archs4x, archs4xd, archs4xd_slow"
      {
        operands[2]=force_reg(SImode, operands[2]);
      }
-  else if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[2], Pmode))
-   {
-      operands[2] = force_reg (SImode, arc_rewrite_small_data (operands[2]));
-   }
-
   ")
 
 (define_expand "adddi3"
@@ -2991,8 +2986,6 @@ archs4x, archs4xd, archs4xd_slow"
     }
   if (flag_pic && arc_raw_symbolic_reference_mentioned_p (operands[c], false))
     operands[c] = force_reg (SImode, operands[c]);
-  else if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[c], Pmode))
-      operands[c] = force_reg (SImode, arc_rewrite_small_data (operands[c]));
 }")
 
 ; the casesi expander might generate a sub of zero, so we have to recognize it.
@@ -3348,8 +3341,7 @@ archs4x, archs4xd, archs4xd_slow"
   ""
   "if (!satisfies_constraint_Cux (operands[2]))
      operands[1] = force_reg (SImode, operands[1]);
-   else if (!TARGET_NO_SDATA_SET && small_data_pattern (operands[1], Pmode))
-     operands[1] = arc_rewrite_small_data (operands[1]);")
+  ")
 
 (define_insn "andsi3_i"
   [(set (match_operand:SI 0 "dest_reg_operand"          "=Rcqq,Rcq,Rcqq,Rcqq,Rcqq,Rcw,Rcw,   Rcw,Rcw,Rcw,Rcw, w,     w,  w,  w,Rrq,w,Rcw,  w,W")
