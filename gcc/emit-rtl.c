@@ -4633,11 +4633,9 @@ note_outside_basic_block_p (enum insn_note subtype, bool on_bb_boundary_p)
       case NOTE_INSN_SWITCH_TEXT_SECTIONS:
 	return true;
 
-      /* Notes for var tracking and EH region markers can appear between or
-	 inside basic blocks.  If the caller is emitting on the basic block
+      /* Notes for EH region markers can appear between or inside
+	 basic blocks.  If the caller is emitting on the basic block
 	 boundary, do not set BLOCK_FOR_INSN on the new note.  */
-      case NOTE_INSN_VAR_LOCATION:
-      case NOTE_INSN_CALL_ARG_LOCATION:
       case NOTE_INSN_EH_REGION_BEG:
       case NOTE_INSN_EH_REGION_END:
 	return on_bb_boundary_p;
