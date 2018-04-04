@@ -1,4 +1,5 @@
 /* { dg-options "-O2 -fdump-tree-optimized -fdump-ipa-profile" } */
+/* { dg-skip-if "ARC uses specific short mem moves" { arc*-*-* } } */
 int a[1000];
 int b[1000];
 int size=1;
