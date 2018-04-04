@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target archs }*/
-/* { dg-options "-O3" } */
+/* { dg-options "-O3 -mll64" } */
 
 /* This tests checks if we merge the two 32-bit stores into one 64-bit
    store.  It also checks if we use std w6,[reg] format.  */
