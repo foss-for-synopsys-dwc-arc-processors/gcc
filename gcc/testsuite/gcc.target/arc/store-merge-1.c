@@ -1,6 +1,6 @@
 /* { dg-do compile } */
-/* { dg-options "-O3" { target { archs } } } */
-/* { dg-options "-O3 -mcpu=archs" { target { ! { clmcpu } } } } */
+/* { dg-require-effective-target archs }*/
+/* { dg-options "-O3 -mcpu=archs -mll64" { target { ! { clmcpu } } } } */
 
 /* This tests checks if we merge the two 32-bit stores into one 64-bit
    store.  It also checks if we use std w6,[reg] format.  */

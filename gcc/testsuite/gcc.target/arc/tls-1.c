@@ -1,5 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target tls } */
+/* { dg-skip-if "" { arc-*-elf* } } */
 /* { dg-options "-O3 -std=gnu99" } */
 
 /* Check if addressing the `pos` member of struct is done via tls
