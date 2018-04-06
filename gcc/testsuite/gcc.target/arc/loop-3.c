@@ -23,5 +23,6 @@ void fn1(void)
   }
 }
 
-/* { dg-final { scan-assembler "bne_s @.L2" } } */
+/* { dg-final { scan-assembler "bne_s @.L2" { target { ! { arc700 || arc6xx } } } } } */
+/* { dg-final { scan-assembler "bne.d @.L2" { target { arc700 || arc6xx } } } } */
 /* { dg-final { scan-assembler-not "add.eq" } } */
