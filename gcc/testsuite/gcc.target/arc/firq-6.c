@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target archs }*/
-/* { dg-options "-O2 -mll64 -mrgf-banked-regs=32" } */
+/* { dg-options "-O2 -mll64 -mrgf-banked-regs=32 -fno-omit-frame-pointer" } */
 
 /* Check if we have any register saved on stack.  */
 
@@ -15,6 +15,6 @@ handler1 (void)
 		  "r10", "r11", "r12", "r13", "r14",
 		  "r15", "r16", "r17", "r18", "r19",
 		  "r20", "r21", "r22", "r23", "r24",
-		  "r25", "fp");
+		  "r25");
 }
 /* { dg-final { scan-assembler-not "(s|l)(t|d)d.*r\[0-9\]+,\\\[sp,\[0-9\]+\\\]" } } */
