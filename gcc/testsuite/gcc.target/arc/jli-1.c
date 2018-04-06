@@ -15,5 +15,5 @@ int main()
 }
 
 /* { dg-final { scan-assembler "jli_s @__jli.func" } } */
-/* { dg-final { scan-assembler ".weak __jli.func" } } */
-/* { dg-final { scan-assembler "b\\\s+@func" } } */
+/* { dg-final { scan-assembler ".weak __jli.func" { xfail *-linux-* } } } */
+/* { dg-final { scan-assembler "b\\\s+@func" { xfail *-linux-* } } } */
