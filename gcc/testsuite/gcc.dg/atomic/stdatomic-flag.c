@@ -2,6 +2,8 @@
 /* The test needs a lockless atomic implementation.  */
 /* { dg-do run { xfail hppa*-*-hpux* } } */
 /* { dg-options "-std=c11 -pedantic-errors" } */
+/* Only archs has lockless atomic implementation.  */
+/* { dg-skip-if "" { arc*-*-* } { "*" } { "" } } */
 
 #include <stdatomic.h>
 

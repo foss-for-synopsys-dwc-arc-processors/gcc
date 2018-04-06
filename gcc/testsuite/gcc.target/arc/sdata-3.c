@@ -2,7 +2,7 @@
    for variables which are having a different alignment
    than the default data type indicates.  */
 /* { dg-do compile } */
-/* { dg-options "-O2" } */
+/* { dg-options "-O2 -msdata" } */
 
 int g_a __attribute__ ((aligned (1)));
 int g_b;
@@ -30,7 +30,7 @@ TEST (d, char)
 /* { dg-final { scan-assembler "ldb r2,\\\[gp,@g_d@sda\\\]" } } */
 
 /* { dg-final { scan-assembler "st r0,\\\[gp,@g_a@sda\\\]" } } */
-/* { dg-final { scan-assembler "st_s r0,\\\[gp,@g_b@sda\\\]" { target { arcem || archs } } } } */
-/* { dg-final { scan-assembler "st\\\.as r0,\\\[gp,@g_b@sda\\\]" { target { arc700 || arc6xx } } } } */
+/* { dg-final { scan-assembler "st_s r0,\\\[gp,@g_b@sda\\\]" { target { codedensity } } } } */
+/* { dg-final { scan-assembler "st\\\.as r0,\\\[gp,@g_b@sda\\\]" { target { ! { codedensity } } } } } */
 /* { dg-final { scan-assembler "st\[hw\]\\\.as r0,\\\[gp,@g_c@sda\\\]" } } */
 /* { dg-final { scan-assembler "stb r0,\\\[gp,@g_d@sda\\\]" } } */
