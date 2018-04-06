@@ -3203,7 +3203,11 @@ arc_expand_prologue (void)
 
   /* Naked functions don't have prologue.  */
   if (ARC_NAKED_P (fn_type))
+    {
+      if (flag_stack_usage_info)
+	current_function_static_stack_size = 0;
       return;
+    }
 
   /* Compute total frame size.  */
   size = arc_compute_frame_size ();
