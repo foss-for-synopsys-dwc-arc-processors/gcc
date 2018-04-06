@@ -1,6 +1,6 @@
 /* { dg-do compile } */
 /* { dg-require-effective-target archs }*/
-/* { dg-options "-O2 -mll64 -mrgf-banked-regs=8" } */
+/* { dg-options "-O2 -mll64 -mrgf-banked-regs=8 -fno-omit-frame-pointer" } */
 
 /* Check if R4 to R11 and R16-R27 are correctly saved on stack.  */
 
@@ -15,7 +15,7 @@ handler1 (void)
 		  "r10", "r11", "r12", "r13", "r14",
 		  "r15", "r16", "r17", "r18", "r19",
 		  "r20", "r21", "r22", "r23", "r24",
-		  "r25", "fp");
+		  "r25");
 }
 /* { dg-final { scan-assembler-not "r0,\\\[sp" } } */
 /* { dg-final { scan-assembler-not "push.*r0" } } */

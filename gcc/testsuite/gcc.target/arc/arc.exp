@@ -89,7 +89,15 @@ proc check_effective_target_clmcpu { } {
 proc check_effective_target_barrelshifter { } {
     return [check_no_compiler_messages barrelshifter assembly {
 	#if !defined(__ARC_BARREL_SHIFTER__)
-	#error No barrel shifter for this confi
+	#error No barrel shifter for this config
+	#endif
+    }]
+}
+
+proc check_effective_target_codedensity { } {
+    return [check_no_compiler_messages codedensity assembly {
+	#if !defined(__ARC_CODE_DENSITY__)
+	#error No code density option for this config
 	#endif
     }]
 }
