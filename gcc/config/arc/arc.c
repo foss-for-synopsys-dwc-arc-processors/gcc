@@ -577,9 +577,6 @@ static bool arc_rtx_costs (rtx, machine_mode, int, int, int *, bool);
 #undef TARGET_SCHED_ISSUE_RATE
 #define TARGET_SCHED_ISSUE_RATE arc_sched_issue_rate
 
-#undef TARGET_SCHED_EXPOSED_PIPELINE
-#define TARGET_SCHED_EXPOSED_PIPELINE true
-
 #undef TARGET_VECTOR_MODE_SUPPORTED_P
 #define TARGET_VECTOR_MODE_SUPPORTED_P arc_vector_mode_supported_p
 
