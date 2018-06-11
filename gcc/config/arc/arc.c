@@ -8132,7 +8132,6 @@ compact_sda_memory_operand (rtx op, machine_mode mode, bool short_p)
 {
   rtx addr;
   int size;
-  tree decl = NULL_TREE;
   int align = 0;
   int mask = 0;
 
