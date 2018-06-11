@@ -4212,7 +4212,7 @@ arc_print_operand (FILE *file, rtx x, int code)
 		  int mask = 0;
 		  switch (GET_MODE (x))
 		    {
-		    case HImode:
+		    case E_HImode:
 		      mask = 1;
 		      break;
 		    default:
