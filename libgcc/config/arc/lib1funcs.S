@@ -232,6 +232,35 @@ SYM(__umulsi3_highpart):
 #endif
 #endif /* L_umulsidi3 */
 
+#ifdef L_muldi3
+	.section .text
+	.align 4
+	.global SYM(__muldi3)
+SYM(__muldi3):
+        mov_s r4,r3     ;4
+        push_s blink
+        mov_s r5,r2     ;4
+        mov_s r9,r0     ;4
+        mov_s r8,r1     ;4
+        bl.d @__umulsidi3
+        mov_s r1,r2     ;4
+        mov_s r6,r0     ;4
+        mov_s r7,r1     ;4
+        mov_s r0,r9     ;4
+        bl.d @__mulsi3
+        mov_s r1,r4     ;4
+        mov_s r4,r0     ;4
+        mov_s r1,r8     ;4
+        bl.d @__mulsi3
+        mov_s r0,r5     ;4
+        add_s r0,r0,r4 ;2
+        add r1,r0,r7
+        pop_s blink
+        j_s.d [blink]
+        mov_s r0,r6     ;4
+ENDFUNC(__muldi3)
+#endif
+
 #ifdef  L_umulsi3_highpart
 #include "ieee-754/arc-ieee-754.h"
 /* For use without a barrel shifter, and for ARC700 / ARC_MUL64, the

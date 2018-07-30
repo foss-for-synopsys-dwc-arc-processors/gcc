@@ -2568,7 +2568,7 @@ archs4x, archs4xd, archs4xd_slow"
     }
   else
   {
-   FAIL;
+   gcc_unreachable ();
     }
 })
 
