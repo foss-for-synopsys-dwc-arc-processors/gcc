@@ -2,7 +2,7 @@
 /* { dg-require-effective-target fpic } */
 /* { dg-options "-O2 -fpic -ftls-model=local-dynamic" } */
 /* { dg-require-effective-target tls } */
-/* { dg-skip-if "" { arc-*-elf* } } */
+/* { dg-skip-if "" { arc*-*-elf* } } */
 
 /* Check if tls local dynamic is correctly generated.  */
 
