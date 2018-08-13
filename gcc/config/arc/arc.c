@@ -7128,8 +7128,6 @@ arc_invalid_within_doloop (const_rtx insn)
   return NULL;
 }
 
-#if 1
-
 static rtx
 arc_active_insn (rtx insn)
 {
@@ -7147,6 +7145,7 @@ static void
 check_store_cacheline_hazard (void)
 {
   rtx insn, succ0, insn1, insn2;
+  bool found = false;
 
   for (insn = get_insns (); insn; insn = arc_active_insn (insn))
     {
@@ -7162,101 +7161,45 @@ check_store_cacheline_hazard (void)
 	  || (get_attr_type (succ0) != TYPE_STORE))
 	continue;
 
-      /* Found two consecutive stores.  */
+      /* Found at least two consecutive stores.  Goto the end of the
+	 store sequence.  */
       insn2 = arc_active_insn (succ0);
-
-      /* Any 16b/32b insn which can appear between the store and the
-	 loads then the sequence may be vulnerable.  */
-      if (insn2 && !(single_set (insn2)
-		    && ((get_attr_type (insn2) == TYPE_LOAD)
-			|| (get_attr_type (insn2) == TYPE_STORE)))
-	  && !JUMP_P (insn2))
-	insn2 = arc_active_insn (insn2);
-      if (!insn2)
-	return;
-
-      /* Check if we have a given sequence of loads.  */
-      int loads = arc_store_hazard;
-      for (insn1 = insn2; insn1 && loads; insn1 = arc_active_insn (insn1))
-	if (single_set (insn1) && get_attr_type (insn1) == TYPE_LOAD)
-	  --loads;
-	else
+      for (insn1 = insn2; insn1; insn1 = arc_active_insn (insn1))
+	if (single_set (insn1) && get_attr_type (insn1) != TYPE_STORE)
 	  break;
 
-      if (loads == 0)
+      /* Now, check the next two instructions for the following cases:
+         1. next instruction is a LD => insert 2 nops between store
+	    sequence and load.
+	 2. next-next instruction is a LD => inset 1 nop after the store
+	    sequence.  */
+      if (insn1 && single_set (insn1)
+	  &&(get_attr_type (insn1) == TYPE_LOAD))
 	{
-	  warning (0, "Potential lockup sequence found, patching");
-	  emit_insn_after (gen_nopv (), insn2);
-	  insn = insn1;
-	  continue;
-	}
-
-      /* Check for branches with delay slot and a load in delay
-	 slot.  */
-      succ0 = arc_active_insn (insn2);
-
-      /* We do not have delay slots yet.  */
-      if (!single_set (insn2) || (get_attr_type (insn2) != TYPE_LOAD)
-	  || !succ0 || !JUMP_P (succ0))
-	continue;
-
-      rtx label = JUMP_LABEL (succ0);
-      if (!label
-	  || (GET_CODE (label) == SIMPLE_RETURN)
-	  || (GET_CODE (PATTERN (succ0)) == SIMPLE_RETURN))
-	continue;
-
-      /* Go to label and dig for the load sequence.  */
-      loads = arc_store_hazard - 1;
-      gcc_assert (arc_store_hazard > 0);
-      for (insn1 = arc_active_insn (label);
-	   insn1 && loads;
-	   insn1 = arc_active_insn (insn1))
-	if (single_set (insn1) && get_attr_type (insn1) == TYPE_LOAD)
-	  --loads;
-	else
-	  break;
-
-      if (loads == 0)
-	{
-	  warning (0, "Potential lockup sequence found, patching");
-	  emit_insn_after (gen_nopv (), label);
-	}
-    }
-}
-
-#else
-
-/* Conservative approach: Insert a NOP whenever we see a sequence of
-   n-1 loads.  */
-
-static void
-check_store_cacheline_hazard (void)
-{
-  rtx insn1, insn = get_insns ();
-  while (insn)
-    {
-      int loads = arc_store_hazard - 1;
-      gcc_assert (arc_store_hazard > 0);
-      for (insn1 = insn; insn1 && loads; insn1 = next_active_insn (insn1))
-	if (single_set (insn1) && get_attr_type (insn1) == TYPE_LOAD)
-	  --loads;
-	else
-	  break;
-
-      if (loads == 0)
-	{
-	  warning (0, "Potential lockup sequence found, patching");
-	  emit_insn_after (gen_nopv (), insn);
-	  insn = insn1;
+	  found = true;
+	  emit_insn_before (gen_nopv (), insn1);
+	  emit_insn_before (gen_nopv (), insn1);
 	}
       else
-	insn = next_active_insn (insn);
+	{
+	  insn1 = arc_active_insn (insn1);
+	  if (insn1 && single_set (insn1)
+	      && (get_attr_type (insn1) == TYPE_LOAD))
+	    {
+	      found = true;
+	      emit_insn_before (gen_nopv (), insn1);
+	    }
+	}
+
+      if (found)
+	{
+	  warning (0, "Potential lockup sequence found, patching");
+	  insn = insn1;
+	  found = false;
+	  continue;
+	}
     }
 }
-
-#endif
-
 
 /* The same functionality as arc_hazard. It is called in machine reorg
    before any other optimization. Hence, the NOP size is taken into
@@ -7279,8 +7222,7 @@ workaround_arc_anomaly (void)
   if (!TARGET_ARC700)
     return;
 
-  if (arc_store_hazard)
-    check_store_cacheline_hazard ();
+  check_store_cacheline_hazard ();
 
   for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
     {
