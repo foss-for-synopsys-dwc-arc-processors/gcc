@@ -1226,6 +1226,10 @@ arc_override_options (void)
   /* Predictive commoning is faulty see bug 71083.  */
   flag_predictive_commoning = 0;
 
+  /* A7 has an issue with delay slots.  */
+  if (TARGET_ARC700)
+    flag_delayed_branch = 0;
+
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
 }
