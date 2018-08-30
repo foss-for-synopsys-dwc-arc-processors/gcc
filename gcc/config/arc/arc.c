@@ -7541,10 +7541,10 @@ arc_invalid_within_doloop (const rtx_insn *insn)
 static rtx_insn *
 arc_active_insn (rtx_insn *insn)
 {
-  rtx_insn *nxt = next_real_insn (insn);
+  rtx_insn *nxt = next_active_insn (insn);
 
   if (nxt && GET_CODE (PATTERN (nxt)) == ASM_INPUT)
-    nxt = next_real_insn (nxt);
+    nxt = next_active_insn (nxt);
   return nxt;
 }
 
