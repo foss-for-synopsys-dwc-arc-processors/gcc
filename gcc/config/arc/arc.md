@@ -3057,30 +3057,17 @@ core_3, archs4x, archs4xd, archs4xd_slow"
    (set (match_dup 3) (match_dup 4))])
 
 (define_insn "*add_n"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,Rcw,W,W,w,w")
-	(plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "Rcqq,c,c,c,c,c")
-	                    (match_operand:SI 2 "_1_2_3_operand" ""))
-		 (match_operand:SI 3 "nonmemory_operand" "0,0,c,?Cal,?c,??Cal")))]
-  ""
-  "add%c2%? %0,%3,%1%&"
-  [(set_attr "type" "shift")
-   (set_attr "length" "*,4,4,8,4,8")
-   (set_attr "predicable" "yes,yes,no,no,no,no")
-   (set_attr "cond" "canuse,canuse,nocond,nocond,nocond,nocond")
-   (set_attr "iscompact" "maybe,false,false,false,false,false")])
-
-(define_insn "*add_n"
-  [(set (match_operand:SI 0 "dest_reg_operand" "=Rcqq,Rcw,W,W,w,w")
-	(plus:SI (mult:SI (match_operand:SI 1 "register_operand" "Rcqq,c,c,c,c,c")
+  [(set (match_operand:SI 0 "dest_reg_operand" "=q,r,r")
+	(plus:SI (mult:SI (match_operand:SI 1 "register_operand" "q,r,r")
 			  (match_operand:SI 2 "_2_4_8_operand" ""))
-		 (match_operand:SI 3 "nonmemory_operand" "0,0,c,?Cal,?c,??Cal")))]
+		 (match_operand:SI 3 "nonmemory_operand" "0,r,Csz")))]
   ""
-  "add%z2%? %0,%3,%1%&"
+  "add%z2%?\\t%0,%3,%1%&"
   [(set_attr "type" "shift")
-   (set_attr "length" "*,4,4,8,4,8")
-   (set_attr "predicable" "yes,yes,no,no,no,no")
-   (set_attr "cond" "canuse,canuse,nocond,nocond,nocond,nocond")
-   (set_attr "iscompact" "maybe,false,false,false,false,false")])
+   (set_attr "length" "*,4,8")
+   (set_attr "predicable" "yes,no,no")
+   (set_attr "cond" "canuse,nocond,nocond")
+   (set_attr "iscompact" "maybe,false,false")])
 
 ;; N.B. sub[123] has the operands of the MINUS in the opposite order from
 ;; what synth_mult likes.
@@ -3497,7 +3484,7 @@ core_3, archs4x, archs4xd, archs4xd_slow"
 ; provide one alternatice for this, without condexec support.
 (define_insn "*ashlsi3_insn"
   [(set (match_operand:SI 0 "dest_reg_operand"           "=Rcq,Rcqq,Rcqq,Rcw, w,   w")
-	(ashift:SI (match_operand:SI 1 "nonmemory_operand" "!0,Rcqq,   0,  0, c,cCal")
+	(ashift:SI (match_operand:SI 1 "nonmemory_operand" "!0,Rcqq,   0,  0, c,cCsz")
 		   (match_operand:SI 2 "nonmemory_operand"  "K,  K,RcqqM, cL,cL,cCal")))]
   "TARGET_BARREL_SHIFTER
    && (register_operand (operands[1], SImode)
@@ -3510,7 +3497,7 @@ core_3, archs4x, archs4xd, archs4xd_slow"
 
 (define_insn "*ashrsi3_insn"
   [(set (match_operand:SI 0 "dest_reg_operand"             "=Rcq,Rcqq,Rcqq,Rcw, w,   w")
-	(ashiftrt:SI (match_operand:SI 1 "nonmemory_operand" "!0,Rcqq,   0,  0, c,cCal")
+	(ashiftrt:SI (match_operand:SI 1 "nonmemory_operand" "!0,Rcqq,   0,  0, c,cCsz")
 		     (match_operand:SI 2 "nonmemory_operand"  "K,  K,RcqqM, cL,cL,cCal")))]
   "TARGET_BARREL_SHIFTER
    && (register_operand (operands[1], SImode)
@@ -3537,7 +3524,7 @@ core_3, archs4x, archs4xd, archs4xd_slow"
 
 (define_insn "rotrsi3"
   [(set (match_operand:SI 0 "dest_reg_operand"             "=Rcw, w,   w")
-	(rotatert:SI (match_operand:SI 1 "register_operand"  " 0,cL,cCal")
+	(rotatert:SI (match_operand:SI 1 "register_operand"  " 0,cL,cCsz")
 		     (match_operand:SI 2 "nonmemory_operand" "cL,cL,cCal")))]
   "TARGET_BARREL_SHIFTER"
   "ror%? %0,%1,%2"
@@ -6330,7 +6317,7 @@ core_3, archs4x, archs4xd, archs4xd_slow"
   [(set (match_operand:SI 0 "register_operand" "=q,r,r")
 	(plus:SI (ashift:SI (match_operand:SI 1 "register_operand" "q,r,r")
 			    (match_operand:SI 2 "_1_2_3_operand" ""))
-		 (match_operand:SI 3 "nonmemory_operand"  "0,r,Cal")))]
+		 (match_operand:SI 3 "nonmemory_operand"  "0,r,Csz")))]
   ""
   "add%2%?\\t%0,%3,%1"
   [(set_attr "length" "*,4,8")
