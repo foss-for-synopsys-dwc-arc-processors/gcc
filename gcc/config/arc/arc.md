@@ -4272,16 +4272,16 @@ core_3, archs4x, archs4xd, archs4xd_slow"
 (define_peephole2
   [(set (match_operand:SI 0 "dest_reg_operand" "")
 	(ashift:SI (match_operand:SI 1 "register_operand" "")
-		   (match_operand:SI 2 "const_int_operand" "")))
+		   (match_operand:SI 2 "_1_2_3_operand" "")))
   (set (match_operand:SI 3 "dest_reg_operand" "")
        (plus:SI (match_operand:SI 4 "nonmemory_operand" "")
 		(match_operand:SI 5 "nonmemory_operand" "")))]
-  "(INTVAL (operands[2]) == 1
-    || INTVAL (operands[2]) == 2
-    || INTVAL (operands[2]) == 3)
-   && (true_regnum (operands[4]) == true_regnum (operands[0])
+  "(true_regnum (operands[4]) == true_regnum (operands[0])
        || true_regnum (operands[5]) == true_regnum (operands[0]))
-   && (peep2_reg_dead_p (2, operands[0]) || (true_regnum (operands[3]) == true_regnum (operands[0])))"
+   && (peep2_reg_dead_p (2, operands[0])
+       || (true_regnum (operands[3]) == true_regnum (operands[0])))
+   && !(optimize_size && satisfies_constraint_I (operands[4]))
+   && !(optimize_size && satisfies_constraint_I (operands[5]))"
  ;; the preparation statements take care to put proper operand in operands[4]
  ;; operands[4] will always contain the correct operand. This is added to satisfy commutativity
   [(set (match_dup 3)
