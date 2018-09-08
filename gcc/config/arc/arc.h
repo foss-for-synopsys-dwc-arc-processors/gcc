@@ -473,14 +473,11 @@ enum reg_class
    R0R1_CD_REGS,		/* 'Rsd' */
    R0R3_CD_REGS,		/* 'Rcd' */
    ARCOMPACT16_REGS,		/* 'q' */
-   GP_REG,			/* 'Rgp' */
-   SP_REGS,			/* 'b' */
    LPCOUNT_REG, 		/* 'l' */
    DOUBLE_REGS,			/* 'D' */
    SIBCALL_REGS,		/* "Rsc" */
    AC16_H_REGS,			/* 'h' */
    GENERAL_REGS,		/* 'r' */
-   AC16_BASE_REGS,  		/* 'e' */
    SIMD_VR_REGS,		/* 'v' */
    SIMD_DMA_CONFIG_REGS,	/* 'd' */
    MPY_WRITABLE_CORE_REGS,	/* 'W' */
@@ -501,14 +498,11 @@ enum reg_class
   "R0R1_CD_REGS",         \
   "R0R3_CD_REGS",         \
   "ARCOMPACT16_REGS",  	  \
-  "GP_REG",            	  \
-  "SP_REGS",		  \
   "LPCOUNT_REG",	  \
   "DOUBLE_REGS",          \
   "SIBCALL_REGS",	  \
   "AC16_H_REGS",          \
   "GENERAL_REGS",      	  \
-  "AC16_BASE_REGS",       \
   "SIMD_VR_REGS",         \
   "SIMD_DMA_CONFIG_REGS", \
   "MPY_WRITABLE_CORE_REGS",   \
@@ -529,14 +523,11 @@ enum reg_class
   {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
   {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
   {0x0000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'q', r0-r3, r12-r15 */		\
-  {0x04000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rgp', Global Pointer, r26 */	\
-  {0x10000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'b', Stack Pointer, r28 */	\
   {0x00000000, 0x10000000, 0x00000000, 0x00000000, 0x00000000},      /* 'l', LPCOUNT Register, r60 */	\
   {0x00000000, 0x00000f00, 0x00000000, 0x00000000, 0x00000000},      /* 'D', D1, D2 Registers */	\
   {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* "Rsc", r0-r12 */ \
   {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h', r0-r28, r31 */ \
   {0xffffffff, 0x8fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r59, pcl */	\
-  {0x1000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'e', r0-r3, r12-r15, sp */	\
   {0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0x00000000},      /* 'v', VR00-VR63 Registers */	\
   {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000ffff},      /* 'd', DI0-7,DO0-7 Registers */	\
   {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'W',  r0-r31 */ \
@@ -584,7 +575,7 @@ extern enum reg_class arc_regno_reg_class[];
 /* The class value for valid base registers. A base register is one used in
    an address which is the register value plus a displacement.  */
 
-#define BASE_REG_CLASS (TARGET_MIXED_CODE ? AC16_BASE_REGS : GENERAL_REGS)
+#define BASE_REG_CLASS GENERAL_REGS
 
 /* These assume that REGNO is a hard or pseudo reg number.
    They give nonzero only if REGNO is a hard reg of the suitable class

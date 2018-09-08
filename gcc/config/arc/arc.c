@@ -1932,8 +1932,6 @@ arc_conditional_register_usage (void)
      has not been activated.  */
   if (!TARGET_Q_CLASS && !TARGET_RRQ_CLASS)
     CLEAR_HARD_REG_SET(reg_class_contents [ARCOMPACT16_REGS]);
-  if (!TARGET_Q_CLASS)
-    CLEAR_HARD_REG_SET(reg_class_contents [AC16_BASE_REGS]);
 
   gcc_assert (FIRST_PSEUDO_REGISTER >= 144);
 

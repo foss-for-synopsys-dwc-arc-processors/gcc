@@ -6303,8 +6303,8 @@ core_3, archs4x, archs4xd, archs4xd_slow"
 
 (define_insn "stack_tie"
   [(set (mem:BLK (scratch))
-	(unspec:BLK [(match_operand:SI 0 "register_operand" "rb")
-		     (match_operand:SI 1 "register_operand" "rb")]
+	(unspec:BLK [(match_operand:SI 0 "register_operand" "r")
+		     (match_operand:SI 1 "register_operand" "r")]
 		    UNSPEC_ARC_STKTIE))]
   ""
   ""
