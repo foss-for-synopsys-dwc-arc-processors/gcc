@@ -55,14 +55,6 @@
 (define_register_constraint "x" "R0_REGS"
   "@code{R0} register.")
 
-(define_register_constraint "Rgp" "GP_REG"
-  "@internal
-   Global Pointer register @code{r26}")
-
-(define_register_constraint "b" "SP_REGS"
-  "@internal
-   Stack Pointer register @code{r28}")
-
 (define_register_constraint "q" "TARGET_Q_CLASS ? ARCOMPACT16_REGS : NO_REGS"
   "Registers usable in ARCompact 16-bit instructions: @code{r0}-@code{r3},
    @code{r12}-@code{r15}")
