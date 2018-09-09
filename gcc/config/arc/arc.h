@@ -473,7 +473,6 @@ enum reg_class
    R0R1_CD_REGS,		/* 'Rsd' */
    R0R3_CD_REGS,		/* 'Rcd' */
    ARCOMPACT16_REGS,		/* 'q' */
-   LPCOUNT_REG, 		/* 'l' */
    DOUBLE_REGS,			/* 'D' */
    SIBCALL_REGS,		/* "Rsc" */
    AC16_H_REGS,			/* 'h' */
@@ -498,7 +497,6 @@ enum reg_class
   "R0R1_CD_REGS",         \
   "R0R3_CD_REGS",         \
   "ARCOMPACT16_REGS",  	  \
-  "LPCOUNT_REG",	  \
   "DOUBLE_REGS",          \
   "SIBCALL_REGS",	  \
   "AC16_H_REGS",          \
@@ -523,7 +521,6 @@ enum reg_class
   {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
   {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
   {0x0000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'q', r0-r3, r12-r15 */		\
-  {0x00000000, 0x10000000, 0x00000000, 0x00000000, 0x00000000},      /* 'l', LPCOUNT Register, r60 */	\
   {0x00000000, 0x00000f00, 0x00000000, 0x00000000, 0x00000000},      /* 'D', D1, D2 Registers */	\
   {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* "Rsc", r0-r12 */ \
   {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h', r0-r28, r31 */ \
