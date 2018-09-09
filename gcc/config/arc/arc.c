@@ -728,11 +728,6 @@ arc_secondary_reload (bool in_p,
   if (cl == DOUBLE_REGS)
     return GENERAL_REGS;
 
-  /* The loop counter register can be stored, but not loaded directly.  */
-  if ((cl == LPCOUNT_REG || cl == WRITABLE_CORE_REGS)
-      && in_p && MEM_P (x))
-    return GENERAL_REGS;
-
  /* If we have a subreg (reg), where reg is a pseudo (that will end in
     a memory location), then we may need a scratch register to handle
     the fp/sp+largeoffset address.  */
@@ -1881,19 +1876,7 @@ arc_conditional_register_usage (void)
       for (regno = 32; regno <= 60; regno++)
 	CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], regno);
 
-      /* If they have used -ffixed-lp_count, make sure it takes
-	 effect.  */
-      if (fixed_regs[LP_COUNT])
-	{
-	  CLEAR_HARD_REG_BIT (reg_class_contents[LPCOUNT_REG], LP_COUNT);
-	  CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], LP_COUNT);
-	  CLEAR_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], LP_COUNT);
-
-	  /* Instead of taking out SF_MODE like below, forbid it outright.  */
-	  arc_hard_regno_modes[60] = 0;
-	}
-      else
-	arc_hard_regno_modes[60] = 1 << (int) S_MODE;
+      arc_hard_regno_modes[60] = 1 << (int) S_MODE;
     }
 
   /* ARCHS has 64-bit data-path which makes use of the even-odd paired
@@ -1936,7 +1919,6 @@ arc_conditional_register_usage (void)
   gcc_assert (FIRST_PSEUDO_REGISTER >= 144);
 
   /* Handle Special Registers.  */
-  arc_regno_reg_class[60] = LPCOUNT_REG;
   arc_regno_reg_class[61] = NO_REGS;      /* CC_REG: must be NO_REGS.  */
   arc_regno_reg_class[62] = GENERAL_REGS;
 
@@ -8746,10 +8728,6 @@ arc_register_move_cost (machine_mode,
     {
       if (to_class == MPY_WRITABLE_CORE_REGS)
 	return 3;
-     /* Instructions modifying LP_COUNT need 4 additional cycles before
-	the register will actually contain the value.  */
-      else if (to_class == LPCOUNT_REG)
-	return 6;
       else if (to_class == WRITABLE_CORE_REGS)
 	return 6;
     }
