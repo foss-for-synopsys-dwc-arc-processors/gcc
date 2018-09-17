@@ -1606,8 +1606,8 @@ enum
 #define TARGET_FPX_QUARK    (TARGET_EM && TARGET_SPFP		\
 			     && (arc_fpu_build == FPX_QK))
 
-/* DBNZ support is available for ARCv2 core3 cpus.  */
-#define TARGET_DBNZ (TARGET_V2 && (arc_tune == ARC_TUNE_CORE_3))
+/* DBNZ support is available for ARCv2 core3 and newer cpus.  */
+#define TARGET_DBNZ (TARGET_V2 && (arc_tune >= ARC_TUNE_CORE_3))
 
 #ifndef TARGET_LRA
 #define TARGET_LRA !TARGET_NO_LRA
