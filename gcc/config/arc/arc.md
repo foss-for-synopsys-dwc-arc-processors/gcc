@@ -2079,40 +2079,21 @@ core_3, archs4x, archs4xd, archs4xd_slow"
 ;; SI <- SI * SI
 
 (define_expand "mulsi3"
- [(set (match_operand:SI 0 "nonimmediate_operand"            "")
+ [(set (match_operand:SI 0 "register_operand"            "")
 	(mult:SI (match_operand:SI 1 "register_operand"  "")
 		 (match_operand:SI 2 "nonmemory_operand" "")))]
   "TARGET_ANY_MPY"
 {
-  if (TARGET_MPY)
+  if (TARGET_MUL64_SET)
     {
-      if (!register_operand (operands[0], SImode))
-	{
-	  rtx result = gen_reg_rtx (SImode);
-
-	  emit_insn (gen_mulsi3 (result, operands[1], operands[2]));
-	  emit_move_insn (operands[0], result);
-	  DONE;
-	}
-    }
-  else if (TARGET_MUL64_SET)
-    {
-     rtx tmp = gen_reg_rtx (SImode);
-     emit_insn (gen_mulsi64 (tmp, operands[1], operands[2]));
-     emit_move_insn (operands[0], tmp);
+     emit_insn (gen_mulsi64 (operands[0], operands[1], operands[2]));
      DONE;
     }
   else if (TARGET_MULMAC_32BY16_SET)
     {
-     rtx tmp = gen_reg_rtx (SImode);
-     emit_insn (gen_mulsi32x16 (tmp, operands[1], operands[2]));
-     emit_move_insn (operands[0], tmp);
+     emit_insn (gen_mulsi32x16 (operands[0], operands[1], operands[2]));
      DONE;
     }
-  else
-  {
-   FAIL;
-   }
 })
 
 (define_insn_and_split "mulsi32x16"
@@ -2649,7 +2630,7 @@ core_3, archs4x, archs4xd, archs4xd_slow"
 		 (zero_extend:DI (match_operand:SI 2 "extend_operand" "cL"))))]
   "TARGET_MPY && !TARGET_PLUS_MACD"
   "#"
-  "reload_completed"
+  "TARGET_MPY && !TARGET_PLUS_MACD && reload_completed"
   [(const_int 0)]
 {
   int hi = !TARGET_BIG_ENDIAN;
