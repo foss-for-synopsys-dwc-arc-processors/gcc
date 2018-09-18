@@ -1649,8 +1649,8 @@ enum reg_class arc_regno_reg_class[FIRST_PSEUDO_REGISTER];
 enum reg_class
 arc_preferred_reload_class (rtx, enum reg_class cl)
 {
-  if ((cl) == CHEAP_CORE_REGS  || (cl) == WRITABLE_CORE_REGS)
-    return GENERAL_REGS;
+  if (cl == GENERAL_REGS)
+    return ARCOMPACT16_REGS;
   return cl;
 }
 
@@ -1755,11 +1755,8 @@ arc_conditional_register_usage (void)
 	  call_used_regs[30] = 1;
 	  fixed_regs[30] = 0;
 
-	  arc_regno_reg_class[30] = WRITABLE_CORE_REGS;
-	  SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], 30);
-	  SET_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], 30);
+	  arc_regno_reg_class[30] = GENERAL_REGS;
 	  SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], 30);
-	  SET_HARD_REG_BIT (reg_class_contents[MPY_WRITABLE_CORE_REGS], 30);
 	}
    }
 
@@ -1867,11 +1864,11 @@ arc_conditional_register_usage (void)
       CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], regno);
   for (regno = 32; regno < 60; regno++)
     if (!fixed_regs[regno])
-      SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], regno);
+      SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], regno);
   if (!TARGET_ARC600_FAMILY)
     {
       for (regno = 32; regno <= 60; regno++)
-	CLEAR_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], regno);
+	CLEAR_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], regno);
 
       arc_hard_regno_modes[60] = 1 << (int) S_MODE;
     }
@@ -1897,13 +1894,7 @@ arc_conditional_register_usage (void)
 	    arc_regno_reg_class[i] = GENERAL_REGS;
 	}
       else if (i < 60)
-	arc_regno_reg_class[i]
-	  = (fixed_regs[i]
-	     ? (TEST_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], i)
-		? CHEAP_CORE_REGS : ALL_CORE_REGS)
-	     : (((!TARGET_ARC600_FAMILY)
-		 && TEST_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], i))
-		? CHEAP_CORE_REGS : WRITABLE_CORE_REGS));
+	arc_regno_reg_class[i] = GENERAL_REGS;
       else
 	arc_regno_reg_class[i] = NO_REGS;
     }
@@ -1926,24 +1917,21 @@ arc_conditional_register_usage (void)
 	  arc_regno_reg_class[i] = DOUBLE_REGS;
 
 	  /* Unless they want us to do 'mov d1, 0x00000000' make sure
-	     no attempt is made to use such a register as a destination
-	     operand in *movdf_insn.  */
+	     no attempt is made to use such a register as a
+	     destination operand in *movdf_insn.  */
 	  if (!TARGET_ARGONAUT_SET)
 	    {
-	    /* Make sure no 'c', 'w', 'W', or 'Rac' constraint is
-	       interpreted to mean they can use D1 or D2 in their insn.  */
-	    CLEAR_HARD_REG_BIT(reg_class_contents[GENERAL_REGS          ], i);
-	    CLEAR_HARD_REG_BIT(reg_class_contents[CHEAP_CORE_REGS       ], i);
-	    CLEAR_HARD_REG_BIT(reg_class_contents[ALL_CORE_REGS         ], i);
-	    CLEAR_HARD_REG_BIT(reg_class_contents[WRITABLE_CORE_REGS    ], i);
-	    CLEAR_HARD_REG_BIT(reg_class_contents[MPY_WRITABLE_CORE_REGS], i);
+	      /* Make sure no 'c', 'w', 'W', or 'Rac' constraint is
+		 interpreted to mean they can use D1 or D2 in their
+		 insn.  */
+	      CLEAR_HARD_REG_BIT(reg_class_contents[GENERAL_REGS          ], i);
 	    }
 	}
     }
   else
     {
-      /* Disable all DOUBLE_REGISTER settings,
-	 if not generating DPFP code.  */
+      /* Disable all DOUBLE_REGISTER settings, if not generating DPFP
+	 code.  */
       arc_regno_reg_class[40] = ALL_REGS;
       arc_regno_reg_class[41] = ALL_REGS;
       arc_regno_reg_class[42] = ALL_REGS;
@@ -1986,16 +1974,10 @@ arc_conditional_register_usage (void)
        && (TARGET_FP_DP_FUSED || TARGET_FP_SP_FUSED))
       || TARGET_PLUS_DMPY)
   {
-    arc_regno_reg_class[ACCL_REGNO] = WRITABLE_CORE_REGS;
-    arc_regno_reg_class[ACCH_REGNO] = WRITABLE_CORE_REGS;
-    SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], ACCL_REGNO);
-    SET_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS], ACCH_REGNO);
-    SET_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], ACCL_REGNO);
-    SET_HARD_REG_BIT (reg_class_contents[CHEAP_CORE_REGS], ACCH_REGNO);
+    arc_regno_reg_class[ACCL_REGNO] = GENERAL_REGS;
+    arc_regno_reg_class[ACCH_REGNO] = GENERAL_REGS;
     SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], ACCL_REGNO);
     SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], ACCH_REGNO);
-    SET_HARD_REG_BIT (reg_class_contents[MPY_WRITABLE_CORE_REGS], ACCL_REGNO);
-    SET_HARD_REG_BIT (reg_class_contents[MPY_WRITABLE_CORE_REGS], ACCH_REGNO);
 
     /* Allow the compiler to freely use them.  */
     if (!TEST_HARD_REG_BIT (overrideregs, ACCL_REGNO))
@@ -8719,16 +8701,6 @@ int
 arc_register_move_cost (machine_mode,
 			enum reg_class from_class, enum reg_class to_class)
 {
-  /* The ARC600 has no bypass for extension registers, hence a nop might be
-     needed to be inserted after a write so that reads are safe.  */
-  if (TARGET_ARC600)
-    {
-      if (to_class == MPY_WRITABLE_CORE_REGS)
-	return 3;
-      else if (to_class == WRITABLE_CORE_REGS)
-	return 6;
-    }
-
   /* Force an attempt to 'mov Dy,Dx' to spill.  */
   if ((TARGET_ARC700 || TARGET_EM) && TARGET_DPFP
       && from_class == DOUBLE_REGS && to_class == DOUBLE_REGS)

@@ -453,7 +453,7 @@
        (match_test
 	"TARGET_Rcw
 	 && REGNO (op) < FIRST_PSEUDO_REGISTER
-	 && TEST_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS],
+	 && TEST_HARD_REG_BIT (reg_class_contents[GENERAL_REGS],
 			       REGNO (op))")))
 
 (define_constraint "Rcr"

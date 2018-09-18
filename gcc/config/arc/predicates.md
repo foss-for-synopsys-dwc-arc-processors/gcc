@@ -20,33 +20,12 @@
 (define_predicate "dest_reg_operand"
   (match_code "reg,subreg")
 {
-  rtx op0 = op;
-
-  if (GET_CODE (op0) == SUBREG)
-    op0 = SUBREG_REG (op0);
-  if (REG_P (op0) && REGNO (op0) < FIRST_PSEUDO_REGISTER
-      && TEST_HARD_REG_BIT (reg_class_contents[ALL_CORE_REGS],
-			    REGNO (op0))
-      && !TEST_HARD_REG_BIT (reg_class_contents[WRITABLE_CORE_REGS],
-			    REGNO (op0)))
-    return 0;
   return register_operand (op, mode);
 })
 
 (define_predicate "mpy_dest_reg_operand"
   (match_code "reg,subreg")
 {
-  rtx op0 = op;
-
-  if (GET_CODE (op0) == SUBREG)
-    op0 = SUBREG_REG (op0);
-  if (REG_P (op0) && REGNO (op0) < FIRST_PSEUDO_REGISTER
-      && TEST_HARD_REG_BIT (reg_class_contents[ALL_CORE_REGS],
-			    REGNO (op0))
-      /* Make sure the destination register is not LP_COUNT.  */
-      && !TEST_HARD_REG_BIT (reg_class_contents[MPY_WRITABLE_CORE_REGS],
-			    REGNO (op0)))
-    return 0;
   return register_operand (op, mode);
 })
 
