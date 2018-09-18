@@ -24,27 +24,23 @@
 ; result registers of ARC600.
 ; First, define a class for core registers that can be read cheaply.  This
 ; is most or all core registers for ARC600, but only r0-r31 for ARC700
-(define_register_constraint "c"
-  "TARGET_CLEAN_REGS ? GENERAL_REGS : CHEAP_CORE_REGS"
-  "core register @code{r0}-@code{r31}, @code{ap},@code{pcl}")
+(define_register_constraint "c" "GENERAL_REGS"
+  "Legacy, core register @code{r0}-@code{r31}, @code{ap},@code{pcl}")
 
 ; All core regs - e.g. for when we must have a way to reload a register.
-(define_register_constraint "Rac"
-  "TARGET_CLEAN_REGS ? GENERAL_REGS : ALL_CORE_REGS"
-  "core register @code{r0}-@code{r60}, @code{ap},@code{pcl}")
+(define_register_constraint "Rac" "GENERAL_REGS"
+  "Legacy, core register @code{r0}-@code{r60}, @code{ap},@code{pcl}")
 
 ; Some core registers (.e.g lp_count) aren't general registers because they
 ; can't be used as the destination of a multi-cycle operation like
 ; load and/or multiply, yet they are still writable in the sense that
 ; register-register moves and single-cycle arithmetic (e.g "add", "and",
 ; but not "mpy") can write to them.
-(define_register_constraint "w"
-  "TARGET_CLEAN_REGS ? GENERAL_REGS : WRITABLE_CORE_REGS"
-  "writable core register: @code{r0}-@code{r31}, @code{r60}, nonfixed core register")
+(define_register_constraint "w" "GENERAL_REGS"
+  "Legacy, writable core register: @code{r0}-@code{r31}, @code{r60}, nonfixed core register")
 
-(define_register_constraint "W"
-  "TARGET_CLEAN_REGS ? GENERAL_REGS : MPY_WRITABLE_CORE_REGS"
-  "writable core register except @code{LP_COUNT} (@code{r60}): @code{r0}-@code{r31}, nonfixed core register")
+(define_register_constraint "W" "GENERAL_REGS"
+  "Legacy, writable core register except @code{LP_COUNT} (@code{r60}): @code{r0}-@code{r31}, nonfixed core register")
 
 (define_constraint "l"
   "@internal
