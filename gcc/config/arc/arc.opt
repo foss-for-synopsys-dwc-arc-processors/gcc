@@ -537,10 +537,6 @@ mrf16
 Target Report Mask(RF16)
 Enable 16-entry register file.
 
-mnew-regs
-Target Report Mask(NEW_REGS)
-Force using new register classes (lra compatible, but not using lra).
-
 mbranch-index
 Target Report Var(TARGET_BRANCH_INDEX) Init(DEFAULT_BRANCH_INDEX)
 Enable use of BI/BIH instructions when available.

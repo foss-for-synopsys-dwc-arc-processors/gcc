@@ -1299,9 +1299,6 @@ arc_override_options (void)
   if (!global_options_set.x_g_switch_value && !TARGET_NO_SDATA_SET)
     g_switch_value = TARGET_LL64 ? 8 : 4;
 
-  if ((target_flags_explicit & MASK_NEW_REGS) == 0)
-    target_flags |= MASK_NEW_REGS;
-
   /* Millicode thunks doesn't work with long calls.  */
   if (TARGET_LONG_CALLS_SET)
     target_flags &= ~MASK_MILLICODE_THUNK_SET;
