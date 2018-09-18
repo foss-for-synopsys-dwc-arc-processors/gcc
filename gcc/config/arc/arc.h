@@ -473,16 +473,12 @@ enum reg_class
    R0R1_CD_REGS,		/* 'Rsd' */
    R0R3_CD_REGS,		/* 'Rcd' */
    ARCOMPACT16_REGS,		/* 'q' */
-   DOUBLE_REGS,			/* 'D' */
    SIBCALL_REGS,		/* "Rsc" */
    AC16_H_REGS,			/* 'h' */
+   DOUBLE_REGS,			/* 'D' */
    GENERAL_REGS,		/* 'r' */
    SIMD_VR_REGS,		/* 'v' */
    SIMD_DMA_CONFIG_REGS,	/* 'd' */
-   MPY_WRITABLE_CORE_REGS,	/* 'W' */
-   WRITABLE_CORE_REGS,		/* 'w' */
-   CHEAP_CORE_REGS,		/* 'c' */
-   ALL_CORE_REGS,		/* 'Rac' */
    ALL_REGS,
    LIM_REG_CLASSES
 };
@@ -497,16 +493,12 @@ enum reg_class
   "R0R1_CD_REGS",         \
   "R0R3_CD_REGS",         \
   "ARCOMPACT16_REGS",  	  \
-  "DOUBLE_REGS",          \
   "SIBCALL_REGS",	  \
   "AC16_H_REGS",          \
+  "DOUBLE_REGS",          \
   "GENERAL_REGS",      	  \
   "SIMD_VR_REGS",         \
   "SIMD_DMA_CONFIG_REGS", \
-  "MPY_WRITABLE_CORE_REGS",   \
-  "WRITABLE_CORE_REGS",   \
-  "CHEAP_CORE_REGS",	  \
-  "ALL_CORE_REGS",	  \
   "ALL_REGS"          	  \
 }
 
@@ -521,20 +513,12 @@ enum reg_class
   {0x00000003, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rsd', r0-r1 */ \
   {0x0000000f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'Rcd', r0-r3 */ \
   {0x0000f00f, 0x00000000, 0x00000000, 0x00000000, 0x00000000},	     /* 'q', r0-r3, r12-r15 */		\
-  {0x00000000, 0x00000f00, 0x00000000, 0x00000000, 0x00000000},      /* 'D', D1, D2 Registers */	\
   {0x1c001fff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* "Rsc", r0-r12 */ \
   {0x9fffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'h', r0-r28, r31 */ \
+  {0x00000000, 0x00000f00, 0x00000000, 0x00000000, 0x00000000},      /* 'D', D1, D2 Registers */	\
   {0xffffffff, 0x8fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'r', r0-r59, pcl */	\
   {0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0x00000000},      /* 'v', VR00-VR63 Registers */	\
   {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000ffff},      /* 'd', DI0-7,DO0-7 Registers */	\
-  {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'W',  r0-r31 */ \
-  /* Include ap / pcl in WRITABLE_CORE_REGS for sake of symmetry.  As these \
-     registers are fixed, it does not affect the literal meaning of the \
-     constraints, but it makes it a superset of GENERAL_REGS, thus \
-     enabling some operations that would otherwise not be possible.  */ \
-  {0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000},      /* 'w', r0-r31 */ \
-  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'c', r0-r60, ap, pcl */ \
-  {0xffffffff, 0x9fffffff, 0x00000000, 0x00000000, 0x00000000},      /* 'Rac', r0-r60, ap, pcl */ \
   {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0003ffff}       /* All Registers */		\
 }
 
