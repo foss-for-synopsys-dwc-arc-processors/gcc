@@ -13040,10 +13040,9 @@ where the value in @var{dest} will be the result returned from the
 built-in.
 @end deftypefn
 
-@deftypefn {Built-in Function} void __builtin_arc_core_write (unsigned int @var{regno}, unsigned int @var{val})
-The first operand is the number of a register to be written, the
-second operand is a compile time constant to write into that
-register.  Generates:
+@deftypefn {Built-in Function} void __builtin_arc_core_write (unsigned int @var{val}, unsigned int @var{regno})
+The first operand is a compile time constant to write into the
+register given by the second operand.  Generates:
 @example
 mov  r@var{regno}, @var{val}
 @end example
