@@ -3997,7 +3997,7 @@ core_3, archs4x, archs4xd, archs4xd_slow"
       rtx reg = gen_reg_rtx (SImode);
       rtx lbl = operands[3];
       operands[3] = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
-      if (flag_pic || !cse_not_expected)
+      if (flag_pic)
 	operands[3] = force_reg (Pmode, operands[3]);
       emit_insn (gen_casesi_load (reg,
 				  operands[3], operands[0], lbl));
@@ -4032,10 +4032,11 @@ core_3, archs4x, archs4xd, archs4xd_slow"
    (set_attr "length" "4")])
 
 (define_insn "casesi_load"
-  [(set (match_operand:SI 0 "register_operand"             "=Rcq,r,r")
-	(unspec:SI [(match_operand:SI 1 "nonmemory_operand" "Rcq,c,Cal")
-		    (match_operand:SI 2 "register_operand"  "Rcq,c,c")
-		    (label_ref (match_operand 3 "" ""))] UNSPEC_ARC_CASESI))]
+  [(set (match_operand:SI 0 "register_operand"             "=q,r,r")
+	(mem:SI (unspec:SI [(match_operand:SI 1 "nonmemory_operand" "q,r,Cal")
+			    (match_operand:SI 2 "register_operand"  "q,r,r")]
+			   UNSPEC_ARC_CASESI)))
+   (use (label_ref (match_operand 3 "" "")))]
   ""
   "*
 {
@@ -4051,15 +4052,15 @@ core_3, archs4x, archs4xd, archs4xd_slow"
   switch (GET_MODE (diff_vec))
     {
     case E_SImode:
-      return \"ld.as %0,[%1,%2]%&\";
+      return \"ld.as\\t%0,[%1,%2]%&\";
     case E_HImode:
       if (ADDR_DIFF_VEC_FLAGS (diff_vec).offset_unsigned)
-	return \"ld%_.as %0,[%1,%2]\";
-      return \"ld%_.x.as %0,[%1,%2]\";
+	return \"ld%_.as\\t%0,[%1,%2]\";
+      return \"ld%_.x.as\\t%0,[%1,%2]\";
     case E_QImode:
       if (ADDR_DIFF_VEC_FLAGS (diff_vec).offset_unsigned)
-	return \"ldb%? %0,[%1,%2]%&\";
-      return \"ldb.x %0,[%1,%2]\";
+	return \"ldb%?\\t%0,[%1,%2]%&\";
+      return \"ldb.x\\t%0,[%1,%2]\";
     default:
       gcc_unreachable ();
     }
