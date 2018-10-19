@@ -319,6 +319,11 @@ if test "$regs" = ""; then
   regs=`grep '^type _pt_regs struct' gen-sysinfo.go || true`
 fi
 if test "$regs" != ""; then
+  # arc*
+  regs=`echo $regs | sed -e 's/scratch struct//'`
+  regs=`echo $regs | sed -e 's/callee struct//'`
+  regs=`echo $regs | sed -e 's/};//g'`
+
   regs=`echo $regs | sed -e 's/type _pt_regs struct//'`
   regs=`echo $regs |
     sed -e 's/type __*user_regs_struct struct //' -e 's/[{}]//g'`

@@ -61,6 +61,11 @@ case $goarch in
 	family=AMD64
 	hugepagesize="1 << 21"
 	;;
+    arc)
+	family=ARC
+	ptrsize=4
+	pcquantum=2
+	;;
     arm | armbe)
 	family=ARM
 	cachelinesize=32

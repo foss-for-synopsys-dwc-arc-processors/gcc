@@ -249,6 +249,9 @@ proc go-set-goarch { } {
 	"riscv64-*-*" {
 	    set goarch "riscv64"
 	}
+	"arc*-*-*" {
+	    set goarch "arc"
+	}
 	"s390*-*-*" {
 	    if [check_effective_target_ilp32] {
 		set goarch "s390"
