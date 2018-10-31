@@ -3905,7 +3905,7 @@ arc_eh_return_address_location (rtx source)
      included in the 'extra_size' field.  */
   offset = afi->reg_size + afi->extra_size - 4;
   mem = gen_frame_mem (Pmode,
-		       plus_constant (Pmode, frame_pointer_rtx, offset));
+                       plus_constant (Pmode, frame_pointer_rtx, offset));
 
   /* The following should not be needed, and is, really a hack.  The
      issue being worked around here is that the DSE (Dead Store
