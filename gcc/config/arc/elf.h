@@ -96,3 +96,14 @@ along with GCC; see the file COPYING3.  If not see
     fun = gen_rtx_SYMBOL_REF (Pmode, "__mcount");		\
     emit_library_call (fun, LCT_NORMAL, VOIDmode);		\
   }
+
+/* Use GP register when not used for sdata.  */
+#undef SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#define SUBTARGET_CONDITIONAL_REGISTER_USAGE			\
+  if (TARGET_NO_SDATA_SET					\
+      && !TEST_HARD_REG_BIT (overrideregs, GP_REG))		\
+    {								\
+      call_used_regs[GP_REG] = 1;				\
+      fixed_regs[GP_REG] = 0;					\
+      arc_regno_reg_class[GP_REG] = GENERAL_REGS;		\
+    }

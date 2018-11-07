@@ -1617,4 +1617,9 @@ enum
 /* The default option for BI/BIH instructions.  */
 #define DEFAULT_BRANCH_INDEX 0
 
+/* Conditional register usage per subtarget.  */
+#ifndef SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#define SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#endif
+
 #endif /* GCC_ARC_H */
