@@ -337,13 +337,14 @@
     case REG :
      /* Program Counter register cannot be the target of a move.  It is
 	 a readonly register.  */
-      if (REGNO (op) == PROGRAM_COUNTER_REGNO)
+      if (REGNO (op) == PCL_REG)
 	return 0;
       else if (TARGET_MULMAC_32BY16_SET
-	       && (REGNO (op) == 56 || REGNO(op) == 57))
+	       && (REGNO (op) == MUL32x16_REG || REGNO (op) == R57_REG))
 	return 0;
       else if (TARGET_MUL64_SET
-	       && (REGNO (op) == 57 || REGNO(op) == 58 || REGNO(op) == 59 ))
+	       && (REGNO (op) == R57_REG || REGNO (op) == MUL64_OUT_REG
+		   || REGNO (op) == R59_REG))
 	return 0;
       else if (REGNO (op) == LP_COUNT)
         return 1;

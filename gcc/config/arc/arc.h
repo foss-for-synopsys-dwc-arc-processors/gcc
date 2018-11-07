@@ -312,8 +312,6 @@ if (GET_MODE_CLASS (MODE) == MODE_INT		\
 #undef WCHAR_TYPE_SIZE
 #define WCHAR_TYPE_SIZE 32
 
-#define PROGRAM_COUNTER_REGNO 63
-
 /* Standard register usage.  */
 
 /* Number of actual hardware registers.

@@ -1748,22 +1748,21 @@ arc_conditional_register_usage (void)
       strcpy (rname29, "ilink");
       strcpy (rname30, "r30");
 
-      if (!TEST_HARD_REG_BIT (overrideregs, 30))
+      if (!TEST_HARD_REG_BIT (overrideregs, R30_REG))
 	{
 	  /* No user interference.  Set the r30 to be used by the
 	     compiler.  */
-	  call_used_regs[30] = 1;
-	  fixed_regs[30] = 0;
+	  call_used_regs[R30_REG] = 1;
+	  fixed_regs[R30_REG] = 0;
 
-	  arc_regno_reg_class[30] = GENERAL_REGS;
-	  SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], 30);
+	  arc_regno_reg_class[R30_REG] = GENERAL_REGS;
 	}
    }
 
   if (TARGET_MUL64_SET)
     {
-      fix_start = 57;
-      fix_end = 59;
+      fix_start = R57_REG;
+      fix_end = R59_REG;
 
       /* We don't provide a name for mmed.  In rtl / assembly resource lists,
 	 you are supposed to refer to it as mlo & mhi, e.g
@@ -1786,8 +1785,8 @@ arc_conditional_register_usage (void)
 
   if (TARGET_MULMAC_32BY16_SET)
     {
-      fix_start = 56;
-      fix_end = fix_end > 57 ? fix_end : 57;
+      fix_start = MUL32x16_REG;
+      fix_end = fix_end > R57_REG ? fix_end : R57_REG;
       strcpy (rname56, TARGET_BIG_ENDIAN ? "acc1" : "acc2");
       strcpy (rname57, TARGET_BIG_ENDIAN ? "acc2" : "acc1");
     }
@@ -1849,103 +1848,59 @@ arc_conditional_register_usage (void)
   /* Reduced configuration: don't use r4-r9, r16-r25.  */
   if (TARGET_RF16)
     {
-      for (i = 4; i <= 9; i++)
+      for (i = R4_REG; i <= R9_REG; i++)
 	{
 	  fixed_regs[i] = call_used_regs[i] = 1;
 	}
-      for (i = 16; i <= 25; i++)
+      for (i = R16_REG; i <= R25_REG; i++)
 	{
 	  fixed_regs[i] = call_used_regs[i] = 1;
 	}
-    }
-
-  for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
-    if (!call_used_regs[regno])
-      CLEAR_HARD_REG_BIT (reg_class_contents[SIBCALL_REGS], regno);
-  for (regno = 32; regno < 60; regno++)
-    if (!fixed_regs[regno])
-      SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], regno);
-  if (!TARGET_ARC600_FAMILY)
-    {
-      for (regno = 32; regno <= 60; regno++)
-	CLEAR_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], regno);
-
-      arc_hard_regno_modes[60] = 1 << (int) S_MODE;
     }
 
   /* ARCHS has 64-bit data-path which makes use of the even-odd paired
      registers.  */
   if (TARGET_HS)
-    {
-      for (regno = 1; regno < 32; regno +=2)
-	{
-	  arc_hard_regno_modes[regno] = S_MODES;
-	}
-    }
+    for (regno = R1_REG; regno < R32_REG; regno +=2)
+      arc_hard_regno_modes[regno] = S_MODES;
 
   for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
-    {
-      if (i < 29)
-	{
-	  if ((TARGET_Q_CLASS || TARGET_RRQ_CLASS)
-	      && ((i <= 3) || ((i >= 12) && (i <= 15))))
-	    arc_regno_reg_class[i] = ARCOMPACT16_REGS;
-	  else
-	    arc_regno_reg_class[i] = GENERAL_REGS;
-	}
-      else if (i < 60)
-	arc_regno_reg_class[i] = GENERAL_REGS;
-      else
-	arc_regno_reg_class[i] = NO_REGS;
-    }
-
-  /* ARCOMPACT16_REGS is empty, if TARGET_Q_CLASS / TARGET_RRQ_CLASS
-     has not been activated.  */
-  if (!TARGET_Q_CLASS && !TARGET_RRQ_CLASS)
-    CLEAR_HARD_REG_SET(reg_class_contents [ARCOMPACT16_REGS]);
-
-  gcc_assert (FIRST_PSEUDO_REGISTER >= 144);
+    if (i < ILINK1_REG)
+      {
+	if ((TARGET_Q_CLASS || TARGET_RRQ_CLASS)
+	    && ((i <= R3_REG) || ((i >= R12_REG) && (i <= R15_REG))))
+	  arc_regno_reg_class[i] = ARCOMPACT16_REGS;
+	else
+	  arc_regno_reg_class[i] = GENERAL_REGS;
+      }
+    else if (i < LP_COUNT)
+      arc_regno_reg_class[i] = GENERAL_REGS;
+    else
+      arc_regno_reg_class[i] = NO_REGS;
 
   /* Handle Special Registers.  */
-  arc_regno_reg_class[61] = NO_REGS;      /* CC_REG: must be NO_REGS.  */
+  arc_regno_reg_class[CC_REG] = NO_REGS;      /* CC_REG: must be NO_REGS.  */
   arc_regno_reg_class[62] = GENERAL_REGS;
 
   if (TARGET_DPFP)
-    {
-      for (i = 40; i < 44; ++i)
-	{
-	  arc_regno_reg_class[i] = DOUBLE_REGS;
-
-	  /* Unless they want us to do 'mov d1, 0x00000000' make sure
-	     no attempt is made to use such a register as a
-	     destination operand in *movdf_insn.  */
-	  if (!TARGET_ARGONAUT_SET)
-	    {
-	      /* Make sure no 'c', 'w', 'W', or 'Rac' constraint is
-		 interpreted to mean they can use D1 or D2 in their
-		 insn.  */
-	      CLEAR_HARD_REG_BIT(reg_class_contents[GENERAL_REGS          ], i);
-	    }
-	}
-    }
+    for (i = R40_REG; i < R44_REG; ++i)
+      arc_regno_reg_class[i] = DOUBLE_REGS;
   else
     {
       /* Disable all DOUBLE_REGISTER settings, if not generating DPFP
 	 code.  */
-      arc_regno_reg_class[40] = ALL_REGS;
-      arc_regno_reg_class[41] = ALL_REGS;
-      arc_regno_reg_class[42] = ALL_REGS;
-      arc_regno_reg_class[43] = ALL_REGS;
+      arc_regno_reg_class[R40_REG] = ALL_REGS;
+      arc_regno_reg_class[R41_REG] = ALL_REGS;
+      arc_regno_reg_class[R42_REG] = ALL_REGS;
+      arc_regno_reg_class[R43_REG] = ALL_REGS;
 
-      fixed_regs[40] = 1;
-      fixed_regs[41] = 1;
-      fixed_regs[42] = 1;
-      fixed_regs[43] = 1;
+      fixed_regs[R40_REG] = 1;
+      fixed_regs[R41_REG] = 1;
+      fixed_regs[R42_REG] = 1;
+      fixed_regs[R43_REG] = 1;
 
-      arc_hard_regno_modes[40] = 0;
-      arc_hard_regno_modes[42] = 0;
-
-      CLEAR_HARD_REG_SET(reg_class_contents [DOUBLE_REGS]);
+      arc_hard_regno_modes[R40_REG] = 0;
+      arc_hard_regno_modes[R42_REG] = 0;
     }
 
   if (TARGET_SIMD_SET)
@@ -1967,7 +1922,7 @@ arc_conditional_register_usage (void)
     }
 
   /* pc : r63 */
-  arc_regno_reg_class[PROGRAM_COUNTER_REGNO] = GENERAL_REGS;
+  arc_regno_reg_class[PCL_REG] = NO_REGS;
 
   /*ARCV2 Accumulator.  */
   if ((TARGET_V2
@@ -1976,8 +1931,6 @@ arc_conditional_register_usage (void)
   {
     arc_regno_reg_class[ACCL_REGNO] = GENERAL_REGS;
     arc_regno_reg_class[ACCH_REGNO] = GENERAL_REGS;
-    SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], ACCL_REGNO);
-    SET_HARD_REG_BIT (reg_class_contents[GENERAL_REGS], ACCH_REGNO);
 
     /* Allow the compiler to freely use them.  */
     if (!TEST_HARD_REG_BIT (overrideregs, ACCL_REGNO))
@@ -10284,11 +10237,11 @@ arc_return_address_register (unsigned int fn_type)
   if (ARC_INTERRUPT_P (fn_type))
     {
       if ((fn_type & (ARC_FUNCTION_ILINK1 | ARC_FUNCTION_FIRQ)) != 0)
-        regno = ILINK1_REGNUM;
+	regno = ILINK1_REG;
       else if ((fn_type & ARC_FUNCTION_ILINK2) != 0)
-        regno = ILINK2_REGNUM;
+	regno = ILINK2_REG;
       else
-        gcc_unreachable ();
+	gcc_unreachable ();
     }
   else if (ARC_NORMAL_P (fn_type) || ARC_NAKED_P (fn_type))
     regno = RETURN_ADDR_REGNUM;
