@@ -186,6 +186,7 @@
    (R16_REG 16)
 
    (R25_REG 25)
+   (GP_REG 26)
    (SP_REG 28)
    (ILINK1_REG 29)
    (ILINK2_REG 30)
