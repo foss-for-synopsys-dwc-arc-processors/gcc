@@ -91,3 +91,14 @@ along with GCC; see the file COPYING3.  If not see
 /* Enter/Leave default value.  */
 #undef TARGET_CODE_DENSITY_FRAME_DEFAULT
 #define TARGET_CODE_DENSITY_FRAME_DEFAULT 0
+
+/* Use GP register when not used for sdata.  */
+#undef SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#define SUBTARGET_CONDITIONAL_REGISTER_USAGE			\
+  if (TARGET_NO_SDATA_SET					\
+      && !TEST_HARD_REG_BIT (overrideregs, GP_REG))		\
+    {								\
+      call_used_regs[GP_REG] = 1;				\
+      fixed_regs[GP_REG] = 0;					\
+      arc_regno_reg_class[GP_REG] = GENERAL_REGS;		\
+    }
