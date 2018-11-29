@@ -1645,4 +1645,9 @@ enum
 #define TARGET_LRA arc_lra_p()
 #endif
 
+/* Conditional register usage per subtarget.  */
+#ifndef SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#define SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#endif
+
 #endif /* GCC_ARC_H */
