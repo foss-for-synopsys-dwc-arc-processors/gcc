@@ -1340,7 +1340,13 @@ arc_override_options (void)
     TARGET_CODE_DENSITY_FRAME = 1;
 
   if (flag_pic)
-    target_flags |= MASK_NO_SDATA_SET;
+    {
+      /* If we had SDATA enabled, still don't use GP when pic is
+	 enabled.  */
+      if (TARGET_NO_SDATA_SET)
+	SET_HARD_REG_BIT (overrideregs, GP_REG);
+      target_flags |= MASK_NO_SDATA_SET;
+    }
 
   /* Check for small data option */
   if (!OPTION_SET_P (g_switch_value) && !TARGET_NO_SDATA_SET)
@@ -1954,6 +1960,9 @@ arc_conditional_register_usage (void)
     if (!fixed_regs[ACCH_REGNO] && !fixed_regs[ACCL_REGNO])
       arc_hard_regno_modes[ACC_REG_FIRST] = D_MODES;
   }
+#if 0
+  SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#endif
 }
 
 /* Implement TARGET_HARD_REGNO_NREGS.  */
