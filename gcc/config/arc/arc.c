@@ -3703,14 +3703,10 @@ arc_expand_prologue (void)
 
   /* Allocate the stack frame.  */
   if (frame_size_to_allocate > 0)
-    {
-      frame_stack_add ((HOST_WIDE_INT) 0 - frame_size_to_allocate);
-      /* If the frame pointer is needed, emit a special barrier that
-	 will prevent the scheduler from moving stores to the frame
-	 before the stack adjustment.  */
-      if (arc_frame_pointer_needed ())
-	emit_insn (gen_stack_tie (stack_pointer_rtx, hard_frame_pointer_rtx));
-    }
+    frame_stack_add ((HOST_WIDE_INT) 0 - frame_size_to_allocate);
+
+  /* Emit a blockage to avoid delay slot scheduling.  */
+  emit_insn (gen_blockage ());
 }
 
 /* Do any necessary cleanup after a function to restore stack, frame,
