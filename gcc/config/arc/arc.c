@@ -1884,7 +1884,10 @@ arc_conditional_register_usage (void)
 
   if (TARGET_DPFP)
     for (i = R40_REG; i < R44_REG; ++i)
-      arc_regno_reg_class[i] = DOUBLE_REGS;
+      {
+	arc_regno_reg_class[i] = DOUBLE_REGS;
+	CLEAR_HARD_REG_BIT(reg_class_contents[GENERAL_REGS], i);
+      }
   else
     {
       /* Disable all DOUBLE_REGISTER settings, if not generating DPFP
