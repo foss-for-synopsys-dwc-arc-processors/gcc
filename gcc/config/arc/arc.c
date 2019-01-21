@@ -1944,7 +1944,9 @@ arc_conditional_register_usage (void)
     if (!fixed_regs[ACCH_REGNO] && !fixed_regs[ACCL_REGNO])
       arc_hard_regno_modes[ACC_REG_FIRST] = D_MODES;
   }
+#if 0
   SUBTARGET_CONDITIONAL_REGISTER_USAGE
+#endif
 }
 
 /* Implement TARGET_HARD_REGNO_NREGS.  */
