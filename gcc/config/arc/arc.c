@@ -2651,6 +2651,7 @@ arc_must_save_register (int regno, struct function *func)
 
   if ((regno) != RETURN_ADDR_REGNUM
       && (regno) != FRAME_POINTER_REGNUM
+      && (regno) != STACK_POINTER_REGNUM
       && df_regs_ever_live_p (regno)
       && (!call_used_regs[regno]
 	  || ARC_INTERRUPT_P (fn_type))
@@ -3747,6 +3748,10 @@ arc_expand_epilogue (int sibcall_p)
 
   if (!can_trust_sp_p)
     gcc_assert (arc_frame_pointer_needed ());
+
+  /* Emit a blockage to avoid/flush all pending sp operations.  */
+  if (size)
+    emit_insn (gen_blockage ());
 
   if (TARGET_CODE_DENSITY
       && TARGET_CODE_DENSITY_FRAME
