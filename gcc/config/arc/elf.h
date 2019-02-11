@@ -107,3 +107,7 @@ along with GCC; see the file COPYING3.  If not see
       fixed_regs[GP_REG] = 0;					\
       arc_regno_reg_class[GP_REG] = GENERAL_REGS;		\
     }
+
+/* Enter/Leave ops are default on for elf targets.  */
+#undef TARGET_CODE_DENSITY_FRAME_DEFAULT
+#define TARGET_CODE_DENSITY_FRAME_DEFAULT 0
