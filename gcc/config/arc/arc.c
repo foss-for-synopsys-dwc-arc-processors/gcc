@@ -6093,6 +6093,13 @@ arc_legitimize_pic_address (rtx orig, rtx oldx)
 	  if (base == op0 && pat == op1)
 	    return orig;
 
+	  if (GET_CODE (base) == PLUS)
+	    {
+	      gcc_assert (oldx != NULL_RTX);
+	      gcc_assert (REG_P (oldx));
+	      emit_insn (gen_rtx_SET (oldx, base));
+	      base = oldx;
+	    }
 	  if (GET_CODE (pat) == CONST_INT)
 	    pat = plus_constant (Pmode, base, INTVAL (pat));
 	  else
@@ -6285,7 +6292,7 @@ prepare_pic_move (rtx *operands, machine_mode)
   else
     {
       rtx temp = (reload_in_progress ? operands[0]
-		  : flag_pic? gen_reg_rtx (Pmode) : NULL_RTX);
+		  : gen_reg_rtx (Pmode));
       operands[1] = arc_legitimize_pic_address (operands[1], temp);
     }
 }
