@@ -490,8 +490,8 @@ arc_sched_issue_rate (void)
 {
   switch (arc_tune)
     {
-    case TUNE_ARCHS4X:
-    case TUNE_ARCHS4XD:
+    case ARC_TUNE_ARCHS4X:
+    case ARC_TUNE_ARCHS4XD:
       return 3;
     default:
       break;
