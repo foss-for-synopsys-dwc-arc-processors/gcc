@@ -161,7 +161,11 @@
 #include "selftest.h"
 
 /* The maximum size (in bits) of the stores this pass should generate.  */
+#ifdef TARGET_LL64
 #define MAX_STORE_BITSIZE (TARGET_LL64 ? 2 * BITS_PER_WORD : BITS_PER_WORD)
+#else
+#define MAX_STORE_BITSIZE (BITS_PER_WORD)
+#endif
 #define MAX_STORE_BYTES (MAX_STORE_BITSIZE / BITS_PER_UNIT)
 
 /* Limit to bound the number of aliasing checks for loads with the same
