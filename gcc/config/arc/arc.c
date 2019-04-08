@@ -7713,6 +7713,21 @@ arc_hazard (rtx_insn *pred, rtx_insn *succ)
   if (TARGET_ARC600)
     return arc600_corereg_hazard (pred, succ);
 
+  return 0;
+}
+
+static int
+arc_check_release31a (rtx_insn *pred, rtx_insn *succ)
+{
+  if (!pred || !INSN_P (pred) || !succ || !INSN_P (succ))
+    return 0;
+
+  if (!JUMP_P (pred) && !single_set (pred))
+    return 0;
+
+  if (!JUMP_P (succ) && !single_set (succ))
+    return 0;
+
   if (TARGET_HS && (arc_tune == ARC_TUNE_ARCHS4X_REL31A))
     switch (get_attr_type (pred))
       {
@@ -7724,7 +7739,7 @@ arc_hazard (rtx_insn *pred, rtx_insn *succ)
 	  case TYPE_LOOP_END:
 	    return 1;
 	  default:
-	   break;
+	    break;
 	  }
 	break;
       case TYPE_BRCC:
@@ -7754,10 +7769,8 @@ workaround_arc_anomaly (void)
   for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
     {
       succ0 = next_real_insn (insn);
-      if (arc_hazard (insn, succ0))
-	{
-	  emit_insn_before (gen_nopv (), succ0);
-	}
+      if (arc_hazard (insn, succ0) || arc_check_release31a (insn, succ0))
+	emit_insn_before (gen_nopv (), succ0);
     }
 
   if (!TARGET_ARC700)
