@@ -5482,9 +5482,9 @@ esac
 # ??? Once 2.11 is released, probably need to add first known working
 # version to the per-target configury.
 case "$cpu_type" in
-  aarch64 | alpha | arc | arm | avr | bfin | cris | csky | i386 | m32c | m68k \
-  | microblaze | mips | nds32 | nios2 | pa | riscv | rs6000 | score | sparc \
-  | tilegx | tilepro | visium | xstormy16 | xtensa)
+  aarch64 | alpha | arc |arc64 | arm | avr | bfin | cris | csky | i386 | m32c \
+  | m68k | microblaze | mips | nds32 | nios2 | pa | riscv | rs6000 | score \
+  | sparc | tilegx | tilepro | visium | xstormy16 | xtensa)
     insn="nop"
     ;;
   ia64 | s390)

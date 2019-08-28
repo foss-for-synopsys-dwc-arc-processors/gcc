@@ -6845,7 +6845,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 loose_warn=
 save_CXXFLAGS="$CXXFLAGS"
-for real_option in -W -Wall -Wno-narrowing -Wwrite-strings -Wcast-qual -Wno-error=format-diag $wf_opt; do
+for real_option in -W -Wall -Wclass-is-pod -Wmismatched-tags -Wno-narrowing -Wstruct-not-pod -Wwrite-strings -Wcast-qual -Wno-error=format-diag $wf_opt; do
   # Do the check with the no- prefix removed since gcc silently
   # accepts any -Wno-* option on purpose
   case $real_option in
@@ -29280,9 +29280,9 @@ esac
 # ??? Once 2.11 is released, probably need to add first known working
 # version to the per-target configury.
 case "$cpu_type" in
-  aarch64 | alpha | arc | arm | avr | bfin | cris | csky | i386 | m32c | m68k \
-  | microblaze | mips | nds32 | nios2 | pa | riscv | rs6000 | score | sparc \
-  | tilegx | tilepro | visium | xstormy16 | xtensa)
+  aarch64 | alpha | arc | arc64 | arm | avr | bfin | cris | csky | i386 | m32c \
+  | m68k | microblaze | mips | nds32 | nios2 | pa | riscv | rs6000 | score \
+  | sparc | tilegx | tilepro | visium | xstormy16 | xtensa)
     insn="nop"
     ;;
   ia64 | s390)
