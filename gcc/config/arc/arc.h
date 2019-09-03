@@ -96,8 +96,8 @@ extern const char *arc_cpu_to_as (int argc, const char **argv);
 #endif
 
 #undef ASM_SPEC
-#define ASM_SPEC  "%{mbig-endian|EB:-EB} %{EL} "			\
-  "%:cpu_to_as(%{mcpu=*:%*}) %{mspfp*} %{mdpfp*} "                      \
+#define ASM_SPEC  "%{mbig-endian|EB:-EB} %{EL} "	\
+  "%:cpu_to_as(%{mcpu=*:%*}) %{mspfp*} %{mdpfp*} "	\
   "%{mfpu=fpuda*:-mfpuda} %{mcode-density}"
 
 #define OPTION_DEFAULT_SPECS						\
