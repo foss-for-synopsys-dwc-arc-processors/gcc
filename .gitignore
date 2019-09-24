@@ -31,6 +31,9 @@ POTFILES
 
 TAGS
 TAGS.sub
+GPATH
+GRTAGS
+GTAGS
 
 .local.vimrc
 .lvimrc
