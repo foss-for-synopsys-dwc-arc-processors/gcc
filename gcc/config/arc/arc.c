@@ -11606,8 +11606,10 @@ arc_split_ior (rtx *operands)
       emit_insn (gen_rtx_SET (operands[0],
 			      gen_rtx_IOR (SImode, op1, GEN_INT (maskx))));
       break;
-    default:
+    case 0:
       break;
+    default:
+      gcc_unreachable ();
     }
 }
 
@@ -11617,6 +11619,9 @@ bool
 arc_check_ior_const (HOST_WIDE_INT ival)
 {
   unsigned int mask = (unsigned int) (ival & 0xffffffff);
+
+  if (UNSIGNED_INT6 (ival))
+    return false;
   if (__builtin_popcount (mask) <= 3)
     return true;
   if (__builtin_popcount (mask & ~0x3f) <= 1)
@@ -11637,9 +11642,6 @@ arc_split_mov_const (rtx *operands)
   /* Manage a constant.  */
   gcc_assert (CONST_INT_P (operands[1]));
   ival = INTVAL (operands[1]) & 0xffffffff;
-
-  if (SIGNED_INT12 (ival))
-    return false;
 
   /* 1. Check if we can just rotate limm by 8 but using ROR8.  */
   if (TARGET_BARREL_SHIFTER && TARGET_V2
@@ -11707,7 +11709,7 @@ arc_split_mov_const (rtx *operands)
       return true;
     }
 
-  return false;
+  gcc_unreachable ();
 }
 
 /* Helper to check Cax constraint.  */
@@ -11716,6 +11718,9 @@ bool
 arc_check_mov_const (HOST_WIDE_INT ival)
 {
   ival = ival & 0xffffffff;
+
+  if (SIGNED_INT12 (ival))
+    return false;
 
   if ((ival & ~0x8000001f) == 0)
     return true;
