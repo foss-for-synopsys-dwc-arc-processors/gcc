@@ -11620,7 +11620,8 @@ arc_check_ior_const (HOST_WIDE_INT ival)
 {
   unsigned int mask = (unsigned int) (ival & 0xffffffff);
 
-  if (UNSIGNED_INT6 (ival))
+  if (UNSIGNED_INT6 (ival)
+      || IS_POWEROF2_P (mask))
     return false;
   if (__builtin_popcount (mask) <= 3)
     return true;
