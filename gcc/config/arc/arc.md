@@ -834,6 +834,18 @@ archs4x, archs4xd"
   "st%U0 %1,%0\;st%U0.di %1,%0"
   [(set_attr "type" "store")])
 
+(define_insn "*load_scaledsi"
+  [(set (match_operand:SI 0 "register_operand" "=q,r,r")
+	(mem:SI (plus:SI (mult:SI (match_operand:SI 1 "register_operand" "q,r,r")
+				  (const_int 4))
+			 (match_operand:SI 2 "nonmemory_operand" "q,r,Cal"))))]
+  ""
+  "ld%?.as\\t%0,[%2,%1]"
+  [(set_attr "type" "load")
+   (set_attr "iscompact" "true,false,false")
+   (set_attr "length" "2,4,8")
+   (set_attr "cpu_facility" "cd,*,*")])
+
 ;; Combiner patterns for compare with zero
 (define_mode_iterator SQH [QI HI])
 (define_mode_attr SQH_postfix [(QI "b") (HI "%_")])
