@@ -419,7 +419,7 @@ arc[eb]*-*-linux*)
 	md_unwind_header=arc/linux-unwind.h
 	;;
 arc64-*-elf)
-	tmake_file="${tmake_file} t-softfp-sfdf t-softfp"
+	tmake_file="${tmake_file} ${cpu_type}/t-softfp t-softfp t-softfp-sfdf"
 	;;
 arm-wrs-vxworks|arm-wrs-vxworks7)
 	tmake_file="$tmake_file arm/t-arm arm/t-elf t-softfp-sfdf t-softfp-excl arm/t-softfp t-softfp"
