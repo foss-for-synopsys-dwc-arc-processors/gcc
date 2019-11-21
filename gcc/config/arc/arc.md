@@ -3749,7 +3749,7 @@ archs4x, archs4xd"
 })
 
 (define_mode_iterator SDF [(SF "TARGET_FP_SP_BASE || TARGET_OPTFPE")
-			   (DF "TARGET_OPTFPE")])
+			   (DF "TARGET_FP_DP_BASE || TARGET_OPTFPE")])
 
 (define_expand "cstore<mode>4"
   [(set (reg:CC CC_REG)
@@ -3759,7 +3759,7 @@ archs4x, archs4xd"
 	(match_operator:SI 1 "comparison_operator" [(reg CC_REG)
 						    (const_int 0)]))]
 
-  "TARGET_FP_SP_BASE || TARGET_OPTFPE"
+  "TARGET_HARD_FLOAT || TARGET_OPTFPE"
 {
   gcc_assert (XEXP (operands[1], 0) == operands[2]);
   gcc_assert (XEXP (operands[1], 1) == operands[3]);
