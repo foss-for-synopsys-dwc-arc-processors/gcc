@@ -11275,10 +11275,14 @@ arc_is_uncached_mem_p (rtx pat)
 	return true;
     }
 
-  /* For COMPONENT_REF, use the FIELD_DECL from tree operand 1.  */
   if (TREE_CODE (addr) == COMPONENT_REF)
     {
+      /* First, use the FIELD_DECL from tree operand 1.  */
       attrs = TYPE_ATTRIBUTES (TREE_TYPE (TREE_OPERAND (addr, 1)));
+      if (lookup_attribute ("uncached", attrs))
+	return true;
+      /* Second, use the FIELD_DECL from tree operand 0.  */
+      attrs = TYPE_ATTRIBUTES (TREE_TYPE (TREE_OPERAND (addr, 0)));
       if (lookup_attribute ("uncached", attrs))
 	return true;
     }
