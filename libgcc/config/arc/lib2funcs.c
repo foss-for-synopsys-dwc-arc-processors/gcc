@@ -25,12 +25,11 @@
 
 typedef          int  sint64_t   __attribute__ ((mode (DI)));
 typedef unsigned int  uint64_t   __attribute__ ((mode (DI)));
+typedef unsigned int  nint32_t   __attribute__ ((mode (SI)));
 typedef int           word_t     __attribute__ ((mode (__word__)));
 
-
 sint64_t __muldi3 (sint64_t, sint64_t);
-sint64_t __divdi3 (sint64_t, sint64_t);
-sint64_t __moddi3 (sint64_t, sint64_t);
+nint32_t __umodsi3 (nint32_t, nint32_t);
 
 #ifdef __ARC_RF16__
 
@@ -50,4 +49,40 @@ __muldi3 (sint64_t a, sint64_t b)
     }
   return res;
 }
+
+/* Unsigned 32bit integer division/modulus.  */
+
+static inline __attribute__ ((__always_inline__))
+nint32_t
+udivmodsi4 (nint32_t num, nint32_t den, word_t modwanted)
+{
+  nint32_t bit = 1;
+  nint32_t res = 0;
+
+  while (den < num && bit && !(den & (1LL << 63)))
+    {
+      den <<= 1;
+      bit <<= 1;
+    }
+  while (bit)
+    {
+      if (num >= den)
+	{
+	  num -= den;
+	  res |= bit;
+	}
+      bit >>= 1;
+      den >>= 1;
+    }
+  if (modwanted)
+    return num;
+  return res;
+}
+
+nint32_t
+__umodsi3 (nint32_t a, nint32_t b)
+{
+  return udivmodsi4 (a, b, 1);
+}
+
 #endif
