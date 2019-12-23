@@ -11322,23 +11322,27 @@ arc_is_uncached_mem_p (rtx pat)
     {
       attrs = TYPE_ATTRIBUTES (TREE_TYPE (addr));
       if (lookup_attribute ("uncached", attrs))
-	return true;
+        return true;
 
       attrs = TYPE_ATTRIBUTES (TREE_TYPE (TREE_OPERAND (addr, 0)));
       if (lookup_attribute ("uncached", attrs))
-	return true;
+        return true;
     }
 
-  if (TREE_CODE (addr) == COMPONENT_REF)
+  while (handled_component_p (addr))
     {
-      /* First, use the FIELD_DECL from tree operand 1.  */
-      attrs = TYPE_ATTRIBUTES (TREE_TYPE (TREE_OPERAND (addr, 1)));
-      if (lookup_attribute ("uncached", attrs))
-	return true;
-      /* Second, use the FIELD_DECL from tree operand 0.  */
-      attrs = TYPE_ATTRIBUTES (TREE_TYPE (TREE_OPERAND (addr, 0)));
-      if (lookup_attribute ("uncached", attrs))
-	return true;
+      if (TREE_CODE (addr) == COMPONENT_REF)
+        {
+          /* First, use the FIELD_DECL from tree operand 1.  */
+          attrs = TYPE_ATTRIBUTES (TREE_TYPE (TREE_OPERAND (addr, 1)));
+          if (lookup_attribute ("uncached", attrs))
+            return true;
+          /* Second, use the FIELD_DECL from tree operand 0.  */
+          attrs = TYPE_ATTRIBUTES (TREE_TYPE (TREE_OPERAND (addr, 0)));
+          if (lookup_attribute ("uncached", attrs))
+            return true;
+          addr = TREE_OPERAND (addr, 0);
+        }
     }
   return false;
 }
