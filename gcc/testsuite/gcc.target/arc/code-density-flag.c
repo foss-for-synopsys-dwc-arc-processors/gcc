@@ -11,6 +11,7 @@
  * as well, else it is going to choke on such encodings.    */
 
 /* { dg-do assemble }                                       */
+/* { dg-do compile }                                        */
 /* { dg-skip-if "" { ! { clmcpu } } }                       */
 /* { dg-options "-mcpu=em_mini -mcode-density" }            */
 
