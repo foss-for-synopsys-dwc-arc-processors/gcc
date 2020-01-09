@@ -4302,7 +4302,7 @@ archs4x, archs4xd"
 (define_insn "arc600_stall"
   [(unspec_volatile [(const_int 0)] VUNSPEC_ARC_ARC600_STALL)]
   "TARGET_MUL64_SET"
-  "mov\\t0,mhi\t;wait until multiply complete."
+  "mov\\t0,mlo\t;wait until multiply complete."
   [(set_attr "length" "4")
    (set_attr "type" "move")]
 )
