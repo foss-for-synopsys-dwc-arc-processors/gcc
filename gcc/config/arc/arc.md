@@ -164,6 +164,7 @@
   VUNSPEC_ARC_BLOCKAGE
   VUNSPEC_ARC_EH_RETURN
   VUNSPEC_ARC_ARC600_RTIE
+  VUNSPEC_ARC_ARC600_STALL
   ])
 
 (define_constants
@@ -4296,6 +4297,14 @@ archs4x, archs4xd"
   ""
   [(set_attr "length" "0")
    (set_attr "type" "block")]
+)
+
+(define_insn "arc600_stall"
+  [(unspec_volatile [(const_int 0)] VUNSPEC_ARC_ARC600_STALL)]
+  "TARGET_MUL64_SET"
+  "mov\\t0,mhi\t;wait until multiply complete."
+  [(set_attr "length" "4")
+   (set_attr "type" "move")]
 )
 
 ;; Split up troublesome insns for better scheduling.

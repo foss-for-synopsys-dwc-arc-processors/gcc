@@ -213,6 +213,9 @@ static int rgf_banked_register_count;
 /* FPX AUX registers.  */
 #define AUX_DPFP_START 0x301
 
+/* ARC600 MULHI register.  */
+#define AUX_MULHI 0x12
+
 /* A nop is needed between a 4 byte insn that sets the condition codes and
    a branch that uses them (the same isn't true for an 8 byte insn that sets
    the condition codes).  Set by arc_ccfsm_advance.  Used by
@@ -2728,8 +2731,6 @@ arc_must_save_register (int regno, struct function *func, bool special_p)
     case R55_REG:
     case R56_REG:
     case R57_REG:
-    case R58_REG:
-    case R59_REG:
       /* The Extension Registers.  */
       if (ARC_INTERRUPT_P (fn_type)
 	  && (df_regs_ever_live_p (RETURN_ADDR_REGNUM)
@@ -2737,6 +2738,20 @@ arc_must_save_register (int regno, struct function *func, bool special_p)
 	  /* Not all extension registers are available, choose the
 	     real ones.  */
 	  && !fixed_regs[regno])
+	return true;
+      return false;
+
+    case R58_REG:
+    case R59_REG:
+      /* ARC600 specifies those ones as mlo/mhi registers, otherwise
+	 just handle them like any other extension register.  */
+      if (ARC_INTERRUPT_P (fn_type)
+	  && (df_regs_ever_live_p (RETURN_ADDR_REGNUM)
+	      || df_regs_ever_live_p (regno))
+	  /* Not all extension registers are available, choose the
+	     real ones.  */
+	  && ((!fixed_regs[regno] && !special_p)
+	      || (TARGET_MUL64_SET && special_p)))
 	return true;
       return false;
 
@@ -2826,6 +2841,7 @@ arc_compute_frame_size (void)
   int size;
   unsigned int extra_plus_reg_size;
   unsigned int extra_plus_reg_size_aligned;
+  unsigned int fn_type = arc_compute_function_type (cfun);
 
   /* The answer might already be known.  */
   if (cfun->machine->frame_info.initialized)
@@ -2880,6 +2896,7 @@ arc_compute_frame_size (void)
 
   /* Saving blink reg for millicode thunk calls.  */
   if (TARGET_MILLICODE_THUNK_SET
+      && !ARC_INTERRUPT_P (fn_type)
       && !crtl->calls_eh_return)
     {
       if (arc_compute_millicode_save_restore_regs (gmask, frame_info))
@@ -2896,6 +2913,11 @@ arc_compute_frame_size (void)
     reg_size += UNITS_PER_WORD * 2;
   if (arc_must_save_register (TARGET_BIG_ENDIAN ? R43_REG : R42_REG,
 			      cfun, TARGET_DPFP))
+    reg_size += UNITS_PER_WORD * 2;
+
+  /* Check for special MLO/MHI case used by ARC600' MUL64
+     extension.  */
+  if (arc_must_save_register (R58_REG, cfun, TARGET_MUL64_SET))
     reg_size += UNITS_PER_WORD * 2;
 
   /* 4) Calculate extra size made up of the blink + fp size.  */
@@ -3101,7 +3123,8 @@ static int
 arc_save_callee_saves (uint64_t gmask,
 		       bool save_blink,
 		       bool save_fp,
-		       HOST_WIDE_INT offset)
+		       HOST_WIDE_INT offset,
+		       bool emit_move)
 {
   rtx reg;
   int frame_allocated = 0;
@@ -3147,7 +3170,7 @@ arc_save_callee_saves (uint64_t gmask,
     }
 
   /* Emit mov fp,sp.  */
-  if (arc_frame_pointer_needed ())
+  if (emit_move)
     frame_move (hard_frame_pointer_rtx, stack_pointer_rtx);
 
   return frame_allocated;
@@ -3166,6 +3189,7 @@ arc_restore_callee_saves (uint64_t gmask,
   rtx reg;
   int frame_deallocated = 0;
   HOST_WIDE_INT offs = cfun->machine->frame_info.reg_size;
+  unsigned int fn_type = arc_compute_function_type (cfun);
   bool early_blink_restore;
 
   /* Emit mov fp,sp.  */
@@ -3192,8 +3216,10 @@ arc_restore_callee_saves (uint64_t gmask,
       offset = 0;
     }
 
-  /* When we do not optimize for size, restore first blink.  */
-  early_blink_restore = restore_blink && !optimize_size && offs;
+  /* When we do not optimize for size or we aren't in an interrupt,
+     restore first blink.  */
+  early_blink_restore = restore_blink && !optimize_size && offs
+    && !ARC_INTERRUPT_P (fn_type);
   if (early_blink_restore)
     {
       rtx addr = plus_constant (Pmode, stack_pointer_rtx, offs);
@@ -3737,6 +3763,7 @@ arc_expand_prologue (void)
   unsigned int fn_type = arc_compute_function_type (cfun);
   bool save_blink = false;
   bool save_fp = false;
+  bool emit_move = false;
 
   /* Naked functions don't have prologue.  */
   if (ARC_NAKED_P (fn_type))
@@ -3774,7 +3801,9 @@ arc_expand_prologue (void)
 
   save_blink = arc_must_save_return_addr (cfun)
     && !ARC_AUTOBLINK_IRQ_P (fn_type);
-  save_fp = arc_frame_pointer_needed () && !ARC_AUTOFP_IRQ_P (fn_type);
+  save_fp = arc_frame_pointer_needed () && !ARC_AUTOFP_IRQ_P (fn_type)
+    && !ARC_INTERRUPT_P (fn_type);
+  emit_move = arc_frame_pointer_needed () && !ARC_INTERRUPT_P (fn_type);
 
   /* Use enter/leave only for non-interrupt functions.  */
   if (TARGET_CODE_DENSITY
@@ -3793,7 +3822,7 @@ arc_expand_prologue (void)
 						     frame->reg_size);
   else
     frame_size_to_allocate -= arc_save_callee_saves (gmask, save_blink, save_fp,
-						     first_offset);
+						     first_offset, emit_move);
 
   /* Check if we need to save the ZOL machinery.  */
   if (arc_lpcwidth != 0 && arc_must_save_register (LP_COUNT, cfun, true))
@@ -3829,6 +3858,18 @@ arc_expand_prologue (void)
 				   VUNSPEC_ARC_LR)));
 	  frame_size_to_allocate -= frame_save_reg (reg0, 0);
 	}
+    }
+
+  /* Save ARC600' MUL64 registers.  */
+  if (arc_must_save_register (R58_REG, cfun, true))
+    frame_size_to_allocate -= arc_save_callee_saves (3ULL << 58,
+						     false, false, 0, false);
+
+  if (arc_frame_pointer_needed () && ARC_INTERRUPT_P (fn_type))
+    {
+      /* Just save fp at the end of the saving context.  */
+      frame_size_to_allocate -= arc_save_callee_saves (0, false,
+						       true, 0, true);
     }
 
   /* Allocate the stack frame.  */
@@ -3899,6 +3940,37 @@ arc_expand_epilogue (int sibcall_p)
   /* Emit a blockage to avoid/flush all pending sp operations.  */
   if (size)
     emit_insn (gen_blockage ());
+
+  if (ARC_INTERRUPT_P (fn_type) && restore_fp)
+    {
+      /* We need to restore FP before any SP operation in an
+	 interrupt.  */
+      size_to_deallocate -= arc_restore_callee_saves (0, false,
+						      restore_fp,
+						      first_offset,
+						      size_to_deallocate);
+      restore_fp = false;
+      first_offset = 0;
+    }
+
+  /* Restore ARC600' MUL64 registers.  */
+  if (arc_must_save_register (R58_REG, cfun, true))
+    {
+      rtx reg0 = gen_rtx_REG (SImode, R0_REG);
+      rtx reg1 = gen_rtx_REG (SImode, R1_REG);
+      rtx tmph, tmpl;
+      size_to_deallocate -= frame_restore_reg (reg0, 0);
+      size_to_deallocate -= frame_restore_reg (reg1, 0);
+
+      tmph = TARGET_BIG_ENDIAN ? reg0 : reg1;
+      tmpl = TARGET_BIG_ENDIAN ? reg1 : reg0;
+
+      emit_insn (gen_mulu64 (tmpl, const1_rtx));
+      emit_insn (gen_arc600_stall ());
+      emit_insn (gen_rtx_UNSPEC_VOLATILE
+		 (VOIDmode, gen_rtvec (2, tmph, GEN_INT (AUX_MULHI)),
+		  VUNSPEC_ARC_SR));
+    }
 
   /* Restore AUX-regs used by FPX machinery.  */
   if (arc_must_save_register (TARGET_BIG_ENDIAN ? R41_REG : R40_REG,
