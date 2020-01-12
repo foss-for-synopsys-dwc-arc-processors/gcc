@@ -1937,9 +1937,9 @@ arc_conditional_register_usage (void)
 	 The point of avoiding having a separate register for mmed is that
 	 this way, we don't have to carry clobbers of that reg around in every
 	 isntruction that modifies mlo and/or mhi.  */
-      strcpy (rname57, TARGET_BIG_ENDIAN ? "mlo" : "mhi");
-      strcpy (rname58, "");
-      strcpy (rname59, TARGET_BIG_ENDIAN ? "mhi" : "mlo");
+      strcpy (rname57, "");
+      strcpy (rname58, TARGET_BIG_ENDIAN ? "mhi" : "mlo");
+      strcpy (rname59, TARGET_BIG_ENDIAN ? "mlo" : "mhi");
     }
 
   /* The nature of arc_tp_regno is actually something more like a global
@@ -2730,7 +2730,7 @@ arc_must_save_register (int regno, struct function *func, bool special_p)
     case R54_REG:
     case R55_REG:
     case R56_REG:
-    case R58_REG:
+    case R57_REG:
       /* The Extension Registers.  */
       if (ARC_INTERRUPT_P (fn_type)
 	  && (df_regs_ever_live_p (RETURN_ADDR_REGNUM)
@@ -2741,7 +2741,7 @@ arc_must_save_register (int regno, struct function *func, bool special_p)
 	return true;
       return false;
 
-    case R57_REG:
+    case R58_REG:
     case R59_REG:
       /* ARC600 specifies those ones as mlo/mhi registers, otherwise
 	 just handle them like any other extension register.  */
@@ -2917,7 +2917,7 @@ arc_compute_frame_size (void)
 
   /* Check for special MLO/MHI case used by ARC600' MUL64
      extension.  */
-  if (arc_must_save_register (R57_REG, cfun, TARGET_MUL64_SET))
+  if (arc_must_save_register (R58_REG, cfun, TARGET_MUL64_SET))
     reg_size += UNITS_PER_WORD * 2;
 
   /* 4) Calculate extra size made up of the blink + fp size.  */
@@ -3861,8 +3861,8 @@ arc_expand_prologue (void)
     }
 
   /* Save ARC600' MUL64 registers.  */
-  if (arc_must_save_register (R57_REG, cfun, true))
-    frame_size_to_allocate -= arc_save_callee_saves (5ULL << 57,
+  if (arc_must_save_register (R58_REG, cfun, true))
+    frame_size_to_allocate -= arc_save_callee_saves (3ULL << 58,
 						     false, false, 0, false);
 
   if (arc_frame_pointer_needed () && ARC_INTERRUPT_P (fn_type))
@@ -3954,16 +3954,16 @@ arc_expand_epilogue (int sibcall_p)
     }
 
   /* Restore ARC600' MUL64 registers.  */
-  if (arc_must_save_register (R57_REG, cfun, true))
+  if (arc_must_save_register (R58_REG, cfun, true))
     {
       rtx reg0 = gen_rtx_REG (SImode, R0_REG);
       rtx reg1 = gen_rtx_REG (SImode, R1_REG);
-      rtx tmpl, tmph;
+      rtx tmph, tmpl;
       size_to_deallocate -= frame_restore_reg (reg0, 0);
       size_to_deallocate -= frame_restore_reg (reg1, 0);
 
-      tmpl = TARGET_BIG_ENDIAN ? reg0 : reg1;
-      tmph = TARGET_BIG_ENDIAN ? reg1 : reg0;
+      tmph = TARGET_BIG_ENDIAN ? reg0 : reg1;
+      tmpl = TARGET_BIG_ENDIAN ? reg1 : reg0;
 
       emit_insn (gen_mulu64 (tmpl, const1_rtx));
       emit_insn (gen_arc600_stall ());
@@ -9912,7 +9912,7 @@ gen_acc2 (void)
 rtx
 gen_mlo (void)
 {
-  return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 57: 59);
+  return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 59: 58);
 }
 
 /* Return a REG rtx for mhi.  N.B. the gcc-internal representation may
@@ -9922,7 +9922,7 @@ gen_mlo (void)
 rtx
 gen_mhi (void)
 {
-  return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 59: 57);
+  return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 58: 59);
 }
 
 /* FIXME: a parameter should be added, and code added to final.c,

@@ -2271,7 +2271,7 @@ archs4x, archs4xd"
       && !satisfies_constraint_L (operands[1]))
     {
       /* MUL64 <0,>b,s12 00101bbb10000100 0BBBssssssSSSSSS  */
-      int n = true_regnum (operands[0]);
+      int n = DBX_REGISTER_NUMBER(true_regnum (operands[0]));
       int i = INTVAL (operands[1]);
       asm_fprintf (asm_out_file, "\t.short %d`", 0x2884 + ((n & 7) << 8));
       asm_fprintf (asm_out_file, "\t.short %d`",
