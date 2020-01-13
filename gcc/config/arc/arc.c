@@ -1938,8 +1938,8 @@ arc_conditional_register_usage (void)
 	 this way, we don't have to carry clobbers of that reg around in every
 	 isntruction that modifies mlo and/or mhi.  */
       strcpy (rname57, "");
-      strcpy (rname58, TARGET_BIG_ENDIAN ? "mhi" : "mlo");
-      strcpy (rname59, TARGET_BIG_ENDIAN ? "mlo" : "mhi");
+      strcpy (rname58, "mlo");
+      strcpy (rname59, "mhi");
     }
 
   /* The nature of arc_tp_regno is actually something more like a global
@@ -3958,17 +3958,13 @@ arc_expand_epilogue (int sibcall_p)
     {
       rtx reg0 = gen_rtx_REG (SImode, R0_REG);
       rtx reg1 = gen_rtx_REG (SImode, R1_REG);
-      rtx tmph, tmpl;
       size_to_deallocate -= frame_restore_reg (reg0, 0);
       size_to_deallocate -= frame_restore_reg (reg1, 0);
 
-      tmph = TARGET_BIG_ENDIAN ? reg0 : reg1;
-      tmpl = TARGET_BIG_ENDIAN ? reg1 : reg0;
-
-      emit_insn (gen_mulu64 (tmpl, const1_rtx));
+      emit_insn (gen_mulu64 (reg0, const1_rtx));
       emit_insn (gen_arc600_stall ());
       emit_insn (gen_rtx_UNSPEC_VOLATILE
-		 (VOIDmode, gen_rtvec (2, tmph, GEN_INT (AUX_MULHI)),
+		 (VOIDmode, gen_rtvec (2, reg1, GEN_INT (AUX_MULHI)),
 		  VUNSPEC_ARC_SR));
     }
 
@@ -9903,26 +9899,6 @@ rtx
 gen_acc2 (void)
 {
   return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 57: 56);
-}
-
-/* Return a REG rtx for mlo.  N.B. the gcc-internal representation may
-   differ from the hardware register number in order to allow the generic
-   code to correctly split the concatenation of mhi and mlo.  */
-
-rtx
-gen_mlo (void)
-{
-  return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 59: 58);
-}
-
-/* Return a REG rtx for mhi.  N.B. the gcc-internal representation may
-   differ from the hardware register number in order to allow the generic
-   code to correctly split the concatenation of mhi and mlo.  */
-
-rtx
-gen_mhi (void)
-{
-  return gen_rtx_REG (SImode, TARGET_BIG_ENDIAN ? 58: 59);
 }
 
 /* FIXME: a parameter should be added, and code added to final.c,
