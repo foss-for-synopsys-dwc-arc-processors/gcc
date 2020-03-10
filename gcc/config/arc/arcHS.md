@@ -50,8 +50,9 @@
   "hs_issue+x1, nothing*3")
 
 (define_insn_reservation "hs_divrem" 13
-  (and (match_test "TARGET_HS")
-       (match_test "TARGET_DIVREM")
+  (and (ior (match_test "TARGET_DIVREM")
+	    (match_test "arc_dsp_divsqrt != 0"))
+       (match_test "TARGET_HS")
        (eq_attr "tune" "none")
        (eq_attr "type" "div_rem"))
   "hs_issue+divrem_hs, (divrem_hs)*12")

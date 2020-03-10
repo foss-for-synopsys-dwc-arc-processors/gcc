@@ -137,6 +137,8 @@
   UNSPEC_ARC_VMAC2HU
   UNSPEC_ARC_VMPY2H
   UNSPEC_ARC_VMPY2HU
+  UNSPEC_ARC_SATF
+  UNSPEC_ARC_SADDSUBLOW
 
   VUNSPEC_ARC_RTIE
   VUNSPEC_ARC_SYNC
@@ -5307,12 +5309,21 @@ archs4x, archs4xd"
   [(set_attr "type" "load")
    (set_attr "length" "8")])
 
-(define_insn "divsi3"
+(define_expand "divsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+	(div:SI (match_operand:SI 1 "arc_nonmemory_operand" "")
+		(match_operand:SI 2 "nonmemory_operand" "")))]
+  "TARGET_ARITH_DIVREM"
+  "")
+
+(define_insn "*divsi3"
   [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
-	(div:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
+	(div:SI (match_operand:SI 1 "arc_nonmemory_operand" "0,r,Csz,0,r,0,  0,  r")
 		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
-  "TARGET_DIVREM"
-  "div%? %0, %1, %2"
+  "TARGET_ARITH_DIVREM
+   && (register_operand (operands[1], SImode)
+       || register_operand (operands[2], SImode))"
+  "div%?\\t%0,%1,%2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
    (set_attr "iscompact" "false")
    (set_attr "type" "div_rem")
@@ -5320,12 +5331,21 @@ archs4x, archs4xd"
    (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
    ])
 
-(define_insn "udivsi3"
+(define_expand "udivsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+	(udiv:SI (match_operand:SI 1 "arc_nonmemory_operand" "")
+		 (match_operand:SI 2 "nonmemory_operand" "")))]
+  "TARGET_ARITH_DIVREM"
+  "")
+
+(define_insn "*udivsi3"
   [(set (match_operand:SI 0 "register_operand"          "=r,r,  r,r,r,r,  r,  r")
-	(udiv:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
+	(udiv:SI (match_operand:SI 1 "arc_nonmemory_operand" "0,r,Csz,0,r,0,  0,  r")
 		 (match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
-  "TARGET_DIVREM"
-  "divu%? %0, %1, %2"
+  "TARGET_ARITH_DIVREM
+   && (register_operand (operands[1], SImode)
+       || register_operand (operands[2], SImode))"
+  "divu%?\\t%0,%1,%2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
    (set_attr "iscompact" "false")
    (set_attr "type" "div_rem")
@@ -5333,12 +5353,21 @@ archs4x, archs4xd"
    (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
    ])
 
-(define_insn "modsi3"
+(define_expand "modsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+	(mod:SI (match_operand:SI 1 "arc_nonmemory_operand" "")
+		(match_operand:SI 2 "nonmemory_operand" "")))]
+  "TARGET_ARITH_DIVREM"
+  "")
+
+(define_insn "*modsi3"
   [(set (match_operand:SI 0 "register_operand"         "=r,r,  r,r,r,r,  r,  r")
-	(mod:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
+	(mod:SI (match_operand:SI 1 "arc_nonmemory_operand" "0,r,Csz,0,r,0,  0,  r")
 		(match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
-  "TARGET_DIVREM"
-  "rem%? %0, %1, %2"
+  "TARGET_ARITH_DIVREM
+   && (register_operand (operands[1], SImode)
+       || register_operand (operands[2], SImode))"
+  "rem%?\\t%0,%1,%2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
    (set_attr "iscompact" "false")
    (set_attr "type" "div_rem")
@@ -5346,12 +5375,21 @@ archs4x, archs4xd"
    (set_attr "cond" "canuse,nocond,nocond,canuse,nocond,nocond,canuse,nocond")
    ])
 
-(define_insn "umodsi3"
+(define_expand "umodsi3"
+  [(set (match_operand:SI 0 "register_operand" "")
+	(umod:SI (match_operand:SI 1 "arc_nonmemory_operand" "")
+		 (match_operand:SI 2 "nonmemory_operand" "")))]
+  "TARGET_ARITH_DIVREM"
+  "")
+
+(define_insn "*umodsi3"
   [(set (match_operand:SI 0 "register_operand"          "=r,r,  r,r,r,r,  r,  r")
-	(umod:SI (match_operand:SI 1 "nonmemory_operand" "0,r,Cal,0,r,0,  0,  r")
+	(umod:SI (match_operand:SI 1 "arc_nonmemory_operand" "0,r,Csz,0,r,0,  0,  r")
 		 (match_operand:SI 2 "nonmemory_operand" "r,r,  r,L,L,I,Cal,Cal")))]
-  "TARGET_DIVREM"
-  "remu%? %0, %1, %2"
+  "TARGET_ARITH_DIVREM
+   && (register_operand (operands[1], SImode)
+       || register_operand (operands[2], SImode))"
+  "remu%?\\t%0,%1,%2"
   [(set_attr "length" "4,4,8,4,4,4,8,8")
    (set_attr "iscompact" "false")
    (set_attr "type" "div_rem")
@@ -6706,3 +6744,6 @@ archs4x, archs4xd"
 
 ;; include atomic extensions
 (include "atomic.md")
+
+;;include dsp extensions
+(include "dsp.md")

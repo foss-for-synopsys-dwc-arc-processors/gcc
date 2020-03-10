@@ -220,3 +220,7 @@ DEF_BUILTIN (VADDSUB,    2, v2si_ftype_v2si_v2si,   addsubv2si3, TARGET_PLUS_QMA
 DEF_BUILTIN (VSUBADD,    2, v2si_ftype_v2si_v2si,   subaddv2si3, TARGET_PLUS_QMACW)
 DEF_BUILTIN (VADDSUB4H,  2, v4hi_ftype_v4hi_v4hi,   addsubv4hi3, TARGET_PLUS_QMACW)
 DEF_BUILTIN (VSUBADD4H,  2, v4hi_ftype_v4hi_v4hi,   subaddv4hi3, TARGET_PLUS_QMACW)
+
+/* DSP builtins.  */
+DEF_BUILTIN (ABSSH, 1, shq_ftype_shq, ssabshq2,   TARGET_DSP)
+DEF_BUILTIN (ABSS,  1, ssq_ftype_ssq, ssabssq2,   TARGET_DSP)

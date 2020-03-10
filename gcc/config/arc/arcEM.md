@@ -87,7 +87,8 @@
 
 ;; Radix-4 divider timing
 (define_insn_reservation "em_divrem" 3
-  (and (match_test "TARGET_EM")
-       (match_test "TARGET_DIVREM")
+  (and (ior (match_test "TARGET_DIVREM")
+	    (match_test "arc_dsp_divsqrt != 0"))
+       (match_test "TARGET_EM")
        (eq_attr "type" "div_rem"))
   "em_issue+mul_em+divrem_em, (mul_em+divrem_em)*2")
