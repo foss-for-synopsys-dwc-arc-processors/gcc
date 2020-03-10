@@ -105,6 +105,7 @@ ARC_OPT (FL_FPUS,  (0xFULL << 26), 0, "single precision floating point")
 ARC_OPT (FL_FPUDA, (0xFFULL << 26), 0, "double precision fp assist")
 ARC_OPT (FL_FPUD,  (0xF0FULL << 26), 0, "double precision floating point")
 ARC_OPT (FL_QUARK, (1ULL << 38), 0, "Quark SE fp extension")
+ARC_OPT (FL_DSP, (1ULL << 39), MASK_DSP, "DSP extension")
 
 /* Local Variables: */
 /* mode: c */

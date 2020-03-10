@@ -84,4 +84,18 @@ enum processor_type
 /* Default MPY option value.  */
 #define DEFAULT_arc_mpy_option -1
 
+/* When -mdsp-divsqrt=radix2, all the divide, remainder, and
+   square-root instructions are implemented using the radix-2
+   algorithm.  */
+#define DIVREM_RADIX2 1
+
+/* When -mdsp-divsqrt=radix4, the integer divide and remainder
+   instructions are implemented using the radix-4 algorithm. However,
+   the fractional divide (DIVF) and the square root (SQRT and SQRTF)
+   instructions are still implemented using the radix-2 algorithm.  */
+#define DIVREM_RADIX4 2
+
+/* Default RADIX algorithm for DSP div/sqrt instructions.  */
+#define DEFAULT_radix 0
+
 #endif /* ARC_OPTS_H */

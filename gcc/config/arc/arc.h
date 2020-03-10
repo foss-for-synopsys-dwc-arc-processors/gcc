@@ -1612,11 +1612,11 @@ enum
 #define TARGET_ANY_MPY						\
   (TARGET_MPY || TARGET_MUL64_SET || TARGET_MULMAC_32BY16_SET)
 /* PLUS_DMPY feature macro.  */
-#define TARGET_PLUS_DMPY  ((arc_mpy_option > 6) && TARGET_HS)
+#define TARGET_PLUS_DMPY  ((arc_mpy_option > 6) && TARGET_HS && !TARGET_DSP)
 /* PLUS_MACD feature macro.  */
-#define TARGET_PLUS_MACD  ((arc_mpy_option > 7) && TARGET_HS)
+#define TARGET_PLUS_MACD  ((arc_mpy_option > 7) && TARGET_HS && !TARGET_DSP)
 /* PLUS_QMACW feature macro.  */
-#define TARGET_PLUS_QMACW ((arc_mpy_option > 8) && TARGET_HS)
+#define TARGET_PLUS_QMACW ((arc_mpy_option > 8) && TARGET_HS && !TARGET_DSP)
 
 /* ARC600 and ARC601 feature macro.  */
 #define TARGET_ARC600_FAMILY (TARGET_ARC600 || TARGET_ARC601)
@@ -1635,9 +1635,9 @@ enum
 /* Double precision floating point support.  */
 #define TARGET_FP_DP_BASE   ((arc_fpu_build & FPU_DP) != 0)
 /* Single precision floating point support with fused operation.  */
-#define TARGET_FP_SP_FUSED  ((arc_fpu_build & FPU_SF) != 0)
+#define TARGET_FP_SP_FUSED  ((arc_fpu_build & FPU_SF) != 0 && !TARGET_DSP)
 /* Double precision floating point support with fused operation.  */
-#define TARGET_FP_DP_FUSED  ((arc_fpu_build & FPU_DF) != 0)
+#define TARGET_FP_DP_FUSED  ((arc_fpu_build & FPU_DF) != 0 && !TARGET_DSP)
 /* Single precision floating point conversion instruction support.  */
 #define TARGET_FP_SP_CONV   ((arc_fpu_build & FPU_SC) != 0)
 /* Double precision floating point conversion instruction support.  */
@@ -1659,6 +1659,23 @@ enum
 
 /* The default option for BI/BIH instructions.  */
 #define DEFAULT_BRANCH_INDEX 0
+
+/* DSP radix2 DIV/REM feature.  */
+#define TARGET_DSP_DIVREM (TARGET_V2 && TARGET_DSP			\
+			   && arc_dsp_divsqrt == DIVREM_RADIX2)
+
+/* DSP SQRT feature.  */
+#define TARGET_DSP_SQRT (TARGET_V2 && TARGET_DSP && arc_dsp_divsqrt != 0)
+
+/* Arithmetic DIV/REM feature, same for DSP RADIX4 config.  */
+#define TARGET_ARITH_DIVREM (TARGET_V2					\
+  && ((TARGET_DIVREM && !TARGET_DSP)					\
+      || (TARGET_DSP && arc_dsp_divsqrt == DIVREM_RADIX4)))
+
+/* DSP features flavors  */
+#define TARGET_DSP2 (TARGET_EM && TARGET_DSP)
+#define TARGET_DSP3 (TARGET_HS && TARGET_DSP)
+#define TARGET_DSPX (TARGET_V2 && TARGET_DSP)
 
 #ifndef TARGET_LRA
 #define TARGET_LRA arc_lra_p()

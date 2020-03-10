@@ -538,3 +538,20 @@ Enable use of BI/BIH instructions when available.
 mcode-density-frame
 Target Var(TARGET_CODE_DENSITY_FRAME) Init(TARGET_CODE_DENSITY_FRAME_DEFAULT)
 Enable ENTER_S and LEAVE_S opcodes for ARCv2.
+
+mdsp
+Target Report Mask(DSP)
+Enable DSP extension instructions.
+
+mdsp-divsqrt=
+Target RejectNegative Joined Enum(arc_dsp_divsqrt) Var(arc_dsp_divsqrt) Init(DEFAULT_radix)
+Enable DSP divide and square-root instructions.
+
+Enum
+Name(arc_dsp_divsqrt) Type(int)
+
+EnumValue
+Enum(arc_dsp_divsqrt) String(radix2) Value(DIVREM_RADIX2)
+
+EnumValue
+Enum(arc_dsp_divsqrt) String(radix4) Value(DIVREM_RADIX4)

@@ -1737,6 +1737,8 @@ arc_init_reg_tables (void)
 	case MODE_INT:
 	case MODE_PARTIAL_INT:
 	case MODE_COMPLEX_INT:
+	case MODE_FRACT:
+	case MODE_UFRACT:
 	  if (GET_MODE_SIZE (m) <= 4)
 	    arc_mode_class[i] = 1 << (int) S_MODE;
 	  else if (GET_MODE_SIZE (m) == 8)
@@ -5411,7 +5413,7 @@ arc_rtx_costs (rtx x, machine_mode mode, int outer_code,
 	  && (TARGET_FP_SP_SQRT || TARGET_FP_DP_SQRT))
 	*total = COSTS_N_INSNS(1);
       else if (GET_MODE_CLASS (mode) == MODE_INT
-	       && TARGET_DIVREM)
+	       && (TARGET_DIVREM || arc_dsp_divsqrt != 0))
 	*total = COSTS_N_INSNS(1);
       else if (speed)
 	*total = COSTS_N_INSNS(30);
@@ -6087,6 +6089,9 @@ arc_legitimate_constant_p (machine_mode mode, rtx x)
     case CONST_DOUBLE:
       return true;
 
+    case CONST_FIXED:
+      return TARGET_DSP ? true : false;
+
     case NEG:
       return arc_legitimate_constant_p (mode, XEXP (x, 0));
 
@@ -6359,6 +6364,16 @@ arc_init_builtins (void)
   tree long_ftype_v2si_v2hi
     = build_function_type_list (long_long_integer_type_node,
 				V2SI_type_node, V2HI_type_node, NULL_TREE);
+
+  /* DSP types.  */
+  tree shq_type_node = sat_fract_type_node;
+  tree ssq_type_node = sat_long_fract_type_node;
+
+  tree shq_ftype_shq
+    = build_function_type_list (shq_type_node, shq_type_node, NULL_TREE);
+
+  tree ssq_ftype_ssq
+    = build_function_type_list (ssq_type_node, ssq_type_node, NULL_TREE);
 
   /* Add the builtins.  */
 #define DEF_BUILTIN(NAME, N_ARGS, TYPE, ICODE, MASK)			\
@@ -10627,6 +10642,18 @@ mem_ok_for_ldd_std (rtx mem, rtx *base, rtx *offset)
   return false;
 }
 
+/* Implement TARGET_SCALAR_MODE_SUPPORTED_P.  */
+
+static bool
+arc_scalar_mode_supported_p (scalar_mode mode)
+{
+  if (ALL_FIXED_POINT_MODE_P (mode)
+      && GET_MODE_PRECISION (mode) <= 2 * BITS_PER_WORD)
+    return true;
+  else
+    return default_scalar_mode_supported_p (mode);
+}
+
 /* Called from peephole2 to replace two word-size accesses with a
    single LDD/STD instruction.  Returns true iff we can generate a new
    instruction sequence.  That is, both accesses use the same base
@@ -11055,6 +11082,12 @@ arc_libm_function_max_error (unsigned cfn, machine_mode mode,
 
 #undef  TARGET_LIBM_FUNCTION_MAX_ERROR
 #define TARGET_LIBM_FUNCTION_MAX_ERROR arc_libm_function_max_error
+
+#undef  TARGET_FIXED_POINT_SUPPORTED_P
+#define TARGET_FIXED_POINT_SUPPORTED_P hook_bool_void_true
+
+#undef TARGET_SCALAR_MODE_SUPPORTED_P
+#define TARGET_SCALAR_MODE_SUPPORTED_P arc_scalar_mode_supported_p
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
