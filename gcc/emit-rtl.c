@@ -2356,6 +2356,7 @@ adjust_address_1 (rtx memref, machine_mode mode, poly_int64 offset,
   scalar_int_mode address_mode;
   struct mem_attrs attrs (*get_mem_attrs (memref)), *defattrs;
   unsigned HOST_WIDE_INT max_align;
+  poly_int64 object_size;
 #ifdef POINTERS_EXTEND_UNSIGNED
   scalar_int_mode pointer_mode
     = targetm.addr_space.pointer_mode (attrs.addrspace);
@@ -2456,8 +2457,13 @@ adjust_address_1 (rtx memref, machine_mode mode, poly_int64 offset,
 
   if (maybe_ne (size, 0))
     {
+      /* Use size of record or union type to check object bounds correctly */
+      if (attrs.expr && RECORD_OR_UNION_TYPE_P (TREE_TYPE (attrs.expr)))
+        object_size = int_size_in_bytes (TREE_TYPE (attrs.expr));
+      else
+        object_size = attrs.size;
       /* Drop the object if the new right end is not within its bounds.  */
-      if (adjust_object && maybe_gt (offset + size, attrs.size))
+      if (adjust_object && maybe_gt (offset + size, object_size))
 	{
 	  attrs.expr = NULL_TREE;
 	  attrs.alias = 0;
