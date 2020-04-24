@@ -2440,7 +2440,12 @@ adjust_address_1 (rtx memref, machine_mode mode, poly_int64 offset,
       /* Drop the object if the new left end is not within its bounds.  */
       if (adjust_object && maybe_lt (attrs.offset, 0))
 	{
-	  attrs.expr = NULL_TREE;
+	  /* Make a copy of MEM_REF expression to preserve attribute list.
+	     It might be needed for some arch's */
+	  if (MEM_EXPR (memref) && TREE_CODE (MEM_EXPR (memref)) == MEM_REF)
+	    attrs.expr = copy_node(MEM_EXPR (memref));
+	  else
+	    attrs.expr = NULL_TREE;
 	  attrs.alias = 0;
 	}
     }
