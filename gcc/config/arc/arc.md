@@ -1018,11 +1018,11 @@
       switch (GET_CODE (XEXP(operands[0], 0)))
 	{
 	case POST_MODIFY: case POST_INC: case POST_DEC:
-	  return \"st%V0 %R1,%R0\;st%U0%V0 %1,%0\";
+	  return \"st%V0 %R1,%R0\;st%U0%V0 %1,%0\;nop_s\;nop_s\";
 	case PRE_MODIFY: case PRE_INC: case PRE_DEC:
-	  return \"st%U0%V0 %1,%0\;st%V0 %R1,%R0\";
+	  return \"st%U0%V0 %1,%0\;st%V0 %R1,%R0\;nop_s\;nop_s\";
 	default:
-	  return \"st%U0%V0 %1,%0\;st%U0%V0 %R1,%R0\";
+	  return \"st%U0%V0 %1,%0\;st%U0%V0 %R1,%R0\;nop_s\;nop_s\";
 	}
     }
 }"
@@ -1035,7 +1035,7 @@
   "arc_split_move (operands);"
   [(set_attr "type" "move,move,load,store")
    ;; ??? The ld/st values could be 4 if it's [reg,bignum].
-   (set_attr "length" "8,16,16,16")])
+   (set_attr "length" "8,16,16,20")])
 
 
 ;; Floating point move insns.

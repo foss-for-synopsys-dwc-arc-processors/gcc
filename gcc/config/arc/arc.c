@@ -958,6 +958,10 @@ arc_override_options (void)
   if (TARGET_COMPACT_CASESI)
     TARGET_CASE_VECTOR_PC_RELATIVE = 1;
 
+  /* A7 has an issue with delay slots.  */
+  if (TARGET_ARC700)
+    flag_delayed_branch = 0;
+
   /* These need to be done at start up.  It's convenient to do them here.  */
   arc_init ();
 }
@@ -6490,6 +6494,100 @@ arc_invalid_within_doloop (const_rtx insn)
   return NULL;
 }
 
+
+/* Return the next active insn, skiping the inline assembly code.  */
+
+static rtx
+arc_active_insn (rtx insn)
+{
+  while (insn)
+    {
+      insn = NEXT_INSN (insn);
+      if (insn == 0
+	  || (active_insn_p (insn)
+	      && NONDEBUG_INSN_P (insn)
+	      && !NOTE_P (insn)
+	      && GET_CODE (PATTERN (insn)) != UNSPEC_VOLATILE
+	      && GET_CODE (PATTERN (insn)) != PARALLEL))
+	break;
+    }
+  return insn;
+}
+
+/* Search for a sequence made out of two stores and a given number of
+   loads, insert a nop if required.  */
+
+static void
+check_store_cacheline_hazard (void)
+{
+  rtx insn, succ0, insn1;
+  bool found = false;
+
+  for (insn = get_insns (); insn; insn = arc_active_insn (insn))
+    {
+      succ0 = arc_active_insn (insn);
+
+      if (!succ0)
+	return;
+
+      if (!single_set (insn))
+	continue;
+
+      if ((get_attr_type (insn) != TYPE_STORE))
+	continue;
+
+      /* Found at least two consecutive stores.  Goto the end of the
+	 store sequence.  */
+      for (insn1 = succ0; insn1; insn1 = arc_active_insn (insn1))
+	if (!single_set (insn1) || get_attr_type (insn1) != TYPE_STORE)
+	  break;
+
+      /* Save were we are.  */
+      succ0 = insn1;
+
+      /* Now, check the next two instructions for the following cases:
+         1. next instruction is a LD => insert 2 nops between store
+	    sequence and load.
+	 2. next-next instruction is a LD => inset 1 nop after the store
+	    sequence.  */
+      if (insn1 && single_set (insn1)
+	  && (get_attr_type (insn1) == TYPE_LOAD))
+	{
+	  found = true;
+	  emit_insn_before (gen_nopv (), insn1);
+	  emit_insn_before (gen_nopv (), insn1);
+	}
+      else
+	{
+	  if (insn1 && !JUMP_P (insn1)
+	      && (get_attr_type (insn1) == TYPE_COMPARE))
+	    {
+	      /* REG_SAVE_NOTE is used by Haifa scheduler, we are in
+		 reorg, so it is safe to reuse it for avoiding the
+		 current compare insn to be part of a BRcc
+		 optimization.  */
+	      add_reg_note (insn1, REG_SAVE_NOTE, GEN_INT (3));
+	    }
+	  insn1 = arc_active_insn (insn1);
+	  if (insn1 && single_set (insn1)
+	      && (get_attr_type (insn1) == TYPE_LOAD))
+	    {
+	      found = true;
+	      emit_insn_before (gen_nopv (), insn1);
+	    }
+	}
+
+      if (found)
+	{
+	  insn = insn1;
+	  found = false;
+	}
+      else
+	insn = succ0;
+    }
+}
+
+
 /* The same functionality as arc_hazard. It is called in machine reorg
    before any other optimization. Hence, the NOP size is taken into
    account when doing branch shortening. */
@@ -6501,25 +6599,9 @@ workaround_arc_anomaly (void)
   if (!TARGET_ARC700)
     return;
 
-  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
-    {
-      succ0 = next_real_insn(insn);
-      if (arc_store_addr_hazard_p (insn, succ0))
-	{
-	  emit_insn_after (gen_nopv (), insn);
-	  emit_insn_after (gen_nopv (), insn);
-	  continue;
-	}
-
-      /* Avoid adding nops if the instruction between the ST and LD is
-	 a call or jump. */
-      succ1 = next_real_insn(succ0);
-      if (succ0 && !JUMP_P (succ0) && !CALL_P (succ0)
-	  && arc_store_addr_hazard_p (insn, succ1))
-	{
-	  emit_insn_after (gen_nopv (), insn);
-	}
-    }
+  /* Insert a NOP between store(s) and consequtive loads
+     operations.  */
+  check_store_cacheline_hazard ();
 }
 
 static int arc_reorg_in_progress = 0;
@@ -6880,6 +6962,10 @@ arc_reorg (void)
 		  /* Avoid FPU instructions. */
 		  || (GET_MODE (SET_DEST (PATTERN (link_insn))) == CC_FPUmode)
 		  || (GET_MODE (SET_DEST (PATTERN (link_insn))) == CC_FPUEmode))
+		continue;
+	      else if (find_reg_note (link_insn, REG_SAVE_NOTE, GEN_INT (3)))
+		/* Avoid making brcc instructions when we need to
+		   patch ST LD LD LD sequence.  */
 		continue;
 	      else
 		/* Check if this is a data dependency.  */
