@@ -6845,7 +6845,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 loose_warn=
 save_CXXFLAGS="$CXXFLAGS"
-for real_option in -W -Wall -Wclass-is-pod -Wmismatched-tags -Wno-narrowing -Wstruct-not-pod -Wwrite-strings -Wcast-qual -Wno-error=format-diag $wf_opt; do
+for real_option in -W -Wall -Wno-narrowing -Wwrite-strings -Wcast-qual -Wno-error=format-diag $wf_opt; do
   # Do the check with the no- prefix removed since gcc silently
   # accepts any -Wno-* option on purpose
   case $real_option in
