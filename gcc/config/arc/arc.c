@@ -5833,7 +5833,7 @@ arc_expand_builtin (tree exp,
   switch (fcode)
     {
     case ARC_BUILTIN_NOP:
-      emit_insn (gen_nop ());
+      emit_insn (gen_nopv ());
       return NULL_RTX;
 
     case ARC_BUILTIN_NORM:
