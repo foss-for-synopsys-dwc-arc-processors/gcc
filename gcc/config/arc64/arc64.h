@@ -506,6 +506,17 @@ extern const enum reg_class arc64_regno_to_regclass[];
        "jl\t[r12]\n"						\
        TEXT_SECTION_ASM_OP);
 
+/* ATOMIC options.  */
+/* FIXME: is 0 okay or should it be -1 like DEFAULT_arc_mpy_option?  */
+/* Default atomic option value.  */
+#undef DEFAULT_ARC_ATOMIC_OPTION
+#define DEFAULT_ARC_ATOMIC_OPTION 0
+
+#define TARGET_ATOMIC_1 (arc_atomic_option > 0)
+#define TARGET_ATOMIC_2 (arc_atomic_option > 1)
+#define TARGET_ATOMIC_3 (arc_atomic_option > 2)
+#define TARGET_ATOMIC   (TARGET_ATOMIC_1 | TARGET_ATOMIC_2 | TARGET_ATOMIC_3)
+
 /* DIVREM options.  */
 #undef TARGET_ARC64_DIVREM_DEFAULT
 #define TARGET_ARC64_DIVREM_DEFAULT 0

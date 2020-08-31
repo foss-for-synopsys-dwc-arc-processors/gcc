@@ -58,7 +58,7 @@
    (match_operand:SI 5 "const_int_operand")		;; is_weak
    (match_operand:SI 6 "const_int_operand")		;; mod_s
    (match_operand:SI 7 "const_int_operand")]		;; mod_f
-  ""
+  "TARGET_ATOMIC"
 {
   arc64_expand_compare_and_swap (operands);
   DONE;
@@ -77,7 +77,7 @@
 	   (match_operand:SI 5 "const_int_operand")	;; mod_s
 	   (match_operand:SI 6 "const_int_operand")]	;; mod_f
 	  ARC64_VUNSPEC_CAS))]
-  ""
+  "TARGET_ATOMIC"
   "#"
   "&& reload_completed"
   [(const_int 0)]
@@ -91,7 +91,7 @@
 	(unspec_volatile:SDI
 	  [(match_operand:SDI 1 "mem_noofs_operand" "ATOMC")]
 	  ARC64_VUNSPEC_LL))]
-  ""
+  "TARGET_ATOMIC"
   "llock<mcctab> %0,%1"
   [(set_attr "type" "llock")
    (set_attr "iscompact" "no")
@@ -103,7 +103,7 @@
 	(unspec_volatile:SDI[(match_operand:SDI 1 "register_operand" "r")]
 			   ARC64_VUNSPEC_SC))
    (clobber (reg:CC_Z CC_REGNUM))]
-  ""
+  "TARGET_ATOMIC"
   "scond<mcctab> %1,%0"
   [(set_attr "type" "scond")
    (set_attr "iscompact" "no")
@@ -115,7 +115,7 @@
    (match_operand:SI 1 "mem_noofs_operand" "")
    (match_operand:SI 2 "register_operand" "")
    (match_operand:SI 3 "const_int_operand" "")]
-  ""
+  "TARGET_ATOMIC"
 {
   enum memmodel model = (enum memmodel) INTVAL (operands[3]);
 
@@ -131,7 +131,7 @@
 			    ARC64_VUNSPEC_EX))
    (set (match_dup 1)
 	(match_operand:SDI 2 "register_operand" "0"))]
-  ""
+  "TARGET_ATOMIC"
   "ex<mcctab> %0,%1"
   [(set_attr "type" "ex")
    (set_attr "iscompact" "no")
@@ -143,7 +143,7 @@
    (atomicop:SI (match_dup 0)
 		(match_operand:SI 1 "register_operand" "")) ;; operand
    (match_operand:SI 2 "const_int_operand" "")] ;; model
-  ""
+  "TARGET_ATOMIC"
 {
   arc64_expand_atomic_op (<CODE>, operands[0], operands[1],
 				NULL_RTX, NULL_RTX, operands[2]);
@@ -154,7 +154,7 @@
   [(match_operand:SI 0 "mem_noofs_operand" "")	;; memory
    (match_operand:SI 1 "register_operand" "")	;; operand
    (match_operand:SI 2 "const_int_operand" "")]	;; model
-  ""
+  "TARGET_ATOMIC"
 {
  arc64_expand_atomic_op (NOT, operands[0], operands[1],
 			    NULL_RTX, NULL_RTX, operands[2]);
@@ -167,7 +167,7 @@
    (atomicop:SI (match_dup 1)
 		(match_operand:SDI 2 "register_operand" "")) ;; operand
    (match_operand:SI 3 "const_int_operand" "")]	;; model
-  ""
+  "TARGET_ATOMIC"
 {
   arc64_expand_atomic_op (<CODE>, operands[1], operands[2],
 				operands[0], NULL_RTX, operands[3]);
@@ -179,7 +179,7 @@
    (match_operand:SDI 1 "mem_noofs_operand" "")	;; memory
    (match_operand:SDI 2 "register_operand" "")	;; operand
    (match_operand:SDI 3 "const_int_operand" "")]	;; model
-  ""
+  "TARGET_ATOMIC"
 {
   arc64_expand_atomic_op (NOT, operands[1], operands[2],
 			     operands[0], NULL_RTX, operands[3]);
@@ -192,7 +192,7 @@
    (atomicop:SDI (match_dup 1)
 		(match_operand:SDI 2 "register_operand" "")) ;; operand
    (match_operand:SDI 3 "const_int_operand" "")]	;; model
-  ""
+  "TARGET_ATOMIC"
 {
   arc64_expand_atomic_op (<CODE>, operands[1], operands[2],
 				NULL_RTX, operands[0], operands[3]);
@@ -204,7 +204,7 @@
    (match_operand:SDI 1 "mem_noofs_operand" "")		;; memory
    (match_operand:SDI 2 "register_operand" "")		;; operand
    (match_operand:SDI 3 "const_int_operand" "")]	;; model
-  ""
+  "TARGET_ATOMIC"
 {
   arc64_expand_atomic_op (NOT, operands[1], operands[2],
 			     NULL_RTX, operands[0], operands[3]);
