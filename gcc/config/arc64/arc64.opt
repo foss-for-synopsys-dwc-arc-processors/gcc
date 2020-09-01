@@ -38,22 +38,22 @@ Target RejectNegative Joined Enum(cmodel) Var(arc64_cmodel_var) Init(ARC64_CMODE
 Specify the code model.
 
 Enum
-Name(arc_atomic) Type(int)
+Name(arc64_atomic) Type(int)
 
 EnumValue
-Enum(arc_atomic) String(0) Value(0)
+Enum(arc64_atomic) String(0) Value(0)
 
 EnumValue
-Enum(arc_atomic) String(1) Value(1)
+Enum(arc64_atomic) String(1) Value(1)
 
 EnumValue
-Enum(arc_atomic) String(2) Value(2)
+Enum(arc64_atomic) String(2) Value(2)
 
 EnumValue
-Enum(arc_atomic) String(3) Value(3)
+Enum(arc64_atomic) String(3) Value(3)
 
 matomic=
-Target RejectNegative Joined Enum(arc_atomic) Var(arc_atomic_option) Init(DEFAULT_ARC_ATOMIC_OPTION)
+Target RejectNegative Joined Enum(arc64_atomic) Var(arc64_atomic_option) Init(DEFAULT_ARC64_ATOMIC_OPTION)
 -matomic=atomic	Enable atomic instructions: {0, 1, 2, 3}
 
 mdiv-rem

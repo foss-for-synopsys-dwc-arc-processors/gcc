@@ -17,10 +17,7 @@
    <http://www.gnu.org/licenses/>.
 */
 
-ARC64_C_DEF ("__ARC64_ATOMIC_0__",	(arc_atomic_option == 0))
-ARC64_C_DEF ("__ARC64_ATOMIC_1__",	(arc_atomic_option == 1))
-ARC64_C_DEF ("__ARC64_ATOMIC_2__",	(arc_atomic_option == 2))
-ARC64_C_DEF ("__ARC64_ATOMIC_3__",	(arc_atomic_option == 3))
+//ARC_C_DEF ("__ARC_UNALIGNED__", unaligned_access)
 
 /* Local Variables: */
 /* mode: c */
