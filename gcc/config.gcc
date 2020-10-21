@@ -4187,18 +4187,70 @@ case "${target}" in
 		;;
 
 	arc*-*-*)
-		supported_defaults="cpu"
+		supported_defaults="cpu fpu"
 
+		new_cpu=arc700
 		if [ x"$with_cpu" = x ] \
 		    || grep "^ARC_CPU ($with_cpu," \
 		       ${srcdir}/config/arc/arc-cpus.def \
 		       > /dev/null; then
 		 # Ok
-		 true
+		 new_cpu=$with_cpu
 		else
 		 echo "Unknown cpu used in --with-cpu=$with_cpu" 1>&2
 		 exit 1
 		fi
+
+		# see if --with-fpu matches any of the supported FPUs
+		case "$with_fpu" in
+		"")
+			# OK
+			;;
+		fpus | fpus_div | fpus_fma | fpus_all)
+			# OK if em or hs
+			if grep -P "^ARC_CPU \($new_cpu,\s+[emhs]+," \
+			   ${srcdir}/config/arc/arc-cpus.def \
+			   > /dev/null; then
+			   # OK
+			   true
+			else
+			 echo "Unknown floating point type used in "\
+			 "--with-fpu=$with_fpu for cpu $new_cpu" 1>&2
+			 exit 1
+			fi
+		;;
+		fpuda | fpuda_div | fpuda_fma | fpuda_all)
+			# OK only em
+			if grep -P "^ARC_CPU \($new_cpu,\s+em," \
+			   ${srcdir}/config/arc/arc-cpus.def \
+			   > /dev/null; then
+			   # OK
+			   true
+			else
+			 echo "Unknown floating point type used in "\
+			      "--with-fpu=$with_fpu for cpu $new_cpu" 1>&2
+			 exit 1
+			fi
+			;;
+		fpud | fpud_div | fpud_fma | fpud_all)
+			# OK only hs
+			if grep -P "^ARC_CPU \($new_cpu,\s+hs," \
+			   ${srcdir}/config/arc/arc-cpus.def \
+			   > /dev/null; then
+			   # OK
+			   true
+			else
+			 echo "Unknown floating point type used in"\
+			      "--with-fpu=$with_fpu for cpu $new_cpu" 1>&2
+			 exit 1
+			fi
+			;;
+		*)
+			echo "Unknown floating point type used in "\
+			     "--with-fpu=$with_fpu" 1>&2
+			exit 1
+			;;
+		esac
 		;;
 
     csky-*-*)
