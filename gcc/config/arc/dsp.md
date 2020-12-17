@@ -321,57 +321,6 @@
   [(set_attr "length" "8")
    (set_attr "type" "misc")])
 
-;; Combiner patterns: Compare with zero
-;;czi;;(define_insn "<optab>_cmp0_noout"
-;;czi;;  [(set (reg:CC_ZN CC_REG)
-;;czi;;	(compare:CC_ZN
-;;czi;;	 (ss_addsub:SQ (match_operand:SQ 0 "register_operand" "<abelian>r,  r")
-;;czi;;		       (match_operand:SQ 1 "nonmemory_operand"        "rL,Cal"))
-;;czi;;	 (const_int 0)))]
-;;czi;;   "TARGET_DSPX"
-;;czi;;   "<code_asmname>.f\\t0,%0,%1"
-;;czi;;   [(set_attr "length" "4,8")
-;;czi;;    (set_attr "cond" "set_zn")
-;;czi;;    (set_attr "type" "misc")])
-;;czi;;
-;;czi;;(define_insn "<optab>_cmp0"
-;;czi;;  [(set (reg:CC_ZN CC_REG)
-;;czi;;	(compare:CC_ZN
-;;czi;;	 (ss_addsub:SQ (match_operand:SQ 1 "register_operand" "<abelian>r,  r")
-;;czi;;		       (match_operand:SQ 2 "nonmemory_operand"        "rL,Cal"))
-;;czi;;	 (const_int 0)))
-;;czi;;   (set (match_operand:SQ 0 "register_operand" "=r,r")
-;;czi;;	(ss_addsub:SQ (match_dup 1) (match_dup 2)))]
-;;czi;;   "TARGET_DSPX"
-;;czi;;   "<code_asmname>.f\\t%0,%1,%2"
-;;czi;;   [(set_attr "length" "4,8")
-;;czi;;    (set_attr "cond" "set_zn")
-;;czi;;    (set_attr "type" "misc")])
-;;czi;;
-;;czi;;(define_insn "<optab><mode>_cmp0_noout"
-;;czi;;  [(set (reg:CC_Z CC_REG)
-;;czi;;	(compare:CC_Z
-;;czi;;	 (ss_absneg:FIXED (match_operand:FIXED 0 "register_operand" "r"))
-;;czi;;	 (const_int 0)))]
-;;czi;;   "TARGET_DSPX"
-;;czi;;   "<code_asmname><code_asmsuffix>.f\\t0,%0"
-;;czi;;   [(set_attr "length" "4")
-;;czi;;    (set_attr "cond" "set_zn")
-;;czi;;    (set_attr "type" "misc")])
-;;czi;;
-;;czi;;(define_insn "<optab><mode>_cmp0"
-;;czi;;  [(set (reg:CC_Z CC_REG)
-;;czi;;	(compare:CC_Z
-;;czi;;	 (ss_absneg:FIXED (match_operand:FIXED 1 "register_operand" "r"))
-;;czi;;	 (const_int 0)))
-;;czi;;   (set (match_operand:FIXED 0 "register_operand" "=r")
-;;czi;;	(ss_absneg:FIXED (match_dup 1)))]
-;;czi;;   "TARGET_DSPX"
-;;czi;;   "<code_asmname><code_asmsuffix>.f\\t%0,%1"
-;;czi;;   [(set_attr "length" "4")
-;;czi;;    (set_attr "cond" "set_zn")
-;;czi;;    (set_attr "type" "misc")])
-
 ;; Basic arithmetic operations
 
 ;; The falowing patterns are for radix-2 DSP implementation which is
@@ -549,3 +498,63 @@
   [(set_attr "length" "4,4,8")
    (set_attr "type" "misc")])
 
+;; MPYW instructions
+(define_insn "mulhisi3_dsp"
+  [(set (match_operand:SI 0 "register_operand"                          "=Rcqq,r,r")
+	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand"  "   0,0,r"))
+		 (sign_extend:SI (match_operand:HI 2 "nonmemory_operand" "Rcqq,r,r"))))
+   (clobber (reg:DI ARCV2_ACC))]
+  "TARGET_DSP"
+  "mpyw%?\\t%0,%1,%2"
+  [(set_attr "length" "*,4,4")
+   (set_attr "iscompact" "maybe,false,false")
+   (set_attr "type" "mul16_em")
+   (set_attr "predicable" "yes,yes,no")
+   (set_attr "cond" "canuse,canuse,nocond")
+   ])
+
+(define_insn "*mulhisi3_idsp"
+  [(set (match_operand:SI 0 "register_operand"                         "=r,r,r,  r,  r")
+	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand" "0,r,0,  0,  r"))
+		 (match_operand:HI 2 "short_const_int_operand"          "L,L,I,C16,C16")))
+   (clobber (reg:DI ARCV2_ACC))]
+  "TARGET_DSP"
+  "mpyw%?\\t%0,%1,%2"
+  [(set_attr "length" "4,4,4,8,8")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "mul16_em")
+   (set_attr "predicable" "yes,no,no,yes,no")
+   (set_attr "cond" "canuse,nocond,nocond,canuse_limm,nocond")
+   ])
+
+(define_insn "umulhisi3_dsp"
+  [(set (match_operand:SI 0 "register_operand"                          "=Rcqq, r, r")
+	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" "   %0, 0, r"))
+		 (zero_extend:SI (match_operand:HI 2 "register_operand" " Rcqq, r, r"))))
+   (clobber (reg:DI ARCV2_ACC))]
+  "TARGET_DSP"
+  "mpyuw%?\\t%0,%1,%2"
+  [(set_attr "length" "*,4,4")
+   (set_attr "iscompact" "maybe,false,false")
+   (set_attr "type" "mul16_em")
+   (set_attr "predicable" "yes,yes,no")
+   (set_attr "cond" "canuse,canuse,nocond")
+   ])
+
+(define_insn "*umulhisi3_idsp"
+  [(set (match_operand:SI 0 "register_operand"                          "=r, r,  r,  r,  r")
+	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" "%0, r,  0,  0,  r"))
+		 (match_operand:HI 2 "short_unsigned_const_operand"     " L, L,J12,J16,J16")))
+   (clobber (reg:DI ARCV2_ACC))]
+  "TARGET_DSP"
+  "mpyuw%?\\t%0,%1,%2"
+  [(set_attr "length" "4,4,4,8,8")
+   (set_attr "iscompact" "false")
+   (set_attr "type" "mul16_em")
+   (set_attr "predicable" "yes,no,no,yes,no")
+   (set_attr "cond" "canuse,nocond,nocond,canuse_limm,nocond")
+   ])
+
+;; mpy mpyu mpym mpymu are the same as the standard implementation,
+;; nothing to do for now.
+;; The same situation for plus_dmpy mpy instructions.

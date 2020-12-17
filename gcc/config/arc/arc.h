@@ -1601,9 +1601,9 @@ enum
   (GET_CODE (PATTERN (insn)) != COND_EXEC || !flag_pic || !TARGET_MEDIUM_CALLS)
 
 /* MPYW feature macro.  Only valid for ARCHS and ARCEM cores.  */
-#define TARGET_MPYW     ((arc_mpy_option > 0) && TARGET_V2)
+#define TARGET_MPYW     ((arc_mpy_option > 0) && TARGET_V2 && !TARGET_DSP)
 /* Full ARCv2 multiplication feature macro.  */
-#define TARGET_MULTI    ((arc_mpy_option > 1) && TARGET_V2)
+#define TARGET_MULTI    (((arc_mpy_option > 1) && TARGET_V2) || TARGET_DSP)
 /* General MPY feature macro.  */
 #define TARGET_MPY      ((TARGET_ARC700 && (!TARGET_NOMPY_SET)) || TARGET_MULTI)
 /* ARC700 MPY feature macro.  */
@@ -1612,11 +1612,11 @@ enum
 #define TARGET_ANY_MPY						\
   (TARGET_MPY || TARGET_MUL64_SET || TARGET_MULMAC_32BY16_SET)
 /* PLUS_DMPY feature macro.  */
-#define TARGET_PLUS_DMPY  ((arc_mpy_option > 6) && TARGET_HS && !TARGET_DSP)
+#define TARGET_PLUS_DMPY  (((arc_mpy_option > 6) && TARGET_HS) || TARGET_DSP)
 /* PLUS_MACD feature macro.  */
-#define TARGET_PLUS_MACD  ((arc_mpy_option > 7) && TARGET_HS && !TARGET_DSP)
+#define TARGET_PLUS_MACD  (((arc_mpy_option > 7) && TARGET_HS) || TARGET_DSP)
 /* PLUS_QMACW feature macro.  */
-#define TARGET_PLUS_QMACW ((arc_mpy_option > 8) && TARGET_HS && !TARGET_DSP)
+#define TARGET_PLUS_QMACW (((arc_mpy_option > 8) && TARGET_HS) || TARGET_DSP)
 
 /* ARC600 and ARC601 feature macro.  */
 #define TARGET_ARC600_FAMILY (TARGET_ARC600 || TARGET_ARC601)
@@ -1676,6 +1676,8 @@ enum
 #define TARGET_DSP2 (TARGET_EM && TARGET_DSP)
 #define TARGET_DSP3 (TARGET_HS && TARGET_DSP)
 #define TARGET_DSPX (TARGET_V2 && TARGET_DSP)
+
+#define TARGET_HAS_MPYW   (TARGET_MPYW || TARGET_DSP)
 
 #ifndef TARGET_LRA
 #define TARGET_LRA arc_lra_p()
