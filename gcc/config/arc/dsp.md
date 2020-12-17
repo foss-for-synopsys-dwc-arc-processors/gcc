@@ -558,3 +558,52 @@
 ;; mpy mpyu mpym mpymu are the same as the standard implementation,
 ;; nothing to do for now.
 ;; The same situation for plus_dmpy mpy instructions.
+
+;; Vector packing/unpacking
+
+(define_insn "vec_duplicatev2hi"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(vec_duplicate:V2HI
+	 (match_operand:HI 1 "register_operand"  "r")))]
+  "TARGET_DSP"
+  "vrep2hl\\t%0,%1"
+  [(set_attr "length" "4")
+   (set_attr "type" "vpack")])
+
+(define_insn "vec_shl_insert_v2hi"
+  [(set (match_operand:V2HI 0 "register_operand"  "=r")
+	(unspec:V2HI
+	 [(match_operand:V2HI 1 "register_operand" "r")
+	  (match_operand:HI 2 "register_operand"   "r")]
+	 UNSPEC_ARC_VPACK2HL))]
+  "TARGET_DSP"
+  "vpack2hl\\t%0,%1,%2"
+  [(set_attr "length" "4")
+   (set_attr "type" "vpack")])
+
+;; DSP vector arithmetics
+(define_insn "smaxv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+       (smax:V2HI (match_operand:V2HI 1 "register_operand" "r")
+                  (match_operand:V2HI 2 "register_operand" "r")))]
+  "TARGET_DSP"
+  "vmax2h\\t%0,%1,%2"
+  [(set_attr "length" "4")
+   (set_attr "type" "vpack")])
+
+(define_insn "sminv2hi3"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+       (smin:V2HI (match_operand:V2HI 1 "register_operand" "r")
+                  (match_operand:V2HI 2 "register_operand" "r")))]
+  "TARGET_DSP"
+  "vmin2h\\t%0,%1,%2"
+  [(set_attr "length" "4")
+   (set_attr "type" "vpack")])
+
+(define_insn "negv2hi2"
+  [(set (match_operand:V2HI 0 "register_operand" "=r")
+	(neg:V2HI (match_operand:V2HI 1 "register_operand" "r")))]
+  "TARGET_DSP"
+  "vneg2h\\t%0,%1"
+  [(set_attr "length" "4")
+   (set_attr "type" "vpack")])

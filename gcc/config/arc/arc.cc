@@ -1027,7 +1027,7 @@ arc_init (void)
       flag_pic = 0;
     }
 
-  if (arc_mpy_option && TARGET_DSP)
+  if ((arc_mpy_option > 0) && TARGET_DSP)
     error ("no MPY/DSP mixing allowed");
 
   arc_init_reg_tables ();

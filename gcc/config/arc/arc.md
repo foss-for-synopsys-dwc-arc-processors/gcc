@@ -139,6 +139,7 @@
   UNSPEC_ARC_VMPY2HU
   UNSPEC_ARC_SATF
   UNSPEC_ARC_SADDSUBLOW
+  UNSPEC_ARC_VPACK2HL
 
   VUNSPEC_ARC_RTIE
   VUNSPEC_ARC_SYNC
@@ -256,7 +257,7 @@
    simd_vcompare, simd_vpermute, simd_vpack, simd_vpack_with_acc,
    simd_valign, simd_valign_with_acc, simd_vcontrol,
    simd_vspecial_3cycle, simd_vspecial_4cycle, simd_dma, mul16_em, div_rem,
-   fpu, fpu_fuse, fpu_sdiv, fpu_ddiv, fpu_cvt, block"
+   fpu, fpu_fuse, fpu_sdiv, fpu_ddiv, fpu_cvt, block, vpack"
   (cond [(eq_attr "is_sfunc" "yes")
 	 (cond [(match_test "!TARGET_LONG_CALLS_SET && (!TARGET_MEDIUM_CALLS || GET_CODE (PATTERN (insn)) != COND_EXEC)") (const_string "call")
 		(match_test "flag_pic") (const_string "sfunc")]

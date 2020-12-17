@@ -540,7 +540,7 @@ Target Var(TARGET_CODE_DENSITY_FRAME) Init(TARGET_CODE_DENSITY_FRAME_DEFAULT)
 Enable ENTER_S and LEAVE_S opcodes for ARCv2.
 
 mdsp
-Target Report Mask(DSP)
+Target Mask(DSP)
 Enable DSP extension instructions.
 
 mdsp-divsqrt=
