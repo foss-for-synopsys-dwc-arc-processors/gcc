@@ -1,5 +1,5 @@
 /* { dg-do run { target { fixed_point } } } */
-/* { dg-require-effective-target archs } */
+/* { dg-require-effective-target dsp } */
 /* { dg-options "-std=gnu99 -mdsp -O2" } */
 
 /* Check basic arithmetic ops for ARC fixed-point/saturating operation
