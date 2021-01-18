@@ -10652,7 +10652,7 @@ arc_scalar_mode_supported_p (scalar_mode mode)
 {
   if (ALL_FIXED_POINT_MODE_P (mode)
       && GET_MODE_PRECISION (mode) <= 2 * BITS_PER_WORD)
-    return true;
+    return TARGET_DSP ? true : false;
   else
     return default_scalar_mode_supported_p (mode);
 }
@@ -11059,6 +11059,13 @@ arc_libm_function_max_error (unsigned cfn, machine_mode mode,
   return default_libm_function_max_error (cfn, mode, boundary_p);
 }
 
+/* Return true if we support fix point arithmetics.  */
+static bool
+arc_fixed_point_supported_p (void)
+{
+  return TARGET_DSP ? true : false;
+}
+
 #undef TARGET_USE_ANCHORS_FOR_SYMBOL_P
 #define TARGET_USE_ANCHORS_FOR_SYMBOL_P arc_use_anchors_for_symbol_p
 
@@ -11087,7 +11094,7 @@ arc_libm_function_max_error (unsigned cfn, machine_mode mode,
 #define TARGET_LIBM_FUNCTION_MAX_ERROR arc_libm_function_max_error
 
 #undef  TARGET_FIXED_POINT_SUPPORTED_P
-#define TARGET_FIXED_POINT_SUPPORTED_P hook_bool_void_true
+#define TARGET_FIXED_POINT_SUPPORTED_P arc_fixed_point_supported_p
 
 #undef TARGET_SCALAR_MODE_SUPPORTED_P
 #define TARGET_SCALAR_MODE_SUPPORTED_P arc_scalar_mode_supported_p
