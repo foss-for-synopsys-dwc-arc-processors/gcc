@@ -4320,7 +4320,7 @@ case "${target}" in
 		done
 		;;
 
-	arc*-*-*)
+	arc-*-* | arc[eb]*-*-*)
 		supported_defaults="cpu"
 
 		if [ x"$with_cpu" = x ] \
@@ -4333,6 +4333,20 @@ case "${target}" in
 		 echo "Unknown cpu used in --with-cpu=$with_cpu" 1>&2
 		 exit 1
 		fi
+		;;
+
+	arc64-*-*)
+		supported_defaults="fpu"
+		case "$with_fpu" in
+		"" | fpus)
+			# OK
+			;;
+		*)
+			echo "Unknown floating point type used in "\
+			     "--with-fpu=$with-fpu" 1>&2
+			exit 1
+			;;
+		esac
 		;;
 
     csky-*-*)
