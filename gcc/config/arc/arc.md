@@ -5050,8 +5050,8 @@ archs4x, archs4xd"
 			(const_int 1))
 		    (label_ref (match_operand 1 "" ""))
 		    (pc)))
-	      (set (match_dup 0) (plus (match_dup 0) (const_int -1)))
-	      (unspec [(const_int 0)] UNSPEC_ARC_LP)
+	      (set (match_dup 0) (plus:SI (match_dup 0) (const_int -1)))
+	      (unspec:SI [(const_int 0)] UNSPEC_ARC_LP)
 	      (clobber (match_dup 2))])]
   ""
 {
@@ -5079,8 +5079,8 @@ archs4x, archs4xd"
 		      (label_ref (match_operand 1 "" ""))
 		      (pc)))
    (set (match_operand:SI 0 "nonimmediate_operand" "=r,m")
-	(plus (match_dup 2) (const_int -1)))
-   (unspec [(const_int 0)] UNSPEC_ARC_LP)
+	(plus:SI (match_dup 2) (const_int -1)))
+   (unspec:SI [(const_int 0)] UNSPEC_ARC_LP)
    (clobber (match_scratch:SI 3 "=X,&r"))]
   ""
   "; ZOL_END, begins @%l1"
@@ -5096,8 +5096,8 @@ archs4x, archs4xd"
 			  (const_int 1))
 		      (label_ref (match_operand 1 ""))
 		      (pc)))
-   (set (match_dup 0) (plus (match_dup 0) (const_int -1)))
-   (unspec [(const_int 0)] UNSPEC_ARC_LP)
+   (set (match_dup 0) (plus:SI (match_dup 0) (const_int -1)))
+   (unspec:SI [(const_int 0)] UNSPEC_ARC_LP)
    (clobber (match_scratch:SI 2))]
   "memory_operand (operands[0], SImode)"
   [(set (match_dup 2) (match_dup 0))
