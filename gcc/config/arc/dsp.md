@@ -600,7 +600,7 @@
   [(set_attr "length" "4")
    (set_attr "type" "vpack")])
 
-(define_insn "negv2hi2"
+(define_insn "*negv2hi2"
   [(set (match_operand:V2HI 0 "register_operand" "=r")
 	(neg:V2HI (match_operand:V2HI 1 "register_operand" "r")))]
   "TARGET_DSP"
