@@ -1395,13 +1395,13 @@
 (define_mode_attr V_addsub_suffix [(V2HI "2h") (V2SI "")])
 
 ;;all vectors
-(define_mode_iterator VCT [(V2HI "TARGET_PLUS_DMPY")
+(define_mode_iterator VCT [(V2HI "TARGET_DSP || TARGET_PLUS_DMPY")
 			   (V4HI "TARGET_PLUS_QMACW")
 			   (V2SI "TARGET_PLUS_QMACW")])
 (define_mode_attr V_suffix [(V2HI "2h") (V4HI "4h") (V2SI "2")])
 
-(define_code_iterator EMUVEC [(mult "TARGET_MPYW")
-			      (div "TARGET_DIVREM")
+(define_code_iterator EMUVEC [(mult "TARGET_HAS_MPYW")
+			      (div "TARGET_ARITH_DIVREM")
 			      smax smin])
 
 (define_code_attr voptab [(mult "mul")
