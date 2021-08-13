@@ -4340,12 +4340,21 @@ arc64_limm_addr_p (rtx op)
     case CONST_INT:
     case CONST:
     case UNSPEC:
+    case LO_SUM:
       return true;
+
+    case PRE_INC:
+    case PRE_DEC:
+    case POST_INC:
+    case POST_DEC:
+    case PRE_MODIFY:
+    case POST_MODIFY:
     case PLUS:
-      /* legitimate address doesn't recognize [b,limm] variant of ld.
+      /* legitimate address doesn't recognize [b,limm] variant of st.
 	 Hence, use it to determine if we have limm or not in
 	 address.  */
-      return !arc64_legitimate_address_p (GET_MODE (op), op, true);
+      return !arc64_legitimate_address_1_p (GET_MODE (op), op,
+					    false, false, true);
     default:
       break;
     }
