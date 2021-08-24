@@ -757,7 +757,10 @@ arc64_legitimate_address_1_p (machine_mode mode,
       && (ARC64_CHECK_SMALL_IMMEDIATE (XEXP (x, 1),
 				       scaling_p ? mode : QImode)
 	  || (load_p && CONST_INT_P (XEXP (x, 1))
-	      && !lra_in_progress && !optimize_size)))
+	      /* FIXME! we can use address scalling here to fit even more.  */
+	      && (UNSIGNED_INT32 (INTVAL (XEXP (x, 1)))
+		  || SIGNED_INT32 (INTVAL (XEXP (x, 1))))
+	      && !optimize_size)))
       return true;
 
   /* Indexed addresses.  */
