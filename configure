@@ -16478,7 +16478,7 @@ else
 fi
 
 
-RAW_CXX_FOR_TARGET="$CXX_FOR_TARGET"
+RAW_CXX_FOR_TARGET="$CXX_FOR_TARGET -nostdinc++"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking where to find the target ar" >&5
 $as_echo_n "checking where to find the target ar... " >&6; }
