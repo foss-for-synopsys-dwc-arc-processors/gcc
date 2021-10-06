@@ -6063,33 +6063,22 @@ archs4x, archs4xd"
    (match_operand:SI 3 "register_operand" "")]
   "TARGET_PLUS_MACD"
   "{
-   rtx acc_reg = gen_rtx_REG (SImode, ACC_REG_FIRST);
+   rtx acc_reg = gen_rtx_REG (SImode, ACCL_REGNO);
 
    emit_move_insn (acc_reg, operands[3]);
-   emit_insn (gen_machi (operands[0], operands[1], operands[2]));
+   emit_insn (gen_machi (operands[0], operands[1], operands[2], acc_reg));
    DONE;
   }")
 
-(define_insn_and_split "machi"
+(define_insn "machi"
   [(set (match_operand:SI 0 "register_operand" "=Ral,r")
 	(plus:SI
 	 (mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand" "%r,r"))
 		  (sign_extend:SI (match_operand:HI 2 "register_operand" "r,r")))
-	 (reg:SI ARCV2_ACC)))
+	 (match_operand:SI 3 "accl_operand" "")))
    (clobber (reg:DI ARCV2_ACC))]
   "TARGET_PLUS_MACD"
-  "@
-   vmac2h\\t%0,%1,%2
-   #"
-  "&& reload_completed && (REGNO (operands[0]) != ACCL_REGNO)"
-  [(parallel
-    [(set (reg:SI ARCV2_ACC)
-	  (plus:SI (mult:SI (sign_extend:SI (match_dup 1))
-			    (sign_extend:SI (match_dup 2)))
-		   (reg:SI ARCV2_ACC)))
-     (clobber (reg:DI ARCV2_ACC))])
-   (set (match_dup 0) (reg:SI ARCV2_ACC))]
-  ""
+  "dmach\\t%0,%1,%2"
   [(set_attr "length" "4")
    (set_attr "type" "multi")
    (set_attr "predicable" "no")
@@ -6103,34 +6092,22 @@ archs4x, archs4xd"
    (match_operand:SI 3 "register_operand" "")]
   "TARGET_PLUS_MACD"
   "{
-   rtx acc_reg = gen_rtx_REG (SImode, ACC_REG_FIRST);
+   rtx acc_reg = gen_rtx_REG (SImode, ACCL_REGNO);
 
    emit_move_insn (acc_reg, operands[3]);
-   emit_insn (gen_umachi (operands[0], operands[1], operands[2]));
+   emit_insn (gen_umachi (operands[0], operands[1], operands[2], acc_reg));
    DONE;
   }")
 
-
-(define_insn_and_split "umachi"
+(define_insn "umachi"
   [(set (match_operand:SI 0 "register_operand" "=Ral,r")
 	(plus:SI
 	 (mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" "%r,r"))
 		  (zero_extend:SI (match_operand:HI 2 "register_operand" "r,r")))
-	 (reg:SI ARCV2_ACC)))
+	 (match_operand:SI 3 "accl_operand" "")))
    (clobber (reg:DI ARCV2_ACC))]
   "TARGET_PLUS_MACD"
-  "@
-   vmac2hu\\t%0,%1,%2
-   #"
-  "&& reload_completed && (REGNO (operands[0]) != ACCL_REGNO)"
-  [(parallel
-    [(set (reg:SI ARCV2_ACC)
-	  (plus:SI (mult:SI (zero_extend:SI (match_dup 1))
-			    (zero_extend:SI (match_dup 2)))
-		   (reg:SI ARCV2_ACC)))
-     (clobber (reg:DI ARCV2_ACC))])
-   (set (match_dup 0) (reg:SI ARCV2_ACC))]
-  ""
+  "dmachu\\t%0,%1,%2"
   [(set_attr "length" "4")
    (set_attr "type" "multi")
    (set_attr "predicable" "no")
