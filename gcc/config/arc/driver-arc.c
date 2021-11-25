@@ -25,6 +25,8 @@
 #include "coretypes.h"
 #include "tm.h"
 
+#include "common-defs.h"
+
 /* Returns command line parameters to pass to as.  */
 
 const char*

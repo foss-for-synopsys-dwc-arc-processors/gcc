@@ -69,6 +69,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "opts.h"
 #include "hw-doloop.h"
 
+#include "common-defs.h"
+
 /* Which cpu we're compiling for (ARC600, ARC601, ARC700).  */
 static char arc_cpu_name[10] = "";
 static const char *arc_cpu_string = arc_cpu_name;
