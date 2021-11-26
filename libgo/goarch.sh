@@ -59,6 +59,18 @@ case $goarch in
 	family=AMD64
 	ptrsize=4
 	;;
+    arc | arcbe)
+	family=ARC
+	cachelinesize=32
+	minframesize=4
+	pcquantum=4
+	ptrsize=4
+	case $goarch in
+	    *be)
+		bigendian=true
+		;;
+	esac
+	;;
     arm | armbe)
 	family=ARM
 	cachelinesize=32
