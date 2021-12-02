@@ -5153,7 +5153,7 @@ dead_or_predicable (basic_block test_bb, basic_block merge_bb,
   if (JUMP_P (end))
     {
       if (!onlyjump_p (end)
-	  && ANY_RETURN_P (end))
+	  || (!returnjump_p (end) || eh_returnjump_p (end)))
 	return FALSE;
       if (head == end)
 	{
