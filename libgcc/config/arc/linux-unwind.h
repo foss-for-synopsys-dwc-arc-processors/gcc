@@ -120,10 +120,10 @@ arc_fallback_frame_state (struct _Unwind_Context *context,
 	= ((_Unwind_Ptr) &(regs[i])) - new_cfa;
     }
 
-  fs->regs.reg[31].how = REG_SAVED_VAL_OFFSET;
-  fs->regs.reg[31].loc.offset = ((_Unwind_Ptr) (regs[ret])) - new_cfa;
+  fs->regs.reg[29].how = REG_SAVED_VAL_OFFSET;
+  fs->regs.reg[29].loc.offset = ((_Unwind_Ptr) (regs[ret])) - new_cfa;
 
-  fs->retaddr_column = 31;
+  fs->retaddr_column = 29;
 
   return _URC_NO_REASON;
 }
