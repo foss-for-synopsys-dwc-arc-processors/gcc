@@ -124,6 +124,7 @@ noinst_HEADERS = \
 	src/aarch64/ffitarget.h src/aarch64/internal.h			\
 	src/alpha/ffitarget.h src/alpha/internal.h			\
 	src/arc/ffitarget.h						\
+	src/arc64/ffitarget.h						\
 	src/arm/ffitarget.h src/arm/internal.h				\
 	src/avr32/ffitarget.h						\
 	src/bfin/ffitarget.h						\
@@ -156,6 +157,7 @@ EXTRA_libffi_la_SOURCES = \
 	src/aarch64/ffi.c src/aarch64/sysv.S				\
 	src/alpha/ffi.c src/alpha/osf.S					\
 	src/arc/ffi.c src/arc/arcompact.S				\
+	src/arc64/ffi.c	src/arc64/arc64.S				\
 	src/arm/ffi.c src/arm/sysv.S					\
 	src/avr32/ffi.c src/avr32/sysv.S				\
 	src/bfin/ffi.c src/bfin/sysv.S					\

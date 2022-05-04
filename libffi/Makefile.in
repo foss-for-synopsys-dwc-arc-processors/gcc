@@ -766,6 +766,16 @@ src/arc/ffi.lo: src/arc/$(am__dirstamp) \
 	src/arc/$(DEPDIR)/$(am__dirstamp)
 src/arc/arcompact.lo: src/arc/$(am__dirstamp) \
 	src/arc/$(DEPDIR)/$(am__dirstamp)
+src/arc64/$(am__dirstamp):
+	@$(MKDIR_P) src/arc64
+	@: > src/arc64/$(am__dirstamp)
+src/arc64/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/arc64/$(DEPDIR)
+	@: > src/arc64/$(DEPDIR)/$(am__dirstamp)
+src/arc64/ffi.lo: src/arc64/$(am__dirstamp) \
+	src/arc64/$(DEPDIR)/$(am__dirstamp)
+src/arc64/arc64.lo: src/arc64/$(am__dirstamp) \
+	src/arc64/$(DEPDIR)/$(am__dirstamp)
 src/arm/$(am__dirstamp):
 	@$(MKDIR_P) src/arm
 	@: > src/arm/$(am__dirstamp)
