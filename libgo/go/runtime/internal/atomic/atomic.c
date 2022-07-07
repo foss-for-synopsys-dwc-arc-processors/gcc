@@ -6,6 +6,10 @@
 
 #include "runtime.h"
 
+#if !(defined(__arc__) || defined(__ARC64__))
+  #define ALIGN64
+#endif
+
 extern void panicUnaligned(void)
   __asm__ (GOSYM_PREFIX "runtime_1internal_1atomic.panicUnaligned")
   __attribute__ ((noreturn));
@@ -47,8 +51,10 @@ uint64_t Load64 (uint64_t *ptr)
 uint64_t
 Load64 (uint64_t *ptr)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   return __atomic_load_n (ptr, __ATOMIC_SEQ_CST);
 }
 
@@ -69,8 +75,10 @@ uint64_t LoadAcq64 (uint64_t *ptr)
 uint64_t
 LoadAcq64 (uint64_t *ptr)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   return __atomic_load_n (ptr, __ATOMIC_ACQUIRE);
 }
 
@@ -121,8 +129,10 @@ int64_t Loadint64 (int64_t *ptr)
 int64_t
 Loadint64 (int64_t *ptr)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   return __atomic_load_n (ptr, __ATOMIC_SEQ_CST);
 }
 
@@ -153,8 +163,10 @@ uint64_t Xadd64 (uint64_t *ptr, int64_t delta)
 uint64_t
 Xadd64 (uint64_t *ptr, int64_t delta)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   return __atomic_add_fetch (ptr, (uint64_t) delta, __ATOMIC_SEQ_CST);
 }
 
@@ -175,8 +187,10 @@ int64_t Xaddint64 (int64_t *ptr, int64_t delta)
 int64_t
 Xaddint64 (int64_t *ptr, int64_t delta)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   return __atomic_add_fetch (ptr, delta, __ATOMIC_SEQ_CST);
 }
 
@@ -207,8 +221,10 @@ uint64_t Xchg64 (uint64_t *ptr, uint64_t new)
 uint64_t
 Xchg64 (uint64_t *ptr, uint64_t new)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   return __atomic_exchange_n (ptr, new, __ATOMIC_SEQ_CST);
 }
 
@@ -289,8 +305,10 @@ _Bool Cas64 (uint64_t *ptr, uint64_t old, uint64_t new)
 _Bool
 Cas64 (uint64_t *ptr, uint64_t old, uint64_t new)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   return __atomic_compare_exchange_n (ptr, &old, new, false, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED);
 }
 
@@ -381,8 +399,10 @@ void Store64 (uint64_t *ptr, uint64_t val)
 void
 Store64 (uint64_t *ptr, uint64_t val)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   __atomic_store_n (ptr, val, __ATOMIC_SEQ_CST);
 }
 
@@ -403,8 +423,10 @@ void StoreRel64 (uint64_t *ptr, uint64_t val)
 void
 StoreRel64 (uint64_t *ptr, uint64_t val)
 {
+#if defined(ALIGN64)
   if (((uintptr_t) ptr & 7) != 0)
     panicUnaligned ();
+#endif
   __atomic_store_n (ptr, val, __ATOMIC_RELEASE);
 }
 

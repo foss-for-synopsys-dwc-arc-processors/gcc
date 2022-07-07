@@ -380,7 +380,7 @@ fi
 if test "$regs" != ""; then
   regs=`echo $regs | sed -e 's/type _pt_regs struct//'`
   regs=`echo $regs |
-    sed -e 's/type __*user_regs_struct struct //' -e 's/[{}]//g'`
+    sed -e 's/type __*user_regs_struct struct //' -e 's/[{]/; struct start;/g' -e 's/[}]/struct end ;/g'`
   regs=`echo $regs | sed -e s'/^ *//'`
   nregs=
   while test -n "$regs"; do
@@ -397,7 +397,8 @@ if test "$regs" != ""; then
       -e 's/__user_per_struct/PtracePer/'`
     nregs="$nregs $field;"
   done
-  echo "type PtraceRegs struct {$nregs }" >> ${OUT}
+  nregs=`echo $nregs | sed -e 's/; Struct start;/ {/g' -e 's/; Struct end;/ }/g'`
+  echo "type PtraceRegs struct $nregs" >> ${OUT}
 fi
 
 # Some basic types.

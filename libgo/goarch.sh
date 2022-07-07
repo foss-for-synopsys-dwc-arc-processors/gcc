@@ -62,6 +62,29 @@ case $goarch in
 	ptrsize=4
 	stackalign=4
 	;;
+    arc | arcbe)
+	family=ARC
+	cachelinesize=32
+	minframesize=4
+	pcquantum=2
+	ptrsize=4
+	int64align=4
+	maxalign=4
+	case $goarch in
+	    *be)
+		bigendian=true
+		;;
+	esac
+	;;
+    arc64)
+	family=ARC64
+	cachelinesize=32
+	minframesize=8
+	pcquantum=2
+	ptrsize=8
+	int64align=4
+	maxalign=4
+	;;
     arm | armbe)
 	family=ARM
 	cachelinesize=32

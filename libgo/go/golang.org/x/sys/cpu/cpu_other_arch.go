@@ -9,6 +9,8 @@
 // +build !386
 // +build !amd64
 // +build !amd64p32
+// +build !arc
+// +build !arc64
 // +build !arm
 // +build !arm64
 // +build !mips64

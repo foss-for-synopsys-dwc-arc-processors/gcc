@@ -168,6 +168,12 @@ proc go-set-goarch { } {
     global target_triplet
 
     switch -glob $target_triplet {
+	"arc-*-*" {
+	    set goarch "arc"
+	}
+	"arc64-*-*" {
+	    set goarch "arc64"
+	}
 	"aarch64*-*-*" {
 	    set goarch "arm64"
 	}

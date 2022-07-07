@@ -123,7 +123,8 @@ endif
 
 noinst_HEADERS = src/aarch64/ffitarget.h src/aarch64/internal.h		\
 	src/alpha/ffitarget.h src/alpha/internal.h			\
-	src/arc/ffitarget.h src/arm/ffitarget.h src/arm/internal.h	\
+	src/arc/ffitarget.h src/arc64/ffitarget.h 			\
+	src/arm/ffitarget.h src/arm/internal.h				\
 	src/avr32/ffitarget.h src/bfin/ffitarget.h			\
 	src/cris/ffitarget.h src/csky/ffitarget.h src/frv/ffitarget.h	\
 	src/ia64/ffitarget.h src/ia64/ia64_flags.h			\
@@ -143,7 +144,9 @@ noinst_HEADERS = src/aarch64/ffitarget.h src/aarch64/internal.h		\
 
 EXTRA_libffi_la_SOURCES = src/aarch64/ffi.c src/aarch64/sysv.S		\
 	src/aarch64/win64_armasm.S src/alpha/ffi.c src/alpha/osf.S	\
-	src/arc/ffi.c src/arc/arcompact.S src/arm/ffi.c			\
+	src/arc/ffi.c src/arc/arcompact.S 				\
+	src/arc64/ffi.c src/arc/arc64.S 				\
+	src/arm/ffi.c							\
 	src/arm/sysv.S src/arm/ffi.c src/arm/sysv_msvc_arm32.S		\
 	src/avr32/ffi.c src/avr32/sysv.S src/bfin/ffi.c			\
 	src/bfin/sysv.S src/cris/ffi.c src/cris/sysv.S src/frv/ffi.c	\

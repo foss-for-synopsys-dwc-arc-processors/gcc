@@ -25,9 +25,15 @@ case "${host}" in
 	SOURCES="ffi.c osf.S"
 	;;
 
-  arc*-*-*)
-	TARGET=ARC; TARGETDIR=arc
-	SOURCES="ffi.c arcompact.S"
+  arc-*-*)
+ 	TARGET=ARC; TARGETDIR=arc64
+ 	SOURCES="ffi.c arc64.S"
+ 	;;
+ 
+  arc64-*-*)
+	TARGET=ARC; TARGETDIR=arc64
+	SOURCES="ffi.c arc64.S"
+	HAVE_LONG_DOUBLE=1
 	;;
 
   arm*-*-cygwin* | arm*-*-mingw* | arm*-*-win* )
