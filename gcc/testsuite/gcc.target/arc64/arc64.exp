@@ -16,8 +16,8 @@
 
 # GCC testsuite that uses the `dg.exp' driver.
 
-# Exit immediately if this isn't an arc target.
-if ![istarget arc*-*-*] then {
+# Exit immediately if this isn't an arc32/arc64 target.
+if { ![istarget arc32-*-*] && ![istarget arc63-*-*] } then {
   return
 }
 
