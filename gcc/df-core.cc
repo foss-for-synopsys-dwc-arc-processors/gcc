@@ -1443,17 +1443,24 @@ df_analyze_loop (class loop *loop)
   df->postorder = XNEWVEC (int, loop->num_nodes);
   df->postorder_inverted.truncate (0);
   df->n_blocks = loop_post_order_compute (df->postorder, loop);
-    loop_inverted_post_order_compute (&df->postorder_inverted, loop);
+  loop_inverted_post_order_compute (&df->postorder_inverted, loop);
   gcc_assert ((unsigned) df->n_blocks == loop->num_nodes);
   gcc_assert (df->postorder_inverted.length () == loop->num_nodes);
 
   bitmap blocks = BITMAP_ALLOC (&df_bitmap_obstack);
   for (int i = 0; i < df->n_blocks; ++i)
     bitmap_set_bit (blocks, df->postorder[i]);
+
+  /* Iterate over loop's exit edges and add theirs destinations BB
+     indexes.  */
+  struct loop_exit *exit;
+  for (exit = loop->exits->next; exit->e; exit = exit->next)
+    bitmap_set_bit (blocks, exit->e->dest->index);
+
   df_set_blocks (blocks);
   BITMAP_FREE (blocks);
 
-  df_analyze_1 ();
+  df_analyze ();
 }
 
 
