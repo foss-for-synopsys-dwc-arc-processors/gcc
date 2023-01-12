@@ -1306,6 +1306,24 @@ df_analyze (void)
   df_analyze_1 ();
 }
 
+/* Returns the number of basic blocks to which a loop exits.  */
+
+static unsigned
+loop_get_n_exit_blocks (class loop *loop)
+{
+  unsigned n_exits = 0;
+  edge eg;
+  unsigned j;
+  auto_bitmap visited;
+  auto_vec<edge> exits = get_loop_exit_edges (loop);
+
+  FOR_EACH_VEC_ELT (exits, j, eg)
+    if (bitmap_set_bit (visited, eg->dest->index))
+      n_exits ++;
+
+  return n_exits;
+}
+
 /* Compute the reverse top sort order of the sub-CFG specified by LOOP.
    Returns the number of blocks which is always loop->num_nodes.  */
 
@@ -1317,7 +1335,8 @@ loop_post_order_compute (int *post_order, class loop *loop)
   int post_order_num = 0;
 
   /* Allocate stack for back-tracking up CFG.  */
-  stack = XNEWVEC (edge_iterator, loop->num_nodes + 1);
+  stack = XNEWVEC (edge_iterator, loop->num_nodes
+		   + loop_get_n_exit_blocks (loop) + 1);
   sp = 0;
 
   /* Allocate bitmap to track nodes that have been visited.  */
@@ -1339,12 +1358,15 @@ loop_post_order_compute (int *post_order, class loop *loop)
 
       /* Check if the edge destination has been visited yet and mark it
          if not so.  */
-      if (flow_bb_inside_loop_p (loop, dest)
+      if ((flow_bb_inside_loop_p (loop, dest)
+	   || loop_exits_to_bb_p (loop, dest))
 	  && bitmap_set_bit (visited, dest->index))
 	{
-	  if (EDGE_COUNT (dest->succs) > 0)
+	  if (EDGE_COUNT (dest->succs) > 0
+	      && !loop_exits_to_bb_p (loop, dest))
 	    /* Since the DEST node has been visited for the first
-	       time, check its successors.  */
+	       time, check its successors, exception making the basic
+	       blocks to which the loop exits.  */
 	    stack[sp++] = ei_start (dest->succs);
 	  else
 	    post_order[post_order_num++] = dest->index;
@@ -1377,10 +1399,11 @@ loop_inverted_post_order_compute (vec<int> *post_order, class loop *loop)
   edge_iterator *stack;
   int sp;
 
-  post_order->reserve_exact (loop->num_nodes);
+  post_order->reserve_exact (loop->num_nodes + loop_get_n_exit_blocks (loop));
 
   /* Allocate stack for back-tracking up CFG.  */
-  stack = XNEWVEC (edge_iterator, loop->num_nodes + 1);
+  stack = XNEWVEC (edge_iterator, loop->num_nodes
+		   + loop_get_n_exit_blocks (loop) + 1);
   sp = 0;
 
   /* Allocate bitmap to track nodes that have been visited.  */
@@ -1388,10 +1411,19 @@ loop_inverted_post_order_compute (vec<int> *post_order, class loop *loop)
 
   /* Put all latches into the initial work list.  In theory we'd want
      to start from loop exits but then we'd have the special case of
-     endless loops.  It doesn't really matter for DF iteration order and
-     handling latches last is probably even better.  */
+     endless loops.  If we have loop exits, we add the basic blocks to
+     which the loop exits too.  It doesn't really matter for DF
+     iteration order and handling latches last is probably even
+     better.  */
   stack[sp++] = ei_start (loop->header->preds);
   bitmap_set_bit (visited, loop->header->index);
+
+  auto_vec<edge> exits = get_loop_exit_edges (loop);
+  edge eg;
+  unsigned j;
+  FOR_EACH_VEC_ELT (exits, j, eg)
+    if (bitmap_set_bit (visited, eg->dest->index))
+      stack[sp++] = ei_start (eg->dest->preds);
 
   /* The inverted traversal loop. */
   while (sp)
@@ -1418,7 +1450,8 @@ loop_inverted_post_order_compute (vec<int> *post_order, class loop *loop)
 	}
       else
 	{
-	  if (flow_bb_inside_loop_p (loop, bb)
+	  if ((flow_bb_inside_loop_p (loop, bb)
+	       ||  loop_exits_to_bb_p (loop, bb))
 	      && ei_one_before_end_p (ei))
 	    post_order->quick_push (bb->index);
 
@@ -1438,29 +1471,23 @@ loop_inverted_post_order_compute (vec<int> *post_order, class loop *loop)
 void
 df_analyze_loop (class loop *loop)
 {
+  unsigned n_nodes = loop->num_nodes + loop_get_n_exit_blocks (loop);
   free (df->postorder);
 
-  df->postorder = XNEWVEC (int, loop->num_nodes);
+  df->postorder = XNEWVEC (int, n_nodes);
   df->postorder_inverted.truncate (0);
   df->n_blocks = loop_post_order_compute (df->postorder, loop);
   loop_inverted_post_order_compute (&df->postorder_inverted, loop);
-  gcc_assert ((unsigned) df->n_blocks == loop->num_nodes);
-  gcc_assert (df->postorder_inverted.length () == loop->num_nodes);
+  gcc_assert ((unsigned) df->n_blocks == n_nodes);
+  gcc_assert (df->postorder_inverted.length () == n_nodes);
 
   bitmap blocks = BITMAP_ALLOC (&df_bitmap_obstack);
   for (int i = 0; i < df->n_blocks; ++i)
     bitmap_set_bit (blocks, df->postorder[i]);
-
-  /* Iterate over loop's exit edges and add theirs destinations BB
-     indexes.  */
-  struct loop_exit *exit;
-  for (exit = loop->exits->next; exit->e; exit = exit->next)
-    bitmap_set_bit (blocks, exit->e->dest->index);
-
   df_set_blocks (blocks);
   BITMAP_FREE (blocks);
 
-  df_analyze ();
+  df_analyze_1 ();
 }
 
 
