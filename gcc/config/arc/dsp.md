@@ -500,9 +500,9 @@
 
 ;; MPYW instructions
 (define_insn "mulhisi3_dsp"
-  [(set (match_operand:SI 0 "register_operand"                          "=Rcqq,r,r")
-	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand"  "   0,0,r"))
-		 (sign_extend:SI (match_operand:HI 2 "nonmemory_operand" "Rcqq,r,r"))))
+  [(set (match_operand:SI 0 "register_operand"                          "=q,r,r")
+	(mult:SI (sign_extend:SI (match_operand:HI 1 "register_operand"  "0,0,r"))
+		 (sign_extend:SI (match_operand:HI 2 "nonmemory_operand" "q,r,r"))))
    (clobber (reg:DI ARCV2_ACC))]
   "TARGET_DSP"
   "mpyw%?\\t%0,%1,%2"
@@ -528,9 +528,9 @@
    ])
 
 (define_insn "umulhisi3_dsp"
-  [(set (match_operand:SI 0 "register_operand"                          "=Rcqq, r, r")
-	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" "   %0, 0, r"))
-		 (zero_extend:SI (match_operand:HI 2 "register_operand" " Rcqq, r, r"))))
+  [(set (match_operand:SI 0 "register_operand"                          "=q, r, r")
+	(mult:SI (zero_extend:SI (match_operand:HI 1 "register_operand" "%0, 0, r"))
+		 (zero_extend:SI (match_operand:HI 2 "register_operand"  "q, r, r"))))
    (clobber (reg:DI ARCV2_ACC))]
   "TARGET_DSP"
   "mpyuw%?\\t%0,%1,%2"
