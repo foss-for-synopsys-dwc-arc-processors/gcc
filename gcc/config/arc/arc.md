@@ -309,7 +309,7 @@
 		     - get_attr_length (insn)")))
 
 ; for ARCv2 we need to disable/enable different instruction alternatives
-(define_attr "cpu_facility" "std,av1,av2,fpx,cd"
+(define_attr "cpu_facility" "std,av1,av2,fpx,cd,le"
   (const_string "std"))
 
 ; We should consider all the instructions enabled until otherwise
@@ -329,6 +329,10 @@
 	 (and (eq_attr "cpu_facility" "cd")
 	      (not (and (match_test "TARGET_V2")
 			(match_test "TARGET_CODE_DENSITY"))))
+	 (const_string "no")
+
+	 (and (eq_attr "cpu_facility" "le")
+	      (match_test "TARGET_BIG_ENDIAN"))
 	 (const_string "no")
 	 ]
 	(const_string "yes")))
@@ -6151,7 +6155,8 @@ archs4x, archs4xd"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no,no")
-   (set_attr "cond" "canuse,nocond,nocond")])
+   (set_attr "cond" "canuse,nocond,nocond")
+   (set_attr "cpu_facility" "le,*,*")])
 
 (define_insn "mac"
   [(set (reg:DI ARCV2_ACC)
@@ -6253,7 +6258,8 @@ archs4x, archs4xd"
   [(set_attr "length" "4,4,8")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no,no")
-   (set_attr "cond" "canuse,nocond,nocond")])
+   (set_attr "cond" "canuse,nocond,nocond")
+   (set_attr "cpu_facility" "le,*,*")])
 
 (define_insn "macu"
   [(set (reg:DI ARCV2_ACC)
@@ -6341,7 +6347,8 @@ archs4x, archs4xd"
   [(set_attr "length" "4,4,8")
    (set_attr "iscompact" "false")
    (set_attr "type" "multi")
-   (set_attr "predicable" "no")])
+   (set_attr "predicable" "no")
+   (set_attr "cpu_facility" "*,le,*")])
 
 (define_insn "*pmpyd<su_optab>_imm_arcv2hs"
   [(set (match_operand:DI 0 "even_register_operand"	    "=r,r")

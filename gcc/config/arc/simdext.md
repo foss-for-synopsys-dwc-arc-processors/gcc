@@ -1905,7 +1905,8 @@
   [(set_attr "length" "4")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no")
-   (set_attr "cond" "canuse,nocond")])
+   (set_attr "cond" "canuse,nocond")
+   (set_attr "cpu_facility" "le,*")])
 
 (define_insn "vmac2hu"
   [(set (match_operand:V2SI 0 "even_register_operand" "=r,r")
@@ -1919,7 +1920,8 @@
   [(set_attr "length" "4")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no")
-   (set_attr "cond" "canuse,nocond")])
+   (set_attr "cond" "canuse,nocond")
+   (set_attr "cpu_facility" "le,*")])
 
 (define_insn "vmpy2h"
   [(set (match_operand:V2SI 0 "even_register_operand" "=r,r")
@@ -1932,7 +1934,8 @@
   [(set_attr "length" "4")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no")
-   (set_attr "cond" "canuse,nocond")])
+   (set_attr "cond" "canuse,nocond")
+   (set_attr "cpu_facility" "le,*")])
 
 (define_insn "vmpy2hu"
   [(set (match_operand:V2SI 0 "even_register_operand" "=r,r")
@@ -1945,7 +1948,8 @@
   [(set_attr "length" "4")
    (set_attr "type" "multi")
    (set_attr "predicable" "yes,no")
-   (set_attr "cond" "canuse,nocond")])
+   (set_attr "cond" "canuse,nocond")
+   (set_attr "cpu_facility" "le,*")])
 
 (define_insn "qmach"
   [(set (match_operand:DI 0 "even_register_operand" "=r,r")
