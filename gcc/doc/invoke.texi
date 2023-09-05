@@ -21273,8 +21273,7 @@ Annotate assembler instructions with estimated addresses.
 
 @opindex mannotate-align
 @item -mannotate-align
-Explain what alignment considerations lead to the decision to make an
-instruction short or long.
+Does nothing.  Preserved for backward compatibility.
 
 @end table
 
