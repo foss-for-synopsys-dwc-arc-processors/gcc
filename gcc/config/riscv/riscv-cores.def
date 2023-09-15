@@ -44,6 +44,7 @@ RISCV_TUNE("xiangshan-nanhu", xiangshan, xiangshan_nanhu_tune_info)
 RISCV_TUNE("generic-ooo", generic_ooo, generic_ooo_tune_info)
 RISCV_TUNE("size", generic, optimize_size_tune_info)
 RISCV_TUNE("rhx", rhx, thead_rhx_tune_info)
+RISCV_TUNE("rmx100", rmx100, thead_rmx100_tune_info)
 
 #undef RISCV_TUNE
 
