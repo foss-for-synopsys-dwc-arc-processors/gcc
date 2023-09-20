@@ -533,6 +533,23 @@ static const struct riscv_tune_param rmx100_tune_info = {
   NULL,						/* vector cost */
 };
 
+/* Costs to use when optimizing for Synopsys RMX500.  */
+static const struct riscv_tune_param rmx500_tune_info = {
+  {COSTS_N_INSNS (2), COSTS_N_INSNS (2)},	/* fp_add */
+  {COSTS_N_INSNS (2), COSTS_N_INSNS (2)},	/* fp_mul */
+  {COSTS_N_INSNS (17), COSTS_N_INSNS (17)},	/* fp_div */
+  {COSTS_N_INSNS (2), COSTS_N_INSNS (2)},	/* int_mul */
+  {COSTS_N_INSNS (17), COSTS_N_INSNS (17)},	/* int_div */
+  1,						/* issue_rate */
+  4,						/* branch_cost */
+  2,						/* memory_cost */
+  4,						/* fmv_cost */
+  false,					/* slow_unaligned_access */
+  false,					/* use_divmod_expansion */
+  RISCV_FUSE_ARCV,				/* fusible_ops */
+  NULL,						/* vector cost */
+};
+
 /* Costs to use when optimizing for Synopsys RHX.  */
 static const struct riscv_tune_param rhx_tune_info = {
   {COSTS_N_INSNS (4), COSTS_N_INSNS (5)},	/* fp_add */
