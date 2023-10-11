@@ -8770,7 +8770,19 @@ arcv_macro_fusion_pair_p (rtx_insn *prev, rtx_insn *curr)
   /* prev and curr are simple SET insns i.e. no flag setting or branching.  */
   bool simple_sets_p = prev_set && curr_set && !any_condjump_p (curr);
 
-  /* Don't handle anything with a jump.  */
+  /* Fuse load-immediate with an unrelated conditional branch. */
+  if (get_attr_type (prev) == TYPE_MOVE
+      && get_attr_move_type (prev) == MOVE_TYPE_CONST
+      && any_condjump_p (curr))
+    {
+      rtx comp = XEXP (SET_SRC (curr_set), 0);
+
+      if ((!REG_P (XEXP (comp, 0)) || XEXP (comp, 0) != SET_DEST (prev_set))
+	  && (!REG_P (XEXP (comp, 1)) || XEXP (comp, 1) != SET_DEST (prev_set)))
+	return true;
+    }
+
+  /* Don't handle anything with a jump past this point.  */
   if (!simple_sets_p)
     return false;
 
