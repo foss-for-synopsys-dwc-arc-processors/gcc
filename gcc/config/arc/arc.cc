@@ -11066,6 +11066,47 @@ arc_fixed_point_supported_p (void)
   return TARGET_DSP ? true : false;
 }
 
+/* Worker for PROFILE_HOOK.  The ARC profile hook uses the blink
+   register and a constant which is the location of the current blink
+   stack slot.  First, the second argument (the blink stack slot
+   location) is initialized with minus one, and, latter, when the
+   stack structure is known, this argument is updated with the right
+   value (see arc_get_arg_ptr).  */
+
+void
+arc_profile_hook (void)
+{
+  rtx fun, r0, r1;
+
+  /* First argument is BLINK.  */
+  r0 = get_hard_reg_initial_val (Pmode, RETURN_ADDR_REGNUM);
+
+  /* This hook is called in the expand, thus, the stack size is
+     unknown.  We need to mark the move instruction, and properly
+     update it after reload.  */
+  r1 = gen_reg_rtx (SImode);
+  emit_insn (gen_mcount_stack (r1, constm1_rtx));
+
+  fun = gen_rtx_SYMBOL_REF (Pmode, "_mcount");
+  emit_library_call (fun, LCT_NORMAL, VOIDmode, r0, Pmode, r1, SImode);
+}
+
+/* Returns the location of BLINK in the stack, which is the location
+   indicated by the ARG_POINTER_REGNUM.  */
+
+unsigned int
+arc_get_arg_ptr (void)
+{
+  struct arc_frame_info *frame_info;
+
+  if (!cfun->machine->frame_info.initialized)
+    arc_compute_frame_size ();
+
+  frame_info = &cfun->machine->frame_info;
+
+  return frame_info->total_size - frame_info->pretend_size;
+}
+
 #undef TARGET_USE_ANCHORS_FOR_SYMBOL_P
 #define TARGET_USE_ANCHORS_FOR_SYMBOL_P arc_use_anchors_for_symbol_p
 
