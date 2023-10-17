@@ -50,6 +50,7 @@ extern bool arc_check_mov_const (HOST_WIDE_INT );
 extern bool arc_split_mov_const (rtx *);
 extern bool arc_can_use_return_insn (void);
 extern bool arc_split_move_p (rtx *);
+extern unsigned int arc_get_arg_ptr (void);
 #endif /* RTX_CODE */
 
 
@@ -97,5 +98,6 @@ extern void arc_eh_return_address_location (rtx);
 extern bool arc_is_jli_call_p (rtx);
 extern void arc_file_end (void);
 extern bool arc_is_secure_call_p (rtx);
+extern void arc_profile_hook (void);
 
 rtl_opt_pass * make_pass_arc_predicate_delay_insns (gcc::context *ctxt);

@@ -126,13 +126,7 @@ along with GCC; see the file COPYING3.  If not see
 
 /* Emit rtl for profiling.  Output assembler code to FILE
    to call "_mcount" for profiling a function entry.  */
-#define PROFILE_HOOK(LABEL)					\
-  {								\
-   rtx fun, rt;							\
-   rt = get_hard_reg_initial_val (Pmode, RETURN_ADDR_REGNUM);	\
-   fun = gen_rtx_SYMBOL_REF (Pmode, "_mcount");			\
-   emit_library_call (fun, LCT_NORMAL, VOIDmode, rt, Pmode);	\
-  }
+#define PROFILE_HOOK(LABEL) arc_profile_hook()
 
 /* Enter/Leave ops are default off for linux targets.  */
 #undef TARGET_CODE_DENSITY_FRAME_DEFAULT

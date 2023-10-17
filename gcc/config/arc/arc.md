@@ -137,6 +137,7 @@
   UNSPEC_ARC_VMAC2HU
   UNSPEC_ARC_VMPY2H
   UNSPEC_ARC_VMPY2HU
+  UNSPEC_ARC_MCOUNT
 
   VUNSPEC_ARC_RTIE
   VUNSPEC_ARC_SYNC
@@ -6595,6 +6596,23 @@ archs4x, archs4xd"
   }"
   [(set_attr "length" "8")]
   )
+
+;; This pattern is used by profile hook to initialize the mcount
+;; second argument with the right value where the blink is located in
+;; current stack.
+(define_insn_and_split "mcount_stack"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(unspec:SI [(match_operand:SI 1 "immediate_operand" "i")]
+		   UNSPEC_ARC_MCOUNT))]
+  ""
+  "#"
+  "reload_completed"
+  [(set (match_dup 0) (match_dup 1))]
+  "
+  {
+  operands[1] = GEN_INT (arc_get_arg_ptr ());
+  }"
+  [(set_attr "length" "8")])
 
 ;; include the arc-FPX instructions
 (include "fpx.md")
