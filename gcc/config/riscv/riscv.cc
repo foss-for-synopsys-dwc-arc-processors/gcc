@@ -705,7 +705,7 @@ typedef enum
 
 typedef insn_code (*code_for_push_pop_t) (machine_mode);
 
-static inline bool
+bool
 riscv_is_micro_arch(enum riscv_microarchitecture_type arch)
 {
   return (riscv_microarchitecture == arch);
@@ -3865,6 +3865,17 @@ riscv_noce_conversion_profitable_p (rtx_insn *seq,
     }
 
   return default_noce_conversion_profitable_p (seq, &riscv_if_info);
+}
+
+/* Implement TARGET_MEMORY_MAX_STORE_BITSIZE.  */
+
+static unsigned int
+riscv_memory_max_store_bit_size (void)
+{
+  if (riscv_is_micro_arch (rhx))
+    return 2 * BITS_PER_WORD;
+
+  return BITS_PER_WORD;
 }
 
 /* Return one word of double-word value OP.  HIGH_P is true to select the
@@ -8571,6 +8582,10 @@ riscv_hard_regno_mode_ok (unsigned int regno, machine_mode mode)
 
       if (!GP_REG_P (regno + nregs - 1))
 	return false;
+
+      /* Reject odd-numbered registers for register pairs. */
+      if (riscv_is_micro_arch (rhx) && ((nregs == 2) && (regno & 1)))
+	  return false;
     }
   else if (FP_REG_P (regno))
     {
@@ -11293,6 +11308,9 @@ riscv_get_raw_result_mode (int regno)
 #define TARGET_MAX_NOCE_IFCVT_SEQ_COST riscv_max_noce_ifcvt_seq_cost
 #undef TARGET_NOCE_CONVERSION_PROFITABLE_P
 #define TARGET_NOCE_CONVERSION_PROFITABLE_P riscv_noce_conversion_profitable_p
+
+#undef TARGET_MEMORY_MAX_STORE_BITSIZE
+#define TARGET_MEMORY_MAX_STORE_BITSIZE riscv_memory_max_store_bit_size
 
 #undef TARGET_ASM_FILE_START
 #define TARGET_ASM_FILE_START riscv_file_start

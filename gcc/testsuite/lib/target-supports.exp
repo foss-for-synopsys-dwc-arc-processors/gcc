@@ -2057,6 +2057,16 @@ proc check_effective_target_riscv_zvfh_ok { } {
     return 0
 }
 
+# Return 1 if "-mtune=rhx" was passed to the compiler.
+
+proc check_rv_mtune_rhx { } {
+    return [check_no_compiler_messages rv_rhx assembly {
+	#if !defined(__riscv_rhx)
+	#error "No mtune=rhx"
+	#endif
+    }]
+}
+
 proc riscv_get_arch { } {
     set gcc_march ""
     # ??? do we neeed to add more extensions to the list below?
@@ -3369,8 +3379,9 @@ proc check_effective_target_ilp32 { } {
 # Update the check_effective_target_store_64 so they stay mutually exclusive
 
 proc check_effective_target_store_32 { } {
-    # For now, this procedure is a mere wrapper around ilp32.
-    # Logics for wanted targets/options can be added here.
+    if { ([check_effective_target_rv32] && [check_rv_mtune_rhx]) } {
+	return 0
+    }
 
     return [check_effective_target_ilp32]
 }
@@ -3534,8 +3545,9 @@ proc check_effective_target_llp64 { } {
 # Update the check_effective_target_store_32 so they stay mutually exclusive
 
 proc check_effective_target_store_64 { } {
-    # For now, this procedure is a mere wrapper around lp64.
-    # Logics for wanted targets/options can be added here.
+    if { ([check_effective_target_rv32] && [check_rv_mtune_rhx]) } {
+	return 1
+    }
 
     return [check_effective_target_lp64]
 }
