@@ -4611,6 +4611,8 @@ other fields in the same word of the structure, but to different bytes.
 
 @hook TARGET_SLOW_UNALIGNED_ACCESS
 
+@hook TARGET_MEMORY_MAX_STORE_BITSIZE
+
 @defmac MOVE_RATIO (@var{speed})
 The threshold of number of scalar memory-to-memory move insns, @emph{below}
 which a sequence of insns should be generated instead of a

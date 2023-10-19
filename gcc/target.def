@@ -3726,6 +3726,16 @@ are the same as to this target hook.",
  default_memory_move_cost)
 
 DEFHOOK
+(memory_max_store_bitsize,
+ "This target hook should return the size (in bits) of data that can\n\
+be written to memory with one store operation.  It is used by the\n\
+@emph{gimple-ssa-store-merging} pass.  By default, this is assumed\n\
+to be @code{BITS_PER_WORD}.  Targets which can combine registers for\n\
+memory access may report higher values than the default.",
+ unsigned int, (void),
+ default_memory_max_store_bitsize)
+
+DEFHOOK
 (use_by_pieces_infrastructure_p,
  "GCC will attempt several strategies when asked to copy between\n\
 two areas of memory, or to set, clear or store to memory, for example\n\

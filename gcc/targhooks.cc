@@ -2075,6 +2075,14 @@ get_move_ratio (bool speed_p ATTRIBUTE_UNUSED)
   return move_ratio;
 }
 
+/* Assume BITS_PER_WORD bits can be written to memory in a single store.  */
+
+unsigned int
+default_memory_max_store_bitsize ()
+{
+  return BITS_PER_WORD;
+}
+
 /* Return TRUE if the move_by_pieces/set_by_pieces infrastructure should be
    used; return FALSE if the cpymem/setmem optab should be expanded, or
    a call to memcpy emitted.  */

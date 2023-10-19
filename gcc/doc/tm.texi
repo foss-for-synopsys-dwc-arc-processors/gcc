@@ -7016,6 +7016,14 @@ The hook must return true whenever @code{STRICT_ALIGNMENT} is true.
 The default implementation returns @code{STRICT_ALIGNMENT}.
 @end deftypefn
 
+@deftypefn {Target Hook} {unsigned int} TARGET_MEMORY_MAX_STORE_BITSIZE (void)
+This target hook should return the size (in bits) of data that can
+be written to memory with one store operation.  It is used by the
+@emph{gimple-ssa-store-merging} pass.  By default, this is assumed
+to be @code{BITS_PER_WORD}.  Targets which can combine registers for
+memory access may report higher values than the default.
+@end deftypefn
+
 @defmac MOVE_RATIO (@var{speed})
 The threshold of number of scalar memory-to-memory move insns, @emph{below}
 which a sequence of insns should be generated instead of a

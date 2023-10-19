@@ -34,5 +34,5 @@ void f8 (void)
 
 /* { dg-final { scan-tree-dump "MEM <unsigned short> \\\[\\(char \\*\\)\\&a2] = " "store-merging" } }
    { dg-final { scan-tree-dump "MEM <unsigned int> \\\[\\(char \\*\\)\\&a4] = " "store-merging" } }
-   { dg-final { scan-tree-dump "MEM <unsigned int> \\\[\\(char \\*\\)\\&a8] = " "store-merging" { target { ilp32 } } } }
-   { dg-final { scan-tree-dump "MEM <unsigned long> \\\[\\(char \\*\\)\\&a8] = " "store-merging" { target { lp64 } } } } */
+   { dg-final { scan-tree-dump "MEM <unsigned int> \\\[\\(char \\*\\)\\&a8] = " "store-merging" { target { store_32 } } } }
+   { dg-final { scan-tree-dump "MEM <unsigned long(?: long)?> \\\[\\(char \\*\\)\\&a8] = " "store-merging" { target { store_64 } } } } */

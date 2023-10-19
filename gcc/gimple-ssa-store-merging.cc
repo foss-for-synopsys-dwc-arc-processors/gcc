@@ -172,8 +172,7 @@
 #include "selftest.h"
 
 /* The maximum size (in bits) of the stores this pass should generate.  */
-#define MAX_STORE_BITSIZE (BITS_PER_WORD)
-#define MAX_STORE_BYTES (MAX_STORE_BITSIZE / BITS_PER_UNIT)
+#define MAX_STORE_BITSIZE targetm.memory_max_store_bitsize ()
 
 /* Limit to bound the number of aliasing checks for loads with the same
    vuse as the corresponding store.  */

@@ -3365,6 +3365,16 @@ proc check_effective_target_ilp32 { } {
     }]
 }
 
+# Return 1 if the maximum store size is 32-bit
+# Update the check_effective_target_store_64 so they stay mutually exclusive
+
+proc check_effective_target_store_32 { } {
+    # For now, this procedure is a mere wrapper around ilp32.
+    # Logics for wanted targets/options can be added here.
+
+    return [check_effective_target_ilp32]
+}
+
 # Return 1 if we're generating ia32 code using default options, 0
 # otherwise.
 
@@ -3518,6 +3528,16 @@ proc check_effective_target_llp64 { } {
 		  && sizeof (long long) == 8
 		  && sizeof (long) == 4 ? 1 : -1];
     }]
+}
+
+# Return 1 if the maximum store size is 64-bit
+# Update the check_effective_target_store_32 so they stay mutually exclusive
+
+proc check_effective_target_store_64 { } {
+    # For now, this procedure is a mere wrapper around lp64.
+    # Logics for wanted targets/options can be added here.
+
+    return [check_effective_target_lp64]
 }
 
 # Return 1 if long and int have different sizes,
