@@ -8722,7 +8722,7 @@ riscv_sched_variable_issue (FILE *, int, rtx_insn *insn, int more)
 /* Implement TARGET_SCHED_MACRO_FUSION_P.  Return true if target supports
    instruction fusion of some sort.  */
 
-static bool
+bool
 riscv_macro_fusion_p (void)
 {
   return tune_param->fusible_ops != RISCV_FUSE_NOTHING;
@@ -8791,16 +8791,19 @@ arcv_macro_fusion_pair_p (rtx_insn *prev, rtx_insn *curr)
   /* prev and curr are simple SET insns i.e. no flag setting or branching.  */
   bool simple_sets_p = prev_set && curr_set && !any_condjump_p (curr);
 
-  /* Fuse load-immediate with an unrelated conditional branch. */
+  /* Fuse load-immediate with a conditional branch. */
   if (get_attr_type (prev) == TYPE_MOVE
       && get_attr_move_type (prev) == MOVE_TYPE_CONST
       && any_condjump_p (curr))
     {
-      rtx comp = XEXP (SET_SRC (curr_set), 0);
-
-      if ((!REG_P (XEXP (comp, 0)) || XEXP (comp, 0) != SET_DEST (prev_set))
-	  && (!REG_P (XEXP (comp, 1)) || XEXP (comp, 1) != SET_DEST (prev_set)))
-	return true;
+      /* We always want fusion here regardless of whether the conditional
+       * branch is dependent or independent of the load. However, due to a
+       * microarchitectural requirement, in the former case we might need to
+       * invert the branch condition so that the load destination register is
+       * always in the first position (this is implemented as a peephole
+       * optimization).
+       */
+       return true;
     }
 
   /* Don't handle anything with a jump past this point.  */
