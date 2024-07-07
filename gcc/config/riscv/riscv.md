@@ -3786,6 +3786,26 @@
   [(set_attr "type" "imul")]
 )
 
+(define_insn_and_split "*zero_extract_split"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (zero_extract:SI (match_operand:SI 1 "register_operand" "r")
+                         (match_operand 2 "const_int_operand")
+                         (match_operand 3 "const_int_operand")))]
+  "riscv_is_micro_arch (rhx) && !TARGET_64BIT
+     && (INTVAL (operands[2]) > 1 || !TARGET_ZBS)"
+  "#"
+  "&& 1"
+  [(set (match_dup 0) (ashift:SI (match_dup 1) (match_dup 2)))
+   (set (match_dup 0) (lshiftrt:SI (match_dup 0) (match_dup 3)))]
+  "{
+     int amount = INTVAL (operands[2]);
+     int end = INTVAL (operands[3]) + amount;
+     operands[2] = GEN_INT (BITS_PER_WORD - end);
+     operands[3] = GEN_INT (BITS_PER_WORD - amount);
+   }"
+  [(set_attr "type" "bitmanip")]
+)
+
 ;; String compare with length insn.
 ;; Argument 0 is the target (result)
 ;; Argument 1 is the source1
