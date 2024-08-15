@@ -43,6 +43,16 @@
 			condmove,mvpair,zicond,cpop,clmul"))
   "(rhx_ALU0 | rhx_ALU1), nothing*2")
 
+(define_insn_reservation "rhx_alu_fused" 1
+   (and (eq_attr "tune" "rhx")
+       (eq_attr "type" "alu_fused"))
+  "rhx_ALU0 | rhx_ALU1")
+
+(define_insn_reservation "rhx_imul_fused" 4
+  (and (eq_attr "tune" "rhx")
+       (eq_attr "type" "imul_fused"))
+  "rhx_MPY32, nothing*3")
+
 (define_insn_reservation "rhx_jmp_insn" 1
   (and (eq_attr "tune" "rhx")
        (eq_attr "type" "branch,jump,call,jalr,ret,trap"))
