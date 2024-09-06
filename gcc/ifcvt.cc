@@ -109,6 +109,8 @@ static bool noce_convert_multiple_sets_1 (struct noce_if_info *,
 
 /* Count the number of non-jump active insns in BB.  */
 
+/*test*/
+
 static int
 count_bb_insns (const_basic_block bb)
 {
