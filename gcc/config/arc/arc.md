@@ -1070,14 +1070,40 @@ archs4x, archs4xd"
    (set_attr "length" "*,4,4,4,8")])
 
 ;; Wrong mov value. Should return 1 if overflow, not 0.
+;(define_insn "mulsi3_v"
+; [(set (match_operand:SI	  0 "register_operand"  "=r,r,r,  r")
+;          (mult:SI (match_operand:SI 1 "register_operand"   "r,r,0,  r")
+;		               (match_operand:SI 2 "nonmemory_operand"  "r,L,I,C32")))
+;  (set (reg:CC_V CC_REG)
+;       (compare:CC_V (mult:SI (match_dup 1)
+;			                        (match_dup 2))
+;		                          (match_dup 1)))]
+; ""
+; "mpy.f\\t%0,%1,%2 ; luis2"
+; [(set_attr "cond"   "set")
+;  (set_attr "type"   "compare")
+;  (set_attr "length" "4,4,4,8")])
+;
+;(define_expand "umulvsi4"
+;  [(match_operand:SI 0 "register_operand")
+;   (match_operand:SI 1 "register_operand")
+;   (match_operand:SI 2 "nonmemory_operand")
+;   (label_ref (match_operand 3 "" ""))]
+;  ""
+;  "emit_insn (gen_mulsi3_v (operands[0], operands[1], operands[2]));
+;              arc_gen_unlikely_cbranch (EQ, CC_Vmode, operands[3]);
+;              DONE;")
+;;
+
+;; Wheres the generated mpy instruction ¯\_(._.)_/¯
 (define_insn "mulsi3_v"
- [(set (match_operand:SI	  0 "register_operand"  "=r,r,r,  r")
-          (mult:SI (match_operand:SI 1 "register_operand"   "r,r,0,  r")
-		               (match_operand:SI 2 "nonmemory_operand"  "r,L,I,C32")))
-  (set (reg:CC_V CC_REG)
-       (compare:CC_V (mult:SI (match_dup 1)
-			                        (match_dup 2))
-		                          (match_dup 1)))]
+ [(parallel
+  [(set (reg:CC_V CC_REG)
+       (compare:CC_V (mult:SI (match_operand:SI 1 "register_operand" "r,r,0,   r")
+			                  (match_operand:SI 2 "nonmemory_operand" "r,L,I,C32"))
+                              (mult:SI (match_dup 1) (match_dup 2))))
+   (set (match_operand:SI 0 "register_operand" "=r,r,r,  r")
+        (mult:SI (match_dup 1) (match_dup 2)))])]
  ""
  "mpy.f\\t%0,%1,%2 ; luis2"
  [(set_attr "cond"   "set")
