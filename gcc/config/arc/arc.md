@@ -350,10 +350,11 @@
 ;; SET: All condition codes are set by this insn.
 ;; SET_ZN: the Z and N flags are set by this insn.
 ;; SET_ZNC: the Z, N, and C flags are set by this insn.
+;; SET_V: the V flag is set by this insn.
 ;; CLOB: The condition codes are set to unknown values by this insn.
 ;; NOCOND: This insn can't use and doesn't affect the condition codes.
 
-(define_attr "cond" "use,canuse,canuse_limm,canuse_limm_add,set,set_zn,clob,nocond"
+(define_attr "cond" "use,canuse,canuse_limm,canuse_limm_add,set,set_zn,set_v,clob,nocond"
   (cond
     [(and (eq_attr "predicable" "yes")
 	  (eq_attr "is_sfunc" "no")
