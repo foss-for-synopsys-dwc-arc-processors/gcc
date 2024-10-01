@@ -9633,10 +9633,6 @@ riscv_override_options_internal (struct gcc_options *opts)
 
   /* Convert -march and -mrvv-vector-bits to a chunks count.  */
   riscv_vector_chunks = riscv_convert_vector_chunks (opts);
-
-  /* RHX: Disable the regrename pass for the benefit of multiply-add fusion. */
-  if (riscv_is_micro_arch (rhx))
-    flag_rename_registers = 0;
 }
 
 /* Implement TARGET_OPTION_OVERRIDE.  */
