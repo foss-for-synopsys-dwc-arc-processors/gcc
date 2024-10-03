@@ -561,8 +561,8 @@ static const struct riscv_tune_param rhx_tune_info = {
   {COSTS_N_INSNS (4), COSTS_N_INSNS (5)},	/* fp_add */
   {COSTS_N_INSNS (4), COSTS_N_INSNS (5)},	/* fp_mul */
   {COSTS_N_INSNS (20), COSTS_N_INSNS (20)},	/* fp_div */
-  {COSTS_N_INSNS (1), COSTS_N_INSNS (1)},	/* int_mul */
-  {COSTS_N_INSNS (12), COSTS_N_INSNS (12)},	/* int_div */
+  {COSTS_N_INSNS (4), COSTS_N_INSNS (4)},	/* int_mul */
+  {COSTS_N_INSNS (27), COSTS_N_INSNS (43)},	/* int_div */
   4,						/* issue_rate */
   9,						/* branch_cost */
   2,						/* memory_cost */
