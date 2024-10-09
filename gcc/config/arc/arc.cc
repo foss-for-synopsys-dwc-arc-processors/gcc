@@ -1555,6 +1555,11 @@ arc_select_cc_mode (enum rtx_code op, rtx x, rtx y)
   machine_mode mode = GET_MODE (x);
   rtx x1;
 
+/*  if (mode == SImode
+      && GET_CODE (x) == MULT
+      && (op == EQ || op == NE))
+    return CC_Vmode; */
+
   /* For an operation that sets the condition codes as a side-effect, the
      C and V flags is not set as for cmp, so we can only use comparisons where
      this doesn't matter.  (For LT and GE we can use "mi" and "pl"
