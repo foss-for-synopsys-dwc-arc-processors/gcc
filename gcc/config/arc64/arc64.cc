@@ -2766,6 +2766,17 @@ check_short_insn_constant_p (rtx op, machine_mode mode)
   return false;
 }
 
+
+/* Can output mi_thunk for all cases except the large code model. */
+static bool
+arc64_can_output_mi_thunk (const_tree, HOST_WIDE_INT, HOST_WIDE_INT, const_tree)
+{
+  if (arc64_cmodel_var == ARC64_CMODEL_LARGE)
+    return false;
+
+  return true;
+}
+
 /* Output code to add DELTA to the first argument, and then jump to
    FUNCTION.  Used for C++ multiple inheritance.  */
 
@@ -6699,8 +6710,7 @@ arc64_expand_vector_init (rtx target, rtx vals)
 #define TARGET_ASM_ALIGNED_SI_OP "\t.word\t"
 
 #undef  TARGET_ASM_CAN_OUTPUT_MI_THUNK
-#define TARGET_ASM_CAN_OUTPUT_MI_THUNK \
-  hook_bool_const_tree_hwi_hwi_const_tree_true
+#define TARGET_ASM_CAN_OUTPUT_MI_THUNK arc64_can_output_mi_thunk
 
 #undef TARGET_ASM_OUTPUT_MI_THUNK
 #define TARGET_ASM_OUTPUT_MI_THUNK arc64_output_mi_thunk
