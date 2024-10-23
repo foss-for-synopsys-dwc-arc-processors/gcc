@@ -1110,7 +1110,9 @@ xorl"
   [(parallel [(call (match_operand 0 "memory_operand")
 		    (match_operand 1 "general_operand"))
 	      (use (match_operand 2 "" ""))
-	     (clobber (reg BLINK_REGNUM))])]
+	     (clobber (reg BLINK_REGNUM))
+
+])]
   ""
   {
    arc64_expand_call (NULL_RTX, operands[0], false);
@@ -1166,7 +1168,9 @@ xorl"
   [(parallel [(call (match_operand 0 "memory_operand")
 		    (match_operand 1 "general_operand"))
 	      (return)
-	      (use (match_operand 2 "" ""))])]
+	      (use (match_operand 2 "" ""))
+             (clobber (match_dup 3))
+])]
   ""
   {
     arc64_expand_call (NULL_RTX, operands[0], true);
@@ -1189,11 +1193,12 @@ xorl"
 
 ;FIXME! add short variant for jump
 (define_insn "*sibcall<mode>_insn"
-  [(call
+ [(parallel [(call
     (mem:P
      (match_operand:P 0 "arc64_call_insn_operand" "Sbreg,BLsym,S12S0,S32S0"))
     (match_operand 1 "" ""))
-  (return)]
+  (return)
+])]
   "SIBLING_CALL_P (insn)"
   "@
    j%*\\t[%0]
@@ -1211,7 +1216,9 @@ xorl"
 	(mem:P
 	 (match_operand:P 1 "arc64_call_insn_operand" "Sbreg,BLsym,S12S0,S32S0"))
 	(match_operand 2 "" "")))
-  (return)]
+  (return)
+;;(clobber (match_scratch:P 3 "=1,1,1,1"))
+]
   "SIBLING_CALL_P (insn)"
   "@
    j%*\\t[%1]

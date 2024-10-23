@@ -5322,7 +5322,12 @@ arc64_expand_call (rtx result, rtx mem, bool sibcall)
      address of the callee into a register before performing the
      branch-and-link.  */
   if (arc64_is_long_call_p (callee) && !REG_P (callee))
+   if(can_create_pseudo_p())
     XEXP (mem, 0) = force_reg (mode, callee);
+   else
+    /*use a caller saved register that is available to be used by the callee*/	   
+    XEXP (mem, 0) = copy_to_suggested_reg(callee, gen_rtx_REG(mode, R13_REGNUM), mode);
+ 	   
 
   call = gen_rtx_CALL (VOIDmode, mem, const0_rtx);
 
@@ -5339,6 +5344,58 @@ arc64_expand_call (rtx result, rtx mem, bool sibcall)
 
   emit_call_insn (call);
 }
+
+void
+arc64_expand_call_1 (rtx result, rtx mem, bool sibcall, rtx scratch_reg)
+{
+  rtx call, callee, clobber, tmp;
+  rtvec vec;
+  machine_mode mode;
+
+  gcc_assert (MEM_P (mem));
+  callee = XEXP (mem, 0);
+  mode = GET_MODE (callee);
+  gcc_assert (mode == Pmode || CONST_INT_P (callee));
+
+  /* Decide if we should generate indirect calls by loading the
+     address of the callee into a register before performing the
+     branch-and-link.  */
+  if (arc64_is_long_call_p (callee) && !REG_P (callee))
+  //  if(!reload_completed)
+    //  XEXP (mem, 0) = force_reg (mode, callee);
+   XEXP (mem, 0) = copy_to_mode_reg (mode, callee);
+
+  clobber = gen_rtx_CLOBBER (VOIDmode, gen_rtx_SCRATCH (DImode));
+ 
+  call = gen_rtx_CALL (VOIDmode, mem, const0_rtx);
+
+  if (result != NULL_RTX)
+    call = gen_rtx_SET (result, call);
+
+  if (sibcall){
+    tmp = ret_rtx;
+    vec = gen_rtvec (2, call, tmp, clobber);
+  }  
+  else{
+    tmp = gen_rtx_CLOBBER (VOIDmode, gen_rtx_REG (Pmode, BLINK_REGNUM));
+    vec = gen_rtvec (2, call, tmp);
+  }
+
+  call = gen_rtx_PARALLEL (VOIDmode, vec);
+
+  emit_call_insn (call);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 /* Return nonzero if this function is known to have a null epilogue.
    This allows the optimizer to omit jumps to jumps if no stack
