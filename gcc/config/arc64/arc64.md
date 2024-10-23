@@ -1189,7 +1189,7 @@ xorl"
 
 ;FIXME! add short variant for jump
 (define_insn "*sibcall<mode>_insn"
-  [(call
+ [(call
     (mem:P
      (match_operand:P 0 "arc64_call_insn_operand" "Sbreg,BLsym,S12S0,S32S0"))
     (match_operand 1 "" ""))
