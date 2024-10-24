@@ -9397,7 +9397,8 @@ riscv_sched_reorder2 (FILE *file, int verbose, rtx_insn **ready, int *n_readyp, 
 	{
 	  if (recog_memoized (ready[*n_readyp - i]) >= 0
 	     && !SCHED_GROUP_P (ready[*n_readyp - i])
-	     && !SCHED_GROUP_P (next_insn (ready[*n_readyp - i]))
+	     && (!next_insn (ready[*n_readyp - i])
+		 || !SCHED_GROUP_P (next_insn (ready[*n_readyp - i])))
 	     && arcv_macro_fusion_pair_p (last_scheduled_insn, ready[*n_readyp - i]))
 	    {
 	      std::swap (ready[*n_readyp - 1], ready[*n_readyp - i]);
@@ -9419,7 +9420,8 @@ riscv_sched_reorder2 (FILE *file, int verbose, rtx_insn **ready, int *n_readyp, 
 	{
 	  if (recog_memoized (ready[*n_readyp - i]) >= 0
 	     && !SCHED_GROUP_P (ready[*n_readyp - i])
-	     && !SCHED_GROUP_P (next_insn (ready[*n_readyp - i]))
+	     && (!next_insn (ready[*n_readyp - i])
+	         || !SCHED_GROUP_P (next_insn (ready[*n_readyp - i])))
 	     && arcv_macro_fusion_pair_p (last_scheduled_insn, ready[*n_readyp - i]))
 	    {
 	      if (get_attr_type (ready[*n_readyp - i]) == TYPE_LOAD
@@ -9457,8 +9459,10 @@ riscv_sched_reorder2 (FILE *file, int verbose, rtx_insn **ready, int *n_readyp, 
 	    && get_attr_type (ready[*n_readyp - i]) != TYPE_LOAD
 	    && get_attr_type (ready[*n_readyp - i]) != TYPE_STORE
 	    && !SCHED_GROUP_P (ready[*n_readyp - i])
-	    && (!SCHED_GROUP_P (next_insn (ready[*n_readyp - i]))
-	|| (get_attr_type (next_insn (ready[*n_readyp - i])) != TYPE_LOAD
+	    && (!next_insn (ready[*n_readyp - i])
+		|| !SCHED_GROUP_P (next_insn (ready[*n_readyp - i])))
+	|| (next_insn (ready[*n_readyp - i])
+	    && get_attr_type (next_insn (ready[*n_readyp - i])) != TYPE_LOAD
 	    && get_attr_type (next_insn (ready[*n_readyp - i])) != TYPE_STORE)))
 	  {
 	    std::swap (ready[*n_readyp - 1], ready[*n_readyp - i]);
