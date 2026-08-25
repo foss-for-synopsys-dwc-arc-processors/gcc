@@ -872,6 +872,11 @@ extern bool arcv_mpy_2c_bypass_p (rtx_insn *, rtx_insn *);
 extern bool arcv_mpy_10c_bypass_p (rtx_insn *, rtx_insn *);
 extern bool arcv_fmadd_acc_bypass_p (rtx_insn *, rtx_insn *);
 
+/* Routines implemented for xmipstrig.  */
+extern rtx riscv_get_trig_scale_value (int flti_const_index);
+extern rtx riscv_get_trig_const (int index);
+extern rtx riscv_output_asinf_hz (rtx dest, rtx src);
+
 extern bool strided_load_broadcast_p (void);
 extern bool riscv_prefer_agnostic_p (void);
 extern bool riscv_use_divmod_expander (void);
