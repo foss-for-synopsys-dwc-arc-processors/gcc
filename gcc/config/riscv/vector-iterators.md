@@ -1911,6 +1911,62 @@
   (V2048HF "RVVM1DF")
 ])
 
+;; Dual-scalar (_2s): same as V_LMUL1, except EEW=64 uses LMUL=2 so two
+;; 64-bit values fit when VLEN=64.
+(define_mode_attr V_LMUL1OR2 [
+  (RVVM8HI "RVVM1HI") (RVVM4HI "RVVM1HI") (RVVM2HI "RVVM1HI") (RVVM1HI "RVVM1HI") (RVVMF2HI "RVVM1HI") (RVVMF4HI "RVVM1HI")
+
+  (RVVM8SI "RVVM1SI") (RVVM4SI "RVVM1SI") (RVVM2SI "RVVM1SI") (RVVM1SI "RVVM1SI") (RVVMF2SI "RVVM1SI")
+
+  (RVVM8DI "RVVM2DI") (RVVM4DI "RVVM2DI") (RVVM2DI "RVVM2DI") (RVVM1DI "RVVM2DI")
+
+  (V1HI "RVVM1HI")
+  (V2HI "RVVM1HI")
+  (V4HI "RVVM1HI")
+  (V8HI "RVVM1HI")
+  (V16HI "RVVM1HI")
+  (V32HI "RVVM1HI")
+  (V64HI "RVVM1HI")
+  (V128HI "RVVM1HI")
+  (V256HI "RVVM1HI")
+  (V512HI "RVVM1HI")
+  (V1024HI "RVVM1HI")
+  (V2048HI "RVVM1HI")
+  (V1SI "RVVM1SI")
+  (V2SI "RVVM1SI")
+  (V4SI "RVVM1SI")
+  (V8SI "RVVM1SI")
+  (V16SI "RVVM1SI")
+  (V32SI "RVVM1SI")
+  (V64SI "RVVM1SI")
+  (V128SI "RVVM1SI")
+  (V256SI "RVVM1SI")
+  (V512SI "RVVM1SI")
+  (V1024SI "RVVM1SI")
+  (V1DI "RVVM2DI")
+  (V2DI "RVVM2DI")
+  (V4DI "RVVM2DI")
+  (V8DI "RVVM2DI")
+  (V16DI "RVVM2DI")
+  (V32DI "RVVM2DI")
+  (V64DI "RVVM2DI")
+  (V128DI "RVVM2DI")
+  (V256DI "RVVM2DI")
+  (V512DI "RVVM2DI")
+])
+
+;; Dual-scalar widen-by-2: like V_EXT_LMUL1, but SI widens to DI LMUL=2.
+(define_mode_attr V_EXT_LMUL1OR2 [
+  (RVVM1QI "RVVM1HI")
+  (RVVM1HI "RVVM1SI")
+  (RVVM1SI "RVVM2DI")
+])
+
+;; Dual-scalar widen-by-4: like V_QEXT_LMUL1, but HI widens to DI LMUL=2.
+(define_mode_attr V_QEXT_LMUL1OR2 [
+  (RVVM1QI "RVVM1SI")
+  (RVVM1HI "RVVM2DI")
+])
 
 (define_mode_iterator VLSB [
   (V1BI "riscv_vector::vls_mode_valid_p (V1BImode)")
