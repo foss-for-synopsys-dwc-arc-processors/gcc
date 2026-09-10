@@ -98,7 +98,6 @@ FAIL: gcc.target/riscv/rvv/base/float-point-frm-insert-8.c
 FAIL: gcc.target/riscv/rvv/pr122474.c
 FAIL: gcc.target/riscv/rvv/vsetvl/avl_single-26.c
 FAIL: gcc.target/riscv/rvv/vsetvl/pr117974.c
-FAIL: gcc.target/riscv/shNadd-sp.c
 UNRESOLVED: gcc-target-riscv-apex-arcv-apex-lto-test1-01.exe
 UNRESOLVED: gcc-target-riscv-apex-arcv-apex-lto-test2-01.exe
 UNRESOLVED: gcc-target-riscv-apex-arcv-apex-lto-test3-01.exe
@@ -121,6 +120,5 @@ UNRESOLVED: gcc.target/riscv/rvv/autovec/pr120378-2.c
 UNRESOLVED: gcc.target/riscv/rvv/autovec/pr120378-3.c
 UNRESOLVED: gcc.target/riscv/rvv/autovec/pr120378-4.c
 UNRESOLVED: gcc.target/riscv/rvv/autovec/pr123940.c
-UNRESOLVED: gcc.target/riscv/shNadd-sp.c
 XPASS: gcc.dg/vect/costmodel/riscv/rvv/pr113281-1.c
 XPASS: gcc.dg/vect/costmodel/riscv/rvv/pr113281-2.c
