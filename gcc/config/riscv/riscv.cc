@@ -9696,6 +9696,241 @@ riscv_emit_stack_tie (rtx reg)
     emit_insn (gen_stack_tiedi (stack_pointer_rtx, reg));
 }
 
+/* Return TRUE if OPERANDS represents a load or store
+   that can be later bonded.  LOAD_P is set to TRUE
+   if it's a load.  Return FALSE otherwise.  */
+
+static bool
+riscv_load_store_p (rtx *operands, bool *load_p)
+{
+  rtx mem;
+  rtx dest = operands[0];
+  rtx src = operands[1];
+
+  if ((GET_CODE (src) == REG || src == const0_rtx)
+      && GET_CODE ((mem = dest)) == MEM)
+    *load_p = false;
+  else if (GET_CODE ((mem = src)) == MEM && GET_CODE (dest) == REG)
+    *load_p = true;
+  else
+    return false;
+
+  if (*load_p && MEM_VOLATILE_P (mem))
+    return false;
+
+  return true;
+}
+
+/* Return TRUE if operands OPERANDS represent two consecutive instructions
+   than can be bonded as load-load/store-store pair in mode MODE.
+   Return FALSE otherwise.  */
+
+static bool
+riscv_bonding_p (rtx *operands, machine_mode mode)
+{
+  bool load_p, load_p2;
+
+  /* Check the supported modes.  */
+  if (mode == HImode || mode == SImode)
+    {
+      /* Ok.  */
+    }
+  else if (mode == DImode)
+    {
+      if (!TARGET_64BIT)
+	return false;
+    }
+  else if (mode == SFmode)
+    {
+      if (!TARGET_HARD_FLOAT)
+	return false;
+    }
+  else if (mode == DFmode)
+    {
+      if (!(TARGET_HARD_FLOAT && TARGET_DOUBLE_FLOAT))
+	return false;
+    }
+  else
+    {
+      return false;
+    }
+
+  if (!riscv_load_store_p (&operands[0], &load_p)
+      || !riscv_load_store_p (&operands[2], &load_p2)
+      || load_p != load_p2)
+    return false;
+
+  return riscv_load_store_bonding_p (operands, mode, load_p);
+}
+
+/* Return TRUE if INSN1 and INSN2 can be bonded, FALSE otherwise.  */
+
+bool
+riscv_load_store_bonding_insn_p (rtx insn1, rtx insn2)
+{
+  rtx operands[4];
+  rtx pat1, pat2;
+
+  gcc_assert (INSN_P (insn1) && INSN_P (insn2));
+
+  pat1 = PATTERN (insn1);
+  pat2 = PATTERN (insn2);
+
+  if (GET_CODE (pat1) == SET && GET_CODE (pat2) == SET)
+    {
+      machine_mode mode;
+
+      operands[0] = SET_DEST (pat1);
+      operands[1] = SET_SRC (pat1);
+      operands[2] = SET_DEST (pat2);
+      operands[3] = SET_SRC (pat2);
+
+      /* We take the mode from either SET_DESTs and the remaining operands
+	 and modes will be checked later.  */
+      mode = GET_MODE (operands[0]);
+
+      return riscv_bonding_p (operands, mode);
+    }
+
+  return false;
+}
+
+/* If X is a PLUS of a CONST_INT, return the two terms in *BASE_PTR
+   and *OFFSET_PTR.  Return X in *BASE_PTR and 0 in *OFFSET_PTR otherwise.  */
+
+static void
+riscv_split_plus (rtx x, rtx *base_ptr, HOST_WIDE_INT *offset_ptr)
+{
+  if (GET_CODE (x) == PLUS && CONST_INT_P (XEXP (x, 1)))
+    {
+      *base_ptr = XEXP (x, 0);
+      *offset_ptr = INTVAL (XEXP (x, 1));
+    }
+  else
+    {
+      *base_ptr = x;
+      *offset_ptr = 0;
+    }
+}
+
+static void
+riscv_load_store_bond_insns_in_range (rtx_insn *from, rtx_insn *to)
+{
+  rtx_insn *cur, *next;
+
+  if (from == NULL || to == NULL || from == to)
+    return;
+
+  for (cur = from, next = NEXT_INSN (from);
+       next;
+       cur = next, next = NEXT_INSN (next))
+    {
+      if (INSN_P (cur) && INSN_P (next)
+	  && riscv_load_store_bonding_insn_p (cur, next))
+	{
+	  rtx_insn *bonded;
+	  int code;
+	  rtx base1, base2;
+	  HOST_WIDE_INT offset1, offset2;
+	  rtx par = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (2));
+
+	  XVECEXP (par, 0, 0) = PATTERN (cur);
+	  XVECEXP (par, 0, 1) = PATTERN (next);
+
+	  bonded = emit_insn_before (par, cur);
+	  code = recog_memoized (bonded);
+
+	  if (code < 0)
+	    {
+	      delete_insn (bonded);
+	      continue;
+	    }
+
+	  base1 = base2 = NULL_RTX;
+
+	  if (GET_CODE (SET_SRC (single_set (cur))) == REG
+	      && GET_CODE (SET_DEST (single_set (cur))) == MEM)
+	    {
+	      riscv_split_plus (XEXP (SET_DEST (single_set (cur)), 0),
+				      &base1, &offset1);
+	      riscv_split_plus (XEXP (SET_DEST (single_set (next)), 0),
+				      &base2, &offset2);
+	    }
+
+	  if (base1 != NULL_RTX
+	      && GET_CODE (base1) == REG
+	      && REGNO (base1) == STACK_POINTER_REGNUM)
+	    {
+	      rtx dwarf, dwarf1 = NULL_RTX, dwarf2 = NULL_RTX;
+	      rtx note1, note2;
+	      int len = 0;
+	      int dwarf_index = 0;
+
+	      gcc_assert (base2 != NULL_RTX && GET_CODE (base2) == REG
+			  && REGNO (base2) == STACK_POINTER_REGNUM);
+
+	      if ((note1 = find_reg_note (cur, REG_FRAME_RELATED_EXPR, 0)))
+		{
+		  dwarf1 = XEXP (note1, 0);
+		  if (GET_CODE (dwarf1) == PARALLEL)
+		    len += XVECLEN (dwarf1, 0);
+		  else
+		    len += 1;
+		}
+
+	      if ((note2 = find_reg_note (next, REG_FRAME_RELATED_EXPR, 0)))
+		{
+		  dwarf2 = XEXP (note2, 0);
+		  if (GET_CODE (dwarf2) == PARALLEL)
+		    len += XVECLEN (dwarf2, 0);
+		  else
+		    len += 1;
+		}
+
+	      dwarf = gen_rtx_PARALLEL (VOIDmode, rtvec_alloc (len));
+
+	      if (dwarf1 && GET_CODE (dwarf1) == PARALLEL)
+		{
+		  int i;
+		  for (i = 0; i < XVECLEN (dwarf1, 0); i++)
+		    {
+		      XVECEXP (dwarf, 0, dwarf_index++) = XVECEXP (dwarf1,
+								   0, i);
+		    }
+		}
+	      else if (dwarf1)
+		XVECEXP (dwarf, 0, dwarf_index++) = dwarf1;
+
+	      if (dwarf2 && GET_CODE (dwarf2) == PARALLEL)
+		{
+		  int i;
+		  for (i = 0; i < XVECLEN (dwarf2, 0); i++)
+		    {
+		      XVECEXP (dwarf, 0, dwarf_index++) = XVECEXP (dwarf2,
+								   0, i);
+		    }
+		}
+	      else if (dwarf2)
+		 XVECEXP (dwarf, 0, dwarf_index++) = dwarf2;
+
+	      RTX_FRAME_RELATED_P (bonded) = 1;
+	      add_reg_note (bonded, REG_FRAME_RELATED_EXPR, dwarf);
+	    }
+
+	  remove_insn (cur);
+	  remove_insn (next);
+	  cur = bonded;
+	  next = bonded;
+	}
+    }
+}
+
+static void
+riscv_load_store_bond_insns ()
+{
+  riscv_load_store_bond_insns_in_range (get_insns (), get_last_insn ());
+}
+
 /*zcmp multi push and pop code_for_push_pop function ptr array  */
 static const code_for_push_pop_t code_for_push_pop[ZCMP_MAX_GRP_SLOTS][ZCMP_OP_NUM]
   = {{code_for_gpr_multi_push_up_to_ra, code_for_gpr_multi_pop_up_to_ra,
@@ -10217,6 +10452,9 @@ riscv_expand_prologue (void)
       else
 	dump_stack_clash_frame_info (NO_PROBE_SMALL_FRAME, true);
     }
+
+  if (ENABLE_LD_ST_PAIRS && optimize)
+    riscv_load_store_bond_insns ();
 }
 
 static rtx
@@ -10635,6 +10873,9 @@ riscv_expand_epilogue (int style)
       else
 	emit_jump_insn (gen_simple_return_internal (ra));
     }
+
+  if (ENABLE_LD_ST_PAIRS && optimize)
+    riscv_load_store_bond_insns ();
 }
 
 /* Implement EPILOGUE_USES.  */
@@ -13667,6 +13908,163 @@ riscv_gpr_save_operation_p (rtx op)
 	}
     }
   return true;
+}
+
+bool
+riscv_load_store_bonding_p (rtx *operands, machine_mode mode, bool load_p)
+{
+  rtx reg1, reg2, mem1, mem2, base1, base2;
+  enum reg_class rc1, rc2;
+  HOST_WIDE_INT offset1, offset2, mode_size;
+
+  if (load_p)
+    {
+      reg1 = operands[0];
+      reg2 = operands[2];
+      mem1 = operands[1];
+      mem2 = operands[3];
+    }
+  else
+    {
+      reg1 = operands[1];
+      reg2 = operands[3];
+      mem1 = operands[0];
+      mem2 = operands[2];
+    }
+
+  if (riscv_address_insns (XEXP (mem1, 0), mode, false) == 0
+      || riscv_address_insns (XEXP (mem2, 0), mode, false) == 0)
+    return false;
+
+  riscv_split_plus (XEXP (mem1, 0), &base1, &offset1);
+  riscv_split_plus (XEXP (mem2, 0), &base2, &offset2);
+
+  /* Base regs do not match.  */
+  if (!REG_P (base1) || !rtx_equal_p (base1, base2))
+    return false;
+
+  /* Either of the loads is clobbering base register.  It is legitimate to bond
+     loads if second load clobbers base register.  However, hardware does not
+     support such bonding.  */
+  if (load_p
+      && (REGNO (reg1) == REGNO (base1)
+	  || (REGNO (reg2) == REGNO (base1))))
+    return false;
+
+  /* Loading in same registers.  */
+  if (load_p
+      && REGNO (reg1) == REGNO (reg2))
+    return false;
+
+  /* The loads/stores are not of same type.  */
+  rc1 = REGNO_REG_CLASS (REGNO (reg1));
+  rc2 = REGNO_REG_CLASS (REGNO (reg2));
+  if (rc1 != rc2
+      && !reg_class_subset_p (rc1, rc2)
+      && !reg_class_subset_p (rc2, rc1))
+    return false;
+
+  /* Make sure offset1 is aligned to the mode size.  */
+  mode_size = GET_MODE_SIZE (mode).to_constant();
+  if ((offset1 & (mode_size - 1)) != 0)
+    return false;
+
+  if (abs (offset1 - offset2) != mode_size)
+    return false;
+
+  return true;
+}
+
+const char *
+riscv_output_join2_insns (rtx *operands, machine_mode mode, bool load_p,
+			  bool sign_extend_p)
+{
+  rtx reg1, reg2, mem1, mem2, base1, base2;
+  HOST_WIDE_INT offset1, offset2;
+
+  if (load_p)
+    {
+      reg1 = operands[0];
+      reg2 = operands[2];
+      mem1 = operands[1];
+      mem2 = operands[3];
+    }
+  else
+    {
+      reg1 = operands[1];
+      reg2 = operands[3];
+      mem1 = operands[0];
+      mem2 = operands[2];
+    }
+
+  gcc_assert (riscv_address_insns (XEXP (mem1, 0), mode, false));
+  gcc_assert (riscv_address_insns (XEXP (mem2, 0), mode, false));
+
+  riscv_split_plus (XEXP (mem1, 0), &base1, &offset1);
+  riscv_split_plus (XEXP (mem2, 0), &base2, &offset2);
+
+  /* Check if we want to output ldp/sdp/lwp/swp.  */
+  if (TARGET_XMIPSLSP
+      && abs (offset1 - offset2) == GET_MODE_SIZE (mode).to_constant()
+      && offset1 >= 0 && offset2 >= 0
+      && (offset1 < (1 << 7) || offset2 < (1 << 7))
+      && (mode == DImode || mode == SImode)
+      && REGNO (base1) == REGNO (base2)
+      && ((load_p && REGNO (reg1) != REGNO (base1)
+	   && REGNO (reg2) != REGNO (base1)) || !load_p))
+  {
+    if (offset1 < offset2)
+    {
+      if (load_p)
+	return mode == DImode ? "mips.ldp\t%0,%2,%1" : "mips.lwp\t%0,%2,%1";
+      else
+	return mode == DImode ? "mips.sdp\t%z1,%z3,%0" : "mips.swp\t%z1,%z3,%0";
+    }
+    else
+    {
+      if (load_p)
+	return mode == DImode ? "mips.ldp\t%2,%0,%3" : "mips.lwp\t%2,%0,%3";
+      else
+	return mode == DImode ? "mips.sdp\t%z3,%z1,%2" : "mips.swp\t%z3,%z1,%2";
+    }
+  }
+
+  if (!load_p || !reg_overlap_mentioned_p (operands[0], operands[3]))
+    {
+    /* Special treatment to use lw.  */
+    if (sign_extend_p && mode == SImode) {
+      output_asm_insn ("lw\t%0,%1", operands);
+      output_asm_insn ("lw\t%2,%3", operands);
+
+    }
+    else
+    {
+      output_asm_insn (riscv_output_move (operands[0], operands[1]),
+					  operands);
+      output_asm_insn (riscv_output_move (operands[2], operands[3]),
+					  &operands[2]);
+    }
+  }
+  else
+  {
+    /* Make sure operands[2] and operands[1] don't overlap.  */
+    gcc_assert(!reg_overlap_mentioned_p (operands[2], operands[1]));
+
+    /* Special treatment to use lw.  */
+    if (sign_extend_p && mode == SImode)
+    {
+      output_asm_insn ("lw\t%2,%3", operands);
+      output_asm_insn ("lw\t%0,%1", operands);
+    }
+    else
+    {
+      output_asm_insn (riscv_output_move (operands[2], operands[3]),
+					  &operands[2]);
+      output_asm_insn (riscv_output_move (operands[0], operands[1]), operands);
+    }
+  }
+
+  return "";
 }
 
 /* Implement TARGET_ASAN_SHADOW_OFFSET.  */
